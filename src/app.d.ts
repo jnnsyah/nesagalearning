@@ -1,13 +1,29 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
+import type { User, Session } from 'lucia';
+
 declare global {
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface PageState {}
-		// interface Platform {}
+		interface Locals {
+			user: User | null;
+			session: Session | null;
+		}
 	}
+}
+
+declare module 'lucia' {
+	interface Register {
+		Lucia: typeof import('./lib/server/auth/lucia').lucia;
+		DatabaseUserAttributes: DatabaseUserAttributes;
+	}
+}
+
+interface DatabaseUserAttributes {
+	username: string;
+	email: string | null;
+	fullName: string;
+	role: 'admin' | 'guru' | 'mentor' | 'siswa';
+	avatarUrl: string | null;
+	googleId: string | null;
+	isActive: boolean;
 }
 
 export {};
