@@ -2,141 +2,173 @@
 	import { page } from '$app/stores';
 
 	let timestamp = $state('—');
+	let showTechDetails = $state(false);
 
 	$effect(() => {
-		timestamp = new Date().toISOString().replace('T', ' ').split('.')[0] + 'Z';
+		timestamp = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC';
 	});
 
-	const errorConfig = $derived(() => {
-		const s = $page.status;
-		if (s === 404) return {
-			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
-			color: '#6366f1',
-			bg: '#e0e7ff',
-			title: 'Halaman Tidak Ditemukan',
-			sub: 'Maaf, halaman yang Anda tuju mungkin telah dipindahkan, dihapus, atau tidak pernah ada di sistem NLC.',
-		};
-		if (s === 403) return {
-			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>`,
-			color: '#d97706',
-			bg: '#fef3c7',
-			title: 'Akses Ditolak',
-			sub: 'Anda tidak memiliki izin untuk mengakses halaman ini. Role akun Anda tidak mencukupi.',
-		};
-		if (s === 401) return {
-			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>`,
-			color: '#0d9488',
-			bg: '#ccfbf1',
-			title: 'Autentikasi Diperlukan',
-			sub: 'Silakan masuk terlebih dahulu untuk mengakses halaman pembelajaran NLC ini.',
-		};
+	let status = $derived($page.status || 500);
+
+	let errorMeta = $derived(() => {
+		if (status === 404) {
+			return {
+				code: '404',
+				badge: 'HALAMAN TIDAK DITEMUKAN',
+				badgeClass: 'badge--indigo',
+				title: 'Waduh, Halaman Tidak Ditemukan',
+				sub: 'Halaman yang Anda tuju mungkin telah dipindahkan, dihapus, atau URL yang dimasukkan salah.',
+				iconColor: '#4f46e5',
+				iconBg: '#e0e7ff',
+				iconSvg: `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`
+			};
+		}
+		if (status === 403) {
+			return {
+				code: '403',
+				badge: 'AKSES DITOLAK',
+				badgeClass: 'badge--amber',
+				title: 'Akses Dibatasi',
+				sub: 'Akun Anda tidak memiliki izin untuk mengakses area ini. Pastikan Anda masuk dengan role yang sesuai.',
+				iconColor: '#d97706',
+				iconBg: '#fef3c7',
+				iconSvg: `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>`
+			};
+		}
+		if (status === 401) {
+			return {
+				code: '401',
+				badge: 'AUTENTIKASI DIPERLUKAN',
+				badgeClass: 'badge--teal',
+				title: 'Sesi Berakhir / Belum Login',
+				sub: 'Silakan masuk terlebih dahulu ke akun NLC Anda untuk mengakses halaman ini.',
+				iconColor: '#0d9488',
+				iconBg: '#ccfbf1',
+				iconSvg: `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+			};
+		}
 		return {
-			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
-			color: '#dc2626',
-			bg: '#fee2e2',
-			title: 'Terjadi Kesalahan Server',
-			sub: 'Sistem kami mengalami kendala teknis saat memproses permintaan Anda. Tim kami sedang menanganinya.',
+			code: String(status),
+			badge: 'KENDALA TEKNIS SERVER',
+			badgeClass: 'badge--red',
+			title: 'Terjadi Kendala pada Server',
+			sub: 'Sistem kami mengalami kesalahan internal saat memproses permintaan Anda. Silakan coba beberapa saat lagi.',
+			iconColor: '#dc2626',
+			iconBg: '#fee2e2',
+			iconSvg: `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
 		};
 	});
 </script>
 
 <svelte:head>
-	<title>Error {$page.status} — NLC</title>
+	<title>Error {status} — NLC</title>
 </svelte:head>
 
-<div class="error-root">
-	<!-- Decorative background -->
-	<div class="error-bg-glow-1"></div>
-	<div class="error-bg-glow-2"></div>
+<div class="error-container">
+	<!-- Background glows -->
+	<div class="glow-1" aria-hidden="true"></div>
+	<div class="glow-2" aria-hidden="true"></div>
 
-	<div class="error-card">
-		<!-- Status icon area -->
-		<div class="error-icon-wrap" style="background: {errorConfig().bg}; color: {errorConfig().color};">
-			{@html errorConfig().icon}
+	<main class="error-card">
+		<!-- Icon ring -->
+		<div class="icon-wrap" style="background: {errorMeta().iconBg}; color: {errorMeta().iconColor};">
+			{@html errorMeta().iconSvg}
 		</div>
 
-		<!-- Status badge -->
-		<div class="error-code-badge mt-5" style="color: {errorConfig().color}; background: {errorConfig().bg}; border-color: {errorConfig().color}22;">
-			STATUS {$page.status}
+		<!-- Status Badge -->
+		<div class="status-badge {errorMeta().badgeClass}">
+			STATUS {errorMeta().code} · {errorMeta().badge}
 		</div>
 
-		<!-- Title & desc -->
-		<h1 class="error-title mt-3">{errorConfig().title}</h1>
-		<p class="error-sub mt-2">{errorConfig().sub}</p>
+		<!-- Title & Subtitle -->
+		<h1 class="error-title">{errorMeta().title}</h1>
+		<p class="error-sub">{errorMeta().sub}</p>
 
-		<!-- Error detail (collapsible feel) -->
+		<!-- System error traceback details (if message exists) -->
 		{#if $page.error?.message}
-			<div class="error-detail-box mt-6">
-				<div class="error-detail-header">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+			<div class="error-details-wrap">
+				<button
+					type="button"
+					onclick={() => (showTechDetails = !showTechDetails)}
+					class="details-toggle"
+				>
 					<span>Pesan Detail Sistem</span>
-				</div>
-				<code class="error-detail-msg">{$page.error.message}</code>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-arrow" class:toggle-arrow--open={showTechDetails}>
+						<polyline points="6 9 12 15 18 9"/>
+					</svg>
+				</button>
+
+				{#if showTechDetails}
+					<div class="details-body">
+						<code class="details-code">{$page.error.message}</code>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
-		<!-- Technical meta -->
-		<div class="error-tech-table mt-5">
-			<div class="tech-row">
-				<span class="tech-label">Path URL</span>
-				<code class="tech-val">{$page.url.pathname}</code>
+		<!-- Technical metadata box -->
+		<div class="meta-box">
+			<div class="meta-row">
+				<span class="meta-key">URL Path</span>
+				<code class="meta-val">{$page.url.pathname}</code>
 			</div>
-			<div class="tech-divider"></div>
-			<div class="tech-row">
-				<span class="tech-label">Waktu Sistem</span>
-				<code class="tech-val">{timestamp}</code>
+			<div class="meta-divider"></div>
+			<div class="meta-row">
+				<span class="meta-key">Timestamp</span>
+				<code class="meta-val">{timestamp}</code>
 			</div>
 		</div>
 
-		<!-- Action buttons -->
-		<div class="error-actions mt-8">
-			<a href="/login" class="btn-primary" style="width: auto; padding: 12px 28px;">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-				Kembali ke Login
+		<!-- Actions -->
+		<div class="actions-row">
+			<a href="/" class="btn-primary-err">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+				Ke Halaman Beranda
 			</a>
-			<button onclick={() => window.history.back()} class="btn-ghost" style="padding: 12px 24px;">
+			<button onclick={() => window.history.back()} class="btn-ghost-err">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-				Halaman Sebelumnya
+				Kembali
 			</button>
 		</div>
 
-		<!-- Branding footer -->
-		<div class="error-brand mt-8">
-			<span class="nlc-logo">NLC</span>
+		<!-- Footer logo -->
+		<footer class="error-footer">
+			<span class="brand-name">NLC</span>
+			<span class="brand-sep">•</span>
 			<span>Nesaga Learning Community</span>
-		</div>
-	</div>
+		</footer>
+	</main>
 </div>
 
 <style>
-	.error-root {
+	.error-container {
+		min-height: 100vh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 100vh;
 		background: #f8fafc;
 		padding: 24px;
 		position: relative;
 		overflow: hidden;
 	}
 
-	.error-bg-glow-1 {
+	.glow-1 {
 		position: absolute;
-		top: -20%;
+		top: -15%;
 		right: -10%;
-		width: 500px;
-		height: 500px;
-		background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+		width: 460px;
+		height: 460px;
+		background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
 		pointer-events: none;
 	}
 
-	.error-bg-glow-2 {
+	.glow-2 {
 		position: absolute;
-		bottom: -20%;
+		bottom: -15%;
 		left: -10%;
-		width: 500px;
-		height: 500px;
-		background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 70%);
+		width: 460px;
+		height: 460px;
+		background: radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%);
 		pointer-events: none;
 	}
 
@@ -144,154 +176,227 @@
 		position: relative;
 		z-index: 1;
 		width: 100%;
-		max-width: 520px;
+		max-width: 500px;
 		background: #ffffff;
 		border: 1px solid #e2e8f0;
-		border-radius: 28px;
-		padding: 48px 40px;
-		box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.08);
-		text-align: center;
+		border-radius: 24px;
+		padding: 44px 36px;
+		box-shadow: 0 20px 48px -12px rgba(15, 23, 42, 0.08);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		text-align: center;
+		gap: 16px;
 	}
 
 	@media (max-width: 480px) {
 		.error-card {
-			padding: 36px 24px;
+			padding: 32px 20px;
 			border-radius: 20px;
 		}
 	}
 
-	.error-icon-wrap {
-		width: 88px;
-		height: 88px;
-		border-radius: 28px;
+	.icon-wrap {
+		width: 80px;
+		height: 80px;
+		border-radius: 24px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 	}
 
-	.error-code-badge {
-		display: inline-flex;
-		align-items: center;
+	.status-badge {
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: 10.5px;
 		font-weight: 800;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.06em;
 		padding: 5px 14px;
 		border-radius: 9999px;
 		border: 1px solid;
 	}
 
+	.badge--indigo { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
+	.badge--amber  { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+	.badge--teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+	.badge--red    { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
 	.error-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.5rem, 4vw, 2rem);
+		font-size: clamp(1.4rem, 4vw, 1.8rem);
 		font-weight: 800;
 		color: #0f172a;
-		line-height: 1.15;
-		letter-spacing: -0.02em;
+		line-height: 1.2;
+		letter-spacing: -0.025em;
+		margin: 0;
 	}
 
 	.error-sub {
-		font-size: 15px;
+		font-size: 14px;
 		color: #64748b;
-		line-height: 1.65;
-		max-width: 420px;
+		line-height: 1.6;
+		margin: 0;
 	}
 
-	.error-detail-box {
+	/* System Details */
+	.error-details-wrap {
 		width: 100%;
-		background: #fef2f2;
 		border: 1px solid #fecaca;
-		border-radius: 14px;
-		padding: 14px 18px;
+		border-radius: 12px;
+		background: #fef2f2;
+		overflow: hidden;
 		text-align: left;
 	}
 
-	.error-detail-header {
+	.details-toggle {
+		width: 100%;
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background: transparent;
+		border: none;
 		font-family: var(--font-mono);
 		font-size: 11px;
 		font-weight: 700;
-		color: #dc2626;
-		margin-bottom: 8px;
+		color: #991b1b;
+		cursor: pointer;
 	}
 
-	.error-detail-msg {
+	.toggle-arrow {
+		transition: transform 180ms ease;
+	}
+
+	.toggle-arrow--open {
+		transform: rotate(180deg);
+	}
+
+	.details-body {
+		padding: 0 14px 12px;
+	}
+
+	.details-code {
 		font-family: var(--font-mono);
-		font-size: 12px;
+		font-size: 11.5px;
 		color: #475569;
 		word-break: break-all;
 		line-height: 1.5;
 	}
 
-	.error-tech-table {
+	/* Metadata Table */
+	.meta-box {
 		width: 100%;
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 4px 0;
+		border-radius: 12px;
+		padding: 2px 0;
 		text-align: left;
 	}
 
-	.tech-row {
+	.meta-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 10px 16px;
+		padding: 9px 14px;
 		gap: 12px;
 	}
 
-	.tech-label {
-		font-size: 12px;
+	.meta-key {
+		font-size: 11.5px;
 		font-weight: 700;
 		color: #64748b;
-		white-space: nowrap;
 	}
 
-	.tech-val {
+	.meta-val {
 		font-family: var(--font-mono);
-		font-size: 12px;
-		color: #334155;
+		font-size: 11.5px;
 		font-weight: 600;
+		color: #1e293b;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		max-width: 220px;
 	}
 
-	.tech-divider {
+	.meta-divider {
 		height: 1px;
 		background: #e2e8f0;
-		margin: 0 16px;
+		margin: 0 14px;
 	}
 
-	.error-actions {
+	/* Buttons */
+	.actions-row {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 12px;
+		gap: 10px;
 		width: 100%;
 		flex-wrap: wrap;
+		margin-top: 4px;
 	}
 
-	.error-brand {
+	.btn-primary-err {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 10px 20px;
+		background: linear-gradient(135deg, #4338ca, #4f46e5 60%, #6366f1);
+		border: none;
+		border-radius: 10px;
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #ffffff;
+		text-decoration: none;
+		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+		transition: transform 150ms ease, box-shadow 150ms ease;
+	}
+
+	.btn-primary-err:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+	}
+
+	.btn-ghost-err {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 10px 18px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 10px;
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #334155;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-ghost-err:hover {
+		background: #f1f5f9;
+		border-color: #94a3b8;
+	}
+
+	/* Footer */
+	.error-footer {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 		font-size: 12px;
-		font-weight: 600;
 		color: #94a3b8;
+		margin-top: 4px;
 	}
 
-	.nlc-logo {
+	.brand-name {
 		font-family: var(--font-macro);
-		font-size: 14px;
 		font-weight: 800;
 		color: #4f46e5;
-		letter-spacing: -0.02em;
+	}
+
+	.brand-sep {
+		font-size: 10px;
 	}
 </style>
