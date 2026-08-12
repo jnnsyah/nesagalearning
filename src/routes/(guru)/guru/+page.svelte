@@ -10,7 +10,9 @@
 	<!-- SIDEBAR -->
 	<aside class="sidebar hide-mobile">
 		<div class="sidebar__brand">
-			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">NLC</div>
+			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">
+				NLC
+			</div>
 			<div class="type-mono text-muted mt-1" style="font-size: 9px;">PORTAL GURU</div>
 		</div>
 		<nav class="sidebar__nav">
@@ -24,7 +26,11 @@
 			<div style="padding: 16px 20px;">
 				<div class="type-mono text-muted mb-1" style="font-size: 9px;">OBSERVER</div>
 				<div class="type-mono" style="font-size: 11px;">{data.user?.fullName}</div>
-				<a href="/logout" class="btn-ghost mt-3" style="display: block; text-align: center; font-size: 10px;">KELUAR</a>
+				<a
+					href="/logout"
+					class="btn-ghost mt-3"
+					style="display: block; text-align: center; font-size: 10px;">KELUAR</a
+				>
 			</div>
 		</div>
 	</aside>
@@ -47,7 +53,10 @@
 				</div>
 				<h1 class="page-title">MONITORING<br />KELAS</h1>
 			</div>
-			<div class="type-mono text-muted hide-mobile" style="font-size: 9px; text-align: right; line-height: 2;">
+			<div
+				class="type-mono text-muted hide-mobile"
+				style="font-size: 9px; text-align: right; line-height: 2;"
+			>
 				<div>{data.user?.fullName}</div>
 				<div>@{data.user?.username}</div>
 			</div>
@@ -88,12 +97,7 @@
 				<span class="type-mono text-muted" style="font-size: 9px;">KLS-01 · TA 2026/2027</span>
 			</div>
 			<div class="chart-bars">
-				{#each [
-					{ label: 'FASE 1', value: 0 },
-					{ label: 'FASE 2', value: 0 },
-					{ label: 'FASE 3', value: 0 },
-					{ label: 'FASE 4', value: 0 },
-				] as fase}
+				{#each [{ label: 'FASE 1', value: 0 }, { label: 'FASE 2', value: 0 }, { label: 'FASE 3', value: 0 }, { label: 'FASE 4', value: 0 }] as fase}
 					<div class="chart-bar-item">
 						<div class="chart-bar-track">
 							<div class="chart-bar-fill" style="height: {fase.value}%;"></div>
@@ -113,12 +117,7 @@
 				<span>[ PROGRESS CHECKPOINT ]</span>
 			</div>
 			<div class="checkpoint-grid">
-				{#each [
-					{ id: 'CP-01', label: 'MENGOPERASIKAN KOMPUTER', status: 'pending' },
-					{ id: 'CP-02', label: 'RAKIT PC', status: 'pending' },
-					{ id: 'CP-03', label: 'DASAR JARINGAN', status: 'pending' },
-					{ id: 'CP-04', label: 'CISCO PACKET TRACER', status: 'pending' },
-				] as cp}
+				{#each [{ id: 'CP-01', label: 'MENGOPERASIKAN KOMPUTER', status: 'pending' }, { id: 'CP-02', label: 'RAKIT PC', status: 'pending' }, { id: 'CP-03', label: 'DASAR JARINGAN', status: 'pending' }, { id: 'CP-04', label: 'CISCO PACKET TRACER', status: 'pending' }] as cp}
 					<div class="checkpoint-item">
 						<div class="type-mono text-muted mb-1" style="font-size: 9px;">{cp.id}</div>
 						<div class="type-mono" style="font-size: 11px;">{cp.label}</div>

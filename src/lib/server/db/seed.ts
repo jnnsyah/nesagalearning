@@ -141,14 +141,12 @@ export async function seed() {
 		})
 		.returning();
 
-	await db
-		.insert(schema.materi)
-		.values({
-			subPhaseId: subPhase1.id,
-			title: 'Dasar-Dasar Hardware',
-			content: '<h3>Pengenalan Komponen Server & PC</h3><p>Penjelasan CPU, RAM, NIC, dan Router.</p>',
-			sortOrder: 1
-		});
+	await db.insert(schema.materi).values({
+		subPhaseId: subPhase1.id,
+		title: 'Dasar-Dasar Hardware',
+		content: '<h3>Pengenalan Komponen Server & PC</h3><p>Penjelasan CPU, RAM, NIC, dan Router.</p>',
+		sortOrder: 1
+	});
 
 	// 5. KelasInstance
 	console.log('Seeding kelas_instance...');
@@ -165,9 +163,12 @@ export async function seed() {
 
 	// 6. Keanggotaan & MentorAssignment
 	console.log('Seeding keanggotaan & mentor assignments...');
-	const targetSiswa1 = siswa1 || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'siswa1') }));
-	const targetSiswa2 = siswa2 || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'siswa2') }));
-	const targetMentor = mentor || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'mentor') }));
+	const targetSiswa1 =
+		siswa1 || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'siswa1') }));
+	const targetSiswa2 =
+		siswa2 || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'siswa2') }));
+	const targetMentor =
+		mentor || (await db.query.user.findFirst({ where: (u, { eq }) => eq(u.username, 'mentor') }));
 
 	if (targetSiswa1) {
 		await db
@@ -230,7 +231,11 @@ export async function seed() {
 		{ configKey: 'streak_milestone_3', configValue: 15, description: 'Bonus poin streak 3x' },
 		{ configKey: 'streak_milestone_5', configValue: 30, description: 'Bonus poin streak 5x' },
 		{ configKey: 'streak_milestone_10', configValue: 75, description: 'Bonus poin streak 10x' },
-		{ configKey: 'streak_milestone_recurring', configValue: 45, description: 'Bonus poin tiap +5 setelah 10' },
+		{
+			configKey: 'streak_milestone_recurring',
+			configValue: 45,
+			description: 'Bonus poin tiap +5 setelah 10'
+		},
 		{ configKey: 'task_kecil', configValue: 10, description: 'Poin task kecil approved' },
 		{ configKey: 'task_sedang', configValue: 20, description: 'Poin task sedang approved' },
 		{ configKey: 'task_besar', configValue: 35, description: 'Poin task besar approved' },

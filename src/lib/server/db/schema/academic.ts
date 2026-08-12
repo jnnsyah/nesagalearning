@@ -1,4 +1,13 @@
-import { pgTable, bigint, text, integer, boolean, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	bigint,
+	text,
+	integer,
+	boolean,
+	timestamp,
+	unique,
+	index
+} from 'drizzle-orm/pg-core';
 import { user } from './auth';
 import { curriculumTrack } from './curriculum';
 

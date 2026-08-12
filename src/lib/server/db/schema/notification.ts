@@ -16,7 +16,5 @@ export const notification = pgTable(
 		referenceType: text('reference_type'),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [
-		index('idx_notification_user').on(table.userId)
-	]
+	(table) => [index('idx_notification_user').on(table.userId)]
 );

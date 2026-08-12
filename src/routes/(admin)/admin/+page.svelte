@@ -10,8 +10,15 @@
 	<!-- SIDEBAR -->
 	<aside class="sidebar hide-mobile">
 		<div class="sidebar__brand">
-			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">NLC</div>
-			<div class="type-mono mt-1" style="font-size: 9px; color: var(--red); letter-spacing: 0.08em;">ADMIN PANEL</div>
+			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">
+				NLC
+			</div>
+			<div
+				class="type-mono mt-1"
+				style="font-size: 9px; color: var(--red); letter-spacing: 0.08em;"
+			>
+				ADMIN PANEL
+			</div>
 		</div>
 		<nav class="sidebar__nav">
 			<a href="/admin" class="sidebar__nav-item active">/// OVERVIEW</a>
@@ -26,7 +33,11 @@
 			<div style="padding: 16px 20px;">
 				<div class="type-mono" style="font-size: 9px; color: var(--red);">⚠ ADMIN ACCESS</div>
 				<div class="type-mono mt-1" style="font-size: 11px;">{data.user?.fullName}</div>
-				<a href="/logout" class="btn-ghost mt-3" style="display: block; text-align: center; font-size: 10px; color: var(--red); border-color: var(--red-dim);">
+				<a
+					href="/logout"
+					class="btn-ghost mt-3"
+					style="display: block; text-align: center; font-size: 10px; color: var(--red); border-color: var(--red-dim);"
+				>
 					TERMINATE SESSION
 				</a>
 			</div>
@@ -41,18 +52,29 @@
 				<span class="type-mono" style="font-size: 11px; font-weight: 700;">NLC</span>
 				<span class="type-mono" style="font-size: 9px; color: var(--red);">// ADMIN</span>
 			</div>
-			<a href="/logout" class="btn-ghost" style="padding: 5px 10px; font-size: 10px; color: var(--red); border-color: var(--red-dim);">KELUAR</a>
+			<a
+				href="/logout"
+				class="btn-ghost"
+				style="padding: 5px 10px; font-size: 10px; color: var(--red); border-color: var(--red-dim);"
+				>KELUAR</a
+			>
 		</header>
 
 		<!-- Command header -->
 		<div class="admin-header">
 			<div>
-				<div class="type-mono mb-1" style="font-size: 9px; color: var(--red); letter-spacing: 0.1em;">
+				<div
+					class="type-mono mb-1"
+					style="font-size: 9px; color: var(--red); letter-spacing: 0.1em;"
+				>
 					[ PRIVILEGED ACCESS ] &nbsp;/// &nbsp; SYSTEM ADMINISTRATION
 				</div>
 				<h1 class="admin-title">SYSTEM<br />CONTROL</h1>
 			</div>
-			<div class="admin-header__sys type-mono text-muted hide-mobile" style="font-size: 9px; line-height: 2; text-align: right;">
+			<div
+				class="admin-header__sys type-mono text-muted hide-mobile"
+				style="font-size: 9px; line-height: 2; text-align: right;"
+			>
 				<div style="color: var(--green-live);">● SYSTEM ONLINE</div>
 				<div>TA 2026/2027</div>
 				<div>@{data.user?.username}</div>
@@ -97,28 +119,67 @@
 				</div>
 				<div class="action-grid">
 					<a href="/admin/users/create" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--red); margin-bottom: 6px;">CMD/USER</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">+ TAMBAH USER</div>
+						<div class="type-mono" style="font-size: 9px; color: var(--red); margin-bottom: 6px;">
+							CMD/USER
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							+ TAMBAH USER
+						</div>
 					</a>
 					<a href="/admin/tahun-ajaran/create" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;">CMD/COHORT</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">+ BUKA TAHUN AJARAN</div>
+						<div
+							class="type-mono"
+							style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;"
+						>
+							CMD/COHORT
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							+ BUKA TAHUN AJARAN
+						</div>
 					</a>
 					<a href="/admin/master/room" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;">CMD/MASTER</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">KELOLA RUANGAN</div>
+						<div
+							class="type-mono"
+							style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;"
+						>
+							CMD/MASTER
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							KELOLA RUANGAN
+						</div>
 					</a>
 					<a href="/admin/konfigurasi" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;">CMD/CONFIG</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">KONFIGURASI POIN</div>
+						<div
+							class="type-mono"
+							style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;"
+						>
+							CMD/CONFIG
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							KONFIGURASI POIN
+						</div>
 					</a>
 					<a href="/admin/audit" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;">CMD/AUDIT</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">LIHAT AUDIT LOG</div>
+						<div
+							class="type-mono"
+							style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;"
+						>
+							CMD/AUDIT
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							LIHAT AUDIT LOG
+						</div>
 					</a>
 					<a href="/admin/users" class="action-item">
-						<div class="type-mono" style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;">CMD/RESET</div>
-						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">RESET PASSWORD</div>
+						<div
+							class="type-mono"
+							style="font-size: 9px; color: var(--text-muted); margin-bottom: 6px;"
+						>
+							CMD/RESET
+						</div>
+						<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+							RESET PASSWORD
+						</div>
 					</a>
 				</div>
 			</section>
@@ -255,7 +316,7 @@
 		background: var(--bg-cell);
 	}
 
-	.action-item:hover .type-mono[style*="text-primary"] {
+	.action-item:hover .type-mono[style*='text-primary'] {
 		color: var(--red) !important;
 	}
 

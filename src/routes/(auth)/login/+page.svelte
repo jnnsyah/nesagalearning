@@ -20,7 +20,10 @@
 
 			<div class="login-identity__desc">
 				<div class="login-identity__rule"></div>
-				<p class="type-mono mt-2" style="font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
+				<p
+					class="type-mono mt-2"
+					style="font-size: 12px; color: var(--text-secondary); line-height: 1.7;"
+				>
 					NESAGA LEARNING COMMUNITY<br />
 					TEKNIK KOMPUTER DAN JARINGAN<br />
 					SMK NESAGA — TA 2026/2027
@@ -47,7 +50,10 @@
 	<div class="login-terminal">
 		<div class="login-terminal__header">
 			<div class="flex items-center gap-3">
-				<div class="login-terminal__dot badge-live" style="width:8px;height:8px;background:var(--green-live);display:inline-block;"></div>
+				<div
+					class="login-terminal__dot badge-live"
+					style="width:8px;height:8px;background:var(--green-live);display:inline-block;"
+				></div>
 				<span class="type-mono" style="font-size: 10px;">TERMINAL AKTIF</span>
 			</div>
 			<span class="type-mono text-muted" style="font-size: 9px;">AUTH v2.0</span>
@@ -57,7 +63,11 @@
 			<!-- Mobile wordmark -->
 			<div class="hide-desktop mb-4">
 				<div class="type-mono text-muted mb-1" style="font-size: 9px;">SYS/AUTH-PORTAL</div>
-				<div style="font-family: var(--font-macro); font-size: clamp(3rem, 15vw, 5rem); line-height: 0.9; letter-spacing: -0.04em; text-transform: uppercase; color: var(--text-primary);">NLC</div>
+				<div
+					style="font-family: var(--font-macro); font-size: clamp(3rem, 15vw, 5rem); line-height: 0.9; letter-spacing: -0.04em; text-transform: uppercase; color: var(--text-primary);"
+				>
+					NLC
+				</div>
 				<hr class="rule mt-3" />
 			</div>
 
@@ -250,8 +260,20 @@
 		color: var(--text-ghost);
 		line-height: 1;
 	}
-	.crosshair--tl { top: 8px; left: 10px; }
-	.crosshair--tr { top: 8px; right: 10px; }
-	.crosshair--bl { bottom: 8px; left: 10px; }
-	.crosshair--br { bottom: 8px; right: 10px; }
+	.crosshair--tl {
+		top: 8px;
+		left: 10px;
+	}
+	.crosshair--tr {
+		top: 8px;
+		right: 10px;
+	}
+	.crosshair--bl {
+		bottom: 8px;
+		left: 10px;
+	}
+	.crosshair--br {
+		bottom: 8px;
+		right: 10px;
+	}
 </style>

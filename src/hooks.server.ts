@@ -65,37 +65,37 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, '/login');
 	}
 
-	// Strict Role-Based Access Control & Anti-URL Traversal
+	// Strict 1-to-1 Role Access Control (Zero Traversal Allowed for Any Role)
 	const role = user.role;
 
-	const isAdminRoute = normalizedPath.startsWith('/admin') || normalizedPath.startsWith('/api/admin');
-	const isMentorRoute = normalizedPath.startsWith('/mentor') || normalizedPath.startsWith('/api/mentor');
+	const isAdminRoute =
+		normalizedPath.startsWith('/admin') || normalizedPath.startsWith('/api/admin');
+	const isMentorRoute =
+		normalizedPath.startsWith('/mentor') || normalizedPath.startsWith('/api/mentor');
 	const isGuruRoute = normalizedPath.startsWith('/guru') || normalizedPath.startsWith('/api/guru');
-	const isSiswaRoute = normalizedPath.startsWith('/siswa') || normalizedPath.startsWith('/api/siswa');
+	const isSiswaRoute =
+		normalizedPath.startsWith('/siswa') || normalizedPath.startsWith('/api/siswa');
 
 	let isAllowed = true;
 
 	if (isAdminRoute && role !== 'admin') {
 		isAllowed = false;
-	} else if (isMentorRoute && role !== 'mentor' && role !== 'admin') {
+	} else if (isMentorRoute && role !== 'mentor') {
 		isAllowed = false;
-	} else if (isGuruRoute && role !== 'guru' && role !== 'admin') {
+	} else if (isGuruRoute && role !== 'guru') {
 		isAllowed = false;
-	} else if (isSiswaRoute && role !== 'siswa' && role !== 'admin') {
+	} else if (isSiswaRoute && role !== 'siswa') {
 		isAllowed = false;
 	}
 
 	if (!isAllowed) {
 		if (isApiRoute) {
-			return new Response(
-				JSON.stringify({ error: 'Forbidden: Akses ditolak untuk role Anda' }),
-				{
-					status: 403,
-					headers: { 'Content-Type': 'application/json' }
-				}
-			);
+			return new Response(JSON.stringify({ error: 'Forbidden: Akses ditolak untuk role Anda' }), {
+				status: 403,
+				headers: { 'Content-Type': 'application/json' }
+			});
 		}
-		// Redirect user back to their assigned role dashboard to block URL role traversal
+		// Redirect user strictly back to their assigned role home portal
 		throw redirect(302, getRoleDefaultRoute(role));
 	}
 

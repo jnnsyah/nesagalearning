@@ -64,28 +64,34 @@
 			</div>
 			<div class="error-telemetry__row">
 				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">PATH</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);">{$page.url.pathname}</samp>
+				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
+					>{$page.url.pathname}</samp
+				>
 			</div>
 			<div class="error-telemetry__row">
 				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">TIMESTAMP</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);">{timestamp}</samp>
+				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
+					>{timestamp}</samp
+				>
 			</div>
 			<div class="error-telemetry__row">
 				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">SYSTEM</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);">NLC / REV 2.0</samp>
+				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
+					>NLC / REV 2.0</samp
+				>
 			</div>
 		</div>
 
 		<!-- Actions -->
 		<div class="error-actions">
-			<a href="/" class="btn-primary" style="display: inline-block; width: auto; padding: 12px 32px;">
+			<a
+				href="/"
+				class="btn-primary"
+				style="display: inline-block; width: auto; padding: 12px 32px;"
+			>
 				&gt;&gt; KEMBALI KE HOME
 			</a>
-			<button
-				onclick={() => window.history.back()}
-				class="btn-ghost"
-				style="padding: 12px 24px;"
-			>
+			<button onclick={() => window.history.back()} class="btn-ghost" style="padding: 12px 24px;">
 				&larr; HALAMAN SEBELUMNYA
 			</button>
 		</div>
@@ -112,10 +118,22 @@
 		color: var(--text-ghost);
 		line-height: 1;
 	}
-	.ch-tl { top: 16px; left: 20px; }
-	.ch-tr { top: 16px; right: 20px; }
-	.ch-bl { bottom: 16px; left: 20px; }
-	.ch-br { bottom: 16px; right: 20px; }
+	.ch-tl {
+		top: 16px;
+		left: 20px;
+	}
+	.ch-tr {
+		top: 16px;
+		right: 20px;
+	}
+	.ch-bl {
+		bottom: 16px;
+		left: 20px;
+	}
+	.ch-br {
+		bottom: 16px;
+		right: 20px;
+	}
 
 	.error-inner {
 		width: 100%;

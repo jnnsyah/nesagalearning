@@ -1,4 +1,13 @@
-import { pgTable, bigint, text, integer, timestamp, jsonb, unique, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	bigint,
+	text,
+	integer,
+	timestamp,
+	jsonb,
+	unique,
+	index
+} from 'drizzle-orm/pg-core';
 import { user } from './auth';
 import { kelasInstance } from './academic';
 import { quiz } from './curriculum';

@@ -15,9 +15,7 @@ export const task = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [
-		index('idx_task_pertemuan').on(table.pertemuanId)
-	]
+	(table) => [index('idx_task_pertemuan').on(table.pertemuanId)]
 );
 
 export const submission = pgTable(

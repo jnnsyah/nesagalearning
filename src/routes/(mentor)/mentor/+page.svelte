@@ -10,7 +10,9 @@
 	<!-- SIDEBAR (desktop) -->
 	<aside class="sidebar hide-mobile">
 		<div class="sidebar__brand">
-			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">NLC</div>
+			<div class="type-mono" style="font-size: 11px; font-weight: 700; color: var(--text-primary);">
+				NLC
+			</div>
 			<div class="type-mono text-muted mt-1" style="font-size: 9px;">PORTAL MENTOR</div>
 		</div>
 		<nav class="sidebar__nav">
@@ -24,9 +26,15 @@
 			<hr class="rule" />
 			<div style="padding: 16px 20px;">
 				<div class="type-mono text-muted mb-1" style="font-size: 9px;">LOGGED IN AS</div>
-				<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">{data.user?.fullName}</div>
+				<div class="type-mono" style="font-size: 11px; color: var(--text-primary);">
+					{data.user?.fullName}
+				</div>
 				<div class="type-mono text-muted" style="font-size: 9px;">@{data.user?.username}</div>
-				<a href="/logout" class="btn-ghost mt-3" style="display: block; text-align: center; font-size: 10px;">
+				<a
+					href="/logout"
+					class="btn-ghost mt-3"
+					style="display: block; text-align: center; font-size: 10px;"
+				>
 					KELUAR
 				</a>
 			</div>
@@ -52,7 +60,10 @@
 				</div>
 				<h1 class="mentor-title">{data.user?.fullName}</h1>
 			</div>
-			<div class="mentor-header__meta type-mono text-muted hide-mobile" style="font-size: 9px; text-align: right; line-height: 2;">
+			<div
+				class="mentor-header__meta type-mono text-muted hide-mobile"
+				style="font-size: 9px; text-align: right; line-height: 2;"
+			>
 				<div>KLS-01 &nbsp;/// &nbsp;MENTOR AKTIF</div>
 				<div>@{data.user?.username}</div>
 			</div>
@@ -98,7 +109,9 @@
 						<span class="type-mono hide-mobile" style="font-size: 9px;">STATUS</span>
 					</div>
 					<div class="grading-table__empty">
-						<span class="type-mono text-muted" style="font-size: 10px;">&gt;&gt; TIDAK ADA SUBMISSION</span>
+						<span class="type-mono text-muted" style="font-size: 10px;"
+							>&gt;&gt; TIDAK ADA SUBMISSION</span
+						>
 					</div>
 				</div>
 			</section>
@@ -110,7 +123,9 @@
 				</div>
 				<div class="session-list">
 					<div class="grading-table__empty">
-						<span class="type-mono text-muted" style="font-size: 10px;">&gt;&gt; BELUM ADA PERTEMUAN</span>
+						<span class="type-mono text-muted" style="font-size: 10px;"
+							>&gt;&gt; BELUM ADA PERTEMUAN</span
+						>
 					</div>
 				</div>
 			</section>

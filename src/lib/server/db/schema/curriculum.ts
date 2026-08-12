@@ -1,4 +1,14 @@
-import { pgTable, bigint, text, integer, boolean, timestamp, jsonb, unique, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	bigint,
+	text,
+	integer,
+	boolean,
+	timestamp,
+	jsonb,
+	unique,
+	index
+} from 'drizzle-orm/pg-core';
 import { tingkat } from './academic';
 
 export const curriculumTrack = pgTable(
@@ -14,9 +24,7 @@ export const curriculumTrack = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [
-		index('idx_curriculum_track_tingkat').on(table.tingkatId)
-	]
+	(table) => [index('idx_curriculum_track_tingkat').on(table.tingkatId)]
 );
 
 export const phase = pgTable(
@@ -88,9 +96,7 @@ export const quiz = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [
-		index('idx_quiz_sub_phase').on(table.subPhaseId)
-	]
+	(table) => [index('idx_quiz_sub_phase').on(table.subPhaseId)]
 );
 
 export const quizQuestion = pgTable(

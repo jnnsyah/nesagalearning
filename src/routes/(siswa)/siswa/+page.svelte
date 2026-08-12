@@ -13,7 +13,9 @@
 	<!-- TOPBAR -->
 	<header class="topbar">
 		<div class="flex items-center gap-3">
-			<span class="type-mono" style="font-size: 11px; color: var(--text-primary); font-weight: 700;">NLC</span>
+			<span class="type-mono" style="font-size: 11px; color: var(--text-primary); font-weight: 700;"
+				>NLC</span
+			>
 			<span class="type-mono text-muted" style="font-size: 9px;">//</span>
 			<span class="type-mono text-muted" style="font-size: 9px;">PORTAL SISWA</span>
 		</div>
@@ -32,7 +34,7 @@
 					[ AKSES AKTIF ] &nbsp; {uid} &nbsp; /// &nbsp; TA 2026/2027 &nbsp; /// &nbsp; KLS-01
 				</div>
 				<h1 class="identity-banner__name">{data.user?.fullName ?? '—'}</h1>
-				<div class="flex items-center gap-3 mt-2">
+				<div class="mt-2 flex items-center gap-3">
 					<span class="badge badge-hadir">{role.toUpperCase()}</span>
 					<span class="type-mono text-muted" style="font-size: 9px;">@{data.user?.username}</span>
 				</div>
@@ -81,7 +83,9 @@
 					<div class="phase-item__bar">
 						<div class="phase-item__bar-fill" style="width: 0%;"></div>
 					</div>
-					<div class="type-mono text-muted mt-1" style="font-size: 9px;">0 / 0 SUB-FASE SELESAI</div>
+					<div class="type-mono text-muted mt-1" style="font-size: 9px;">
+						0 / 0 SUB-FASE SELESAI
+					</div>
 				</div>
 
 				<div class="phase-item">
@@ -92,7 +96,9 @@
 					<div class="phase-item__bar">
 						<div class="phase-item__bar-fill" style="width: 0%;"></div>
 					</div>
-					<div class="type-mono text-muted mt-1" style="font-size: 9px;">0 / 0 SUB-FASE SELESAI</div>
+					<div class="type-mono text-muted mt-1" style="font-size: 9px;">
+						0 / 0 SUB-FASE SELESAI
+					</div>
 				</div>
 
 				<div class="phase-item">
@@ -103,7 +109,9 @@
 					<div class="phase-item__bar">
 						<div class="phase-item__bar-fill" style="width: 0%;"></div>
 					</div>
-					<div class="type-mono text-muted mt-1" style="font-size: 9px;">0 / 0 SUB-FASE SELESAI</div>
+					<div class="type-mono text-muted mt-1" style="font-size: 9px;">
+						0 / 0 SUB-FASE SELESAI
+					</div>
 				</div>
 
 				<div class="phase-item">
@@ -114,7 +122,9 @@
 					<div class="phase-item__bar">
 						<div class="phase-item__bar-fill" style="width: 0%;"></div>
 					</div>
-					<div class="type-mono text-muted mt-1" style="font-size: 9px;">0 / 0 SUB-FASE SELESAI</div>
+					<div class="type-mono text-muted mt-1" style="font-size: 9px;">
+						0 / 0 SUB-FASE SELESAI
+					</div>
 				</div>
 			</div>
 		</section>
@@ -123,19 +133,68 @@
 	<!-- BOTTOM NAV (mobile) -->
 	<nav class="bottom-nav hide-desktop">
 		<a href="/siswa" class="bottom-nav__item active">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect
+					x="14"
+					y="14"
+					width="7"
+					height="7"
+				/><rect x="3" y="14" width="7" height="7" /></svg
+			>
 			HOME
 		</a>
 		<a href="/siswa/kurikulum" class="bottom-nav__item">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path
+					d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+				/></svg
+			>
 			MATERI
 		</a>
 		<a href="/siswa/jadwal" class="bottom-nav__item">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="0" ry="0"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				><rect x="3" y="4" width="18" height="18" rx="0" ry="0" /><line
+					x1="16"
+					y1="2"
+					x2="16"
+					y2="6"
+				/><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg
+			>
 			JADWAL
 		</a>
 		<a href="/siswa/progress" class="bottom-nav__item">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line
+					x1="6"
+					y1="20"
+					x2="6"
+					y2="14"
+				/></svg
+			>
 			PROGRESS
 		</a>
 	</nav>

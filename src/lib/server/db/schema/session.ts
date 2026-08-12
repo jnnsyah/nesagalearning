@@ -1,4 +1,14 @@
-import { pgTable, bigint, text, boolean, date, time, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	bigint,
+	text,
+	boolean,
+	date,
+	time,
+	timestamp,
+	unique,
+	index
+} from 'drizzle-orm/pg-core';
 import { kelasInstance } from './academic';
 import { subPhase } from './curriculum';
 import { user } from './auth';
@@ -43,9 +53,7 @@ export const attendanceToken = pgTable(
 		isActive: boolean('is_active').notNull().default(true),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [
-		index('idx_attendance_token_pertemuan').on(table.pertemuanId)
-	]
+	(table) => [index('idx_attendance_token_pertemuan').on(table.pertemuanId)]
 );
 
 export const attendance = pgTable(
