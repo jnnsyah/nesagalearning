@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
+	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -56,6 +57,9 @@
 				if (result.type === 'success') {
 					originalTitle = title;
 					originalContent = content;
+					toast.success('Materi berhasil disimpan!');
+				} else if (result.type === 'failure') {
+					toast.error((result.data as any)?.error || 'Gagal menyimpan materi');
 				}
 			};
 		}}

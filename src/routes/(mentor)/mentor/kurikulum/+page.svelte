@@ -4,6 +4,8 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -13,6 +15,10 @@
 	// ── Form Drawer state ───────────────────────────────────────────────
 	let showFormDrawer = $state(false);
 	let editingTrack   = $state<TrackItem | null>(null);
+
+	// ── Confirm Modal Delete State ──────────────────────────────────────
+	let deleteTrackTarget = $state<TrackItem | null>(null);
+	let isDeletingTrack   = $state(false);
 
 	// Reactive Form Bindings
 	let formTingkatId   = $state<number | string | null>(null);
@@ -344,17 +350,14 @@
 						</div>
 
 						<div style="display:flex;gap:6px;">
-							<form method="POST" action="?/deleteTrack" use:enhance>
-								<input type="hidden" name="id" value={track.id} />
-								<button
-									type="submit"
-									onclick={(e) => !confirm(`Hapus Track "${track.title}"?`) && e.preventDefault()}
-									class="btn-delete"
-									aria-label="Hapus track {track.title}"
-								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-								</button>
-							</form>
+							<button
+								type="button"
+								onclick={() => (deleteTrackTarget = track)}
+								class="btn-delete"
+								aria-label="Hapus track {track.title}"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+							</button>
 
 							<a
 								href="/mentor/kurikulum/{track.id}"
@@ -556,6 +559,48 @@
 			</form>
 		</aside>
 	</div>
+{/if}
+
+<!-- ══════════════════════════════════════════════════
+     DELETE TRACK CONFIRMATION MODAL & HIDDEN FORM
+     ══════════════════════════════════════════════════ -->
+{#if deleteTrackTarget}
+	<ConfirmModal
+		open={true}
+		title="Hapus Track Kurikulum?"
+		message={`Apakah Anda yakin ingin menghapus track "${deleteTrackTarget.title}"? Seluruh fase, sub-fase, dan materi di dalamnya akan terhapus secara permanen.`}
+		variant="danger"
+		confirmText="Ya, Hapus Track"
+		cancelText="Batal"
+		loading={isDeletingTrack}
+		oncancel={() => (deleteTrackTarget = null)}
+		onconfirm={() => {
+			const formEl = document.getElementById('delete-track-form') as HTMLFormElement;
+			if (formEl) formEl.requestSubmit();
+		}}
+	/>
+
+	<form
+		id="delete-track-form"
+		method="POST"
+		action="?/deleteTrack"
+		style="display:none;"
+		use:enhance={() => {
+			isDeletingTrack = true;
+			return async ({ result, update }) => {
+				await update();
+				isDeletingTrack = false;
+				deleteTrackTarget = null;
+				if (result.type === 'success') {
+					toast.success('Track kurikulum berhasil dihapus');
+				} else if (result.type === 'failure') {
+					toast.error((result.data as any)?.error || 'Gagal menghapus track');
+				}
+			};
+		}}
+	>
+		<input type="hidden" name="id" value={deleteTrackTarget.id} />
+	</form>
 {/if}
 
 <style>

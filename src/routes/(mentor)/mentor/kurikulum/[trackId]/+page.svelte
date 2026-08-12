@@ -5,9 +5,15 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// ── Confirm Modal Delete State ──────────────────────────────────────
+	let deleteTarget = $state<{ type: 'phase' | 'subPhase' | 'materi'; id: number; title: string } | null>(null);
+	let isDeleting = $state(false);
 
 	// ── Slider Drawer States (Right on desktop, Bottom on mobile) ──────
 	let drawerType = $state<'track' | 'phase' | 'subPhase' | 'materi' | null>(null);
@@ -320,17 +326,14 @@
 								Edit
 							</button>
 
-							<form method="POST" action="?/deletePhase" use:enhance>
-								<input type="hidden" name="id" value={p.id} />
-								<button
-									type="submit"
-									onclick={(e) => !confirm(`Hapus Fase "${p.title}" beserta seluruh sub-fase & materinya?`) && e.preventDefault()}
-									class="btn-delete"
-									aria-label="Hapus Fase {p.title}"
-								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-								</button>
-							</form>
+							<button
+								type="button"
+								onclick={() => (deleteTarget = { type: 'phase', id: p.id, title: p.title })}
+								class="btn-delete"
+								aria-label="Hapus Fase {p.title}"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+							</button>
 
 							<button onclick={() => openCreateSubPhaseDrawer(p.id)} class="btn-create" style="padding: 6px 12px; font-size: 12px;">
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -445,6 +448,16 @@
 																	Preview
 																</button>
 															{/if}
+
+															<button
+																type="button"
+																onclick={() => (deleteTarget = { type: 'materi', id: m.id, title: m.title })}
+																class="btn-delete"
+																style="padding: 4px 8px; font-size: 11px;"
+																aria-label="Hapus Materi {m.title}"
+															>
+																<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+															</button>
 
 															<a
 																href="/mentor/kurikulum/{data.track.id}/materi/{m.id}"
@@ -661,6 +674,96 @@
 			</form>
 		</aside>
 	</div>
+{/if}
+
+<!-- ══════════════════════════════════════════════════
+     CONFIRM DELETE MODAL & HIDDEN FORMS
+     ══════════════════════════════════════════════════ -->
+{#if deleteTarget}
+	<ConfirmModal
+		open={true}
+		title={
+			deleteTarget.type === 'phase'
+				? 'Hapus Fase Kurikulum?'
+				: deleteTarget.type === 'subPhase'
+				? 'Hapus Sub-Fase?'
+				: 'Hapus Materi Pembelajaran?'
+		}
+		message={
+			deleteTarget.type === 'phase'
+				? `Apakah Anda yakin ingin menghapus fase "${deleteTarget.title}" beserta seluruh sub-fase dan materinya?`
+				: deleteTarget.type === 'subPhase'
+				? `Apakah Anda yakin ingin menghapus sub-fase "${deleteTarget.title}" beserta seluruh materinya?`
+				: `Apakah Anda yakin ingin menghapus materi "${deleteTarget.title}"?`
+		}
+		variant="danger"
+		confirmText="Ya, Hapus"
+		cancelText="Batal"
+		loading={isDeleting}
+		oncancel={() => (deleteTarget = null)}
+		onconfirm={() => {
+			const formId = `delete-${deleteTarget?.type}-form`;
+			const formEl = document.getElementById(formId) as HTMLFormElement;
+			if (formEl) formEl.requestSubmit();
+		}}
+	/>
+
+	<form
+		id="delete-phase-form"
+		method="POST"
+		action="?/deletePhase"
+		style="display:none;"
+		use:enhance={() => {
+			isDeleting = true;
+			return async ({ result, update }) => {
+				await update();
+				isDeleting = false;
+				deleteTarget = null;
+				if (result.type === 'success') toast.success('Fase berhasil dihapus');
+				else if (result.type === 'failure') toast.error((result.data as any)?.error || 'Gagal menghapus fase');
+			};
+		}}
+	>
+		<input type="hidden" name="id" value={deleteTarget.type === 'phase' ? deleteTarget.id : ''} />
+	</form>
+
+	<form
+		id="delete-subPhase-form"
+		method="POST"
+		action="?/deleteSubPhase"
+		style="display:none;"
+		use:enhance={() => {
+			isDeleting = true;
+			return async ({ result, update }) => {
+				await update();
+				isDeleting = false;
+				deleteTarget = null;
+				if (result.type === 'success') toast.success('Sub-fase berhasil dihapus');
+				else if (result.type === 'failure') toast.error((result.data as any)?.error || 'Gagal menghapus sub-fase');
+			};
+		}}
+	>
+		<input type="hidden" name="id" value={deleteTarget.type === 'subPhase' ? deleteTarget.id : ''} />
+	</form>
+
+	<form
+		id="delete-materi-form"
+		method="POST"
+		action="?/deleteMateri"
+		style="display:none;"
+		use:enhance={() => {
+			isDeleting = true;
+			return async ({ result, update }) => {
+				await update();
+				isDeleting = false;
+				deleteTarget = null;
+				if (result.type === 'success') toast.success('Materi berhasil dihapus');
+				else if (result.type === 'failure') toast.error((result.data as any)?.error || 'Gagal menghapus materi');
+			};
+		}}
+	>
+		<input type="hidden" name="id" value={deleteTarget.type === 'materi' ? deleteTarget.id : ''} />
+	</form>
 {/if}
 
 <style>
