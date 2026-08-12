@@ -1,14 +1,24 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import TextArea from '$lib/components/ui/TextArea.svelte';
+	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	type TrackItem = (typeof data.tracks)[number];
 
-	// ── Form Drawer state (Slider from right on desktop, from bottom on mobile) ──
+	// ── Form Drawer state ───────────────────────────────────────────────
 	let showFormDrawer = $state(false);
 	let editingTrack   = $state<TrackItem | null>(null);
+
+	// Reactive Form Bindings
+	let formTingkatId   = $state<number | string | null>(null);
+	let formTitle       = $state('');
+	let formDescription = $state('');
+	let formIsPublished = $state(false);
 
 	// ── Inspection Drawer state ─────────────────────────────────────────
 	let inspectingTrackId = $state<number | null>(null);
@@ -17,22 +27,33 @@
 	let searchQuery     = $state('');
 	let selectedTingkat = $state<number | null>(null);
 	let selectedStatus  = $state<'all' | 'published' | 'draft'>('all');
-	let searchInputEl   = $state<HTMLInputElement | null>(null);
 
 	// ── Actions ─────────────────────────────────────────────────────────
 	function openCreateForm() {
-		editingTrack = null;
-		showFormDrawer = true;
+		editingTrack    = null;
+		formTingkatId   = null;
+		formTitle       = '';
+		formDescription = '';
+		formIsPublished = false;
+		showFormDrawer  = true;
 	}
 
 	function openEditForm(track: TrackItem) {
-		editingTrack = track;
-		showFormDrawer = true;
+		editingTrack    = track;
+		formTingkatId   = track.tingkatId;
+		formTitle       = track.title;
+		formDescription = track.description ?? '';
+		formIsPublished = track.isPublished;
+		showFormDrawer  = true;
 	}
 
 	function closeFormDrawer() {
-		showFormDrawer = false;
-		editingTrack = null;
+		showFormDrawer  = false;
+		editingTrack    = null;
+		formTingkatId   = null;
+		formTitle       = '';
+		formDescription = '';
+		formIsPublished = false;
 	}
 
 	function clearFilters() {
@@ -69,7 +90,6 @@
 	function handleGlobalKeyDown(e: KeyboardEvent) {
 		const tgt = e.target;
 		if (tgt instanceof HTMLInputElement || tgt instanceof HTMLTextAreaElement || tgt instanceof HTMLSelectElement) return;
-		if (e.key === '/') { e.preventDefault(); searchInputEl?.focus(); }
 		if (e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); openCreateForm(); }
 		if (e.key === 'Escape') {
 			if (showFormDrawer) closeFormDrawer();
@@ -171,17 +191,13 @@
 	<!-- ── Search & filter bar ───────────────────── -->
 	<div class="filter-bar">
 		<div class="search-row">
-			<div class="search-wrap">
-				<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-				<input
-					bind:this={searchInputEl}
+			<div style="flex:1;">
+				<TextInput
 					type="search"
 					bind:value={searchQuery}
-					placeholder='Cari judul track atau tingkat…'
-					class="search-input"
-					aria-label="Cari kurikulum"
+					placeholder="Cari judul track atau tingkat…"
+					clearable
 				/>
-				<kbd class="search-hint" aria-hidden="true">/</kbd>
 			</div>
 
 			{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
@@ -433,8 +449,7 @@
 {/if}
 
 <!-- ══════════════════════════════════════════════════
-     ADD / EDIT TRACK SLIDER DRAWER
-     (Slides from right on desktop, from bottom on mobile)
+     ADD / EDIT TRACK SLIDER DRAWER WITH CUSTOM UI COMPONENTS
      ══════════════════════════════════════════════════ -->
 {#if showFormDrawer}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -485,65 +500,46 @@
 				{/if}
 
 				<div class="form-drawer__body">
-					<!-- Tingkat Class Select -->
-					<div class="field-group-m">
-						<label for="tingkatId" class="field-label">Tingkat Kelas <span aria-hidden="true">*</span></label>
-						<select
-							id="tingkatId"
-							name="tingkatId"
-							required
-							class="field-input select-input"
-							value={editingTrack?.tingkatId ?? ''}
-						>
-							<option value="">— Pilih Tingkat Kelas —</option>
-							{#each data.tingkatList as t}
-								<option value={t.id}>{t.name}</option>
-							{/each}
-						</select>
-					</div>
+					<!-- CustomSelect Component for Tingkat Class -->
+					<CustomSelect
+						name="tingkatId"
+						label="Tingkat Kelas"
+						required
+						bind:value={formTingkatId}
+						options={data.tingkatList.map((t) => ({ value: t.id, label: t.name }))}
+						placeholder="— Pilih Tingkat Kelas —"
+					/>
 
-					<!-- Track Title Input -->
-					<div class="field-group-m">
-						<label for="title" class="field-label">Judul Track <span aria-hidden="true">*</span></label>
-						<input
-							type="text"
-							id="title"
-							name="title"
-							required
-							value={editingTrack?.title ?? ''}
-							placeholder="Contoh: Dasar Jaringan & Cisco Packet Tracer"
-							class="field-input"
-						/>
-					</div>
+					<!-- TextInput Component for Track Title -->
+					<TextInput
+						name="title"
+						label="Judul Track"
+						required
+						bind:value={formTitle}
+						placeholder="Contoh: Dasar Jaringan & Cisco Packet Tracer"
+						clearable
+					/>
 
-					<!-- Description Textarea -->
-					<div class="field-group-m">
-						<label for="description" class="field-label">Deskripsi Silabus <span class="opt-label">Opsional</span></label>
-						<textarea
-							id="description"
-							name="description"
-							rows="4"
-							value={editingTrack?.description ?? ''}
-							placeholder="Penjelasan singkat cakupan kurikulum dan kompetensi yang dipelajari…"
-							class="field-input"
-							style="resize:vertical;"
-						></textarea>
-					</div>
+					<!-- TextArea Component for Description -->
+					<TextArea
+						name="description"
+						label="Deskripsi Silabus"
+						bind:value={formDescription}
+						placeholder="Penjelasan singkat cakupan kurikulum dan kompetensi yang dipelajari…"
+						rows={4}
+						maxlength={300}
+					/>
 
-					<!-- Publication Status Select (Edit Mode) -->
+					<!-- ToggleSwitch Component for Publication Status (Edit Mode) -->
 					{#if editingTrack}
-						<div class="field-group-m">
-							<label for="isPublishedSelect" class="field-label">Status Publikasi</label>
-							<select
-								id="isPublishedSelect"
-								name="isPublished"
-								class="field-input select-input"
-								value={editingTrack.isPublished ? 'true' : 'false'}
-							>
-								<option value="true">Published (Aktif & dapat diakses siswa)</option>
-								<option value="false">Draft (Hanya terlihat oleh mentor)</option>
-							</select>
-						</div>
+						<ToggleSwitch
+							name="isPublished"
+							label="Status Publikasi Track"
+							bind:checked={formIsPublished}
+							onLabel="Published (Aktif untuk siswa)"
+							offLabel="Draft (Hanya terlihat oleh mentor)"
+							description="Beralih ke Published agar materi dapat langsung diakses siswa."
+						/>
 					{/if}
 				</div>
 
@@ -746,52 +742,6 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-	}
-
-	.search-wrap {
-		flex: 1;
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-
-	.search-icon {
-		position: absolute;
-		left: 12px;
-		color: var(--text-ghost);
-		pointer-events: none;
-	}
-
-	.search-input {
-		width: 100%;
-		background: var(--bg-inset);
-		border: 1.5px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		font-family: var(--font-body);
-		font-size: 13px;
-		color: var(--text-primary);
-		padding: 9px 40px 9px 38px;
-		outline: none;
-		transition: border-color 200ms ease, box-shadow 200ms ease;
-	}
-
-	.search-input:focus {
-		border-color: var(--primary);
-		box-shadow: 0 0 0 3px var(--primary-light);
-		background: #ffffff;
-	}
-
-	.search-hint {
-		position: absolute;
-		right: 10px;
-		background: var(--bg-cell);
-		border: 1px solid var(--border-hard);
-		border-radius: 5px;
-		padding: 1px 6px;
-		font-family: var(--font-mono);
-		font-size: 10px;
-		color: var(--text-muted);
-		pointer-events: none;
 	}
 
 	.clear-btn {
@@ -1352,31 +1302,6 @@
 		gap: 12px;
 		background: #ffffff;
 		flex-shrink: 0;
-	}
-
-	.field-group-m {
-		display: flex;
-		flex-direction: column;
-		gap: 7px;
-	}
-
-	.opt-label {
-		font-size: 11px;
-		font-weight: 500;
-		color: var(--text-muted);
-		background: var(--bg-cell);
-		border-radius: 5px;
-		padding: 1px 6px;
-		margin-left: 4px;
-	}
-
-	.select-input {
-		appearance: none;
-		-webkit-appearance: none;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-		background-repeat: no-repeat;
-		background-position: right 14px center;
-		padding-right: 36px;
 	}
 
 	/* ── Mobile Layout Adjustment (<768px): Slide from Bottom ── */
