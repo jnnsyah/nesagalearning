@@ -92,24 +92,17 @@
 	// Collapsible Phases State
 	let expandedPhases = $state<Record<number, boolean>>({});
 
-	// Initialize all phases expanded by default
-	$effect(() => {
-		if (data.track?.phases) {
-			const map: Record<number, boolean> = {};
-			data.track.phases.forEach((p) => {
-				map[p.id] = expandedPhases[p.id] !== undefined ? expandedPhases[p.id] : true;
-			});
-			expandedPhases = map;
-		}
-	});
+	function isPhaseExpanded(phaseId: number): boolean {
+		return expandedPhases[phaseId] ?? true;
+	}
 
 	function togglePhase(phaseId: number) {
-		expandedPhases[phaseId] = !expandedPhases[phaseId];
+		expandedPhases[phaseId] = !isPhaseExpanded(phaseId);
 	}
 
 	function setAllPhasesExpanded(expanded: boolean) {
 		const map: Record<number, boolean> = {};
-		data.track.phases.forEach((p) => {
+		data.track?.phases?.forEach((p) => {
 			map[p.id] = expanded;
 		});
 		expandedPhases = map;
@@ -292,9 +285,9 @@
 							type="button"
 							onclick={() => togglePhase(p.id)}
 							class="phase-title-btn"
-							aria-expanded={expandedPhases[p.id]}
+							aria-expanded={isPhaseExpanded(p.id)}
 						>
-							<span class="chevron-icon" class:chevron-icon--open={expandedPhases[p.id]}>
+							<span class="chevron-icon" class:chevron-icon--open={isPhaseExpanded(p.id)}>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
 							</span>
 							<span class="badge badge-hadir">FASE {String(p.sortOrder).padStart(2, '0')}</span>
@@ -347,7 +340,7 @@
 					</div>
 
 					<!-- Sub-phases Body -->
-					{#if expandedPhases[p.id]}
+					{#if isPhaseExpanded(p.id)}
 						<div class="subphases-container">
 							{#if p.subPhases.length === 0}
 								<div class="subphase-empty">
