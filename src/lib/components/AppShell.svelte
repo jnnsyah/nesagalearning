@@ -19,8 +19,14 @@
 
 	// Fallback to $page.data.user if user prop is not passed directly
 	let currentUser = $derived(user ?? $page.data.user);
-	let role = $derived((currentUser?.role ?? 'siswa').toLowerCase());
 	let pathname = $derived($page.url.pathname);
+	let role = $derived(
+		currentUser?.role?.toLowerCase() ??
+		(pathname.startsWith('/mentor') ? 'mentor' :
+		 pathname.startsWith('/guru') ? 'guru' :
+		 pathname.startsWith('/admin') ? 'admin' :
+		 pathname.startsWith('/siswa') ? 'siswa' : 'siswa')
+	);
 
 	// Sidebar collapsed state
 	let sidebarCollapsed = $state(false);
