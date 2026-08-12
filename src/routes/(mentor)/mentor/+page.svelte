@@ -6,20 +6,19 @@
 	<title>Dashboard Mentor — NLC</title>
 </svelte:head>
 
-<div class="main-container">
-	<!-- Page header -->
-	<div class="page-header">
+<div class="content-area">
+	<!-- Page header row with navigation breadcrumb & action button -->
+	<div class="page-header-row">
 		<div>
-			<div class="flex items-center gap-2 mb-2">
-				<span class="badge badge-hadir">MENTOR AKTIF</span>
-				<span class="type-mono text-muted">KLS-01 · TA 2026/2027</span>
-			</div>
+			<nav class="breadcrumb" aria-label="Breadcrumb">
+				<span class="bc-current">Dashboard</span>
+			</nav>
 			<h1 class="page-title">Dashboard Mentor</h1>
 			<p class="page-sub">Selamat datang kembali, <strong>{data.user?.fullName}</strong>. Kelola pertemuan & pantau progress siswa.</p>
 		</div>
-		<a href="/mentor/pertemuan/create" class="btn-primary hide-mobile" style="width: auto; padding: 10px 20px; font-size: 13px; white-space: nowrap;">
+		<a href="/mentor/pertemuan/create" class="btn-create hide-mobile" style="text-decoration:none;">
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-			Buat Pertemuan
+			<span>Buat Pertemuan</span>
 		</a>
 	</div>
 
@@ -60,7 +59,7 @@
 	</div>
 
 	<!-- Two-column content -->
-	<div class="two-col-grid mt-6">
+	<div class="two-col-grid">
 		<!-- Grading queue -->
 		<section class="panel">
 			<div class="section-header">
@@ -98,7 +97,7 @@
 	</div>
 
 	<!-- Quick actions strip -->
-	<div class="quick-actions mt-6">
+	<div class="quick-actions">
 		<div class="quick-actions__header">Aksi Cepat</div>
 		<div class="quick-actions__grid">
 			<a href="/mentor/kurikulum" class="quick-action-card">
@@ -130,40 +129,81 @@
 </div>
 
 <style>
-	.main-container {
-		padding: 28px 28px 48px;
-		max-width: 1200px;
+	/* ── Content area identical to /mentor/kurikulum ── */
+	.content-area {
+		padding: 24px 28px 40px;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		max-width: 1300px;
 		margin: 0 auto;
 		width: 100%;
 	}
 
 	@media (max-width: 768px) {
-		.main-container {
-			padding: 20px 16px 48px;
+		.content-area {
+			padding: 16px 16px 40px;
 		}
 	}
 
-	.page-header {
+	.page-header-row {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 20px;
-		margin-bottom: 24px;
+	}
+
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 4px;
+	}
+
+	.bc-current {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--primary);
 	}
 
 	.page-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.6rem, 4vw, 2.2rem);
+		font-size: clamp(1.4rem, 3vw, 1.8rem);
 		font-weight: 800;
 		color: var(--text-primary);
-		letter-spacing: -0.025em;
-		margin-bottom: 6px;
+		letter-spacing: -0.02em;
+		margin-bottom: 4px;
 	}
 
 	.page-sub {
 		font-size: 14px;
 		color: var(--text-secondary);
 		line-height: 1.5;
+	}
+
+	.btn-create {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: linear-gradient(135deg, #4338ca, #4f46e5 60%, #6366f1);
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #ffffff;
+		cursor: pointer;
+		text-decoration: none;
+		box-shadow: var(--shadow-glow);
+		transition: transform 150ms ease, box-shadow 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-create:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 10px 24px -4px rgba(79,70,229,0.45);
 	}
 
 	.stats-row {
@@ -174,7 +214,7 @@
 
 	@media (max-width: 640px) {
 		.stats-row { grid-template-columns: 1fr; }
-		.page-header { flex-direction: column; }
+		.page-header-row { flex-direction: column; }
 	}
 
 	.stat-card-h {
