@@ -4,13 +4,42 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	// ── Page state ────────────────────────────────────────────────────
-	let showAddModal     = $state(false);
+	type TrackItem = (typeof data.tracks)[number];
+
+	// ── Form Drawer state (Slider from right on desktop, from bottom on mobile) ──
+	let showFormDrawer = $state(false);
+	let editingTrack   = $state<TrackItem | null>(null);
+
+	// ── Inspection Drawer state ─────────────────────────────────────────
 	let inspectingTrackId = $state<number | null>(null);
-	let searchQuery       = $state('');
-	let selectedTingkat   = $state<number | null>(null);
-	let selectedStatus    = $state<'all' | 'published' | 'draft'>('all');
-	let searchInputEl     = $state<HTMLInputElement | null>(null);
+
+	// ── Filter & Search state ───────────────────────────────────────────
+	let searchQuery     = $state('');
+	let selectedTingkat = $state<number | null>(null);
+	let selectedStatus  = $state<'all' | 'published' | 'draft'>('all');
+	let searchInputEl   = $state<HTMLInputElement | null>(null);
+
+	// ── Actions ─────────────────────────────────────────────────────────
+	function openCreateForm() {
+		editingTrack = null;
+		showFormDrawer = true;
+	}
+
+	function openEditForm(track: TrackItem) {
+		editingTrack = track;
+		showFormDrawer = true;
+	}
+
+	function closeFormDrawer() {
+		showFormDrawer = false;
+		editingTrack = null;
+	}
+
+	function clearFilters() {
+		searchQuery = '';
+		selectedTingkat = null;
+		selectedStatus = 'all';
+	}
 
 	// ── Derived data ──────────────────────────────────────────────────
 	let filteredTracks = $derived(
@@ -30,24 +59,22 @@
 		})
 	);
 
-	let totalTracks      = $derived(data.tracks.length);
-	let publishedTracks  = $derived(data.tracks.filter((t) => t.isPublished).length);
-	let draftTracks      = $derived(data.tracks.filter((t) => !t.isPublished).length);
-	let totalMateris     = $derived(data.tracks.reduce((acc, t) => acc + (t.materiCount || 0), 0));
-	let inspectedTrack   = $derived(inspectingTrackId ? data.tracks.find((t) => t.id === inspectingTrackId) ?? null : null);
+	let totalTracks     = $derived(data.tracks.length);
+	let publishedTracks = $derived(data.tracks.filter((t) => t.isPublished).length);
+	let draftTracks     = $derived(data.tracks.filter((t) => !t.isPublished).length);
+	let totalMateris    = $derived(data.tracks.reduce((acc, t) => acc + (t.materiCount || 0), 0));
+	let inspectedTrack  = $derived(inspectingTrackId ? data.tracks.find((t) => t.id === inspectingTrackId) ?? null : null);
 
 	// ── Keyboard shortcuts ─────────────────────────────────────────────
 	function handleGlobalKeyDown(e: KeyboardEvent) {
 		const tgt = e.target;
 		if (tgt instanceof HTMLInputElement || tgt instanceof HTMLTextAreaElement || tgt instanceof HTMLSelectElement) return;
 		if (e.key === '/') { e.preventDefault(); searchInputEl?.focus(); }
-		if (e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); showAddModal = true; }
-	}
-
-	function clearFilters() {
-		searchQuery = '';
-		selectedTingkat = null;
-		selectedStatus = 'all';
+		if (e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); openCreateForm(); }
+		if (e.key === 'Escape') {
+			if (showFormDrawer) closeFormDrawer();
+			if (inspectingTrackId) inspectingTrackId = null;
+		}
 	}
 </script>
 
@@ -71,7 +98,7 @@
 		</div>
 		<button
 			id="btn-buat-track"
-			onclick={() => (showAddModal = true)}
+			onclick={openCreateForm}
 			class="btn-create"
 			aria-label="Buat track kurikulum baru (Alt+N)"
 		>
@@ -216,7 +243,7 @@
 			{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
 				<button onclick={clearFilters} class="btn-ghost" style="width:auto;padding:9px 20px;">Reset Filter</button>
 			{:else}
-				<button onclick={() => (showAddModal = true)} class="btn-create" style="width:auto;">
+				<button onclick={openCreateForm} class="btn-create" style="width:auto;">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 					Buat Track Pertama
 				</button>
@@ -276,18 +303,31 @@
 
 					<!-- Actions -->
 					<div class="track-card__actions">
-						<button
-							type="button"
-							onclick={() => (inspectingTrackId = track.id)}
-							class="btn-ghost"
-							style="padding:7px 14px;font-size:12px;"
-							aria-label="Inspect track {track.title}"
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-							Inspect
-						</button>
+						<div style="display:flex;gap:6px;">
+							<button
+								type="button"
+								onclick={() => (inspectingTrackId = track.id)}
+								class="btn-ghost"
+								style="padding:6px 10px;font-size:12px;"
+								aria-label="Inspect track {track.title}"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+								Inspect
+							</button>
 
-						<div style="display:flex;gap:8px;">
+							<button
+								type="button"
+								onclick={() => openEditForm(track)}
+								class="btn-ghost"
+								style="padding:6px 10px;font-size:12px;"
+								aria-label="Edit track {track.title}"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+								Edit
+							</button>
+						</div>
+
+						<div style="display:flex;gap:6px;">
 							<form method="POST" action="?/deleteTrack" use:enhance>
 								<input type="hidden" name="id" value={track.id} />
 								<button
@@ -380,6 +420,9 @@
 
 			<div class="drawer__footer">
 				<button onclick={() => (inspectingTrackId = null)} class="btn-ghost" style="flex:1;">Tutup</button>
+				<button onclick={() => { const tr = inspectedTrack; inspectingTrackId = null; if (tr) openEditForm(tr); }} class="btn-ghost" style="flex:1;">
+					Edit
+				</button>
 				<a href="/mentor/kurikulum/{inspectedTrack.id}" class="btn-manage" style="flex:2;justify-content:center;">
 					Buka Builder
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -390,39 +433,68 @@
 {/if}
 
 <!-- ══════════════════════════════════════════════════
-     CREATE TRACK MODAL
+     ADD / EDIT TRACK SLIDER DRAWER
+     (Slides from right on desktop, from bottom on mobile)
      ══════════════════════════════════════════════════ -->
-{#if showAddModal}
+{#if showFormDrawer}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="modal-scrim"
-		onclick={(e) => e.target === e.currentTarget && (showAddModal = false)}
+		class="form-scrim"
+		onclick={(e) => e.target === e.currentTarget && closeFormDrawer()}
 		role="dialog"
 		aria-modal="true"
-		aria-label="Buat track kurikulum baru"
+		aria-label={editingTrack ? 'Edit track kurikulum' : 'Buat track kurikulum baru'}
 	>
-		<div class="modal">
-			<div class="modal__header">
+		<aside class="form-drawer">
+			<!-- Mobile drag handle pill -->
+			<div class="mobile-drag-handle hide-desktop" aria-hidden="true"></div>
+
+			<!-- Drawer Header -->
+			<div class="form-drawer__header">
 				<div>
-					<h2 class="modal__title">Buat Track Kurikulum</h2>
-					<p class="modal__sub">Isi informasi dasar untuk track baru.</p>
+					<span class="badge {editingTrack ? 'badge-hadir' : 'badge-live'} mb-1">
+						{editingTrack ? 'EDIT TRACK' : 'TRACK BARU'}
+					</span>
+					<h2 class="form-drawer__title">
+						{editingTrack ? 'Edit Track Kurikulum' : 'Buat Track Kurikulum Baru'}
+					</h2>
+					<p class="form-drawer__sub">
+						{editingTrack ? 'Perbarui informasi dasar & status publikasi track.' : 'Isi detail informasi dasar untuk track baru.'}
+					</p>
 				</div>
-				<button onclick={() => (showAddModal = false)} class="modal-close" aria-label="Tutup modal">
+				<button onclick={closeFormDrawer} class="form-drawer__close" aria-label="Tutup panel">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 				</button>
 			</div>
 
-			<form method="POST" action="?/createTrack" use:enhance={() => {
-				return async ({ result, update }) => {
-					await update();
-					if (result.type === 'success') showAddModal = false;
-				};
-			}}>
-				<div class="modal__body">
+			<!-- Form -->
+			<form
+				method="POST"
+				action={editingTrack ? '?/updateTrack' : '?/createTrack'}
+				use:enhance={() => {
+					return async ({ result, update }) => {
+						await update();
+						if (result.type === 'success') closeFormDrawer();
+					};
+				}}
+				class="form-drawer__form"
+			>
+				{#if editingTrack}
+					<input type="hidden" name="id" value={editingTrack.id} />
+				{/if}
+
+				<div class="form-drawer__body">
+					<!-- Tingkat Class Select -->
 					<div class="field-group-m">
 						<label for="tingkatId" class="field-label">Tingkat Kelas <span aria-hidden="true">*</span></label>
-						<select id="tingkatId" name="tingkatId" required class="field-input select-input">
+						<select
+							id="tingkatId"
+							name="tingkatId"
+							required
+							class="field-input select-input"
+							value={editingTrack?.tingkatId ?? ''}
+						>
 							<option value="">— Pilih Tingkat Kelas —</option>
 							{#each data.tingkatList as t}
 								<option value={t.id}>{t.name}</option>
@@ -430,6 +502,7 @@
 						</select>
 					</div>
 
+					<!-- Track Title Input -->
 					<div class="field-group-m">
 						<label for="title" class="field-label">Judul Track <span aria-hidden="true">*</span></label>
 						<input
@@ -437,33 +510,55 @@
 							id="title"
 							name="title"
 							required
+							value={editingTrack?.title ?? ''}
 							placeholder="Contoh: Dasar Jaringan & Cisco Packet Tracer"
 							class="field-input"
 						/>
 					</div>
 
+					<!-- Description Textarea -->
 					<div class="field-group-m">
 						<label for="description" class="field-label">Deskripsi Silabus <span class="opt-label">Opsional</span></label>
 						<textarea
 							id="description"
 							name="description"
-							rows="3"
-							placeholder="Penjelasan singkat cakupan kurikulum ini…"
+							rows="4"
+							value={editingTrack?.description ?? ''}
+							placeholder="Penjelasan singkat cakupan kurikulum dan kompetensi yang dipelajari…"
 							class="field-input"
 							style="resize:vertical;"
 						></textarea>
 					</div>
+
+					<!-- Publication Status Select (Edit Mode) -->
+					{#if editingTrack}
+						<div class="field-group-m">
+							<label for="isPublishedSelect" class="field-label">Status Publikasi</label>
+							<select
+								id="isPublishedSelect"
+								name="isPublished"
+								class="field-input select-input"
+								value={editingTrack.isPublished ? 'true' : 'false'}
+							>
+								<option value="true">Published (Aktif & dapat diakses siswa)</option>
+								<option value="false">Draft (Hanya terlihat oleh mentor)</option>
+							</select>
+						</div>
+					{/if}
 				</div>
 
-				<div class="modal__footer">
-					<button type="button" onclick={() => (showAddModal = false)} class="btn-ghost">Batal</button>
-					<button type="submit" class="btn-manage" style="width:auto;padding:10px 24px;">
+				<!-- Drawer Footer (Sticky bottom) -->
+				<div class="form-drawer__footer">
+					<button type="button" onclick={closeFormDrawer} class="btn-ghost" style="flex:1;">
+						Batal
+					</button>
+					<button type="submit" class="btn-create" style="flex:2;justify-content:center;">
 						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-						Simpan Track
+						{editingTrack ? 'Simpan Perubahan' : 'Simpan Track Baru'}
 					</button>
 				</div>
 			</form>
-		</div>
+		</aside>
 	</div>
 {/if}
 
@@ -1020,7 +1115,7 @@
 		margin-bottom: 20px;
 	}
 
-	/* ── Drawer ─────────────────────────────────────── */
+	/* ── Inspection Drawer ─────────────────────────── */
 	.drawer-scrim {
 		position: fixed;
 		inset: 0;
@@ -1144,8 +1239,11 @@
 		background: #ffffff;
 	}
 
-	/* ── Modal ──────────────────────────────────────── */
-	.modal-scrim {
+	/* ── Add / Edit Form Slider Drawer ─────────────────
+	   Desktop: Slides from Right
+	   Mobile: Slides from Bottom
+	   ──────────────────────────────────────────────── */
+	.form-scrim {
 		position: fixed;
 		inset: 0;
 		z-index: 60;
@@ -1153,49 +1251,63 @@
 		backdrop-filter: blur(6px);
 		-webkit-backdrop-filter: blur(6px);
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 24px;
+		align-items: stretch;
+		justify-content: flex-end;
 	}
 
-	.modal {
+	.form-drawer {
 		width: 100%;
-		max-width: 500px;
+		max-width: 480px;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: 24px;
-		box-shadow: 0 24px 64px rgba(15,23,42,0.12);
+		border-left: 1px solid var(--border-hard);
+		display: flex;
+		flex-direction: column;
+		box-shadow: -12px 0 48px rgba(15, 23, 42, 0.12);
+		animation: slideFromRight 240ms cubic-bezier(0.16, 1, 0.3, 1);
+		height: 100vh;
 		overflow: hidden;
-		animation: popIn 200ms cubic-bezier(0.34,1.56,0.64,1);
 	}
 
-	@keyframes popIn {
-		from { transform: scale(0.92); opacity: 0; }
-		to   { transform: scale(1);    opacity: 1; }
+	@keyframes slideFromRight {
+		from { transform: translateX(100%); }
+		to   { transform: translateX(0); }
 	}
 
-	.modal__header {
+	.mobile-drag-handle {
+		width: 36px;
+		height: 4px;
+		border-radius: 9999px;
+		background: var(--border-hard);
+		margin: 12px auto 4px;
+		flex-shrink: 0;
+	}
+
+	.form-drawer__header {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		padding: 22px 24px 18px;
 		border-bottom: 1px solid var(--border-hard);
+		flex-shrink: 0;
+		background: #ffffff;
 	}
 
-	.modal__title {
+	.form-drawer__title {
 		font-family: var(--font-macro);
 		font-size: 1.15rem;
 		font-weight: 800;
 		color: var(--text-primary);
 		margin-bottom: 3px;
+		line-height: 1.25;
 	}
 
-	.modal__sub {
+	.form-drawer__sub {
 		font-size: 13px;
 		color: var(--text-secondary);
+		line-height: 1.45;
 	}
 
-	.modal-close {
+	.form-drawer__close {
 		width: 32px;
 		height: 32px;
 		border-radius: 8px;
@@ -1210,26 +1322,36 @@
 		transition: all 150ms ease;
 	}
 
-	.modal-close:hover {
+	.form-drawer__close:hover {
 		background: var(--red-dim);
 		border-color: var(--red-border);
 		color: var(--red);
 	}
 
-	.modal__body {
+	.form-drawer__form {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	.form-drawer__body {
+		flex: 1;
 		padding: 20px 24px;
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 18px;
+		overflow-y: auto;
 	}
 
-	.modal__footer {
+	.form-drawer__footer {
 		padding: 16px 24px;
 		border-top: 1px solid var(--border-hard);
 		display: flex;
 		align-items: center;
-		justify-content: flex-end;
-		gap: 10px;
+		gap: 12px;
+		background: #ffffff;
+		flex-shrink: 0;
 	}
 
 	.field-group-m {
@@ -1257,11 +1379,32 @@
 		padding-right: 36px;
 	}
 
-	/* ── Responsive ─────────────────────────────────── */
+	/* ── Mobile Layout Adjustment (<768px): Slide from Bottom ── */
 	@media (max-width: 767px) {
 		.content-area { padding: 16px 16px 40px; }
 		.btn-create span { display: none; }
 		.btn-create kbd { display: none; }
 		.btn-create { padding: 10px; }
+
+		.form-scrim {
+			align-items: flex-end;
+			justify-content: center;
+		}
+
+		.form-drawer {
+			max-width: 100%;
+			height: auto;
+			max-height: 88vh;
+			border-left: none;
+			border-top: 1px solid var(--border-hard);
+			border-radius: 24px 24px 0 0;
+			box-shadow: 0 -12px 48px rgba(15, 23, 42, 0.15);
+			animation: slideFromBottom 240ms cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		@keyframes slideFromBottom {
+			from { transform: translateY(100%); }
+			to   { transform: translateY(0); }
+		}
 	}
 </style>
