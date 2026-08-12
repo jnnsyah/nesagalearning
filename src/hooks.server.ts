@@ -1,5 +1,5 @@
 import { lucia } from '$lib/server/auth/lucia';
-import { redirect, error, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const sessionId = event.cookies.get(lucia.sessionCookieName);
@@ -28,15 +28,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const path = event.url.pathname;
+	const normalizedPath = path.toLowerCase();
 	const user = event.locals.user;
 
 	// Public routes
-	const isLoginRoute = path === '/login';
-	const isLogoutRoute = path === '/logout';
-	const isApiRoute = path.startsWith('/api/');
+	const isLoginRoute = normalizedPath === '/login';
+	const isLogoutRoute = normalizedPath === '/logout';
+	const isApiRoute = normalizedPath.startsWith('/api/');
 
 	// Root path handling
-	if (path === '/') {
+	if (normalizedPath === '/' || normalizedPath === '') {
 		if (!user) {
 			throw redirect(302, '/login');
 		}
@@ -64,21 +65,38 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, '/login');
 	}
 
-	// Server-side RBAC enforcement
-	if (path.startsWith('/admin') && user.role !== 'admin') {
-		return handleRbacViolation(isApiRoute, 'Membutuhkan role Admin');
+	// Strict Role-Based Access Control & Anti-URL Traversal
+	const role = user.role;
+
+	const isAdminRoute = normalizedPath.startsWith('/admin') || normalizedPath.startsWith('/api/admin');
+	const isMentorRoute = normalizedPath.startsWith('/mentor') || normalizedPath.startsWith('/api/mentor');
+	const isGuruRoute = normalizedPath.startsWith('/guru') || normalizedPath.startsWith('/api/guru');
+	const isSiswaRoute = normalizedPath.startsWith('/siswa') || normalizedPath.startsWith('/api/siswa');
+
+	let isAllowed = true;
+
+	if (isAdminRoute && role !== 'admin') {
+		isAllowed = false;
+	} else if (isMentorRoute && role !== 'mentor' && role !== 'admin') {
+		isAllowed = false;
+	} else if (isGuruRoute && role !== 'guru' && role !== 'admin') {
+		isAllowed = false;
+	} else if (isSiswaRoute && role !== 'siswa' && role !== 'admin') {
+		isAllowed = false;
 	}
 
-	if (path.startsWith('/mentor') && user.role !== 'mentor' && user.role !== 'admin') {
-		return handleRbacViolation(isApiRoute, 'Membutuhkan role Mentor');
-	}
-
-	if (path.startsWith('/guru') && user.role !== 'guru' && user.role !== 'admin') {
-		return handleRbacViolation(isApiRoute, 'Membutuhkan role Guru');
-	}
-
-	if (path.startsWith('/siswa') && user.role !== 'siswa' && user.role !== 'admin') {
-		return handleRbacViolation(isApiRoute, 'Membutuhkan role Siswa');
+	if (!isAllowed) {
+		if (isApiRoute) {
+			return new Response(
+				JSON.stringify({ error: 'Forbidden: Akses ditolak untuk role Anda' }),
+				{
+					status: 403,
+					headers: { 'Content-Type': 'application/json' }
+				}
+			);
+		}
+		// Redirect user back to their assigned role dashboard to block URL role traversal
+		throw redirect(302, getRoleDefaultRoute(role));
 	}
 
 	return resolve(event);
@@ -96,14 +114,4 @@ function getRoleDefaultRoute(role: string): string {
 		default:
 			return '/siswa';
 	}
-}
-
-function handleRbacViolation(isApiRoute: boolean, message: string): Response {
-	if (isApiRoute) {
-		return new Response(JSON.stringify({ error: `Forbidden: ${message}` }), {
-			status: 403,
-			headers: { 'Content-Type': 'application/json' }
-		});
-	}
-	throw error(403, `Akses Ditolak: ${message}`);
 }
