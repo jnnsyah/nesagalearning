@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { curriculumTrack, phase, subPhase, materi, tingkat } from '$lib/server/db/schema';
-import { eq, asc, max, sql } from 'drizzle-orm';
+import { eq, asc, max } from 'drizzle-orm';
 import type {
 	CreateCurriculumTrackInput,
 	UpdateCurriculumTrackInput,
@@ -12,11 +12,15 @@ import type {
 	UpdateMateriInput
 } from '$lib/validators/curriculum';
 
-export class CurriculumService {
+/**
+ * CurriculumTree — Deep Aggregate Engine for Curriculum Tracks, Phases, SubPhases, and Materis.
+ * Encapsulates tree query hierarchies, transaction integrity, and automatic sortOrder management.
+ */
+export const CurriculumTree = {
 	/**
-	 * Get all curriculum tracks with associated Tingkat
+	 * Fetch all tracks with nested counts
 	 */
-	static async getTracks() {
+	async getTracks() {
 		const tracks = await db.query.curriculumTrack.findMany({
 			with: {
 				tingkat: true,
@@ -61,19 +65,19 @@ export class CurriculumService {
 				materiCount
 			};
 		});
-	}
+	},
 
 	/**
-	 * Get all available Tingkat levels for drop-down selection
+	 * Get all available Tingkat grade levels
 	 */
-	static async getTingkatList() {
+	async getTingkatList() {
 		return db.select().from(tingkat).orderBy(asc(tingkat.levelOrder));
-	}
+	},
 
 	/**
 	 * Get full curriculum track with all phases, sub-phases, and materis nested
 	 */
-	static async getTrackWithDetails(trackId: number) {
+	async getTrackWithDetails(trackId: number) {
 		const track = await db.query.curriculumTrack.findFirst({
 			where: eq(curriculumTrack.id, trackId),
 			with: {
@@ -95,7 +99,6 @@ export class CurriculumService {
 
 		if (!track) return null;
 
-		// Fetch tingkat details
 		const tingkatData = await db
 			.select()
 			.from(tingkat)
@@ -106,12 +109,12 @@ export class CurriculumService {
 			...track,
 			tingkatName: tingkatData[0]?.name || 'Tingkat Unknown'
 		};
-	}
+	},
 
 	/**
-	 * Create a new CurriculumTrack
+	 * Create CurriculumTrack
 	 */
-	static async createTrack(input: CreateCurriculumTrackInput) {
+	async createTrack(input: CreateCurriculumTrackInput) {
 		const [created] = await db
 			.insert(curriculumTrack)
 			.values({
@@ -121,12 +124,12 @@ export class CurriculumService {
 			})
 			.returning();
 		return created;
-	}
+	},
 
 	/**
 	 * Update CurriculumTrack
 	 */
-	static async updateTrack(id: number, input: UpdateCurriculumTrackInput) {
+	async updateTrack(id: number, input: UpdateCurriculumTrackInput) {
 		const [updated] = await db
 			.update(curriculumTrack)
 			.set({
@@ -139,12 +142,12 @@ export class CurriculumService {
 			.where(eq(curriculumTrack.id, id))
 			.returning();
 		return updated;
-	}
+	},
 
 	/**
-	 * Toggle publish status of CurriculumTrack
+	 * Toggle publish status
 	 */
-	static async togglePublishTrack(id: number, isPublished: boolean) {
+	async togglePublishTrack(id: number, isPublished: boolean) {
 		const [updated] = await db
 			.update(curriculumTrack)
 			.set({
@@ -154,21 +157,21 @@ export class CurriculumService {
 			.where(eq(curriculumTrack.id, id))
 			.returning();
 		return updated;
-	}
+	},
 
 	/**
 	 * Delete CurriculumTrack (cascade deletes phases, sub-phases, materis)
 	 */
-	static async deleteTrack(id: number) {
+	async deleteTrack(id: number) {
 		return db.delete(curriculumTrack).where(eq(curriculumTrack.id, id));
-	}
+	},
 
 	// ==================== PHASE OPERATIONS ====================
 
 	/**
-	 * Create a Phase (auto-assigned next sortOrder)
+	 * Create Phase (auto-assigned next sortOrder)
 	 */
-	static async createPhase(input: CreatePhaseInput) {
+	async createPhase(input: CreatePhaseInput) {
 		const maxOrderResult = await db
 			.select({ maxOrder: max(phase.sortOrder) })
 			.from(phase)
@@ -187,12 +190,12 @@ export class CurriculumService {
 			.returning();
 
 		return created;
-	}
+	},
 
 	/**
 	 * Update Phase
 	 */
-	static async updatePhase(id: number, input: UpdatePhaseInput) {
+	async updatePhase(id: number, input: UpdatePhaseInput) {
 		const [updated] = await db
 			.update(phase)
 			.set({
@@ -203,12 +206,12 @@ export class CurriculumService {
 			.where(eq(phase.id, id))
 			.returning();
 		return updated;
-	}
+	},
 
 	/**
-	 * Delete Phase & shift remaining phases sortOrder
+	 * Delete Phase & normalize sortOrders
 	 */
-	static async deletePhase(id: number) {
+	async deletePhase(id: number) {
 		const target = await db.query.phase.findFirst({
 			where: eq(phase.id, id)
 		});
@@ -216,7 +219,6 @@ export class CurriculumService {
 
 		await db.delete(phase).where(eq(phase.id, id));
 
-		// Normalize remaining phase sortOrders
 		const remainingPhases = await db
 			.select({ id: phase.id })
 			.from(phase)
@@ -229,21 +231,19 @@ export class CurriculumService {
 				remainingPhases.map((p) => p.id)
 			);
 		}
-	}
+	},
 
 	/**
-	 * Reorder Phases using two-pass transaction to avoid unique constraint collisions
+	 * Reorder Phases safely in two-pass transaction
 	 */
-	static async reorderPhases(curriculumTrackId: number, orderedIds: number[]) {
+	async reorderPhases(curriculumTrackId: number, orderedIds: number[]) {
 		return db.transaction(async (tx) => {
-			// Pass 1: set temporary negative sortOrders
 			for (let i = 0; i < orderedIds.length; i++) {
 				await tx
 					.update(phase)
 					.set({ sortOrder: -(i + 1000) })
 					.where(eq(phase.id, orderedIds[i]));
 			}
-			// Pass 2: set final sortOrders
 			for (let i = 0; i < orderedIds.length; i++) {
 				await tx
 					.update(phase)
@@ -251,14 +251,14 @@ export class CurriculumService {
 					.where(eq(phase.id, orderedIds[i]));
 			}
 		});
-	}
+	},
 
 	// ==================== SUB-PHASE OPERATIONS ====================
 
 	/**
 	 * Create SubPhase (auto-assigned next sortOrder)
 	 */
-	static async createSubPhase(input: CreateSubPhaseInput) {
+	async createSubPhase(input: CreateSubPhaseInput) {
 		const maxOrderResult = await db
 			.select({ maxOrder: max(subPhase.sortOrder) })
 			.from(subPhase)
@@ -277,12 +277,12 @@ export class CurriculumService {
 			.returning();
 
 		return created;
-	}
+	},
 
 	/**
 	 * Update SubPhase
 	 */
-	static async updateSubPhase(id: number, input: UpdateSubPhaseInput) {
+	async updateSubPhase(id: number, input: UpdateSubPhaseInput) {
 		const [updated] = await db
 			.update(subPhase)
 			.set({
@@ -293,12 +293,12 @@ export class CurriculumService {
 			.where(eq(subPhase.id, id))
 			.returning();
 		return updated;
-	}
+	},
 
 	/**
-	 * Delete SubPhase & shift remaining sortOrders
+	 * Delete SubPhase & normalize sortOrders
 	 */
-	static async deleteSubPhase(id: number) {
+	async deleteSubPhase(id: number) {
 		const target = await db.query.subPhase.findFirst({
 			where: eq(subPhase.id, id)
 		});
@@ -318,12 +318,12 @@ export class CurriculumService {
 				remaining.map((sp) => sp.id)
 			);
 		}
-	}
+	},
 
 	/**
 	 * Reorder SubPhases
 	 */
-	static async reorderSubPhases(phaseId: number, orderedIds: number[]) {
+	async reorderSubPhases(phaseId: number, orderedIds: number[]) {
 		return db.transaction(async (tx) => {
 			for (let i = 0; i < orderedIds.length; i++) {
 				await tx
@@ -338,14 +338,14 @@ export class CurriculumService {
 					.where(eq(subPhase.id, orderedIds[i]));
 			}
 		});
-	}
+	},
 
 	// ==================== MATERI OPERATIONS ====================
 
 	/**
 	 * Create Materi (auto-assigned next sortOrder)
 	 */
-	static async createMateri(input: CreateMateriInput) {
+	async createMateri(input: CreateMateriInput) {
 		const maxOrderResult = await db
 			.select({ maxOrder: max(materi.sortOrder) })
 			.from(materi)
@@ -364,13 +364,13 @@ export class CurriculumService {
 			.returning();
 
 		return created;
-	}
+	},
 
 	/**
-	 * Get single Materi with breadcrumbs (subPhase, phase, track)
+	 * Get single Materi with breadcrumbs
 	 */
-	static async getMateriWithDetails(materiId: number) {
-		const m = await db.query.materi.findFirst({
+	async getMateriWithDetails(materiId: number) {
+		return db.query.materi.findFirst({
 			where: eq(materi.id, materiId),
 			with: {
 				subPhase: {
@@ -384,13 +384,12 @@ export class CurriculumService {
 				}
 			}
 		});
-		return m;
-	}
+	},
 
 	/**
 	 * Update Materi
 	 */
-	static async updateMateri(id: number, input: UpdateMateriInput) {
+	async updateMateri(id: number, input: UpdateMateriInput) {
 		const [updated] = await db
 			.update(materi)
 			.set({
@@ -401,12 +400,12 @@ export class CurriculumService {
 			.where(eq(materi.id, id))
 			.returning();
 		return updated;
-	}
+	},
 
 	/**
 	 * Delete Materi & reorder remaining
 	 */
-	static async deleteMateri(id: number) {
+	async deleteMateri(id: number) {
 		const target = await db.query.materi.findFirst({
 			where: eq(materi.id, id)
 		});
@@ -426,12 +425,12 @@ export class CurriculumService {
 				remaining.map((m) => m.id)
 			);
 		}
-	}
+	},
 
 	/**
 	 * Reorder Materis
 	 */
-	static async reorderMateris(subPhaseId: number, orderedIds: number[]) {
+	async reorderMateris(subPhaseId: number, orderedIds: number[]) {
 		return db.transaction(async (tx) => {
 			for (let i = 0; i < orderedIds.length; i++) {
 				await tx
@@ -447,4 +446,9 @@ export class CurriculumService {
 			}
 		});
 	}
-}
+};
+
+/**
+ * Backward compatibility alias for CurriculumService
+ */
+export const CurriculumService = CurriculumTree;

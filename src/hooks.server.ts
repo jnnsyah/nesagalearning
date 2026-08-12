@@ -1,117 +1,27 @@
-import { lucia } from '$lib/server/auth/lucia';
+import { AuthGatekeeper } from '$lib/server/auth/gatekeeper';
 import { redirect, type Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const sessionId = event.cookies.get(lucia.sessionCookieName);
+	// 1. Validate session & populate event.locals.user and event.locals.session
+	const { user } = await AuthGatekeeper.validateRequest(event);
 
-	if (!sessionId) {
-		event.locals.user = null;
-		event.locals.session = null;
-	} else {
-		const { session, user } = await lucia.validateSession(sessionId);
-		if (session && session.fresh) {
-			const sessionCookie = lucia.createSessionCookie(session.id);
-			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
-				...sessionCookie.attributes
-			});
-		}
-		if (!session) {
-			const sessionCookie = lucia.createBlankSessionCookie();
-			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
-				...sessionCookie.attributes
-			});
-		}
-		event.locals.user = user;
-		event.locals.session = session;
-	}
+	const pathname = event.url.pathname.toLowerCase();
 
-	const path = event.url.pathname;
-	const normalizedPath = path.toLowerCase();
-	const user = event.locals.user;
-
-	// Public routes
-	const isLoginRoute = normalizedPath === '/login';
-	const isLogoutRoute = normalizedPath === '/logout';
-	const isApiRoute = normalizedPath.startsWith('/api/');
-
-	// Root path handling
-	if (normalizedPath === '/' || normalizedPath === '') {
+	// Root path redirect
+	if (pathname === '/' || pathname === '') {
 		if (!user) {
 			throw redirect(302, '/login');
 		}
-		throw redirect(302, getRoleDefaultRoute(user.role));
+		throw redirect(302, `/${user.role}`);
 	}
 
-	// Logged-in user trying to access /login
-	if (isLoginRoute && user) {
-		throw redirect(302, getRoleDefaultRoute(user.role));
+	// Prevent logged-in user from visiting /login
+	if (pathname === '/login' && user) {
+		throw redirect(302, `/${user.role}`);
 	}
 
-	// Allow unauthenticated access to /login and /logout
-	if (isLoginRoute || isLogoutRoute) {
-		return resolve(event);
-	}
-
-	// Protected routes require authentication
-	if (!user) {
-		if (isApiRoute) {
-			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-				status: 401,
-				headers: { 'Content-Type': 'application/json' }
-			});
-		}
-		throw redirect(302, '/login');
-	}
-
-	// Strict 1-to-1 Role Access Control (Zero Traversal Allowed for Any Role)
-	const role = user.role;
-
-	const isAdminRoute =
-		normalizedPath.startsWith('/admin') || normalizedPath.startsWith('/api/admin');
-	const isMentorRoute =
-		normalizedPath.startsWith('/mentor') || normalizedPath.startsWith('/api/mentor');
-	const isGuruRoute = normalizedPath.startsWith('/guru') || normalizedPath.startsWith('/api/guru');
-	const isSiswaRoute =
-		normalizedPath.startsWith('/siswa') || normalizedPath.startsWith('/api/siswa');
-
-	let isAllowed = true;
-
-	if (isAdminRoute && role !== 'admin') {
-		isAllowed = false;
-	} else if (isMentorRoute && role !== 'mentor') {
-		isAllowed = false;
-	} else if (isGuruRoute && role !== 'guru') {
-		isAllowed = false;
-	} else if (isSiswaRoute && role !== 'siswa') {
-		isAllowed = false;
-	}
-
-	if (!isAllowed) {
-		if (isApiRoute) {
-			return new Response(JSON.stringify({ error: 'Forbidden: Akses ditolak untuk role Anda' }), {
-				status: 403,
-				headers: { 'Content-Type': 'application/json' }
-			});
-		}
-		// Redirect user strictly back to their assigned role home portal
-		throw redirect(302, getRoleDefaultRoute(role));
-	}
+	// 2. Enforce Server RBAC Policy via AuthGatekeeper
+	AuthGatekeeper.enforceRoutePolicy(user, pathname);
 
 	return resolve(event);
 };
-
-function getRoleDefaultRoute(role: string): string {
-	switch (role) {
-		case 'admin':
-			return '/admin';
-		case 'guru':
-			return '/guru';
-		case 'mentor':
-			return '/mentor';
-		case 'siswa':
-		default:
-			return '/siswa';
-	}
-}

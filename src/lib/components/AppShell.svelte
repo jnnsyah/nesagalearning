@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { NavigationRegistry } from '$lib/navigation/registry';
 	import type { Snippet } from 'svelte';
 
 	interface User {
@@ -20,13 +21,7 @@
 	// Fallback to $page.data.user if user prop is not passed directly
 	let currentUser = $derived(user ?? $page.data.user);
 	let pathname = $derived($page.url.pathname);
-	let role = $derived(
-		currentUser?.role?.toLowerCase() ??
-		(pathname.startsWith('/mentor') ? 'mentor' :
-		 pathname.startsWith('/guru') ? 'guru' :
-		 pathname.startsWith('/admin') ? 'admin' :
-		 pathname.startsWith('/siswa') ? 'siswa' : 'siswa')
-	);
+	let role = $derived(NavigationRegistry.deriveRole(currentUser?.role?.toLowerCase(), pathname));
 
 	// Sidebar collapsed state
 	let sidebarCollapsed = $state(false);
