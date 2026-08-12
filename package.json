@@ -45,6 +45,9 @@
 	},
 	"dependencies": {
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
+		"@tiptap/core": "^3.30.0",
+		"@tiptap/pm": "^3.30.0",
+		"@tiptap/starter-kit": "^3.30.0",
 		"bcryptjs": "^3.0.3",
 		"lucia": "^3.2.2",
 		"zod": "^4.4.3"

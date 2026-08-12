@@ -6,211 +6,292 @@
 	$effect(() => {
 		timestamp = new Date().toISOString().replace('T', ' ').split('.')[0] + 'Z';
 	});
+
+	const errorConfig = $derived(() => {
+		const s = $page.status;
+		if (s === 404) return {
+			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`,
+			color: '#6366f1',
+			bg: '#e0e7ff',
+			title: 'Halaman Tidak Ditemukan',
+			sub: 'Maaf, halaman yang Anda tuju mungkin telah dipindahkan, dihapus, atau tidak pernah ada di sistem NLC.',
+		};
+		if (s === 403) return {
+			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>`,
+			color: '#d97706',
+			bg: '#fef3c7',
+			title: 'Akses Ditolak',
+			sub: 'Anda tidak memiliki izin untuk mengakses halaman ini. Role akun Anda tidak mencukupi.',
+		};
+		if (s === 401) return {
+			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>`,
+			color: '#0d9488',
+			bg: '#ccfbf1',
+			title: 'Autentikasi Diperlukan',
+			sub: 'Silakan masuk terlebih dahulu untuk mengakses halaman pembelajaran NLC ini.',
+		};
+		return {
+			icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+			color: '#dc2626',
+			bg: '#fee2e2',
+			title: 'Terjadi Kesalahan Server',
+			sub: 'Sistem kami mengalami kendala teknis saat memproses permintaan Anda. Tim kami sedang menanganinya.',
+		};
+	});
 </script>
 
 <svelte:head>
-	<title>ERROR {$page.status} — NLC</title>
+	<title>Error {$page.status} — NLC</title>
 </svelte:head>
 
 <div class="error-root">
-	<!-- Crosshairs -->
-	<span class="ch ch-tl">+</span>
-	<span class="ch ch-tr">+</span>
-	<span class="ch ch-bl">+</span>
-	<span class="ch ch-br">+</span>
+	<!-- Decorative background -->
+	<div class="error-bg-glow-1"></div>
+	<div class="error-bg-glow-2"></div>
 
-	<div class="error-inner">
-		<!-- Status code — macro -->
-		<div class="error-code">{$page.status}</div>
+	<div class="error-card">
+		<!-- Status icon area -->
+		<div class="error-icon-wrap" style="background: {errorConfig().bg}; color: {errorConfig().color};">
+			{@html errorConfig().icon}
+		</div>
 
-		<!-- Accent rule -->
-		<div class="error-rule"></div>
+		<!-- Status badge -->
+		<div class="error-code-badge mt-5" style="color: {errorConfig().color}; background: {errorConfig().bg}; border-color: {errorConfig().color}22;">
+			STATUS {$page.status}
+		</div>
 
-		<!-- Label + message -->
-		<div class="error-meta">
-			<div class="type-mono" style="font-size: 10px; color: var(--red); letter-spacing: 0.12em;">
-				[ SYSTEM ERROR DETECTED ]
-			</div>
+		<!-- Title & desc -->
+		<h1 class="error-title mt-3">{errorConfig().title}</h1>
+		<p class="error-sub mt-2">{errorConfig().sub}</p>
 
-			<h1 class="error-message">
-				{#if $page.status === 404}
-					HALAMAN TIDAK DITEMUKAN
-				{:else if $page.status === 403}
-					AKSES DITOLAK
-				{:else if $page.status === 401}
-					AUTENTIKASI DIPERLUKAN
-				{:else if $page.status === 500}
-					KESALAHAN SERVER INTERNAL
-				{:else}
-					TERJADI KESALAHAN
-				{/if}
-			</h1>
-
-			{#if $page.error?.message}
-				<div class="error-detail">
-					<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">&gt;&gt; </span>
-					<samp class="type-mono" style="font-size: 11px; color: var(--text-secondary);">
-						{$page.error.message}
-					</samp>
+		<!-- Error detail (collapsible feel) -->
+		{#if $page.error?.message}
+			<div class="error-detail-box mt-6">
+				<div class="error-detail-header">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+					<span>Pesan Detail Sistem</span>
 				</div>
-			{/if}
-		</div>
+				<code class="error-detail-msg">{$page.error.message}</code>
+			</div>
+		{/if}
 
-		<!-- Telemetry dump -->
-		<div class="error-telemetry">
-			<div class="error-telemetry__row">
-				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">STATUS_CODE</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--red);">{$page.status}</samp>
+		<!-- Technical meta -->
+		<div class="error-tech-table mt-5">
+			<div class="tech-row">
+				<span class="tech-label">Path URL</span>
+				<code class="tech-val">{$page.url.pathname}</code>
 			</div>
-			<div class="error-telemetry__row">
-				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">PATH</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
-					>{$page.url.pathname}</samp
-				>
-			</div>
-			<div class="error-telemetry__row">
-				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">TIMESTAMP</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
-					>{timestamp}</samp
-				>
-			</div>
-			<div class="error-telemetry__row">
-				<span class="type-mono" style="font-size: 9px; color: var(--text-muted);">SYSTEM</span>
-				<samp class="type-mono" style="font-size: 9px; color: var(--text-secondary);"
-					>NLC / REV 2.0</samp
-				>
+			<div class="tech-divider"></div>
+			<div class="tech-row">
+				<span class="tech-label">Waktu Sistem</span>
+				<code class="tech-val">{timestamp}</code>
 			</div>
 		</div>
 
-		<!-- Actions -->
-		<div class="error-actions">
-			<a
-				href="/"
-				class="btn-primary"
-				style="display: inline-block; width: auto; padding: 12px 32px;"
-			>
-				&gt;&gt; KEMBALI KE HOME
+		<!-- Action buttons -->
+		<div class="error-actions mt-8">
+			<a href="/login" class="btn-primary" style="width: auto; padding: 12px 28px;">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+				Kembali ke Login
 			</a>
 			<button onclick={() => window.history.back()} class="btn-ghost" style="padding: 12px 24px;">
-				&larr; HALAMAN SEBELUMNYA
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+				Halaman Sebelumnya
 			</button>
+		</div>
+
+		<!-- Branding footer -->
+		<div class="error-brand mt-8">
+			<span class="nlc-logo">NLC</span>
+			<span>Nesaga Learning Community</span>
 		</div>
 	</div>
 </div>
 
 <style>
 	.error-root {
-		position: relative;
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: center;
 		min-height: 100vh;
-		background: var(--bg-base);
-		padding: 40px 24px;
+		background: #f8fafc;
+		padding: 24px;
+		position: relative;
 		overflow: hidden;
 	}
 
-	/* Crosshairs */
-	.ch {
+	.error-bg-glow-1 {
 		position: absolute;
-		font-family: var(--font-mono);
-		font-size: 14px;
-		color: var(--text-ghost);
-		line-height: 1;
-	}
-	.ch-tl {
-		top: 16px;
-		left: 20px;
-	}
-	.ch-tr {
-		top: 16px;
-		right: 20px;
-	}
-	.ch-bl {
-		bottom: 16px;
-		left: 20px;
-	}
-	.ch-br {
-		bottom: 16px;
-		right: 20px;
-	}
-
-	.error-inner {
-		width: 100%;
-		max-width: 640px;
-		display: flex;
-		flex-direction: column;
-		gap: 28px;
-	}
-
-	/* Giant status code in background style */
-	.error-code {
-		font-family: var(--font-macro);
-		font-size: clamp(6rem, 20vw, 16rem);
-		line-height: 0.85;
-		letter-spacing: -0.06em;
-		text-transform: uppercase;
-		color: var(--text-ghost);
+		top: -20%;
+		right: -10%;
+		width: 500px;
+		height: 500px;
+		background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
 		pointer-events: none;
-		user-select: none;
 	}
 
-	.error-rule {
-		width: 48px;
-		height: 2px;
-		background: var(--red);
+	.error-bg-glow-2 {
+		position: absolute;
+		bottom: -20%;
+		left: -10%;
+		width: 500px;
+		height: 500px;
+		background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 70%);
+		pointer-events: none;
 	}
 
-	.error-meta {
+	.error-card {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		max-width: 520px;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 28px;
+		padding: 48px 40px;
+		box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.08);
+		text-align: center;
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-	}
-
-	.error-message {
-		font-family: var(--font-macro);
-		font-size: clamp(1.4rem, 4vw, 2.8rem);
-		line-height: 0.95;
-		letter-spacing: -0.03em;
-		text-transform: uppercase;
-		color: var(--text-primary);
-	}
-
-	.error-detail {
-		display: flex;
-		align-items: flex-start;
-		gap: 4px;
-		padding: 10px 14px;
-		border: 1px solid var(--border-soft);
-		border-left: 2px solid var(--border-hard);
-		background: var(--bg-inset);
-	}
-
-	/* Telemetry dump block */
-	.error-telemetry {
-		display: flex;
-		flex-direction: column;
-		border: 1px solid var(--border-hard);
-		background: var(--bg-panel);
-	}
-
-	.error-telemetry__row {
-		display: flex;
-		justify-content: space-between;
 		align-items: center;
-		padding: 8px 16px;
-		border-bottom: 1px solid var(--border-soft);
-		gap: 16px;
 	}
 
-	.error-telemetry__row:last-child {
-		border-bottom: none;
+	@media (max-width: 480px) {
+		.error-card {
+			padding: 36px 24px;
+			border-radius: 20px;
+		}
+	}
+
+	.error-icon-wrap {
+		width: 88px;
+		height: 88px;
+		border-radius: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.error-code-badge {
+		display: inline-flex;
+		align-items: center;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		padding: 5px 14px;
+		border-radius: 9999px;
+		border: 1px solid;
+	}
+
+	.error-title {
+		font-family: var(--font-macro);
+		font-size: clamp(1.5rem, 4vw, 2rem);
+		font-weight: 800;
+		color: #0f172a;
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+	}
+
+	.error-sub {
+		font-size: 15px;
+		color: #64748b;
+		line-height: 1.65;
+		max-width: 420px;
+	}
+
+	.error-detail-box {
+		width: 100%;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 14px;
+		padding: 14px 18px;
+		text-align: left;
+	}
+
+	.error-detail-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: #dc2626;
+		margin-bottom: 8px;
+	}
+
+	.error-detail-msg {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: #475569;
+		word-break: break-all;
+		line-height: 1.5;
+	}
+
+	.error-tech-table {
+		width: 100%;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 4px 0;
+		text-align: left;
+	}
+
+	.tech-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 16px;
+		gap: 12px;
+	}
+
+	.tech-label {
+		font-size: 12px;
+		font-weight: 700;
+		color: #64748b;
+		white-space: nowrap;
+	}
+
+	.tech-val {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: #334155;
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 220px;
+	}
+
+	.tech-divider {
+		height: 1px;
+		background: #e2e8f0;
+		margin: 0 16px;
 	}
 
 	.error-actions {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 12px;
+		width: 100%;
 		flex-wrap: wrap;
+	}
+
+	.error-brand {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		font-weight: 600;
+		color: #94a3b8;
+	}
+
+	.nlc-logo {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: #4f46e5;
+		letter-spacing: -0.02em;
 	}
 </style>

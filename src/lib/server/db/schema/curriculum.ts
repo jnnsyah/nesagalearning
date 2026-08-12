@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
 	pgTable,
 	bigint,
@@ -109,10 +110,40 @@ export const quizQuestion = pgTable(
 		questionText: text('question_text').notNull(),
 		options: jsonb('options').notNull().default([]),
 		sortOrder: integer('sort_order').notNull(),
-		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(table) => [
 		unique('quiz_question_sort_unique').on(table.quizId, table.sortOrder),
 		index('idx_quiz_question_quiz').on(table.quizId)
 	]
 );
+
+export const curriculumTrackRelations = relations(curriculumTrack, ({ one, many }) => ({
+	tingkat: one(tingkat, {
+		fields: [curriculumTrack.tingkatId],
+		references: [tingkat.id]
+	}),
+	phases: many(phase)
+}));
+
+export const phaseRelations = relations(phase, ({ one, many }) => ({
+	curriculumTrack: one(curriculumTrack, {
+		fields: [phase.curriculumTrackId],
+		references: [curriculumTrack.id]
+	}),
+	subPhases: many(subPhase)
+}));
+
+export const subPhaseRelations = relations(subPhase, ({ one, many }) => ({
+	phase: one(phase, {
+		fields: [subPhase.phaseId],
+		references: [phase.id]
+	}),
+	materis: many(materi)
+}));
+
+export const materiRelations = relations(materi, ({ one }) => ({
+	subPhase: one(subPhase, {
+		fields: [materi.subPhaseId],
+		references: [subPhase.id]
+	})
+}));

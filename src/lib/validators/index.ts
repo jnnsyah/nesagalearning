@@ -26,3 +26,4 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type SubmissionInput = z.infer<typeof submissionSchema>;
 export type AttendanceScanInput = z.infer<typeof attendanceScanSchema>;
 export type ManualAttendanceInput = z.infer<typeof manualAttendanceSchema>;
+export * from './curriculum';
