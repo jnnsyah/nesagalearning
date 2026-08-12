@@ -1,14 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	let user = $derived($page.data.user);
-
-	// ── Sidebar state ──────────────────────────────────────────────────
-	let sidebarCollapsed = $state(false);
 
 	// ── Page state ────────────────────────────────────────────────────
 	let showAddModal     = $state(false);
@@ -42,43 +36,12 @@
 	let totalMateris     = $derived(data.tracks.reduce((acc, t) => acc + (t.materiCount || 0), 0));
 	let inspectedTrack   = $derived(inspectingTrackId ? data.tracks.find((t) => t.id === inspectingTrackId) ?? null : null);
 
-	// ── Nav items ──────────────────────────────────────────────────────
-	const navItems = [
-		{
-			href: '/mentor',
-			label: 'Dashboard',
-			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
-		},
-		{
-			href: '/mentor/kurikulum',
-			label: 'Kurikulum',
-			active: true,
-			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-		},
-		{
-			href: '/mentor/pertemuan',
-			label: 'Pertemuan',
-			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-		},
-		{
-			href: '/mentor/siswa',
-			label: 'Data Siswa',
-			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-		},
-		{
-			href: '/mentor/grading',
-			label: 'Grading Tugas',
-			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
-		},
-	];
-
 	// ── Keyboard shortcuts ─────────────────────────────────────────────
 	function handleGlobalKeyDown(e: KeyboardEvent) {
 		const tgt = e.target;
 		if (tgt instanceof HTMLInputElement || tgt instanceof HTMLTextAreaElement || tgt instanceof HTMLSelectElement) return;
 		if (e.key === '/') { e.preventDefault(); searchInputEl?.focus(); }
 		if (e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); showAddModal = true; }
-		if (e.key === '[') { e.preventDefault(); sidebarCollapsed = !sidebarCollapsed; }
 	}
 
 	function clearFilters() {
@@ -94,352 +57,265 @@
 	<title>Kurikulum — Portal Mentor NLC</title>
 </svelte:head>
 
-<div class="page-shell">
-	<!-- ══════════════════════════════════════════════════
-	     COLLAPSIBLE SIDEBAR
-	     ══════════════════════════════════════════════════ -->
-	<aside class="sidebar" class:sidebar--collapsed={sidebarCollapsed} aria-label="Navigasi Mentor">
-		<!-- Brand -->
-		<div class="sidebar__brand">
-			{#if !sidebarCollapsed}
-				<div class="brand-mark">NLC</div>
-				<div class="brand-sub">Portal Mentor</div>
-			{:else}
-				<div class="brand-mark brand-mark--sm">N</div>
-			{/if}
+<div class="content-area">
+
+	<!-- Header row with page title & action button -->
+	<div class="page-header-row">
+		<div>
+			<nav class="breadcrumb" aria-label="Breadcrumb">
+				<a href="/mentor" class="bc-link">Dashboard</a>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+				<span class="bc-current">Kurikulum</span>
+			</nav>
+			<h1 class="page-title">Kurikulum & Track Pembelajaran</h1>
 		</div>
-
-		<!-- Nav items -->
-		<nav class="sidebar__nav">
-			{#each navItems as item}
-				<a
-					href={item.href}
-					class="nav-item"
-					class:nav-item--active={item.active}
-					title={sidebarCollapsed ? item.label : undefined}
-					aria-current={item.active ? 'page' : undefined}
-				>
-					<span class="nav-item__icon">{@html item.icon}</span>
-					{#if !sidebarCollapsed}
-						<span class="nav-item__label">{item.label}</span>
-					{/if}
-				</a>
-			{/each}
-		</nav>
-
-		<!-- User section (pinned to bottom) -->
-		<div class="sidebar__user">
-			<hr class="rule" />
-			{#if sidebarCollapsed}
-				<div class="user-avatar-sm" title={user?.fullName}>
-					{user?.fullName?.charAt(0) ?? 'M'}
-				</div>
-			{:else}
-				<div class="user-card">
-					<div class="user-avatar">{user?.fullName?.charAt(0) ?? 'M'}</div>
-					<div class="user-info">
-						<div class="user-name">{user?.fullName}</div>
-						<div class="user-role">Mentor Aktif</div>
-					</div>
-				</div>
-				<a href="/logout" class="logout-btn" aria-label="Keluar">
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-					Keluar
-				</a>
-			{/if}
-		</div>
-
-		<!-- Collapse toggle button -->
 		<button
-			class="collapse-btn"
-			onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
-			aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-			title="Toggle sidebar [ ]"
+			id="btn-buat-track"
+			onclick={() => (showAddModal = true)}
+			class="btn-create"
+			aria-label="Buat track kurikulum baru (Alt+N)"
 		>
-			{#if sidebarCollapsed}
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="9 18 15 12 9 6"/>
-				</svg>
-			{:else}
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="15 18 9 12 15 6"/>
-				</svg>
-			{/if}
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				<line x1="12" y1="5" x2="12" y2="19"/>
+				<line x1="5" y1="12" x2="19" y2="12"/>
+			</svg>
+			<span>Buat Track</span>
+			<kbd aria-hidden="true">Alt+N</kbd>
 		</button>
-	</aside>
+	</div>
 
-	<!-- ══════════════════════════════════════════════════
-	     MAIN CONTENT
-	     ══════════════════════════════════════════════════ -->
-	<div class="main-wrapper">
-		<!-- Topbar -->
-		<header class="topbar">
-			<div class="topbar__left">
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/mentor" class="bc-link">Dashboard</a>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-					<span class="bc-current">Kurikulum</span>
-				</nav>
-				<h1 class="page-title">Kurikulum & Track Pembelajaran</h1>
+	<!-- ── Notifications ────────────────────────── -->
+	{#if form?.error}
+		<div class="notif notif--error" role="alert">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+			{form.error}
+		</div>
+	{/if}
+	{#if form?.success}
+		<div class="notif notif--success" role="status">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+			{form.message}
+		</div>
+	{/if}
+
+	<!-- ── Stat cards ────────────────────────────── -->
+	<div class="stats-row">
+		<div class="stat-card">
+			<div class="stat-card__icon" style="background:#e0e7ff;color:#4f46e5;">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 			</div>
-			<div class="topbar__right">
-				<button
-					id="btn-buat-track"
-					onclick={() => (showAddModal = true)}
-					class="btn-create"
-					aria-label="Buat track kurikulum baru (Alt+N)"
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<line x1="12" y1="5" x2="12" y2="19"/>
-						<line x1="5" y1="12" x2="19" y2="12"/>
-					</svg>
-					<span>Buat Track</span>
-					<kbd aria-hidden="true">Alt+N</kbd>
+			<div>
+				<div class="stat-card__label">Total Track</div>
+				<div class="stat-card__value">{totalTracks}</div>
+			</div>
+		</div>
+
+		<div class="stat-card">
+			<div class="stat-card__icon" style="background:#dcfce7;color:#16a34a;">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+			</div>
+			<div>
+				<div class="stat-card__label">Published</div>
+				<div class="stat-card__value" style="color:#16a34a;">{publishedTracks}</div>
+			</div>
+		</div>
+
+		<div class="stat-card">
+			<div class="stat-card__icon" style="background:#fef3c7;color:#d97706;">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+			</div>
+			<div>
+				<div class="stat-card__label">Draft</div>
+				<div class="stat-card__value" style="color:#d97706;">{draftTracks}</div>
+			</div>
+		</div>
+
+		<div class="stat-card">
+			<div class="stat-card__icon" style="background:#f3e8ff;color:#9333ea;">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+			</div>
+			<div>
+				<div class="stat-card__label">Total Materi</div>
+				<div class="stat-card__value">{totalMateris}</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ── Search & filter bar ───────────────────── -->
+	<div class="filter-bar">
+		<div class="search-row">
+			<div class="search-wrap">
+				<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				<input
+					bind:this={searchInputEl}
+					type="search"
+					bind:value={searchQuery}
+					placeholder='Cari judul track atau tingkat…'
+					class="search-input"
+					aria-label="Cari kurikulum"
+				/>
+				<kbd class="search-hint" aria-hidden="true">/</kbd>
+			</div>
+
+			{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
+				<button onclick={clearFilters} class="clear-btn" aria-label="Reset semua filter">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					Reset
 				</button>
-			</div>
-		</header>
-
-		<!-- Scrollable content area -->
-		<div class="content-area">
-
-			<!-- ── Notifications ────────────────────────── -->
-			{#if form?.error}
-				<div class="notif notif--error" role="alert">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-					{form.error}
-				</div>
 			{/if}
-			{#if form?.success}
-				<div class="notif notif--success" role="status">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-					{form.message}
-				</div>
-			{/if}
+		</div>
 
-			<!-- ── Stat cards ────────────────────────────── -->
-			<div class="stats-row">
-				<div class="stat-card">
-					<div class="stat-card__icon" style="background:#e0e7ff;color:#4f46e5;">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-					</div>
-					<div>
-						<div class="stat-card__label">Total Track</div>
-						<div class="stat-card__value">{totalTracks}</div>
-					</div>
-				</div>
-
-				<div class="stat-card">
-					<div class="stat-card__icon" style="background:#dcfce7;color:#16a34a;">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-					</div>
-					<div>
-						<div class="stat-card__label">Published</div>
-						<div class="stat-card__value" style="color:#16a34a;">{publishedTracks}</div>
-					</div>
-				</div>
-
-				<div class="stat-card">
-					<div class="stat-card__icon" style="background:#fef3c7;color:#d97706;">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-					</div>
-					<div>
-						<div class="stat-card__label">Draft</div>
-						<div class="stat-card__value" style="color:#d97706;">{draftTracks}</div>
-					</div>
-				</div>
-
-				<div class="stat-card">
-					<div class="stat-card__icon" style="background:#f3e8ff;color:#9333ea;">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-					</div>
-					<div>
-						<div class="stat-card__label">Total Materi</div>
-						<div class="stat-card__value">{totalMateris}</div>
-					</div>
-				</div>
+		<div class="filter-chips-row">
+			<!-- Tingkat filter -->
+			<div class="filter-group" role="group" aria-label="Filter tingkat">
+				<span class="filter-label">Tingkat</span>
+				<button
+					onclick={() => (selectedTingkat = null)}
+					class="chip"
+					class:chip--active={selectedTingkat === null}
+				>Semua</button>
+				{#each data.tingkatList as t}
+					<button
+						onclick={() => (selectedTingkat = t.id)}
+						class="chip"
+						class:chip--active={selectedTingkat === t.id}
+					>{t.name}</button>
+				{/each}
 			</div>
 
-			<!-- ── Search & filter bar ───────────────────── -->
-			<div class="filter-bar">
-				<div class="search-row">
-					<div class="search-wrap">
-						<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input
-							bind:this={searchInputEl}
-							type="search"
-							bind:value={searchQuery}
-							placeholder='Cari judul track atau tingkat…'
-							class="search-input"
-							aria-label="Cari kurikulum"
-						/>
-						<kbd class="search-hint" aria-hidden="true">/</kbd>
-					</div>
+			<div class="filter-divider" aria-hidden="true"></div>
 
-					{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
-						<button onclick={clearFilters} class="clear-btn" aria-label="Reset semua filter">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-							Reset
-						</button>
-					{/if}
-				</div>
-
-				<div class="filter-chips-row">
-					<!-- Tingkat filter -->
-					<div class="filter-group" role="group" aria-label="Filter tingkat">
-						<span class="filter-label">Tingkat</span>
-						<button
-							onclick={() => (selectedTingkat = null)}
-							class="chip"
-							class:chip--active={selectedTingkat === null}
-						>Semua</button>
-						{#each data.tingkatList as t}
-							<button
-								onclick={() => (selectedTingkat = t.id)}
-								class="chip"
-								class:chip--active={selectedTingkat === t.id}
-							>{t.name}</button>
-						{/each}
-					</div>
-
-					<div class="filter-divider" aria-hidden="true"></div>
-
-					<!-- Status filter -->
-					<div class="filter-group" role="group" aria-label="Filter status">
-						<span class="filter-label">Status</span>
-						{#each [['all', 'Semua'], ['published', 'Published'], ['draft', 'Draft']] as [val, lbl]}
-							<button
-								onclick={() => (selectedStatus = val as typeof selectedStatus)}
-								class="chip"
-								class:chip--active={selectedStatus === val}
-							>{lbl}</button>
-						{/each}
-					</div>
-				</div>
+			<!-- Status filter -->
+			<div class="filter-group" role="group" aria-label="Filter status">
+				<span class="filter-label">Status</span>
+				{#each [['all', 'Semua'], ['published', 'Published'], ['draft', 'Draft']] as [val, lbl]}
+					<button
+						onclick={() => (selectedStatus = val as typeof selectedStatus)}
+						class="chip"
+						class:chip--active={selectedStatus === val}
+					>{lbl}</button>
+				{/each}
 			</div>
+		</div>
+	</div>
 
-			<!-- ── Track grid ─────────────────────────────── -->
-			{#if filteredTracks.length === 0}
-				<div class="empty-state">
-					<div class="empty-icon">
-						<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-					</div>
-					<h3 class="empty-title">Tidak ada track ditemukan</h3>
-					<p class="empty-sub">
-						{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
-							Tidak ada track yang sesuai filter. Coba ubah kriteria pencarian.
-						{:else}
-							Belum ada track kurikulum. Buat track pertama untuk memulai.
-						{/if}
-					</p>
-					{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
-						<button onclick={clearFilters} class="btn-ghost" style="width:auto;padding:9px 20px;">Reset Filter</button>
-					{:else}
-						<button onclick={() => (showAddModal = true)} class="btn-create" style="width:auto;">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-							Buat Track Pertama
-						</button>
-					{/if}
-				</div>
+	<!-- ── Track grid ─────────────────────────────── -->
+	{#if filteredTracks.length === 0}
+		<div class="empty-state">
+			<div class="empty-icon">
+				<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+			</div>
+			<h3 class="empty-title">Tidak ada track ditemukan</h3>
+			<p class="empty-sub">
+				{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
+					Tidak ada track yang sesuai filter. Coba ubah kriteria pencarian.
+				{:else}
+					Belum ada track kurikulum. Buat track pertama untuk memulai.
+				{/if}
+			</p>
+			{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
+				<button onclick={clearFilters} class="btn-ghost" style="width:auto;padding:9px 20px;">Reset Filter</button>
 			{:else}
-				<p class="result-count">{filteredTracks.length} track ditemukan</p>
-				<div class="track-grid" role="list">
-					{#each filteredTracks as track (track.id)}
-						<article class="track-card" role="listitem">
-							<!-- Card top row: id + status toggle -->
-							<div class="track-card__top">
-								<span class="track-id">TRK-{String(track.id).padStart(3, '0')} · {track.tingkatName}</span>
-								<form method="POST" action="?/togglePublish" use:enhance>
-									<input type="hidden" name="id" value={track.id} />
-									<input type="hidden" name="isPublished" value={track.isPublished} />
-									<button
-										type="submit"
-										class="status-toggle"
-										class:status-toggle--pub={track.isPublished}
-										title="Klik untuk ubah status publikasi"
-									>
-										{#if track.isPublished}
-											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-											Published
-										{:else}
-											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-											Draft
-										{/if}
-									</button>
-								</form>
-							</div>
-
-							<!-- Title & desc -->
-							<h2 class="track-card__title">{track.title}</h2>
-							{#if track.description}
-								<p class="track-card__desc">{track.description}</p>
-							{/if}
-
-							<!-- Mini metrics -->
-							<div class="track-metrics">
-								<div class="track-metric">
-									<span class="track-metric__val">{track.phaseCount}</span>
-									<span class="track-metric__key">Fase</span>
-								</div>
-								<div class="track-metric-sep" aria-hidden="true"></div>
-								<div class="track-metric">
-									<span class="track-metric__val">{track.subPhaseCount}</span>
-									<span class="track-metric__key">Sub-fase</span>
-								</div>
-								<div class="track-metric-sep" aria-hidden="true"></div>
-								<div class="track-metric">
-									<span class="track-metric__val">{track.materiCount}</span>
-									<span class="track-metric__key">Materi</span>
-								</div>
-							</div>
-
-							<!-- Actions -->
-							<div class="track-card__actions">
-								<button
-									type="button"
-									onclick={() => (inspectingTrackId = track.id)}
-									class="btn-ghost"
-									style="padding:7px 14px;font-size:12px;"
-									aria-label="Inspect track {track.title}"
-								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-									Inspect
-								</button>
-
-								<div style="display:flex;gap:8px;">
-									<form method="POST" action="?/deleteTrack" use:enhance>
-										<input type="hidden" name="id" value={track.id} />
-										<button
-											type="submit"
-											onclick={(e) => !confirm(`Hapus Track "${track.title}"?`) && e.preventDefault()}
-											class="btn-delete"
-											aria-label="Hapus track {track.title}"
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-										</button>
-									</form>
-
-									<a
-										href="/mentor/kurikulum/{track.id}"
-										class="btn-manage"
-										aria-label="Kelola track {track.title}"
-									>
-										Kelola
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-									</a>
-								</div>
-							</div>
-						</article>
-					{/each}
-				</div>
+				<button onclick={() => (showAddModal = true)} class="btn-create" style="width:auto;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+					Buat Track Pertama
+				</button>
 			{/if}
+		</div>
+	{:else}
+		<p class="result-count">{filteredTracks.length} track ditemukan</p>
+		<div class="track-grid" role="list">
+			{#each filteredTracks as track (track.id)}
+				<article class="track-card" role="listitem">
+					<!-- Card top row: id + status toggle -->
+					<div class="track-card__top">
+						<span class="track-id">TRK-{String(track.id).padStart(3, '0')} · {track.tingkatName}</span>
+						<form method="POST" action="?/togglePublish" use:enhance>
+							<input type="hidden" name="id" value={track.id} />
+							<input type="hidden" name="isPublished" value={track.isPublished} />
+							<button
+								type="submit"
+								class="status-toggle"
+								class:status-toggle--pub={track.isPublished}
+								title="Klik untuk ubah status publikasi"
+							>
+								{#if track.isPublished}
+									<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+									Published
+								{:else}
+									<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+									Draft
+								{/if}
+							</button>
+						</form>
+					</div>
 
-		</div><!-- /content-area -->
-	</div><!-- /main-wrapper -->
-</div><!-- /page-shell -->
+					<!-- Title & desc -->
+					<h2 class="track-card__title">{track.title}</h2>
+					{#if track.description}
+						<p class="track-card__desc">{track.description}</p>
+					{/if}
+
+					<!-- Mini metrics -->
+					<div class="track-metrics">
+						<div class="track-metric">
+							<span class="track-metric__val">{track.phaseCount}</span>
+							<span class="track-metric__key">Fase</span>
+						</div>
+						<div class="track-metric-sep" aria-hidden="true"></div>
+						<div class="track-metric">
+							<span class="track-metric__val">{track.subPhaseCount}</span>
+							<span class="track-metric__key">Sub-fase</span>
+						</div>
+						<div class="track-metric-sep" aria-hidden="true"></div>
+						<div class="track-metric">
+							<span class="track-metric__val">{track.materiCount}</span>
+							<span class="track-metric__key">Materi</span>
+						</div>
+					</div>
+
+					<!-- Actions -->
+					<div class="track-card__actions">
+						<button
+							type="button"
+							onclick={() => (inspectingTrackId = track.id)}
+							class="btn-ghost"
+							style="padding:7px 14px;font-size:12px;"
+							aria-label="Inspect track {track.title}"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+							Inspect
+						</button>
+
+						<div style="display:flex;gap:8px;">
+							<form method="POST" action="?/deleteTrack" use:enhance>
+								<input type="hidden" name="id" value={track.id} />
+								<button
+									type="submit"
+									onclick={(e) => !confirm(`Hapus Track "${track.title}"?`) && e.preventDefault()}
+									class="btn-delete"
+									aria-label="Hapus track {track.title}"
+								>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+								</button>
+							</form>
+
+							<a
+								href="/mentor/kurikulum/{track.id}"
+								class="btn-manage"
+								aria-label="Kelola track {track.title}"
+							>
+								Kelola
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+							</a>
+						</div>
+					</div>
+				</article>
+			{/each}
+		</div>
+	{/if}
+
+</div><!-- /content-area -->
 
 <!-- ══════════════════════════════════════════════════
      INSPECTION DRAWER
@@ -592,272 +468,29 @@
 {/if}
 
 <style>
-	/* ── Page shell layout ─────────────────────────── */
-	.page-shell {
-		display: flex;
-		min-height: 100vh;
-		background: var(--bg-base);
-	}
-
-	/* ── Sidebar ─────────────────────────────────────── */
-	.sidebar {
-		width: 260px;
-		min-height: 100vh;
-		background: #ffffff;
-		border-right: 1px solid var(--border-hard);
+	/* ── Content area ──────────────────────────────── */
+	.content-area {
+		padding: 24px 28px 40px;
 		display: flex;
 		flex-direction: column;
-		flex-shrink: 0;
-		position: sticky;
-		top: 0;
-		height: 100vh;
-		overflow: hidden;
-		box-shadow: var(--shadow-sm);
-		transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
-		z-index: 40;
+		gap: 20px;
+		max-width: 1300px;
+		margin: 0 auto;
+		width: 100%;
 	}
 
-	.sidebar--collapsed {
-		width: 68px;
-	}
-
-	/* Brand area */
-	.sidebar__brand {
-		padding: 20px 18px 16px;
-		border-bottom: 1px solid var(--border-hard);
-		min-height: 72px;
+	.page-header-row {
 		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		overflow: hidden;
-	}
-
-	.brand-mark {
-		font-family: var(--font-macro);
-		font-size: 1.35rem;
-		font-weight: 800;
-		color: var(--primary);
-		letter-spacing: -0.03em;
-		white-space: nowrap;
-	}
-
-	.brand-mark--sm {
-		font-size: 1.15rem;
-		text-align: center;
-	}
-
-	.brand-sub {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 600;
-		color: var(--text-muted);
-		margin-top: 3px;
-		white-space: nowrap;
-	}
-
-	/* Nav */
-	.sidebar__nav {
-		flex: 1;
-		padding: 12px 10px;
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-		overflow: hidden;
-	}
-
-	.nav-item {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 10px 10px;
-		border-radius: var(--radius-md);
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		text-decoration: none;
-		white-space: nowrap;
-		transition: background 150ms ease, color 150ms ease;
-		min-height: 40px;
-	}
-
-	.nav-item:hover {
-		background: var(--primary-light);
-		color: var(--primary);
-	}
-
-	.nav-item--active {
-		background: linear-gradient(135deg, #4f46e5, #6366f1);
-		color: #ffffff;
-		box-shadow: var(--shadow-glow);
-	}
-
-	.nav-item--active:hover {
-		background: linear-gradient(135deg, #4338ca, #4f46e5);
-		color: #ffffff;
-	}
-
-	.nav-item__icon {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 20px;
-	}
-
-	.nav-item__label {
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	/* User section pinned to bottom */
-	.sidebar__user {
-		padding: 12px 14px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		overflow: hidden;
-	}
-
-	.user-card {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.user-avatar {
-		width: 34px;
-		height: 34px;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #4f46e5, #6366f1);
-		color: white;
-		font-family: var(--font-macro);
-		font-size: 15px;
-		font-weight: 800;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.user-avatar-sm {
-		width: 34px;
-		height: 34px;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #4f46e5, #6366f1);
-		color: white;
-		font-family: var(--font-macro);
-		font-size: 14px;
-		font-weight: 800;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 8px auto 0;
-		cursor: default;
-	}
-
-	.user-info {
-		overflow: hidden;
-	}
-
-	.user-name {
-		font-size: 13px;
-		font-weight: 700;
-		color: var(--text-primary);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.user-role {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 600;
-		color: var(--text-muted);
-	}
-
-	.logout-btn {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 10px;
-		border-radius: var(--radius-md);
-		font-size: 12px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		text-decoration: none;
-		border: 1px solid var(--border-hard);
-		background: #f8fafc;
-		transition: all 150ms ease;
-		cursor: pointer;
-		white-space: nowrap;
-	}
-
-	.logout-btn:hover {
-		background: #fee2e2;
-		border-color: #fca5a5;
-		color: #dc2626;
-	}
-
-	/* Collapse toggle button */
-	.collapse-btn {
-		position: absolute;
-		top: 22px;
-		right: -13px;
-		width: 26px;
-		height: 26px;
-		border-radius: 50%;
-		border: 1.5px solid var(--border-hard);
-		background: #ffffff;
-		color: var(--text-secondary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		box-shadow: var(--shadow-sm);
-		transition: color 150ms ease, background 150ms ease, transform 150ms ease;
-		z-index: 10;
-	}
-
-	.collapse-btn:hover {
-		background: var(--primary-light);
-		color: var(--primary);
-		transform: scale(1.1);
-	}
-
-	/* ── Main wrapper ──────────────────────────────── */
-	.main-wrapper {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* ── Topbar ────────────────────────────────────── */
-	.topbar {
-		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		gap: 20px;
-		padding: 16px 28px;
-		border-bottom: 1px solid var(--border-hard);
-		background: rgba(255,255,255,0.92);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		position: sticky;
-		top: 0;
-		z-index: 30;
-	}
-
-	.topbar__left {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
 	}
 
 	.breadcrumb {
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		margin-bottom: 4px;
 	}
 
 	.bc-link {
@@ -882,17 +515,10 @@
 
 	.page-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.25rem, 3vw, 1.6rem);
+		font-size: clamp(1.4rem, 3vw, 1.8rem);
 		font-weight: 800;
 		color: var(--text-primary);
 		letter-spacing: -0.02em;
-	}
-
-	.topbar__right {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-shrink: 0;
 	}
 
 	.btn-create {
@@ -931,17 +557,6 @@
 		font-size: 10px;
 		font-family: var(--font-mono);
 		font-weight: 600;
-	}
-
-	/* ── Content area ──────────────────────────────── */
-	.content-area {
-		flex: 1;
-		padding: 24px 28px 40px;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		max-width: 1300px;
-		width: 100%;
 	}
 
 	/* ── Notifications ──────────────────────────────── */
@@ -1644,8 +1259,6 @@
 
 	/* ── Responsive ─────────────────────────────────── */
 	@media (max-width: 767px) {
-		.sidebar { display: none; }
-		.topbar { padding: 14px 16px; }
 		.content-area { padding: 16px 16px 40px; }
 		.btn-create span { display: none; }
 		.btn-create kbd { display: none; }
