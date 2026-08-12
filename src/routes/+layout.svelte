@@ -2,6 +2,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { navigating } from '$app/stores';
+	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 
 	let { children } = $props();
 </script>
@@ -18,6 +19,9 @@
 {/if}
 
 {@render children()}
+
+<!-- Global Toast Notification Container -->
+<ToastContainer />
 
 <style>
 	.top-nav-loader {
