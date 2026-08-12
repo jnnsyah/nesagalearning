@@ -1,21 +1,12 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/validators';
-import { loginWithUsernamePassword } from '$lib/server/services/auth.service';
+import { AuthGatekeeper, type UserRole } from '$lib/server/auth/gatekeeper';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
-		switch (locals.user.role) {
-			case 'admin':
-				throw redirect(302, '/admin');
-			case 'guru':
-				throw redirect(302, '/guru');
-			case 'mentor':
-				throw redirect(302, '/mentor');
-			case 'siswa':
-			default:
-				throw redirect(302, '/siswa');
-		}
+		const targetPath = AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
+		throw redirect(302, targetPath);
 	}
 	return {};
 };
@@ -38,23 +29,20 @@ export const actions: Actions = {
 
 		try {
 			const userAgent = request.headers.get('user-agent');
-			const { user, cookie } = await loginWithUsernamePassword(
+			const { user, cookie } = await AuthGatekeeper.login(
 				username,
 				password,
 				userAgent,
 				rememberMe
 			);
 
+			// Always set cookie path to '/' so it's accessible across all role routes
 			cookies.set(cookie.name, cookie.value, {
-				path: '.',
+				path: '/',
 				...cookie.attributes
 			});
 
-			let targetPath = '/siswa';
-			if (user.role === 'admin') targetPath = '/admin';
-			else if (user.role === 'guru') targetPath = '/guru';
-			else if (user.role === 'mentor') targetPath = '/mentor';
-
+			const targetPath = AuthGatekeeper.getRoleDefaultPath(user.role as UserRole);
 			throw redirect(302, targetPath);
 		} catch (err: any) {
 			if (err?.status === 302 || err?.location) throw err;

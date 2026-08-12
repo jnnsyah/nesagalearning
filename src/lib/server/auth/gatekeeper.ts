@@ -14,6 +14,23 @@ export type UserRole = 'admin' | 'guru' | 'mentor' | 'siswa';
  */
 export const AuthGatekeeper = {
 	/**
+	 * Map role to default home dashboard path
+	 */
+	getRoleDefaultPath(role: UserRole | string): string {
+		switch (role) {
+			case 'admin':
+				return '/admin';
+			case 'guru':
+				return '/guru';
+			case 'mentor':
+				return '/mentor';
+			case 'siswa':
+			default:
+				return '/siswa';
+		}
+	},
+
+	/**
 	 * Validates the current incoming HTTP session & attaches user/session to event.locals
 	 */
 	async validateRequest(event: RequestEvent) {
@@ -29,7 +46,7 @@ export const AuthGatekeeper = {
 		if (session && session.fresh) {
 			const sessionCookie = lucia.createSessionCookie(session.id);
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
+				path: '/',
 				...sessionCookie.attributes
 			});
 		}
@@ -37,7 +54,7 @@ export const AuthGatekeeper = {
 		if (!session) {
 			const sessionCookie = lucia.createBlankSessionCookie();
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
+				path: '/',
 				...sessionCookie.attributes
 			});
 		}
