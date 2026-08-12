@@ -4,10 +4,38 @@
 	import { navigating } from '$app/stores';
 
 	let { children } = $props();
+	let fontLoaded = $state(false);
+
+	$effect(() => {
+		if (typeof document !== 'undefined') {
+			document.fonts.ready.then(() => {
+				fontLoaded = true;
+			});
+		}
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
+<!-- Fullscreen Initial Loader (waits for fonts & DOM mount) -->
+{#if !fontLoaded}
+	<div class="initial-loader">
+		<div class="loader-box">
+			<div class="type-mono" style="font-size: 10px; color: var(--red); letter-spacing: 0.12em;">
+				[ SYSTEM INITIALIZING ]
+			</div>
+			<div class="loader-title">NLC</div>
+			<div class="loading-bar">
+				<div class="loading-bar__fill"></div>
+			</div>
+			<div class="type-mono text-muted" style="font-size: 9px;">
+				&gt;&gt;&gt; MEMUAT FONTS & ASSETS...
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Route Navigation Loader Bar -->
 {#if $navigating}
 	<div class="loading-overlay">
 		<div class="loading-bar">
@@ -22,9 +50,41 @@
 	</div>
 {/if}
 
-{@render children()}
+<div style="visibility: {fontLoaded ? 'visible' : 'hidden'}; display: contents;">
+	{@render children()}
+</div>
 
 <style>
+	.initial-loader {
+		position: fixed;
+		inset: 0;
+		z-index: 99999;
+		background: var(--bg-base);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+	}
+
+	.loader-box {
+		width: 100%;
+		max-width: 320px;
+		background: var(--bg-panel);
+		border: 1px solid var(--border-hard);
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.loader-title {
+		font-family: var(--font-macro);
+		font-size: 2.5rem;
+		line-height: 0.9;
+		letter-spacing: -0.04em;
+		color: var(--text-primary);
+	}
+
 	.loading-overlay {
 		position: fixed;
 		top: 0;
@@ -49,7 +109,7 @@
 		background: var(--red);
 		width: 40%;
 		position: absolute;
-		animation: loading-scan 1.2s infinite ease-in-out;
+		animation: loading-scan 1s infinite ease-in-out;
 	}
 
 	@keyframes loading-scan {
