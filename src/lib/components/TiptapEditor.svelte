@@ -139,7 +139,7 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 		editor = new Editor({
 			element,
 			extensions: [
-				StarterKit.configure({ codeBlock: false }),
+				StarterKit.configure({ code: false, codeBlock: false }),
 				CustomCodeBlock,
 				ResizableImage
 			],
@@ -392,10 +392,10 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 					aria-label="Italic" aria-pressed={isItalic} data-tooltip="Italic ⌘I">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
 				</button>
-				<button type="button" class="tb-btn" class:tb-btn--on={isCode}
-					onclick={() => editor?.chain().focus().toggleCode().run()}
-					aria-label="Inline code" aria-pressed={isCode} data-tooltip="Code ⌘E">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+				<button type="button" class="tb-btn" class:tb-btn--on={isCodeBlock}
+					onclick={() => editor?.chain().focus().toggleCodeBlock().run()}
+					aria-label="Code block" aria-pressed={isCodeBlock} data-tooltip="Code Block Box ⌘E">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 8 5 12 9 16"/><polyline points="15 8 19 12 15 16"/></svg>
 				</button>
 			</div>
 
@@ -515,11 +515,6 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCodeBlock().run(); }}
 				aria-label="Code Block Terminal Box" title="Code Block (Box Terminal)">
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 8 5 12 9 16"/><polyline points="15 8 19 12 15 16"/></svg>
-			</button>
-			<button type="button" class="float-btn" class:float-btn--on={isCode}
-				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCode().run(); }}
-				aria-label="Inline Code Text" title="Inline Text Highlight">
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
 			</button>
 		</div>
 
