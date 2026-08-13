@@ -1108,4 +1108,39 @@
 		background: var(--primary-light);
 		border-radius: 0 var(--radius-md) var(--radius-md) 0;
 	}
+
+	/* Image & alignment preview styles */
+	:global(.preview-canvas figure),
+	:global(.preview-canvas .tiptap-image-figure) {
+		display: flex;
+		margin: 1em 0;
+	}
+	:global(.preview-canvas figure[data-alignment='left']),
+	:global(.preview-canvas .tiptap-image-figure[data-alignment='left']) {
+		justify-content: flex-start;
+	}
+	:global(.preview-canvas figure[data-alignment='center']),
+	:global(.preview-canvas .tiptap-image-figure[data-alignment='center']) {
+		justify-content: center;
+	}
+	:global(.preview-canvas figure[data-alignment='right']),
+	:global(.preview-canvas .tiptap-image-figure[data-alignment='right']) {
+		justify-content: flex-end;
+	}
+	:global(.preview-canvas figure[data-alignment='full']),
+	:global(.preview-canvas .tiptap-image-figure[data-alignment='full']) {
+		display: block;
+		width: 100%;
+	}
+	:global(.preview-canvas figure img),
+	:global(.preview-canvas img) {
+		max-width: 100%;
+		height: auto;
+		border-radius: var(--radius-md);
+		display: inline-block;
+	}
+	:global(.preview-canvas figure[data-alignment='full'] img),
+	:global(.preview-canvas .tiptap-image-figure[data-alignment='full'] img) {
+		width: 100% !important;
+	}
 </style>

@@ -25,28 +25,52 @@ export const ResizableImage = Image.extend({
 
 	addAttributes() {
 		return {
-			...this.parent?.(),
+			src: {
+				default: null,
+				parseHTML: (el) => {
+					if (el.tagName === 'IMG') return (el as HTMLImageElement).getAttribute('src');
+					const img = el.querySelector('img');
+					return img ? img.getAttribute('src') : el.getAttribute('src');
+				}
+			},
+			alt: {
+				default: null,
+				parseHTML: (el) => {
+					if (el.tagName === 'IMG') return (el as HTMLImageElement).getAttribute('alt');
+					const img = el.querySelector('img');
+					return img ? img.getAttribute('alt') : el.getAttribute('alt');
+				}
+			},
+			title: {
+				default: null,
+				parseHTML: (el) => {
+					if (el.tagName === 'IMG') return (el as HTMLImageElement).getAttribute('title');
+					const img = el.querySelector('img');
+					return img ? img.getAttribute('title') : el.getAttribute('title');
+				}
+			},
 			width: {
 				default: null,
 				parseHTML: (el) => {
-					const img =
-						el.tagName === 'FIGURE'
-							? (el.querySelector('img') as HTMLImageElement)
-							: (el as HTMLImageElement);
+					const img = el.tagName === 'FIGURE' ? el.querySelector('img') : (el as HTMLImageElement);
 					return img?.style.width || img?.getAttribute('width') || null;
 				},
 				renderHTML: () => ({})
 			},
 			alignment: {
 				default: 'center',
-				parseHTML: (el) => (el as HTMLElement).getAttribute('data-alignment') || 'center',
+				parseHTML: (el) => el.getAttribute('data-alignment') || 'center',
 				renderHTML: (attrs) => ({ 'data-alignment': attrs.alignment || 'center' })
 			}
 		};
 	},
 
 	parseHTML() {
-		return [{ tag: 'figure[data-alignment]' }, { tag: 'img[src]' }];
+		return [
+			{ tag: 'figure[data-alignment]' },
+			{ tag: 'figure.tiptap-image-figure' },
+			{ tag: 'img[src]' }
+		];
 	},
 
 	renderHTML({ HTMLAttributes }) {
