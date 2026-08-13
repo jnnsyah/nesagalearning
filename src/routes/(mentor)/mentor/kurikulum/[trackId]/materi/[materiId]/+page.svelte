@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
@@ -19,6 +21,11 @@
 	// Autosave reactive state
 	let saveStatus = $state<'saved' | 'unsaved' | 'saving' | 'error'>('saved');
 	let lastSavedAt = $state<Date | null>(null);
+
+	// Confirmation modal state for leaving page with unsaved changes
+	let showLeaveModal = $state(false);
+	let pendingNavigateUrl = $state<string | null>(null);
+	let allowNavigation = $state(false);
 
 	let activeTab = $state<'edit' | 'preview' | 'split'>('edit');
 
@@ -92,6 +99,32 @@
 	onDestroy(() => {
 		if (autosaveTimer) clearTimeout(autosaveTimer);
 	});
+
+	// Intercept client-side navigation if there are unsaved changes
+	beforeNavigate((navigation) => {
+		if (allowNavigation) return;
+
+		if (isDirty || saveStatus === 'unsaved' || saveStatus === 'saving') {
+			navigation.cancel();
+			pendingNavigateUrl = navigation.to?.url.href || null;
+			showLeaveModal = true;
+		}
+	});
+
+	function confirmLeave() {
+		showLeaveModal = false;
+		allowNavigation = true;
+		if (pendingNavigateUrl) {
+			goto(pendingNavigateUrl);
+		} else {
+			window.history.back();
+		}
+	}
+
+	function cancelLeave() {
+		showLeaveModal = false;
+		pendingNavigateUrl = null;
+	}
 
 	function handleBeforeUnload(e: BeforeUnloadEvent) {
 		if (isDirty || saveStatus === 'unsaved' || saveStatus === 'saving') {
@@ -414,7 +447,17 @@
 				{/if}
 			</main>
 		</div>
-	</form>
+	<!-- Leave Confirmation Modal -->
+	<ConfirmModal
+		bind:open={showLeaveModal}
+		title="Perubahan Belum Disimpan"
+		message="Modul materi yang Anda edit memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin meninggalkan halaman ini?"
+		confirmText="Tinggalkan Halaman"
+		cancelText="Lanjut Edit"
+		variant="warning"
+		onconfirm={confirmLeave}
+		oncancel={cancelLeave}
+	/>
 </div>
 
 <style>
