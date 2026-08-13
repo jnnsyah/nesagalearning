@@ -9,11 +9,15 @@
 		value = $bindable(''),
 		placeholder = 'Ketik materi pembelajaran, penjelasan konsep, atau snippet kode...',
 		disabled = false,
+		saveStatus = 'saved',
+		lastSavedAt = null,
 		onchange
 	}: {
 		value?: string;
 		placeholder?: string;
 		disabled?: boolean;
+		saveStatus?: 'saved' | 'unsaved' | 'saving' | 'error';
+		lastSavedAt?: Date | null;
 		onchange?: (html: string) => void;
 	} = $props();
 
@@ -452,7 +456,25 @@
 
 	<!-- ── STATUS BAR ── -->
 	<div class="statusbar">
-		<span class="statusbar-brand">TipTap</span>
+		<div class="statusbar-left">
+			<span class="statusbar-brand">TipTap</span>
+			<span class="statusbar-dot">·</span>
+			<span class="statusbar-autosave statusbar-autosave--{saveStatus}">
+				{#if saveStatus === 'saving'}
+					<svg class="spin-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+					<span>Menyimpan otomatis...</span>
+				{:else if saveStatus === 'saved'}
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+					<span>Tersimpan {lastSavedAt ? lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+				{:else if saveStatus === 'unsaved'}
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+					<span>Belum disimpan</span>
+				{:else if saveStatus === 'error'}
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+					<span>Gagal menyimpan otomatis</span>
+				{/if}
+			</span>
+		</div>
 		<div class="statusbar-stats">
 			<span>{wordCount} kata</span>
 			<span class="statusbar-dot">·</span>
@@ -650,9 +672,26 @@
 		display: flex; align-items: center; justify-content: space-between;
 		font-family: var(--font-mono); font-size: 10.5px; color: var(--text-ghost); flex-shrink: 0;
 	}
+	.statusbar-left { display: flex; align-items: center; gap: 6px; }
 	.statusbar-brand { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 	.statusbar-stats { display: flex; align-items: center; gap: 5px; }
 	.statusbar-dot { opacity: 0.4; }
+
+	.statusbar-autosave {
+		display: inline-flex; align-items: center; gap: 4px;
+		font-family: var(--font-body); font-size: 11px; font-weight: 500;
+		transition: color 150ms ease;
+	}
+	.statusbar-autosave--saved { color: #059669; }
+	.statusbar-autosave--unsaved { color: #d97706; }
+	.statusbar-autosave--saving { color: var(--primary); }
+	.statusbar-autosave--error { color: #dc2626; }
+
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+	.spin-icon { animation: spin 1s linear infinite; }
 
 	/* ══════════════════════════════════════════
 	   FLOATING MENUS — position:fixed

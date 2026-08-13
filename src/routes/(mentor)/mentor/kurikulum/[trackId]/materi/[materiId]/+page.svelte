@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
 	import { toast } from '$lib/stores/toast';
@@ -15,6 +16,10 @@
 
 	let isDirty = $derived(title !== originalTitle || content !== originalContent);
 
+	// Autosave reactive state
+	let saveStatus = $state<'saved' | 'unsaved' | 'saving' | 'error'>('saved');
+	let lastSavedAt = $state<Date | null>(null);
+
 	let activeTab = $state<'edit' | 'preview' | 'split'>('edit');
 
 	// Telemetry calculations
@@ -26,19 +31,89 @@
 	let phaseTitle = $derived(data.materi.subPhase?.phase?.title || '');
 	let trackTitle = $derived(data.materi.subPhase?.phase?.curriculumTrack?.title || '');
 
+	// Debounced autosave implementation
+	let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+	const DEBOUNCE_MS = 2000;
+
+	async function performAutosave() {
+		if (!isDirty || isSaving || !title.trim()) return;
+
+		saveStatus = 'saving';
+		try {
+			const formData = new FormData();
+			formData.append('title', title);
+			formData.append('content', content);
+
+			const res = await fetch('?/updateMateri', {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'x-sveltekit-action': 'true'
+				}
+			});
+
+			if (res.ok) {
+				const json = await res.json();
+				if (json.type === 'success' || res.status === 200) {
+					originalTitle = title;
+					originalContent = content;
+					saveStatus = 'saved';
+					lastSavedAt = new Date();
+					return;
+				}
+			}
+			saveStatus = 'error';
+		} catch (err) {
+			console.error('Autosave failed:', err);
+			saveStatus = 'error';
+		}
+	}
+
+	$effect(() => {
+		const currTitle = title;
+		const currContent = content;
+
+		if (currTitle !== originalTitle || currContent !== originalContent) {
+			if (saveStatus !== 'saving') {
+				saveStatus = 'unsaved';
+			}
+			if (autosaveTimer) clearTimeout(autosaveTimer);
+			autosaveTimer = setTimeout(() => {
+				performAutosave();
+			}, DEBOUNCE_MS);
+		} else {
+			if (autosaveTimer) clearTimeout(autosaveTimer);
+			if (saveStatus !== 'saving') {
+				saveStatus = 'saved';
+			}
+		}
+	});
+
+	onDestroy(() => {
+		if (autosaveTimer) clearTimeout(autosaveTimer);
+	});
+
+	function handleBeforeUnload(e: BeforeUnloadEvent) {
+		if (isDirty || saveStatus === 'unsaved' || saveStatus === 'saving') {
+			e.preventDefault();
+			e.returnValue = 'Ada perubahan yang belum disimpan.';
+		}
+	}
+
 	// Keyboard shortcut Ctrl+S / Cmd+S handler
 	function handleKeyDown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key === 's') {
 			e.preventDefault();
 			const formEl = document.getElementById('materi-form') as HTMLFormElement;
 			if (formEl && !isSaving) {
+				if (autosaveTimer) clearTimeout(autosaveTimer);
 				formEl.requestSubmit();
 			}
 		}
 	}
 </script>
 
-<svelte:window onkeydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} onbeforeunload={handleBeforeUnload} />
 
 <svelte:head>
 	<title>Edit Materi: {title} — NLC</title>
@@ -50,15 +125,20 @@
 		method="POST"
 		action="?/updateMateri"
 		use:enhance={() => {
+			if (autosaveTimer) clearTimeout(autosaveTimer);
 			isSaving = true;
+			saveStatus = 'saving';
 			return async ({ result, update }) => {
 				await update();
 				isSaving = false;
 				if (result.type === 'success') {
 					originalTitle = title;
 					originalContent = content;
+					saveStatus = 'saved';
+					lastSavedAt = new Date();
 					toast.success('Materi berhasil disimpan!');
 				} else if (result.type === 'failure') {
+					saveStatus = 'error';
 					toast.error((result.data as any)?.error || 'Gagal menyimpan materi');
 				}
 			};
@@ -81,12 +161,21 @@
 						<span class="materi-order">M-{data.materi.sortOrder}</span>
 						{title || 'Untitled Materi'}
 					</h1>
-					{#if isDirty}
-						<span class="unsaved-pill">
+					<span class="autosave-pill autosave-pill--{saveStatus}">
+						{#if saveStatus === 'saving'}
+							<svg class="spin-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+							<span>Menyimpan...</span>
+						{:else if saveStatus === 'saved'}
+							<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+							<span>Tersimpan {lastSavedAt ? lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+						{:else if saveStatus === 'unsaved'}
 							<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
-							Unsaved
-						</span>
-					{/if}
+							<span>Ada Perubahan</span>
+						{:else if saveStatus === 'error'}
+							<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+							<span>Gagal Simpan</span>
+						{/if}
+					</span>
 				</div>
 			</div>
 
@@ -269,6 +358,8 @@
 						</div>
 						<TiptapEditor
 							bind:value={content}
+							{saveStatus}
+							{lastSavedAt}
 							placeholder="Ketik modul pembelajaran, penjelasan konsep, snippet command Cisco/Linux..."
 						/>
 					</div>
@@ -302,6 +393,8 @@
 							</div>
 							<TiptapEditor
 								bind:value={content}
+								{saveStatus}
+								{lastSavedAt}
 								placeholder="Ketik modul pembelajaran…"
 							/>
 						</div>
@@ -428,21 +521,39 @@
 		letter-spacing: 0.05em;
 		white-space: nowrap;
 	}
-	.unsaved-pill {
+	.autosave-pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
 		font-family: var(--font-mono);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 700;
 		letter-spacing: 0.04em;
-		color: #b45309;
-		background: var(--amber-dim);
-		border: 1px solid var(--amber-border);
 		border-radius: var(--radius-full);
 		padding: 3px 10px;
 		white-space: nowrap;
+		transition: all 180ms ease;
 		animation: fadeIn 200ms ease;
+	}
+	.autosave-pill--saved {
+		color: #047857;
+		background: #ecfdf5;
+		border: 1px solid #a7f3d0;
+	}
+	.autosave-pill--unsaved {
+		color: #b45309;
+		background: var(--amber-dim);
+		border: 1px solid var(--amber-border);
+	}
+	.autosave-pill--saving {
+		color: var(--primary);
+		background: var(--primary-light);
+		border: 1px solid var(--primary-border);
+	}
+	.autosave-pill--error {
+		color: #b91c1c;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
 	}
 	@keyframes fadeIn {
 		from { opacity: 0; transform: scale(0.9); }
