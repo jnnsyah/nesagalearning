@@ -21,7 +21,6 @@ declare module '@tiptap/core' {
 
 export const ResizableImage = Image.extend({
 	name: 'resizableImage',
-
 	group: 'block',
 
 	addAttributes() {
@@ -30,11 +29,13 @@ export const ResizableImage = Image.extend({
 			width: {
 				default: null,
 				parseHTML: (el) => {
-					// Try to read from the figure's img child
-					const img = el.tagName === 'FIGURE' ? (el.querySelector('img') as HTMLImageElement) : (el as HTMLImageElement);
-					return img?.getAttribute('width') || img?.style.width || null;
+					const img =
+						el.tagName === 'FIGURE'
+							? (el.querySelector('img') as HTMLImageElement)
+							: (el as HTMLImageElement);
+					return img?.style.width || img?.getAttribute('width') || null;
 				},
-				renderHTML: () => ({}) // handled in NodeView
+				renderHTML: () => ({})
 			},
 			alignment: {
 				default: 'center',
@@ -45,16 +46,13 @@ export const ResizableImage = Image.extend({
 	},
 
 	parseHTML() {
-		return [
-			{ tag: 'figure[data-alignment]' },
-			{ tag: 'img[src]' }
-		];
+		return [{ tag: 'figure[data-alignment]' }, { tag: 'img[src]' }];
 	},
 
 	renderHTML({ HTMLAttributes }) {
 		const { alignment, width, src, alt, title } = HTMLAttributes;
 		const align: ImageAlignment = alignment || 'center';
-		const imgStyle = `max-width:100%;height:auto;${width ? `width:${width}${typeof width === 'number' ? 'px' : ''};` : ''}`;
+		const imgStyle = `max-width:100%;height:auto;display:inline-block;${width ? `width:${width}${typeof width === 'number' ? 'px' : ''};` : ''}`;
 		return [
 			'figure',
 			{ 'data-alignment': align, class: 'tiptap-image-figure' },
@@ -63,104 +61,140 @@ export const ResizableImage = Image.extend({
 	},
 
 	addNodeView() {
-		return ({ node, getPos, editor }) => {
+		return ({ node, editor }) => {
 			const { src, alt, title, width, alignment } = node.attrs;
 			const align: ImageAlignment = alignment || 'center';
 
-			// Wrapper figure
+			// === Outer wrapper ===
+			const wrapper = document.createElement('div');
+			wrapper.className = 'tiptap-image-wrapper';
+			applyWrapperAlign(wrapper, align);
+
+			// === Figure ===
 			const figure = document.createElement('figure');
 			figure.className = 'tiptap-image-figure';
 			figure.setAttribute('data-alignment', align);
-			figure.style.cssText = alignStyle(align);
-			figure.style.position = 'relative';
-			figure.style.display = 'inline-block';
-			figure.style.maxWidth = '100%';
-			if (align === 'center') { figure.style.display = 'block'; figure.style.textAlign = 'center'; }
-			if (align === 'full') { figure.style.display = 'block'; figure.style.width = '100%'; }
-			if (align === 'left') { figure.style.display = 'block'; figure.style.textAlign = 'left'; }
-			if (align === 'right') { figure.style.display = 'block'; figure.style.textAlign = 'right'; }
+			figure.style.cssText = 'position:relative;display:inline-block;max-width:100%;margin:0;';
 
-			// Image
+			// === Image ===
 			const img = document.createElement('img');
 			img.src = src;
 			if (alt) img.alt = alt;
 			if (title) img.title = title;
-			img.style.maxWidth = '100%';
-			img.style.height = 'auto';
-			img.style.borderRadius = '10px';
-			img.style.display = 'inline-block';
+			img.style.cssText = 'display:block;max-width:100%;height:auto;border-radius:10px;user-select:none;';
 			if (width) img.style.width = typeof width === 'number' ? `${width}px` : width;
 
-			// Resize handle (right side)
-			const handle = document.createElement('div');
-			handle.className = 'tiptap-resize-handle';
-			handle.style.cssText = `
-				position: absolute;
-				right: -7px;
-				top: 50%;
-				transform: translateY(-50%);
-				width: 14px;
-				height: 48px;
-				background: #4f46e5;
-				border-radius: 6px;
-				cursor: ew-resize;
-				opacity: 0;
-				transition: opacity 150ms ease;
-				z-index: 10;
-				box-shadow: 0 2px 8px rgba(79,70,229,0.4);
-			`;
+			// === Corner resize handles ===
+			type Corner = 'nw' | 'ne' | 'sw' | 'se';
+			const corners: Corner[] = ['nw', 'ne', 'sw', 'se'];
+			const handles: HTMLDivElement[] = [];
 
-			// Show handle on figure hover/selected
-			figure.addEventListener('mouseenter', () => { handle.style.opacity = '0.85'; });
-			figure.addEventListener('mouseleave', () => { handle.style.opacity = '0'; });
+			const cornerCursors: Record<Corner, string> = {
+				nw: 'nw-resize', ne: 'ne-resize',
+				sw: 'sw-resize', se: 'se-resize'
+			};
 
-			// Drag resize
-			let startX = 0;
-			let startW = 0;
+			corners.forEach((corner) => {
+				const h = document.createElement('div');
+				h.className = `tiptap-resize-handle tiptap-resize-handle--${corner}`;
+				h.style.cssText = `
+					position:absolute;
+					width:12px;
+					height:12px;
+					background:#4f46e5;
+					border:2px solid white;
+					border-radius:50%;
+					cursor:${cornerCursors[corner]};
+					z-index:20;
+					opacity:0;
+					transition:opacity 150ms ease, transform 100ms ease;
+					box-shadow:0 1px 6px rgba(79,70,229,0.5);
+				`;
 
-			handle.addEventListener('mousedown', (e: MouseEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				startX = e.clientX;
-				startW = img.getBoundingClientRect().width;
+				// Position each corner
+				if (corner === 'nw') { h.style.top = '-6px'; h.style.left = '-6px'; }
+				if (corner === 'ne') { h.style.top = '-6px'; h.style.right = '-6px'; }
+				if (corner === 'sw') { h.style.bottom = '-6px'; h.style.left = '-6px'; }
+				if (corner === 'se') { h.style.bottom = '-6px'; h.style.right = '-6px'; }
 
-				const onMove = (ev: MouseEvent) => {
-					const newW = Math.max(80, startW + (ev.clientX - startX));
-					img.style.width = `${newW}px`;
-				};
+				// Drag resize
+				h.addEventListener('mousedown', (e: MouseEvent) => {
+					e.preventDefault();
+					e.stopPropagation();
 
-				const onUp = () => {
-					const finalW = img.style.width;
-					if (typeof getPos === 'function') {
+					const startX = e.clientX;
+					const startY = e.clientY;
+					const startW = img.getBoundingClientRect().width;
+					const startH = img.getBoundingClientRect().height;
+					const aspectRatio = startW / startH;
+
+					// Scale from the relevant corner
+					const isLeft = corner === 'nw' || corner === 'sw';
+					const isTop = corner === 'nw' || corner === 'ne';
+
+					const onMove = (ev: MouseEvent) => {
+						const dx = isLeft ? startX - ev.clientX : ev.clientX - startX;
+						const dy = isTop  ? startY - ev.clientY : ev.clientY - startY;
+						// Use the larger delta, keep aspect ratio
+						const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+						const newW = Math.max(60, startW + delta);
+						img.style.width = `${newW}px`;
+						img.style.height = `${newW / aspectRatio}px`;
+					};
+
+					const onUp = () => {
+						const finalW = img.style.width;
 						editor.chain().updateAttributes('resizableImage', { width: finalW }).run();
-					}
-					handle.style.opacity = '0.85';
-					window.removeEventListener('mousemove', onMove);
-					window.removeEventListener('mouseup', onUp);
-				};
+						window.removeEventListener('mousemove', onMove);
+						window.removeEventListener('mouseup', onUp);
+					};
 
-				window.addEventListener('mousemove', onMove);
-				window.addEventListener('mouseup', onUp);
+					window.addEventListener('mousemove', onMove);
+					window.addEventListener('mouseup', onUp);
+				});
+
+				figure.appendChild(h);
+				handles.push(h);
 			});
 
+			// Show/hide handles
+			function showHandles() { handles.forEach((h) => (h.style.opacity = '1')); }
+			function hideHandles() { handles.forEach((h) => (h.style.opacity = '0')); }
+
+			figure.addEventListener('mouseenter', showHandles);
+			figure.addEventListener('mouseleave', hideHandles);
+
+			// Also show when node is selected (ProseMirror adds this class)
+			const obs = new MutationObserver(() => {
+				if (wrapper.classList.contains('ProseMirror-selectednode')) {
+					showHandles();
+				}
+			});
+			obs.observe(wrapper, { attributes: true, attributeFilter: ['class'] });
+
 			figure.appendChild(img);
-			figure.appendChild(handle);
+			wrapper.appendChild(figure);
 
 			return {
-				dom: figure,
+				dom: wrapper,
 				contentDOM: undefined,
 				update: (updatedNode) => {
 					if (updatedNode.type !== node.type) return false;
 					const { src: ns, alt: na, width: nw, alignment: nalign } = updatedNode.attrs;
 					img.src = ns;
-					if (na) img.alt = na;
-					if (nw) img.style.width = typeof nw === 'number' ? `${nw}px` : nw;
+					if (na !== undefined) img.alt = na;
+					if (nw) {
+						img.style.width = typeof nw === 'number' ? `${nw}px` : nw;
+						img.style.height = 'auto';
+					}
 					const a: ImageAlignment = nalign || 'center';
 					figure.setAttribute('data-alignment', a);
-					applyAlign(figure, a);
+					applyWrapperAlign(wrapper, a);
 					return true;
 				},
-				destroy: () => {}
+				destroy: () => {
+					obs.disconnect();
+				}
 			};
 		};
 	},
@@ -169,37 +203,24 @@ export const ResizableImage = Image.extend({
 		return {
 			setResizableImage:
 				(options) =>
-				({ commands }) => {
-					return commands.insertContent({
-						type: this.name,
-						attrs: options
-					});
-				},
+				({ commands }) =>
+					commands.insertContent({ type: this.name, attrs: options }),
 			updateImageSize:
 				(width) =>
-				({ commands }) => {
-					return commands.updateAttributes(this.name, { width });
-				},
+				({ commands }) =>
+					commands.updateAttributes(this.name, { width }),
 			updateImageAlignment:
 				(alignment) =>
-				({ commands }) => {
-					return commands.updateAttributes(this.name, { alignment });
-				}
+				({ commands }) =>
+					commands.updateAttributes(this.name, { alignment })
 		};
 	}
 });
 
-function alignStyle(align: ImageAlignment): string {
-	if (align === 'left') return 'margin-right:auto;margin-left:0;';
-	if (align === 'right') return 'margin-left:auto;margin-right:0;';
-	if (align === 'full') return 'width:100%;';
-	return 'margin-left:auto;margin-right:auto;';
-}
-
-function applyAlign(figure: HTMLElement, align: ImageAlignment) {
-	figure.style.display = 'block';
-	if (align === 'center') { figure.style.textAlign = 'center'; figure.style.marginLeft = 'auto'; figure.style.marginRight = 'auto'; figure.style.width = ''; }
-	if (align === 'left') { figure.style.textAlign = 'left'; figure.style.marginLeft = '0'; figure.style.marginRight = 'auto'; figure.style.width = ''; }
-	if (align === 'right') { figure.style.textAlign = 'right'; figure.style.marginLeft = 'auto'; figure.style.marginRight = '0'; figure.style.width = ''; }
-	if (align === 'full') { figure.style.textAlign = 'left'; figure.style.marginLeft = '0'; figure.style.marginRight = '0'; figure.style.width = '100%'; }
+function applyWrapperAlign(wrapper: HTMLElement, align: ImageAlignment) {
+	wrapper.style.cssText = `display:flex;margin:1em 0;`;
+	if (align === 'left')   { wrapper.style.justifyContent = 'flex-start'; }
+	if (align === 'center') { wrapper.style.justifyContent = 'center'; }
+	if (align === 'right')  { wrapper.style.justifyContent = 'flex-end'; }
+	if (align === 'full')   { wrapper.style.display = 'block'; }
 }
