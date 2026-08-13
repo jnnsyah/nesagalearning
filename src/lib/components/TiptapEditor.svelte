@@ -807,6 +807,10 @@
 	:global(.float-btn--del:hover)  { background: #fef2f2 !important; color: #dc2626 !important; }
 
 	/* ── ProseMirror ── */
+	.editor-content {
+		max-height: 520px;
+		overflow-y: auto;
+	}
 	:global(.editor-content .ProseMirror) {
 		outline: none; padding: 20px 24px; min-height: 280px;
 		font-family: var(--font-body); font-size: 14.5px; color: var(--text-primary); line-height: 1.75;

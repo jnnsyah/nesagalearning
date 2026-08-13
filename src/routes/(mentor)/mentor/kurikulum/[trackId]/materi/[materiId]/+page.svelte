@@ -950,10 +950,14 @@
 		line-height: 1.75;
 		color: var(--text-secondary);
 		min-height: 320px;
+		max-height: 580px;
+		overflow-y: auto;
 	}
 	.preview-canvas--split {
 		min-height: 200px;
+		max-height: 520px;
 		padding: 16px 20px;
+		overflow-y: auto;
 	}
 	:global(.preview-empty) {
 		color: var(--text-ghost);
