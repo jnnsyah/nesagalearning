@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { Editor } from '@tiptap/core';
 	import StarterKit from '@tiptap/starter-kit';
+	import { ResizableImage } from '$lib/tiptap/ResizableImage';
 
 	let {
 		value = $bindable(''),
@@ -29,10 +30,24 @@
 	let isBulletList  = $state(false);
 	let isOrderedList = $state(false);
 	let isBlockquote  = $state(false);
+	let isImage       = $state(false);
+
+	// History availability
+	let canUndo = $state(false);
+	let canRedo = $state(false);
 
 	// Stats
 	let charCount = $state(0);
 	let wordCount = $state(0);
+
+	// Image dialog state
+	let showImageDialog = $state(false);
+	let imageUrl        = $state('');
+	let imageAlt        = $state('');
+	let imageInputEl    = $state<HTMLInputElement | null>(null);
+
+	// Active image alignment state
+	let activeImageAlign = $state<'left' | 'center' | 'right' | 'full' | null>(null);
 
 	function updateToolbarState() {
 		if (!editor) return;
@@ -46,6 +61,17 @@
 		isBulletList  = editor.isActive('bulletList');
 		isOrderedList = editor.isActive('orderedList');
 		isBlockquote  = editor.isActive('blockquote');
+		isImage       = editor.isActive('resizableImage');
+
+		if (isImage) {
+			const attrs = editor.getAttributes('resizableImage');
+			activeImageAlign = attrs.alignment || 'center';
+		} else {
+			activeImageAlign = null;
+		}
+
+		canUndo = editor.can().undo();
+		canRedo = editor.can().redo();
 
 		const text = editor.getText();
 		charCount = text.length;
@@ -56,7 +82,7 @@
 		if (!element) return;
 		editor = new Editor({
 			element,
-			extensions: [StarterKit],
+			extensions: [StarterKit, ResizableImage],
 			content: value,
 			editable: !disabled,
 			onUpdate: ({ editor }) => {
@@ -93,7 +119,133 @@
 			editor.setEditable(!disabled);
 		}
 	});
+
+	// === IMAGE INSERT ===
+	function openImageDialog() {
+		imageUrl = '';
+		imageAlt = '';
+		showImageDialog = true;
+		// Focus the URL input after render
+		setTimeout(() => imageInputEl?.focus(), 50);
+	}
+
+	function closeImageDialog() {
+		showImageDialog = false;
+		imageUrl = '';
+		imageAlt = '';
+	}
+
+	function insertImage() {
+		const url = imageUrl.trim();
+		if (!url || !editor) return;
+		editor.chain().focus().setResizableImage({ src: url, alt: imageAlt, alignment: 'center' }).run();
+		closeImageDialog();
+	}
+
+	function handleImageDialogKey(e: KeyboardEvent) {
+		if (e.key === 'Enter') insertImage();
+		if (e.key === 'Escape') closeImageDialog();
+	}
+
+	// Handle file upload (base64 preview)
+	function handleFileUpload(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = (ev) => {
+			imageUrl = ev.target?.result as string;
+		};
+		reader.readAsDataURL(file);
+	}
+
+	// Alignment change for selected image
+	function setImageAlignment(align: 'left' | 'center' | 'right' | 'full') {
+		editor?.chain().focus().updateImageAlignment(align).run();
+	}
 </script>
+
+<!-- Image insert dialog -->
+{#if showImageDialog}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div class="img-dialog-backdrop" onclick={closeImageDialog} role="dialog" aria-modal="true" aria-label="Insert Image">
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div class="img-dialog" onclick={(e) => e.stopPropagation()} onkeydown={handleImageDialogKey}>
+			<div class="img-dialog__header">
+				<span class="img-dialog__title">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+					Sisipkan Gambar
+				</span>
+				<button type="button" class="img-dialog__close" onclick={closeImageDialog} aria-label="Tutup">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
+			</div>
+
+			<div class="img-dialog__body">
+				<!-- URL input -->
+				<div class="img-field">
+					<label for="img-url-input" class="img-field__label">URL Gambar</label>
+					<input
+						id="img-url-input"
+						bind:this={imageInputEl}
+						type="url"
+						bind:value={imageUrl}
+						placeholder="https://example.com/image.png"
+						class="img-field__input"
+					/>
+				</div>
+
+				<!-- Or upload -->
+				<div class="img-divider-row">
+					<hr class="img-divider-line" />
+					<span class="img-divider-text">atau unggah file</span>
+					<hr class="img-divider-line" />
+				</div>
+
+				<div class="img-upload-zone">
+					<label for="img-file-upload" class="img-upload-label">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+						Pilih Gambar dari Komputer
+					</label>
+					<input
+						id="img-file-upload"
+						type="file"
+						accept="image/*"
+						class="img-file-hidden"
+						onchange={handleFileUpload}
+					/>
+				</div>
+
+				<!-- Preview -->
+				{#if imageUrl}
+					<div class="img-preview-box">
+						<img src={imageUrl} alt={imageAlt || 'preview'} class="img-preview-thumb" />
+					</div>
+				{/if}
+
+				<!-- Alt text -->
+				<div class="img-field">
+					<label for="img-alt-input" class="img-field__label">Teks Alt <span class="img-field__optional">(opsional)</span></label>
+					<input
+						id="img-alt-input"
+						type="text"
+						bind:value={imageAlt}
+						placeholder="Deskripsi singkat gambar..."
+						class="img-field__input"
+					/>
+				</div>
+			</div>
+
+			<div class="img-dialog__footer">
+				<button type="button" class="img-btn-cancel" onclick={closeImageDialog}>Batal</button>
+				<button type="button" class="img-btn-insert" onclick={insertImage} disabled={!imageUrl.trim()}>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+					Sisipkan Gambar
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <div class="editor-container" class:editor-container--disabled={disabled}>
 	{#if editor && !disabled}
@@ -204,13 +356,71 @@
 				</button>
 			</div>
 
+			<div class="tool-divider" aria-hidden="true"></div>
+
+			<!-- Image Group -->
+			<div class="tool-group">
+				<button
+					type="button"
+					class="tool-btn tool-btn--image"
+					class:tool-btn--active={isImage}
+					onclick={openImageDialog}
+					title="Sisipkan Gambar"
+				>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+				</button>
+			</div>
+
+			<!-- Image alignment (only visible when an image is selected) -->
+			{#if isImage}
+				<div class="tool-divider" aria-hidden="true"></div>
+				<div class="tool-group" title="Alignment Gambar">
+					<button
+						type="button"
+						class="tool-btn"
+						class:tool-btn--active={activeImageAlign === 'left'}
+						onclick={() => setImageAlignment('left')}
+						title="Align Kiri"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+					</button>
+					<button
+						type="button"
+						class="tool-btn"
+						class:tool-btn--active={activeImageAlign === 'center'}
+						onclick={() => setImageAlignment('center')}
+						title="Align Tengah"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+					</button>
+					<button
+						type="button"
+						class="tool-btn"
+						class:tool-btn--active={activeImageAlign === 'right'}
+						onclick={() => setImageAlignment('right')}
+						title="Align Kanan"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="7" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+					</button>
+					<button
+						type="button"
+						class="tool-btn"
+						class:tool-btn--active={activeImageAlign === 'full'}
+						onclick={() => setImageAlignment('full')}
+						title="Full Width"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><rect x="3" y="10" width="18" height="4" rx="1"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+					</button>
+				</div>
+			{/if}
+
 			<!-- History Group (Undo / Redo) -->
 			<div class="tool-group ml-auto">
 				<button
 					type="button"
 					class="tool-btn"
 					onclick={() => editor?.chain().focus().undo().run()}
-					disabled={!editor.can().undo()}
+					disabled={!canUndo}
 					title="Undo (Ctrl+Z)"
 				>
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -219,7 +429,7 @@
 					type="button"
 					class="tool-btn"
 					onclick={() => editor?.chain().focus().redo().run()}
-					disabled={!editor.can().redo()}
+					disabled={!canRedo}
 					title="Redo (Ctrl+Y)"
 				>
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
@@ -314,6 +524,13 @@
 		color: var(--primary) !important;
 	}
 
+	.tool-btn--image:hover:not(:disabled),
+	.tool-btn--image.tool-btn--active {
+		color: #059669;
+		background: var(--green-dim) !important;
+		border-color: var(--green-border) !important;
+	}
+
 	.tool-btn:disabled {
 		opacity: 0.35;
 		cursor: not-allowed;
@@ -323,6 +540,10 @@
 		font-family: var(--font-macro);
 		font-size: 12px;
 		font-weight: 800;
+	}
+
+	.ml-auto {
+		margin-left: auto;
 	}
 
 	/* Content Area */
@@ -442,6 +663,73 @@
 		font-style: normal;
 	}
 
+	/* ==== IMAGE STYLES ==== */
+	:global(.editor-content .ProseMirror .tiptap-image-figure) {
+		position: relative;
+		display: block;
+		margin: 1em 0;
+		cursor: default;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure[data-alignment="center"]) {
+		margin-left: auto;
+		margin-right: auto;
+		text-align: center;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure[data-alignment="left"]) {
+		margin-right: auto;
+		margin-left: 0;
+		text-align: left;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure[data-alignment="right"]) {
+		margin-left: auto;
+		margin-right: 0;
+		text-align: right;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure[data-alignment="full"]) {
+		width: 100%;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure img) {
+		max-width: 100%;
+		height: auto;
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-md);
+		display: inline-block;
+		transition: box-shadow 150ms ease;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure.ProseMirror-selectednode img) {
+		outline: 3px solid var(--primary);
+		outline-offset: 2px;
+		box-shadow: var(--shadow-glow);
+	}
+
+	/* Resize handle — injected via CSS on figure hover/selected */
+	:global(.editor-content .ProseMirror .tiptap-image-figure) {
+		--handle-size: 14px;
+	}
+
+	:global(.editor-content .ProseMirror .tiptap-image-figure.ProseMirror-selectednode::after) {
+		content: '';
+		position: absolute;
+		right: -6px;
+		bottom: 50%;
+		transform: translateY(50%);
+		width: var(--handle-size);
+		height: 40px;
+		background: var(--primary);
+		border-radius: 4px;
+		cursor: ew-resize;
+		opacity: 0.85;
+		transition: opacity 150ms ease;
+		box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+		pointer-events: none; /* handled by JS on the element */
+	}
+
 	/* Status bar */
 	.editor-statusbar {
 		padding: 8px 16px;
@@ -469,5 +757,266 @@
 
 	.status-dot {
 		color: var(--border-hard);
+	}
+
+	/* ==== IMAGE DIALOG ==== */
+	.img-dialog-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.45);
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+		animation: backdropIn 180ms ease;
+	}
+
+	@keyframes backdropIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.img-dialog {
+		background: white;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-lg);
+		width: 100%;
+		max-width: 460px;
+		overflow: hidden;
+		animation: dialogIn 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	@keyframes dialogIn {
+		from { opacity: 0; transform: scale(0.93) translateY(8px); }
+		to { opacity: 1; transform: scale(1) translateY(0); }
+	}
+
+	.img-dialog__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 20px;
+		border-bottom: 1px solid var(--border-hard);
+		background: var(--bg-inset);
+	}
+
+	.img-dialog__title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-family: var(--font-macro);
+		font-size: 15px;
+		font-weight: 800;
+		color: var(--text-primary);
+		letter-spacing: -0.01em;
+	}
+
+	.img-dialog__close {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-hard);
+		background: white;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.img-dialog__close:hover {
+		background: var(--red-dim);
+		border-color: var(--red-border);
+		color: var(--red);
+	}
+
+	.img-dialog__body {
+		padding: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	/* Fields */
+	.img-field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.img-field__label {
+		font-family: var(--font-body);
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+
+	.img-field__optional {
+		font-weight: 400;
+		color: var(--text-muted);
+		text-transform: none;
+	}
+
+	.img-field__input {
+		display: block;
+		width: 100%;
+		padding: 10px 14px;
+		background: var(--bg-inset);
+		border: 1.5px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		font-family: var(--font-body);
+		font-size: 13px;
+		color: var(--text-primary);
+		outline: none;
+		transition: border-color 150ms ease, box-shadow 150ms ease;
+	}
+
+	.img-field__input:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px var(--primary-light);
+		background: white;
+	}
+
+	.img-field__input::placeholder {
+		color: var(--text-ghost);
+	}
+
+	/* Divider */
+	.img-divider-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.img-divider-line {
+		flex: 1;
+		border: none;
+		border-top: 1px solid var(--border-hard);
+	}
+
+	.img-divider-text {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		color: var(--text-muted);
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
+	}
+
+	/* Upload zone */
+	.img-upload-zone {
+		display: flex;
+		justify-content: center;
+	}
+
+	.img-upload-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: var(--bg-inset);
+		border: 1.5px dashed var(--border-hard);
+		border-radius: var(--radius-md);
+		font-family: var(--font-body);
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+		width: 100%;
+		justify-content: center;
+	}
+
+	.img-upload-label:hover {
+		border-color: var(--primary);
+		color: var(--primary);
+		background: var(--primary-light);
+	}
+
+	.img-file-hidden {
+		display: none;
+	}
+
+	/* Preview */
+	.img-preview-box {
+		background: var(--bg-inset);
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		padding: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		max-height: 160px;
+		overflow: hidden;
+	}
+
+	.img-preview-thumb {
+		max-width: 100%;
+		max-height: 144px;
+		border-radius: 8px;
+		object-fit: contain;
+	}
+
+	/* Footer */
+	.img-dialog__footer {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 10px;
+		padding: 14px 20px;
+		border-top: 1px solid var(--border-hard);
+		background: var(--bg-inset);
+	}
+
+	.img-btn-cancel {
+		padding: 8px 16px;
+		background: white;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		font-family: var(--font-body);
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.img-btn-cancel:hover {
+		border-color: #cbd5e1;
+		color: var(--text-primary);
+	}
+
+	.img-btn-insert {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 18px;
+		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: white;
+		cursor: pointer;
+		box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.3);
+		transition: all 150ms ease;
+	}
+
+	.img-btn-insert:hover:not(:disabled) {
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		transform: translateY(-1px);
+	}
+
+	.img-btn-insert:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 </style>
