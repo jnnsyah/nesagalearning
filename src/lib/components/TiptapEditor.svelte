@@ -513,7 +513,7 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 			</button>
 			<button type="button" class="float-btn" class:float-btn--on={isCode}
 				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCode().run(); }}
-				aria-label="Code" title="Code ⌘E">
+				aria-label="Inline Code" title="Inline Code ⌘E">
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
 			</button>
 		</div>
@@ -544,6 +544,11 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleOrderedList().run(); }}
 				title="Numbered list">
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+			</button>
+			<button type="button" class="float-btn" class:float-btn--on={isCodeBlock}
+				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCodeBlock().run(); }}
+				aria-label="Code Block" title="Code Block">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 8 5 12 9 16"/><polyline points="15 8 19 12 15 16"/></svg>
 			</button>
 			<button type="button" class="float-btn" class:float-btn--on={isBlockquote}
 				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }}
