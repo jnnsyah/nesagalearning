@@ -5,31 +5,42 @@
 		message = 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
 		confirmText = 'Ya, Konfirmasi',
 		cancelText = 'Batal',
+		saveText = '',
 		variant = 'danger',
 		loading = false,
+		saveLoading = false,
 		onconfirm,
-		oncancel
+		oncancel,
+		onsave
 	}: {
 		open?: boolean;
 		title?: string;
 		message?: string;
 		confirmText?: string;
 		cancelText?: string;
+		saveText?: string;
 		variant?: 'danger' | 'warning' | 'info';
 		loading?: boolean;
+		saveLoading?: boolean;
 		onconfirm?: () => void;
 		oncancel?: () => void;
+		onsave?: () => void;
 	} = $props();
 
 	function handleCancel() {
-		if (loading) return;
+		if (loading || saveLoading) return;
 		open = false;
 		oncancel?.();
 	}
 
 	function handleConfirm() {
-		if (loading) return;
+		if (loading || saveLoading) return;
 		onconfirm?.();
+	}
+
+	function handleSave() {
+		if (loading || saveLoading) return;
+		onsave?.();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -70,11 +81,11 @@
 			</div>
 
 			<!-- Action Buttons -->
-			<div class="confirm-actions">
+			<div class="confirm-actions" class:confirm-actions--triple={Boolean(saveText)}>
 				<button
 					type="button"
 					onclick={handleCancel}
-					disabled={loading}
+					disabled={loading || saveLoading}
 					class="btn-cancel"
 				>
 					{cancelText}
@@ -82,7 +93,7 @@
 				<button
 					type="button"
 					onclick={handleConfirm}
-					disabled={loading}
+					disabled={loading || saveLoading}
 					class="btn-confirm btn-confirm--{variant}"
 				>
 					{#if loading}
@@ -92,6 +103,22 @@
 						{confirmText}
 					{/if}
 				</button>
+				{#if saveText}
+					<button
+						type="button"
+						onclick={handleSave}
+						disabled={loading || saveLoading}
+						class="btn-save-modal"
+					>
+						{#if saveLoading}
+							<svg class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+							Menyimpan...
+						{:else}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+							{saveText}
+						{/if}
+					</button>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -171,6 +198,46 @@
 		gap: 10px;
 		width: 100%;
 		margin-top: 4px;
+	}
+	.confirm-actions--triple {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.confirm-actions--triple .btn-cancel,
+	.confirm-actions--triple .btn-confirm,
+	.confirm-actions--triple .btn-save-modal {
+		flex: 1 1 auto;
+		min-width: 110px;
+	}
+
+	.btn-save-modal {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 10px 14px;
+		border-radius: var(--radius-md);
+		border: none;
+		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #ffffff;
+		cursor: pointer;
+		box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.35);
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+	.btn-save-modal:hover:not(:disabled) {
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px -2px rgba(79, 70, 229, 0.45);
+	}
+	.btn-save-modal:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.btn-cancel {

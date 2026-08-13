@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { enhance } from '$app/forms';
+	import { enhance, deserialize } from '$app/forms';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -26,6 +26,7 @@
 	let showLeaveModal = $state(false);
 	let pendingNavigateUrl = $state<string | null>(null);
 	let allowNavigation = $state(false);
+	let isModalSaving = $state(false);
 
 	let activeTab = $state<'edit' | 'preview' | 'split'>('edit');
 
@@ -59,17 +60,16 @@
 				}
 			});
 
-			if (res.ok) {
-				const json = await res.json();
-				if (json.type === 'success' || res.status === 200) {
-					originalTitle = title;
-					originalContent = content;
-					saveStatus = 'saved';
-					lastSavedAt = new Date();
-					return;
-				}
+			const result = deserialize(await res.text());
+
+			if (result.type === 'success') {
+				originalTitle = title;
+				originalContent = content;
+				saveStatus = 'saved';
+				lastSavedAt = new Date();
+			} else {
+				saveStatus = 'error';
 			}
-			saveStatus = 'error';
 		} catch (err) {
 			console.error('Autosave failed:', err);
 			saveStatus = 'error';
@@ -110,6 +110,51 @@
 			showLeaveModal = true;
 		}
 	});
+
+	async function saveAndLeave() {
+		if (!title.trim()) {
+			toast.error('Judul materi tidak boleh kosong');
+			return;
+		}
+		isModalSaving = true;
+		try {
+			const formData = new FormData();
+			formData.append('title', title);
+			formData.append('content', content);
+
+			const res = await fetch('?/updateMateri', {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'x-sveltekit-action': 'true'
+				}
+			});
+
+			const result = deserialize(await res.text());
+
+			if (result.type === 'success') {
+				originalTitle = title;
+				originalContent = content;
+				saveStatus = 'saved';
+				lastSavedAt = new Date();
+				toast.success('Materi berhasil disimpan!');
+				showLeaveModal = false;
+				allowNavigation = true;
+				isModalSaving = false;
+				if (pendingNavigateUrl) {
+					goto(pendingNavigateUrl);
+				} else {
+					window.history.back();
+				}
+			} else {
+				toast.error((result as any)?.data?.error || 'Gagal menyimpan materi');
+				isModalSaving = false;
+			}
+		} catch (err: any) {
+			toast.error(err?.message || 'Terjadi kesalahan saat menyimpan');
+			isModalSaving = false;
+		}
+	}
 
 	function confirmLeave() {
 		showLeaveModal = false;
@@ -451,9 +496,12 @@
 	<ConfirmModal
 		bind:open={showLeaveModal}
 		title="Perubahan Belum Disimpan"
-		message="Modul materi yang Anda edit memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin meninggalkan halaman ini?"
-		confirmText="Tinggalkan Halaman"
-		cancelText="Lanjut Edit"
+		message="Modul materi yang Anda edit belum disimpan secara penuh. Pilihlah Simpan & Keluar untuk menyimpan perubahan Anda terlebih dahulu."
+		saveText="Simpan & Keluar"
+		saveLoading={isModalSaving}
+		onsave={saveAndLeave}
+		confirmText="Buang Perubahan"
+		cancelText="Batal"
 		variant="warning"
 		onconfirm={confirmLeave}
 		oncancel={cancelLeave}
