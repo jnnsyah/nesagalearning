@@ -872,9 +872,11 @@
 		box-shadow: var(--shadow-sm);
 		overflow: hidden;
 		margin-bottom: 16px;
+		flex-shrink: 0;
 	}
 	.content-block--editor {
 		flex: 1;
+		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
 	}
@@ -921,10 +923,12 @@
 	.title-input {
 		display: block;
 		width: 100%;
-		padding: 16px 20px;
+		box-sizing: border-box;
+		padding: 14px 20px;
 		font-family: var(--font-macro);
 		font-size: 1.15rem;
 		font-weight: 700;
+		line-height: 1.4;
 		color: var(--text-primary);
 		background: white;
 		border: none;
