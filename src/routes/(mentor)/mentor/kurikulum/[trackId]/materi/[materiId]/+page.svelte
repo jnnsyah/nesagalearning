@@ -162,8 +162,26 @@
 			const pres = document.querySelectorAll('.preview-canvas pre');
 			pres.forEach((pre) => {
 				const preEl = pre as HTMLElement;
-				preEl.style.position = 'relative';
-				if (preEl.querySelector('.code-copy-btn')) return;
+				if (preEl.parentElement?.classList.contains('tiptap-code-block-wrapper')) return;
+
+				const wrapper = document.createElement('div');
+				wrapper.className = 'tiptap-code-block-wrapper';
+
+				const header = document.createElement('div');
+				header.className = 'code-block-header';
+
+				const dots = document.createElement('div');
+				dots.className = 'mac-dots';
+				dots.innerHTML = `
+					<span class="mac-dot mac-dot--red"></span>
+					<span class="mac-dot mac-dot--yellow"></span>
+					<span class="mac-dot mac-dot--green"></span>
+				`;
+
+				const langWrapper = document.createElement('div');
+				langWrapper.className = 'code-block-lang';
+				const lang = preEl.getAttribute('data-language') || preEl.querySelector('code')?.className.replace('language-', '') || 'code';
+				langWrapper.innerHTML = `<span class="code-block-lang__tag">${lang}</span>`;
 
 				const btn = document.createElement('button');
 				btn.type = 'button';
@@ -197,7 +215,13 @@
 					});
 				});
 
-				preEl.appendChild(btn);
+				header.appendChild(dots);
+				header.appendChild(langWrapper);
+				header.appendChild(btn);
+
+				preEl.parentNode?.insertBefore(wrapper, preEl);
+				wrapper.appendChild(header);
+				wrapper.appendChild(preEl);
 			});
 		}, 50);
 	}
@@ -1296,5 +1320,102 @@
 	:global(.preview-canvas figure[data-alignment='full'] img),
 	:global(.preview-canvas .tiptap-image-figure[data-alignment='full'] img) {
 		width: 100% !important;
+	}
+
+	/* ── Code block box (preview) ── */
+	:global(.preview-canvas .tiptap-code-block-wrapper) {
+		margin: 1.25em 0;
+		border-radius: var(--radius-md);
+		border: 1px solid #334155;
+		background: #0f172a;
+		overflow: hidden;
+		box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25);
+	}
+	:global(.preview-canvas .code-block-header) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 14px;
+		background: #1e293b;
+		border-bottom: 1px solid #334155;
+		user-select: none;
+	}
+	:global(.preview-canvas .mac-dots) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	:global(.preview-canvas .mac-dot) {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+	:global(.preview-canvas .mac-dot--red)    { background: #ff5f56; border: 1px solid #e0443e; }
+	:global(.preview-canvas .mac-dot--yellow) { background: #ffbd2e; border: 1px solid #dea123; }
+	:global(.preview-canvas .mac-dot--green)  { background: #27c93f; border: 1px solid #1aab29; }
+
+	:global(.preview-canvas .code-block-lang) {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		color: #94a3b8;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+	:global(.preview-canvas .code-block-lang__tag) {
+		background: rgba(255, 255, 255, 0.06);
+		padding: 2px 8px;
+		border-radius: 4px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	:global(.preview-canvas .code-copy-btn) {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		color: #94a3b8;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 140ms ease;
+		user-select: none;
+	}
+	:global(.preview-canvas .code-copy-btn:hover) {
+		color: #f8fafc;
+		background: rgba(255, 255, 255, 0.12);
+		border-color: rgba(255, 255, 255, 0.2);
+		transform: translateY(-1px);
+	}
+	:global(.preview-canvas .code-copy-btn--copied) {
+		color: #34d399 !important;
+		background: rgba(6, 78, 59, 0.8) !important;
+		border-color: rgba(52, 211, 153, 0.4) !important;
+		transform: none !important;
+	}
+
+	:global(.preview-canvas .tiptap-code-block-wrapper pre) {
+		margin: 0 !important;
+		padding: 16px 18px !important;
+		background: transparent !important;
+		border: none !important;
+		border-radius: 0 !important;
+		font-family: var(--font-mono);
+		font-size: 13.5px;
+		line-height: 1.65;
+		color: #e2e8f0;
+		overflow-x: auto;
+	}
+	:global(.preview-canvas .tiptap-code-block-wrapper pre code) {
+		background: transparent !important;
+		border: none !important;
+		padding: 0 !important;
+		color: inherit !important;
+		font-size: inherit !important;
 	}
 </style>

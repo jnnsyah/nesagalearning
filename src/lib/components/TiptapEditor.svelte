@@ -827,37 +827,103 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 	:global(.editor-content .ProseMirror h2) { font-family: var(--font-macro); font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; padding-bottom: 6px; border-bottom: 1px solid var(--border-hard); }
 	:global(.editor-content .ProseMirror h3) { font-family: var(--font-macro); font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
 	:global(.editor-content .ProseMirror code) { font-family: var(--font-mono); background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 5px; padding: 1px 5px; color: #4338ca; font-size: 0.88em; font-weight: 600; }
-	/* ── Code block copy button ── */
+	/* ══════════════════════════════════════════
+	   PRO CODE BLOCK BOX (UI-UX-Pro-Max)
+	══════════════════════════════════════════ */
+	:global(.tiptap-code-block-wrapper) {
+		margin: 1.25em 0;
+		border-radius: var(--radius-md);
+		border: 1px solid #334155;
+		background: #0f172a;
+		overflow: hidden;
+		box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25), 0 2px 6px -1px rgba(15, 23, 42, 0.15);
+	}
+	:global(.code-block-header) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 14px;
+		background: #1e293b;
+		border-bottom: 1px solid #334155;
+		user-select: none;
+	}
+	:global(.mac-dots) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	:global(.mac-dot) {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+	:global(.mac-dot--red)    { background: #ff5f56; border: 1px solid #e0443e; }
+	:global(.mac-dot--yellow) { background: #ffbd2e; border: 1px solid #dea123; }
+	:global(.mac-dot--green)  { background: #27c93f; border: 1px solid #1aab29; }
+
+	:global(.code-block-lang) {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		color: #94a3b8;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+	:global(.code-block-lang__tag) {
+		background: rgba(255, 255, 255, 0.06);
+		padding: 2px 8px;
+		border-radius: 4px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
 	:global(.code-copy-btn) {
-		position: absolute;
-		top: 8px;
-		right: 8px;
-		z-index: 10;
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		padding: 4px 8px;
+		padding: 4px 10px;
 		font-family: var(--font-mono);
 		font-size: 11px;
 		font-weight: 600;
 		color: #94a3b8;
-		background: rgba(30, 41, 59, 0.85);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 6px;
 		cursor: pointer;
-		backdrop-filter: blur(4px);
-		transition: all 150ms ease;
+		transition: all 140ms ease;
 		user-select: none;
 	}
 	:global(.code-copy-btn:hover) {
 		color: #f8fafc;
-		background: #334155;
-		border-color: rgba(255, 255, 255, 0.25);
+		background: rgba(255, 255, 255, 0.12);
+		border-color: rgba(255, 255, 255, 0.2);
+		transform: translateY(-1px);
 	}
 	:global(.code-copy-btn--copied) {
 		color: #34d399 !important;
-		background: rgba(6, 78, 59, 0.85) !important;
+		background: rgba(6, 78, 59, 0.8) !important;
 		border-color: rgba(52, 211, 153, 0.4) !important;
+		transform: none !important;
+	}
+
+	:global(.tiptap-code-block-wrapper pre) {
+		margin: 0 !important;
+		padding: 16px 18px !important;
+		background: transparent !important;
+		border: none !important;
+		border-radius: 0 !important;
+		font-family: var(--font-mono);
+		font-size: 13.5px;
+		line-height: 1.65;
+		color: #e2e8f0;
+		overflow-x: auto;
+	}
+	:global(.tiptap-code-block-wrapper pre code) {
+		background: transparent !important;
+		border: none !important;
+		padding: 0 !important;
+		color: inherit !important;
+		font-size: inherit !important;
 	}
 
 	/* ══════════════════════════════════════════
