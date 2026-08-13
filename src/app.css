@@ -656,3 +656,105 @@ th, td {
 	}
 }
 
+/* === PRO CODE BLOCK BOX (GLOBAL SYSTEM) === */
+.tiptap-code-block-wrapper {
+	margin: 1.25em 0;
+	border-radius: 12px;
+	border: 1px solid #334155 !important;
+	background: #0f172a !important;
+	overflow: hidden;
+	box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25), 0 2px 6px -1px rgba(15, 23, 42, 0.15);
+}
+
+.code-block-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 14px;
+	background: #1e293b !important;
+	border-bottom: 1px solid #334155 !important;
+	user-select: none;
+}
+
+.mac-dots {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.mac-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	display: inline-block;
+}
+.mac-dot--red    { background: #ff5f56; border: 1px solid #e0443e; }
+.mac-dot--yellow { background: #ffbd2e; border: 1px solid #dea123; }
+.mac-dot--green  { background: #27c93f; border: 1px solid #1aab29; }
+
+.code-block-lang {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 10.5px;
+	font-weight: 700;
+	color: #94a3b8;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+.code-block-lang__tag {
+	background: rgba(255, 255, 255, 0.06);
+	padding: 2px 8px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.code-copy-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 11px;
+	font-weight: 600;
+	color: #94a3b8;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 140ms ease;
+	user-select: none;
+}
+.code-copy-btn:hover {
+	color: #f8fafc;
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.2);
+	transform: translateY(-1px);
+}
+.code-copy-btn--copied {
+	color: #34d399 !important;
+	background: rgba(6, 78, 59, 0.8) !important;
+	border-color: rgba(52, 211, 153, 0.4) !important;
+	transform: none !important;
+}
+
+.tiptap-code-block-wrapper pre {
+	margin: 0 !important;
+	padding: 16px 18px !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 0 !important;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 13.5px;
+	line-height: 1.65;
+	color: #e2e8f0 !important;
+	overflow-x: auto;
+	box-shadow: none !important;
+}
+
+.tiptap-code-block-wrapper pre code {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	color: inherit !important;
+	font-size: inherit !important;
+}
+

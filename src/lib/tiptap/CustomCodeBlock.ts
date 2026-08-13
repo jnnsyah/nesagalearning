@@ -8,7 +8,10 @@ export const CustomCodeBlock = CodeBlock.extend({
 			...this.parent?.(),
 			language: {
 				default: null,
-				parseHTML: (element) => element.getAttribute('data-language') || element.className.replace('language-', '') || null,
+				parseHTML: (element) =>
+					element.getAttribute('data-language') ||
+					element.className.replace('language-', '') ||
+					null,
 				renderHTML: (attributes) => {
 					if (!attributes.language) return {};
 					return {
@@ -18,6 +21,13 @@ export const CustomCodeBlock = CodeBlock.extend({
 				}
 			}
 		};
+	},
+
+	parseHTML() {
+		return [
+			{ tag: 'div.tiptap-code-block-wrapper' },
+			{ tag: 'pre', preserveWhitespace: 'full' }
+		];
 	},
 
 	addNodeView() {
