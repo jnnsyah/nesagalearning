@@ -156,6 +156,60 @@
 		}
 	}
 
+	function enhancePreviewCodeBlocks() {
+		if (typeof document === 'undefined') return;
+		setTimeout(() => {
+			const pres = document.querySelectorAll('.preview-canvas pre');
+			pres.forEach((pre) => {
+				const preEl = pre as HTMLElement;
+				preEl.style.position = 'relative';
+				if (preEl.querySelector('.code-copy-btn')) return;
+
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'code-copy-btn';
+				btn.setAttribute('aria-label', 'Salin Kode');
+				btn.innerHTML = `
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+					<span>Salin</span>
+				`;
+
+				let timer: ReturnType<typeof setTimeout> | null = null;
+				btn.addEventListener('click', (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					const text = preEl.querySelector('code')?.textContent || preEl.textContent || '';
+					if (!text) return;
+					navigator.clipboard.writeText(text).then(() => {
+						btn.classList.add('code-copy-btn--copied');
+						btn.innerHTML = `
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+							<span>Tersalin!</span>
+						`;
+						if (timer) clearTimeout(timer);
+						timer = setTimeout(() => {
+							btn.classList.remove('code-copy-btn--copied');
+							btn.innerHTML = `
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+								<span>Salin</span>
+							`;
+						}, 2000);
+					});
+				});
+
+				preEl.appendChild(btn);
+			});
+		}, 50);
+	}
+
+	$effect(() => {
+		const c = content;
+		const tab = activeTab;
+		if (tab === 'preview' || tab === 'split') {
+			enhancePreviewCodeBlocks();
+		}
+	});
+
 	function confirmLeave() {
 		showLeaveModal = false;
 		allowNavigation = true;
@@ -1180,6 +1234,7 @@
 		font-weight: 600;
 	}
 	:global(.preview-canvas pre) {
+		position: relative;
 		background: #1e293b;
 		border: 1px solid #334155;
 		border-radius: var(--radius-md);

@@ -5,6 +5,8 @@
 	import StarterKit from '@tiptap/starter-kit';
 	import { ResizableImage } from '$lib/tiptap/ResizableImage';
 
+import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
+
 	let {
 		value = $bindable(''),
 		placeholder = 'Ketik materi pembelajaran, penjelasan konsep, atau snippet kode...',
@@ -136,7 +138,11 @@
 
 		editor = new Editor({
 			element,
-			extensions: [StarterKit, ResizableImage],
+			extensions: [
+				StarterKit.configure({ codeBlock: false }),
+				CustomCodeBlock,
+				ResizableImage
+			],
 			content: value,
 			editable: !disabled,
 			onUpdate: ({ editor: ed }) => {
@@ -821,14 +827,38 @@
 	:global(.editor-content .ProseMirror h2) { font-family: var(--font-macro); font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; padding-bottom: 6px; border-bottom: 1px solid var(--border-hard); }
 	:global(.editor-content .ProseMirror h3) { font-family: var(--font-macro); font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
 	:global(.editor-content .ProseMirror code) { font-family: var(--font-mono); background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 5px; padding: 1px 5px; color: #4338ca; font-size: 0.88em; font-weight: 600; }
-	:global(.editor-content .ProseMirror pre) { background: #1e293b; border: 1px solid #334155; border-radius: var(--radius-md); padding: 14px 18px; font-family: var(--font-mono); font-size: 13px; color: #e2e8f0; overflow-x: auto; line-height: 1.6; }
-	:global(.editor-content .ProseMirror pre code) { background: transparent; border: none; color: inherit; padding: 0; }
-	:global(.editor-content .ProseMirror ul) { list-style: disc; padding-left: 1.5em; }
-	:global(.editor-content .ProseMirror ol) { list-style: decimal; padding-left: 1.5em; }
-	:global(.editor-content .ProseMirror li + li) { margin-top: 0.2em; }
-	:global(.editor-content .ProseMirror blockquote) { border-left: 3px solid var(--primary); padding: 8px 16px; color: var(--text-secondary); font-style: italic; background: var(--primary-light); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-	:global(.editor-content .ProseMirror p.is-editor-empty:first-child::before) { color: var(--text-ghost); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
-	:global(.editor-content .ProseMirror .ProseMirror-selectednode .tiptap-image-figure img) { outline: 2px solid var(--primary); outline-offset: 3px; }
+	/* ── Code block copy button ── */
+	:global(.code-copy-btn) {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		z-index: 10;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 8px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		color: #94a3b8;
+		background: rgba(30, 41, 59, 0.85);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 6px;
+		cursor: pointer;
+		backdrop-filter: blur(4px);
+		transition: all 150ms ease;
+		user-select: none;
+	}
+	:global(.code-copy-btn:hover) {
+		color: #f8fafc;
+		background: #334155;
+		border-color: rgba(255, 255, 255, 0.25);
+	}
+	:global(.code-copy-btn--copied) {
+		color: #34d399 !important;
+		background: rgba(6, 78, 59, 0.85) !important;
+		border-color: rgba(52, 211, 153, 0.4) !important;
+	}
 
 	/* ══════════════════════════════════════════
 	   DIALOG
