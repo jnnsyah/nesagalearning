@@ -18,6 +18,19 @@
 	let selectedLog = $state<any>(null);
 	let isDetailDrawerOpen = $state(false);
 
+	// Debounced Live Search for searchVal
+	let debounceTimer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		const term = searchVal;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			if (term !== (data.filters.search || '')) {
+				applyFilters();
+			}
+		}, 300);
+		return () => clearTimeout(debounceTimer);
+	});
+
 	const roleOptions = [
 		{ value: 'all', label: 'Semua Peran Aktor' },
 		{ value: 'admin', label: 'Administrator' },
@@ -218,23 +231,27 @@
 	     ══════════════════════════════════════════════════════════ -->
 	<FilterBar>
 		{#snippet search()}
-			<form onsubmit={(e) => { e.preventDefault(); applyFilters(); }} class="flex items-center gap-2 w-full">
+			<div class="flex items-center gap-2 w-full">
 				<div class="flex-1">
 					<TextInput
 						name="search"
-						placeholder="Cari log (Nama Aktor / Username / Jenis Aksi / Entitas)…"
+						placeholder="Cari log secara real-time (Nama Aktor / Username / Jenis Aksi / Entitas)…"
 						bind:value={searchVal}
 						clearable
 					/>
 				</div>
-				<button type="submit" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5 flex-shrink-0">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<span>Cari</span>
-				</button>
-				<button type="button" onclick={resetFilters} class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer flex-shrink-0">
-					Reset
-				</button>
-			</form>
+				{#if searchVal || selectedRole !== 'all' || selectedAction !== 'all' || dateFrom || dateTo}
+					<button
+						type="button"
+						onclick={resetFilters}
+						class="btn-drawer-secondary flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-bold flex-shrink-0"
+						title="Reset Filter"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+						<span>Reset Filter</span>
+					</button>
+				{/if}
+			</div>
 		{/snippet}
 
 		{#snippet filters()}
