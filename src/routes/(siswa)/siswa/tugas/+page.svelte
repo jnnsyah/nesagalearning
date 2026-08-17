@@ -52,36 +52,10 @@
 		})
 	);
 
-	let groupedTasks = $derived(() => {
-		const map = new Map<string, typeof filteredTasks>();
-		for (const task of filteredTasks) {
-			const key = task.pertemuanTitle || 'Pertemuan Umum';
-			if (!map.has(key)) {
-				map.set(key, []);
-			}
-			map.get(key)!.push(task);
-		}
-		return Array.from(map.entries()).map(([pertemuanTitle, items]) => ({
-			pertemuanTitle,
-			sessionDate: items[0]?.sessionDate,
-			items
-		}));
-	});
-
-	// Collapse / Expand state per Pertemuan section
-	let collapsedGroups = $state<Record<string, boolean>>({});
-
-	function toggleGroupCollapse(pertemuanTitle: string) {
-		collapsedGroups = {
-			...collapsedGroups,
-			[pertemuanTitle]: !collapsedGroups[pertemuanTitle]
-		};
-	}
-
-	function openSubmitModal(task: TaskItem) {
+	let openSubmitModal = (task: TaskItem) => {
 		activeSubmitTask = task;
 		submissionLink = task.submission?.link || '';
-	}
+	};
 
 	function closeSubmitModal() {
 		activeSubmitTask = null;

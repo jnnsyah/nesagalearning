@@ -16,9 +16,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	try {
 		// Fetch student's active class membership
-		const activeMembership = await db.query.keanggotaan.findFirst({
-			where: and(eq(keanggotaan.userId, locals.user.id), eq(keanggotaan.status, 'aktif'))
-		});
+		const [activeMembership] = await db
+			.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
+			.from(keanggotaan)
+			.where(and(eq(keanggotaan.userId, locals.user.id), eq(keanggotaan.status, 'aktif')))
+			.limit(1);
 
 		if (!activeMembership) {
 			return {
