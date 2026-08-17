@@ -3,20 +3,25 @@ import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/validators';
 import { AuthGatekeeper, type UserRole } from '$lib/server/auth/gatekeeper';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	if (locals.user) {
-		const targetPath = AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
+		const redirectTo = url.searchParams.get('redirectTo');
+		const targetPath =
+			redirectTo && redirectTo.startsWith('/')
+				? redirectTo
+				: AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
 		throw redirect(302, targetPath);
 	}
 	return {};
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, cookies, url }) => {
 		const formData = await request.formData();
 		const username = formData.get('username')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
 		const rememberMe = formData.get('rememberMe') === 'on';
+		const redirectToParam = url.searchParams.get('redirectTo') || formData.get('redirectTo')?.toString();
 
 		const validation = loginSchema.safeParse({ username, password, rememberMe });
 		if (!validation.success) {
@@ -42,7 +47,11 @@ export const actions: Actions = {
 				...cookie.attributes
 			});
 
-			const targetPath = AuthGatekeeper.getRoleDefaultPath(user.role as UserRole);
+			const targetPath =
+				redirectToParam && redirectToParam.startsWith('/')
+					? redirectToParam
+					: AuthGatekeeper.getRoleDefaultPath(user.role as UserRole);
+
 			throw redirect(302, targetPath);
 		} catch (err: any) {
 			if (err?.status === 302 || err?.location) throw err;

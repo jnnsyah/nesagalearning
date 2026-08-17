@@ -52,7 +52,7 @@
 		{placeholder}
 		{disabled}
 		{required}
-		{maxlength}
+		maxlength={maxlength > 0 ? maxlength : undefined}
 		class="custom-textarea"
 		class:custom-textarea--error={!!error}
 	></textarea>

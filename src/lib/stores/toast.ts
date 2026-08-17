@@ -8,14 +8,27 @@ export interface ToastMessage {
 	duration?: number;
 }
 
+const MAX_TOASTS = 3;
+
 function createToastStore() {
 	const { subscribe, update } = writable<ToastMessage[]>([]);
 
-	function add(type: ToastMessage['type'], message: string, title?: string, duration = 4000) {
+	function add(type: ToastMessage['type'], message: string, title?: string, duration = 3500) {
 		const id = Math.random().toString(36).substring(2, 9);
 		const newToast: ToastMessage = { id, type, title, message, duration };
 
-		update((toasts) => [...toasts, newToast]);
+		update((toasts) => {
+			// Avoid exact duplicate active toasts
+			const isDuplicate = toasts.some((t) => t.message === message && t.type === type);
+			if (isDuplicate) return toasts;
+
+			// Keep at most MAX_TOASTS (newest 3)
+			const updated = [...toasts, newToast];
+			if (updated.length > MAX_TOASTS) {
+				return updated.slice(updated.length - MAX_TOASTS);
+			}
+			return updated;
+		});
 
 		if (duration > 0) {
 			setTimeout(() => {

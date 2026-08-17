@@ -10,15 +10,17 @@ export interface NavItem {
 export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	siswa: [
 		{ label: 'Dashboard', href: '/siswa', icon: 'dashboard' },
+		{ label: 'Presensi QR', href: '/siswa/presensi', icon: 'calendar' },
 		{ label: 'Kurikulum Saya', href: '/siswa/kurikulum', icon: 'book' },
-		{ label: 'Jadwal & Presensi', href: '/siswa/pertemuan', icon: 'calendar' },
+		{ label: 'Jadwal & Pertemuan', href: '/siswa/pertemuan', icon: 'calendar' },
 		{ label: 'Tugas Saya', href: '/siswa/tugas', icon: 'task' },
 		{ label: 'Poin & Ranking', href: '/siswa/leaderboard', icon: 'trophy' }
 	],
 	mentor: [
 		{ label: 'Dashboard', href: '/mentor', icon: 'dashboard' },
+		{ label: 'Pertemuan Sesi', href: '/mentor/pertemuan', icon: 'calendar' },
+		{ label: 'Kelola Presensi', href: '/mentor/presensi', icon: 'users' },
 		{ label: 'Kurikulum', href: '/mentor/kurikulum', icon: 'book' },
-		{ label: 'Pertemuan & QR', href: '/mentor/pertemuan', icon: 'calendar' },
 		{ label: 'Data Siswa', href: '/mentor/siswa', icon: 'users' },
 		{ label: 'Grading Tugas', href: '/mentor/grading', icon: 'task', badge: 'PENDING' }
 	],

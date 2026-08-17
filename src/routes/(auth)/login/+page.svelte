@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+
 	let { form } = $props();
 
 	let showPassword = $state(false);
@@ -58,6 +60,9 @@
 		{/if}
 
 		<form method="POST" class="login-form">
+			{#if $page.url.searchParams.get('redirectTo')}
+				<input type="hidden" name="redirectTo" value={$page.url.searchParams.get('redirectTo')} />
+			{/if}
 			<!-- Username -->
 			<div class="field-group">
 				<label for="username" class="field-label-clean">Username</label>

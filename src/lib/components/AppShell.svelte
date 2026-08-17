@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { NavigationRegistry } from '$lib/navigation/registry';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import type { Snippet } from 'svelte';
 
 	interface User {
@@ -25,6 +26,9 @@
 
 	// Sidebar collapsed state
 	let sidebarCollapsed = $state(false);
+
+	// Logout confirmation modal state
+	let showLogoutModal = $state(false);
 
 	// Keyboard shortcut '[' to toggle sidebar collapse
 	function handleKeyDown(e: KeyboardEvent) {
@@ -75,8 +79,8 @@
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
 				},
 				{
-					href: '/mentor/grading',
-					label: 'Grading Tugas',
+					href: '/mentor/tugas',
+					label: 'Penilaian Tugas',
 					exact: false,
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`
 				}
@@ -162,22 +166,22 @@
 				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`
 			},
 			{
+				href: '/siswa/tugas',
+				label: 'Tugas Saya',
+				exact: false,
+				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`
+			},
+			{
 				href: '/siswa/kurikulum',
-				label: 'Materi & Kurikulum',
+				label: 'Materi',
 				exact: false,
 				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
 			},
 			{
 				href: '/siswa/jadwal',
-				label: 'Jadwal Pertemuan',
+				label: 'Jadwal',
 				exact: false,
 				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
-			},
-			{
-				href: '/siswa/progress',
-				label: 'Progress Belajar',
-				exact: false,
-				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`
 			}
 		];
 	});
@@ -243,14 +247,19 @@
 						<div class="user-badge" style="color: {currentRoleMeta.color};">{currentRoleMeta.badge}</div>
 					</div>
 				</div>
-				<a href="/logout" class="logout-btn" aria-label="Keluar dari akun">
+				<button
+					type="button"
+					onclick={() => (showLogoutModal = true)}
+					class="logout-btn"
+					aria-label="Keluar dari akun"
+				>
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
 						<polyline points="16 17 21 12 16 7"/>
 						<line x1="21" y1="12" x2="9" y2="12"/>
 					</svg>
 					<span>Keluar</span>
-				</a>
+				</button>
 			{/if}
 		</div>
 
@@ -299,9 +308,19 @@
 					<div class="user-pill-avatar">{currentUser?.fullName?.charAt(0) ?? 'U'}</div>
 					<span class="user-pill-name">{currentUser?.fullName ?? 'User'}</span>
 				</div>
-				<a href="/logout" class="btn-ghost hide-desktop" style="padding: 6px 12px; font-size: 12px;">
-					Keluar
-				</a>
+				<button
+					type="button"
+					onclick={() => (showLogoutModal = true)}
+					class="btn-logout-topbar hide-desktop"
+					aria-label="Keluar dari akun"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+						<polyline points="16 17 21 12 16 7"/>
+						<line x1="21" y1="12" x2="9" y2="12"/>
+					</svg>
+					<span>Keluar</span>
+				</button>
 			</div>
 		</header>
 
@@ -323,6 +342,20 @@
 			</a>
 		{/each}
 	</nav>
+
+	<!-- Confirm Modal Logout -->
+	<ConfirmModal
+		bind:open={showLogoutModal}
+		title="Keluar dari Akun?"
+		message="Apakah Anda yakin ingin keluar dari akun? Sesi Anda akan diakhiri."
+		confirmText="Ya, Keluar"
+		cancelText="Batal"
+		variant="danger"
+		onconfirm={() => {
+			showLogoutModal = false;
+			window.location.href = '/logout';
+		}}
+	/>
 </div>
 
 <style>
@@ -330,6 +363,28 @@
 		display: flex;
 		min-height: 100vh;
 		background-color: var(--bg-base);
+	}
+
+	.btn-logout-topbar {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: #ffffff;
+		border: 1px solid #fca5a5;
+		color: #e11d48;
+		font-family: var(--font-macro);
+		font-size: 12.5px;
+		font-weight: 700;
+		padding: 6px 12px;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-logout-topbar:hover {
+		background: #ffe4e6;
+		border-color: #e11d48;
 	}
 
 	/* ── Sidebar ── */

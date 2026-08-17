@@ -1,10 +1,35 @@
 <script lang="ts">
 	import { toast } from '$lib/stores/toast';
+
+	let touchStartY = 0;
+	let touchStartX = 0;
+
+	function handleTouchStart(e: TouchEvent) {
+		touchStartY = e.touches[0].clientY;
+		touchStartX = e.touches[0].clientX;
+	}
+
+	function handleTouchEnd(e: TouchEvent, id: string) {
+		const touchEndY = e.changedTouches[0].clientY;
+		const touchEndX = e.changedTouches[0].clientX;
+		const diffY = touchEndY - touchStartY;
+		const diffX = Math.abs(touchEndX - touchStartX);
+
+		// Swipe up (diffY < -30) or horizontal swipe (diffX > 60) dismisses toast on mobile
+		if (diffY < -30 || diffX > 60) {
+			toast.remove(id);
+		}
+	}
 </script>
 
 <div class="toast-container" aria-live="polite" aria-atomic="true">
 	{#each $toast as item (item.id)}
-		<div class="toast-card toast-card--{item.type}" role="status">
+		<div
+			class="toast-card toast-card--{item.type}"
+			role="status"
+			ontouchstart={handleTouchStart}
+			ontouchend={(e) => handleTouchEnd(e, item.id)}
+		>
 			<div class="toast-icon">
 				{#if item.type === 'success'}
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -46,16 +71,50 @@
 		flex-direction: column;
 		gap: 10px;
 		max-width: 380px;
-		width: calc(100% - 48px);
+		width: calc(100% - 32px);
 		pointer-events: none;
 	}
 
+	/* Mobile Native Banner Adaptation (Floating below topbar header) */
 	@media (max-width: 640px) {
 		.toast-container {
+			top: 68px;
 			bottom: auto;
-			top: 16px;
-			right: 16px;
-			width: calc(100% - 32px);
+			left: 50%;
+			right: auto;
+			transform: translateX(-50%);
+			width: calc(100vw - 24px);
+			max-width: 440px;
+			gap: 8px;
+		}
+
+		.toast-card {
+			padding: 12px 14px;
+			border-radius: 16px;
+			box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+			animation: toastSlideInMobile 280ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+		}
+
+		.toast-card:active {
+			transform: scale(0.98);
+		}
+
+		@keyframes toastSlideInMobile {
+			from { opacity: 0; transform: translateY(-24px) scale(0.92); }
+			to   { opacity: 1; transform: translateY(0) scale(1); }
+		}
+
+		.toast-icon {
+			width: 32px;
+			height: 32px;
+		}
+
+		.toast-title {
+			font-size: 12.5px;
+		}
+
+		.toast-msg {
+			font-size: 12px;
 		}
 	}
 
@@ -65,16 +124,20 @@
 		align-items: flex-start;
 		gap: 12px;
 		padding: 14px 16px;
-		background: #ffffff;
+		background: rgba(255, 255, 255, 0.96);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg);
 		border: 1px solid var(--border-hard);
-		box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.14);
-		animation: toastSlideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+		box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+		animation: toastSlideInDesktop 240ms cubic-bezier(0.16, 1, 0.3, 1);
 		transition: all 180ms ease;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 
-	@keyframes toastSlideIn {
-		from { opacity: 0; transform: translateY(16px) scale(0.96); }
+	@keyframes toastSlideInDesktop {
+		from { opacity: 0; transform: translateY(16px) scale(0.95); }
 		to   { opacity: 1; transform: translateY(0) scale(1); }
 	}
 

@@ -132,6 +132,16 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && isOpen) isOpen = false;
 	}
+	let popoverAlign = $state<'left' | 'right'>('left');
+	let popoverVAlign = $state<'bottom' | 'top'>('bottom');
+
+	$effect(() => {
+		if (isOpen && containerEl) {
+			const rect = containerEl.getBoundingClientRect();
+			popoverAlign = rect.left + 300 > window.innerWidth - 16 ? 'right' : 'left';
+			popoverVAlign = rect.bottom + 340 > window.innerHeight && rect.top > 340 ? 'top' : 'bottom';
+		}
+	});
 </script>
 
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
@@ -185,7 +195,11 @@
 
 	<!-- Calendar Popover Overlay -->
 	{#if isOpen}
-		<div class="calendar-popover">
+		<div
+			class="calendar-popover"
+			class:popover-right={popoverAlign === 'right'}
+			class:popover-top={popoverVAlign === 'top'}
+		>
 			<!-- Presets row -->
 			<div class="preset-row">
 				<button type="button" class="preset-chip" onclick={() => setPreset(0)}>Hari ini</button>
@@ -363,8 +377,24 @@
 		animation: popoverFade 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
+	.calendar-popover.popover-right {
+		left: auto;
+		right: 0;
+	}
+
+	.calendar-popover.popover-top {
+		top: auto;
+		bottom: calc(100% + 6px);
+		animation: popoverFadeUp 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
 	@keyframes popoverFade {
 		from { opacity: 0; transform: translateY(-6px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes popoverFadeUp {
+		from { opacity: 0; transform: translateY(6px); }
 		to   { opacity: 1; transform: translateY(0); }
 	}
 
