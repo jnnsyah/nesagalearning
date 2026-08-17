@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { auditLog } from '../db/schema/system';
 import { user as userTable } from '../db/schema/auth';
-import { eq, and, sql, count, desc, gte, lte, ilike, or } from 'drizzle-orm';
+import { eq, and, sql, count, desc, gte, lte, ilike, or, inArray } from 'drizzle-orm';
 
 export interface AuditLogItem {
 	id: number;
@@ -13,6 +13,7 @@ export interface AuditLogItem {
 	action: string;
 	entityType: string;
 	entityId: number | null;
+	entityLabel: string;
 	oldValues: any;
 	newValues: any;
 	ipAddress: string | null;
@@ -31,6 +32,60 @@ export interface PaginatedAuditLogs {
 		securityAlertsCount: number;
 		adminActionsCount: number;
 	};
+}
+
+function deriveEntityLabel(
+	entityType: string,
+	entityId: number | null,
+	oldValues: any,
+	newValues: any,
+	targetUserMap?: Map<number, { fullName: string; username: string }>
+): string {
+	// 1. If target is user & found in targetUserMap
+	if (entityType === 'user' && entityId && targetUserMap?.has(entityId)) {
+		const targetUser = targetUserMap.get(entityId)!;
+		return `${targetUser.fullName} (@${targetUser.username})`;
+	}
+
+	// 2. Extract from values payload if present
+	const vals = { ...oldValues, ...newValues };
+
+	if (vals.targetFullName || vals.targetUsername) {
+		const name = vals.targetFullName || vals.targetUsername;
+		const handle = vals.targetUsername ? ` (@${vals.targetUsername})` : '';
+		return `User: ${name}${handle}`;
+	}
+
+	if (vals.fullName || vals.username) {
+		const name = vals.fullName || vals.username;
+		const handle = vals.username ? ` (@${vals.username})` : '';
+		return `User: ${name}${handle}`;
+	}
+
+	if (vals.name) {
+		return `${vals.name}`;
+	}
+
+	if (vals.title) {
+		return `${vals.title}`;
+	}
+
+	if (vals.code) {
+		return `Kode: ${vals.code}`;
+	}
+
+	if (vals.studentName || vals.sessionTitle) {
+		const student = vals.studentName || '';
+		const session = vals.sessionTitle ? ` - ${vals.sessionTitle}` : '';
+		return `Presensi: ${student}${session}`;
+	}
+
+	if (vals.description && typeof vals.description === 'string' && vals.description.length < 40) {
+		return `${vals.description}`;
+	}
+
+	// Fallback
+	return `${entityType.toUpperCase()}${entityId ? ` #${entityId}` : ''}`;
 }
 
 export const AuditLogService = {
@@ -225,6 +280,22 @@ export const AuditLogService = {
 			.limit(safeLimit)
 			.offset(offset);
 
+		// Batch lookup for target user entities
+		const targetUserIds = records
+			.filter((r) => r.entityType === 'user' && r.entityId)
+			.map((r) => r.entityId as number);
+
+		const targetUserMap = new Map<number, { fullName: string; username: string }>();
+		if (targetUserIds.length > 0) {
+			const targetUsers = await db
+				.select({ id: userTable.id, fullName: userTable.fullName, username: userTable.username })
+				.from(userTable)
+				.where(inArray(userTable.id, targetUserIds));
+			for (const tu of targetUsers) {
+				targetUserMap.set(tu.id, { fullName: tu.fullName, username: tu.username });
+			}
+		}
+
 		const items: AuditLogItem[] = records.map((r) => ({
 			id: r.id,
 			actorId: r.actorId,
@@ -235,6 +306,7 @@ export const AuditLogService = {
 			action: r.action,
 			entityType: r.entityType,
 			entityId: r.entityId,
+			entityLabel: deriveEntityLabel(r.entityType, r.entityId, r.oldValues, r.newValues, targetUserMap),
 			oldValues: r.oldValues,
 			newValues: r.newValues,
 			ipAddress: r.ipAddress,

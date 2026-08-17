@@ -307,9 +307,12 @@
 								</td>
 
 								<td>
-									<span class="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-										{item.entityType}{item.entityId ? ` #${item.entityId}` : ''}
-									</span>
+									<div class="flex flex-col gap-0.5">
+										<span class="font-bold text-xs text-slate-800">{item.entityLabel}</span>
+										<span class="font-mono text-[11px] text-slate-500 font-semibold">
+											{item.entityType.toUpperCase()}{item.entityId ? ` #${item.entityId}` : ''}
+										</span>
+									</div>
 								</td>
 
 								<td class="font-mono text-xs text-slate-500">
@@ -435,8 +438,9 @@
 
 					<div class="meta-spec-card">
 						<span class="meta-spec-label">ENTITAS TARGET</span>
-						<div class="flex items-center gap-1.5 mt-1">
-							<span class="font-mono font-extrabold text-slate-800 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+						<div class="flex flex-col gap-0.5 mt-1">
+							<span class="font-bold text-xs text-slate-900">{selectedLog.entityLabel}</span>
+							<span class="font-mono text-[11px] text-slate-500 font-semibold">
 								{selectedLog.entityType.toUpperCase()}{selectedLog.entityId ? ` #${selectedLog.entityId}` : ''}
 							</span>
 						</div>
