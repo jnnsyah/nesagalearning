@@ -2,6 +2,7 @@ import { db } from '../db';
 import { auditLog } from '../db/schema/system';
 import { user as userTable } from '../db/schema/auth';
 import { eq, and, sql, count, desc, gte, lte, ilike, or, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 export interface AuditLogItem {
 	id: number;
@@ -210,6 +211,7 @@ export const AuditLogService = {
 		const offset = (safePage - 1) * safeLimit;
 
 		// Build WHERE conditions
+		const targetUser = alias(userTable, 'target_user');
 		const conditions = [];
 
 		if (params.role && params.role !== 'all') {
@@ -226,8 +228,12 @@ export const AuditLogService = {
 				or(
 					ilike(userTable.fullName, term),
 					ilike(userTable.username, term),
+					ilike(targetUser.fullName, term),
+					ilike(targetUser.username, term),
 					ilike(auditLog.action, term),
-					ilike(auditLog.entityType, term)
+					ilike(auditLog.entityType, term),
+					sql`${auditLog.newValues}::text ILIKE ${term}`,
+					sql`${auditLog.oldValues}::text ILIKE ${term}`
 				)
 			);
 		}
@@ -251,6 +257,7 @@ export const AuditLogService = {
 			.select({ total: count(auditLog.id) })
 			.from(auditLog)
 			.leftJoin(userTable, eq(auditLog.actorId, userTable.id))
+			.leftJoin(targetUser, and(eq(auditLog.entityType, 'user'), eq(auditLog.entityId, targetUser.id)))
 			.where(whereClause);
 
 		const total = Number(countRes?.total ?? 0);
@@ -275,6 +282,7 @@ export const AuditLogService = {
 			})
 			.from(auditLog)
 			.leftJoin(userTable, eq(auditLog.actorId, userTable.id))
+			.leftJoin(targetUser, and(eq(auditLog.entityType, 'user'), eq(auditLog.entityId, targetUser.id)))
 			.where(whereClause)
 			.orderBy(desc(auditLog.createdAt))
 			.limit(safeLimit)
