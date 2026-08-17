@@ -5,6 +5,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import DatePicker from '$lib/components/ui/DatePicker.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
+	import { toast } from '$lib/stores/toast';
 
 	let { data } = $props();
 
@@ -95,6 +96,20 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function formatKeyLabel(key: string): string {
+		return key
+			.replace(/([A-Z])/g, ' $1')
+			.replace(/^./, (str) => str.toUpperCase())
+			.replace(/_/g, ' ');
+	}
+
+	function copyToClipboard(text: string) {
+		if (typeof window !== 'undefined' && navigator?.clipboard) {
+			navigator.clipboard.writeText(text);
+			toast.success('Payload audit log berhasil disalin ke clipboard!');
+		}
 	}
 </script>
 
@@ -376,66 +391,141 @@
 	{@const actMeta = getActionMeta(selectedLog.action)}
 	<FormDrawer
 		bind:open={isDetailDrawerOpen}
-		title="Rincian Detail Audit Log"
+		title="Rincian Transaksi Audit"
 		subtitle={`ID Log #${selectedLog.id} • ${formatDateTime(selectedLog.createdAt)}`}
 		onclose={() => (isDetailDrawerOpen = false)}
 	>
 		{#snippet children()}
-			<div class="flex flex-col gap-4">
-				<!-- Actor Box -->
-				<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3">
-					<div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm flex-shrink-0">
+			<div class="audit-detail-container flex flex-col gap-5">
+				<!-- 1. Actor Profile Banner Card -->
+				<div class="actor-banner-card">
+					<div class="actor-avatar-lg">
 						{#if selectedLog.actorAvatarUrl}
 							<img src={selectedLog.actorAvatarUrl} alt={selectedLog.actorName} class="w-full h-full object-cover rounded-full" />
 						{:else}
-							{selectedLog.actorName ? selectedLog.actorName.charAt(0).toUpperCase() : 'S'}
+							<span>{selectedLog.actorName ? selectedLog.actorName.charAt(0).toUpperCase() : 'S'}</span>
 						{/if}
 					</div>
-					<div>
-						<h4 class="font-bold text-slate-800 text-xs">{selectedLog.actorName}</h4>
-						<p class="text-[11px] text-slate-500 font-mono">@{selectedLog.actorUsername} • <span class="capitalize font-semibold">{selectedLog.actorRole}</span></p>
+					<div class="actor-banner-info">
+						<div class="flex items-center gap-2">
+							<h3 class="actor-banner-name">{selectedLog.actorName}</h3>
+							<span class="role-pill role-pill--{selectedLog.actorRole}">
+								{selectedLog.actorRole.toUpperCase()}
+							</span>
+						</div>
+						<p class="actor-banner-username">
+							@{selectedLog.actorUsername}
+							{#if selectedLog.actorId}
+								<span class="text-slate-400 font-mono text-[11px] ml-1">(ID: #{selectedLog.actorId})</span>
+							{/if}
+						</p>
 					</div>
 				</div>
 
-				<!-- Event Meta -->
-				<div class="grid grid-cols-2 gap-3 text-xs">
-					<div class="p-2.5 bg-white border border-slate-200 rounded-md">
-						<span class="text-slate-500 block text-[10.5px] font-bold mb-1">JENIS AKSI</span>
-						<span class="action-pill inline-block" style="background: {actMeta.bg}; color: {actMeta.color};">
-							{actMeta.label}
+				<!-- 2. Action & Metadata Grid -->
+				<div class="meta-spec-grid">
+					<div class="meta-spec-card">
+						<span class="meta-spec-label">JENIS AKSI SISTEM</span>
+						<div class="flex items-center gap-1.5 mt-1">
+							<span class="action-pill font-bold" style="background: {actMeta.bg}; color: {actMeta.color};">
+								{actMeta.label}
+							</span>
+						</div>
+					</div>
+
+					<div class="meta-spec-card">
+						<span class="meta-spec-label">ENTITAS TARGET</span>
+						<div class="flex items-center gap-1.5 mt-1">
+							<span class="font-mono font-extrabold text-slate-800 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+								{selectedLog.entityType.toUpperCase()}{selectedLog.entityId ? ` #${selectedLog.entityId}` : ''}
+							</span>
+						</div>
+					</div>
+
+					<div class="meta-spec-card">
+						<span class="meta-spec-label">ALAMAT IP</span>
+						<span class="font-mono text-xs font-semibold text-slate-700 block mt-1">
+							{selectedLog.ipAddress || '127.0.0.1'}
 						</span>
 					</div>
-					<div class="p-2.5 bg-white border border-slate-200 rounded-md">
-						<span class="text-slate-500 block text-[10.5px] font-bold mb-1">ENTITAS TARGET</span>
-						<span class="font-mono font-bold text-slate-800">{selectedLog.entityType}{selectedLog.entityId ? ` #${selectedLog.entityId}` : ''}</span>
+
+					<div class="meta-spec-card">
+						<span class="meta-spec-label">WAKTU AUDIT</span>
+						<span class="font-mono text-xs font-semibold text-slate-700 block mt-1">
+							{formatDateTime(selectedLog.createdAt)}
+						</span>
 					</div>
 				</div>
 
-				<!-- Values JSON Viewer -->
-				{#if selectedLog.newValues}
-					<div>
-						<span class="font-bold text-xs text-slate-700 block mb-1.5">Nilai Baru / Perubahan (newValues):</span>
-						<pre class="p-3 bg-slate-900 text-emerald-400 text-xs font-mono rounded-lg overflow-x-auto max-h-48">{JSON.stringify(selectedLog.newValues, null, 2)}</pre>
+				<!-- 3. Formatted New Values Card -->
+				{#if selectedLog.newValues && Object.keys(selectedLog.newValues).length > 0}
+					<div class="values-card values-card--new">
+						<div class="values-card-header">
+							<div class="flex items-center gap-2">
+								<span class="dot-indicator bg-emerald-500"></span>
+								<h4 class="values-card-title text-emerald-800">Perubahan / Nilai Baru (newValues)</h4>
+							</div>
+						</div>
+						<div class="values-card-body">
+							<div class="flex flex-col gap-2">
+								{#each Object.entries(selectedLog.newValues) as [key, val]}
+									<div class="value-row">
+										<span class="value-key">{formatKeyLabel(key)}:</span>
+										<span class="value-val font-mono text-emerald-900 bg-emerald-50/80 border border-emerald-200/80 px-2 py-0.5 rounded">
+											{typeof val === 'object' ? JSON.stringify(val) : String(val)}
+										</span>
+									</div>
+								{/each}
+							</div>
+						</div>
 					</div>
 				{/if}
 
-				{#if selectedLog.oldValues}
-					<div>
-						<span class="font-bold text-xs text-slate-700 block mb-1.5">Nilai Sebelumnya (oldValues):</span>
-						<pre class="p-3 bg-slate-900 text-amber-300 text-xs font-mono rounded-lg overflow-x-auto max-h-48">{JSON.stringify(selectedLog.oldValues, null, 2)}</pre>
+				<!-- 4. Formatted Old Values Card -->
+				{#if selectedLog.oldValues && Object.keys(selectedLog.oldValues).length > 0}
+					<div class="values-card values-card--old">
+						<div class="values-card-header">
+							<div class="flex items-center gap-2">
+								<span class="dot-indicator bg-amber-500"></span>
+								<h4 class="values-card-title text-amber-800">Nilai Sebelumnya (oldValues)</h4>
+							</div>
+						</div>
+						<div class="values-card-body">
+							<div class="flex flex-col gap-2">
+								{#each Object.entries(selectedLog.oldValues) as [key, val]}
+									<div class="value-row">
+										<span class="value-key">{formatKeyLabel(key)}:</span>
+										<span class="value-val font-mono text-amber-900 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded">
+											{typeof val === 'object' ? JSON.stringify(val) : String(val)}
+										</span>
+									</div>
+								{/each}
+							</div>
+						</div>
 					</div>
 				{/if}
 
-				<!-- IP & Timestamp -->
-				<div class="text-[11px] text-slate-500 pt-2 border-t border-slate-200 flex justify-between">
-					<span>IP Address: <strong class="font-mono text-slate-700">{selectedLog.ipAddress || '127.0.0.1'}</strong></span>
-					<span>Waktu: <strong class="font-mono text-slate-700">{formatDateTime(selectedLog.createdAt)}</strong></span>
-				</div>
+				<!-- 5. Raw JSON Accordion -->
+				<details class="json-accordion">
+					<summary class="json-summary">
+						<span class="font-bold text-xs text-slate-700">Inspect Payload JSON Raw</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+					</summary>
+					<pre class="json-code-block">{JSON.stringify(selectedLog, null, 2)}</pre>
+				</details>
 			</div>
 		{/snippet}
 
 		{#snippet footer()}
-			<div class="drawer-footer-row">
+			<div class="drawer-footer-row flex justify-between items-center w-full">
+				<button
+					type="button"
+					onclick={() => copyToClipboard(JSON.stringify(selectedLog, null, 2))}
+					class="btn-copy-json"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+					<span>Salin Payload JSON</span>
+				</button>
 				<button type="button" onclick={() => (isDetailDrawerOpen = false)} class="btn-drawer-secondary">
 					Tutup
 				</button>
@@ -762,7 +852,9 @@
 
 	.drawer-footer-row {
 		display: flex;
-		justify-content: flex-end;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
 	}
 
 	.btn-drawer-secondary {
@@ -775,4 +867,181 @@
 		background: #ffffff;
 		cursor: pointer;
 	}
-</style>
+
+	/* Audit Drawer Styling */
+	.actor-banner-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.actor-avatar-lg {
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		background: #e0e7ff;
+		color: #4f46e5;
+		font-weight: 800;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		overflow: hidden;
+	}
+
+	.actor-banner-name {
+		font-weight: 800;
+		font-size: 14px;
+		color: #0f172a;
+	}
+
+	.actor-banner-username {
+		font-size: 12px;
+		color: #64748b;
+		margin-top: 1px;
+	}
+
+	.role-pill {
+		font-size: 10px;
+		font-weight: 800;
+		padding: 2px 7px;
+		border-radius: 9999px;
+		text-transform: uppercase;
+	}
+
+	.role-pill--admin { background: #fee2e2; color: #dc2626; }
+	.role-pill--mentor { background: #dcfce7; color: #166534; }
+	.role-pill--guru { background: #fef9c3; color: #854d0e; }
+	.role-pill--siswa { background: #e0f2fe; color: #0369a1; }
+	.role-pill--system { background: #f3e8ff; color: #6b21a8; }
+
+	.meta-spec-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+	}
+
+	.meta-spec-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 10px 12px;
+	}
+
+	.meta-spec-label {
+		font-size: 10px;
+		font-weight: 800;
+		color: #64748b;
+		letter-spacing: 0.04em;
+	}
+
+	.values-card {
+		border-radius: 10px;
+		border: 1px solid;
+		overflow: hidden;
+	}
+
+	.values-card--new {
+		background: #f0fdf4;
+		border-color: #bbf7d0;
+	}
+
+	.values-card--old {
+		background: #fffbeb;
+		border-color: #fde68a;
+	}
+
+	.values-card-header {
+		padding: 10px 12px;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+	}
+
+	.values-card-title {
+		font-size: 12px;
+		font-weight: 800;
+	}
+
+	.dot-indicator {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.values-card-body {
+		padding: 12px;
+	}
+
+	.value-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-size: 12px;
+	}
+
+	.value-key {
+		font-weight: 700;
+		color: #334155;
+	}
+
+	.value-val {
+		font-size: 11.5px;
+	}
+
+	.json-accordion {
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		overflow: hidden;
+		background: #ffffff;
+	}
+
+	.json-summary {
+		padding: 10px 14px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		user-select: none;
+	}
+
+	.json-summary:hover {
+		background: #f8fafc;
+	}
+
+	.json-code-block {
+		padding: 12px;
+		background: #0f172a;
+		color: #38bdf8;
+		font-size: 11px;
+		font-family: monospace;
+		margin: 0;
+		overflow-x: auto;
+		max-height: 220px;
+		border-top: 1px solid #1e293b;
+	}
+
+	.btn-copy-json {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		background: #f1f5f9;
+		border: 1px solid #cbd5e1;
+		border-radius: 8px;
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-copy-json:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+	}</style>
