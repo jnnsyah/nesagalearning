@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/validators';
 import { AuthGatekeeper, type UserRole } from '$lib/server/auth/gatekeeper';
+import { AuditLogService } from '$lib/server/services/audit-log.service';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
 	if (locals.user) {
@@ -26,6 +27,19 @@ export const actions: Actions = {
 		const validation = loginSchema.safeParse({ username, password, rememberMe });
 		if (!validation.success) {
 			const errors = validation.error.flatten().fieldErrors;
+			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+			await AuditLogService.logAction({
+				actorId: null,
+				action: 'LOGIN_FAILED',
+				entityType: 'user',
+				entityId: null,
+				newValues: {
+					username,
+					reason: 'Input form username/password tidak valid',
+					attemptedAt: new Date().toISOString()
+				},
+				ipAddress
+			});
 			return fail(400, {
 				username,
 				error: errors.username?.[0] || errors.password?.[0] || 'Input tidak valid'
@@ -47,6 +61,20 @@ export const actions: Actions = {
 				...cookie.attributes
 			});
 
+			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+			await AuditLogService.logAction({
+				actorId: Number(user.id),
+				action: 'LOGIN',
+				entityType: 'user',
+				entityId: Number(user.id),
+				newValues: {
+					username: user.username,
+					fullName: user.fullName,
+					role: user.role
+				},
+				ipAddress
+			});
+
 			const targetPath =
 				redirectToParam && redirectToParam.startsWith('/')
 					? redirectToParam
@@ -55,6 +83,21 @@ export const actions: Actions = {
 			throw redirect(302, targetPath);
 		} catch (err: any) {
 			if (err?.status === 302 || err?.location) throw err;
+
+			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+			await AuditLogService.logAction({
+				actorId: null,
+				action: 'LOGIN_FAILED',
+				entityType: 'user',
+				entityId: null,
+				newValues: {
+					username,
+					reason: err.message || 'Username atau password salah',
+					attemptedAt: new Date().toISOString()
+				},
+				ipAddress
+			});
+
 			return fail(400, {
 				username,
 				error: err.message || 'Login gagal'
