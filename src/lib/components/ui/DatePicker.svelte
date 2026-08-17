@@ -7,7 +7,8 @@
 		placeholder = 'Pilih tanggal…',
 		disabled = false,
 		error = '',
-		id = ''
+		id = '',
+		onchange
 	}: {
 		name?: string;
 		label?: string;
@@ -17,6 +18,7 @@
 		disabled?: boolean;
 		error?: string;
 		id?: string;
+		onchange?: (val: string) => void;
 	} = $props();
 
 	let isOpen     = $state(false);
@@ -104,6 +106,7 @@
 		const dStr = String(d).padStart(2, '0');
 		value = `${viewYear}-${mStr}-${dStr}`;
 		isOpen = false;
+		onchange?.(value);
 	}
 
 	function setPreset(offsetDays: number) {
@@ -116,11 +119,13 @@
 		viewYear = y;
 		viewMonth = target.getMonth();
 		isOpen = false;
+		onchange?.(value);
 	}
 
 	function clearValue() {
 		value = '';
 		isOpen = false;
+		onchange?.('');
 	}
 
 	function isSelectedDate(day: number, isCurrentMonth: boolean) {

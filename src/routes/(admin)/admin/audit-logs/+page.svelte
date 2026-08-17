@@ -46,7 +46,10 @@
 		if (dateFrom) params.set('dateFrom', dateFrom);
 		if (dateTo) params.set('dateTo', dateTo);
 		params.set('page', '1');
-		goto(`?${params.toString()}`);
+
+		const queryString = params.toString();
+		const targetUrl = queryString ? `?${queryString}` : '/admin/audit-logs';
+		goto(targetUrl, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
 	function resetFilters() {
@@ -55,7 +58,18 @@
 		selectedAction = 'all';
 		dateFrom = '';
 		dateTo = '';
-		goto('/admin/audit-logs');
+		goto('/admin/audit-logs', { keepFocus: true, noScroll: true, replaceState: true });
+	}
+
+	function goToPage(pageNum: number) {
+		const params = new URLSearchParams();
+		if (searchVal.trim()) params.set('search', searchVal.trim());
+		if (selectedRole !== 'all') params.set('role', selectedRole);
+		if (selectedAction !== 'all') params.set('action', selectedAction);
+		if (dateFrom) params.set('dateFrom', dateFrom);
+		if (dateTo) params.set('dateTo', dateTo);
+		params.set('page', String(pageNum));
+		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
 	function openDetailDrawer(item: any) {
@@ -204,7 +218,7 @@
 	     ══════════════════════════════════════════════════════════ -->
 	<FilterBar>
 		{#snippet search()}
-			<div class="flex items-center gap-2">
+			<form onsubmit={(e) => { e.preventDefault(); applyFilters(); }} class="flex items-center gap-2 w-full">
 				<div class="flex-1">
 					<TextInput
 						name="search"
@@ -213,14 +227,14 @@
 						clearable
 					/>
 				</div>
-				<button type="button" onclick={applyFilters} class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5 flex-shrink-0">
+				<button type="submit" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5 flex-shrink-0">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<span>Terapkan</span>
+					<span>Cari</span>
 				</button>
 				<button type="button" onclick={resetFilters} class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer flex-shrink-0">
 					Reset
 				</button>
-			</div>
+			</form>
 		{/snippet}
 
 		{#snippet filters()}
@@ -228,24 +242,28 @@
 				name="role"
 				options={roleOptions}
 				bind:value={selectedRole}
+				onchange={applyFilters}
 			/>
 
 			<CustomSelect
 				name="action"
 				options={actionOptions}
 				bind:value={selectedAction}
+				onchange={applyFilters}
 			/>
 
 			<DatePicker
 				name="dateFrom"
 				placeholder="Tanggal Mulai"
 				bind:value={dateFrom}
+				onchange={applyFilters}
 			/>
 
 			<DatePicker
 				name="dateTo"
 				placeholder="Tanggal Akhir"
 				bind:value={dateTo}
+				onchange={applyFilters}
 			/>
 		{/snippet}
 	</FilterBar>
@@ -346,9 +364,13 @@
 				</div>
 				<div class="pagination-buttons">
 					{#if data.auditLogsData.page > 1}
-						<a href="?page={data.auditLogsData.page - 1}&search={searchVal}&role={selectedRole}&action={selectedAction}" class="page-nav-btn">
+						<button
+							type="button"
+							onclick={() => goToPage(data.auditLogsData.page - 1)}
+							class="page-nav-btn cursor-pointer"
+						>
 							&larr; Sebelumnya
-						</a>
+						</button>
 					{:else}
 						<span class="page-nav-btn page-nav-btn--disabled">&larr; Sebelumnya</span>
 					{/if}
@@ -358,7 +380,13 @@
 							{#if pNum === data.auditLogsData.page}
 								<span class="page-num page-num--active">{pNum}</span>
 							{:else if Math.abs(pNum - data.auditLogsData.page) <= 2 || pNum === 1 || pNum === data.auditLogsData.totalPages}
-								<a href="?page={pNum}&search={searchVal}&role={selectedRole}&action={selectedAction}" class="page-num">{pNum}</a>
+								<button
+									type="button"
+									onclick={() => goToPage(pNum)}
+									class="page-num cursor-pointer"
+								>
+									{pNum}
+								</button>
 							{:else if Math.abs(pNum - data.auditLogsData.page) === 3}
 								<span class="page-num-dots">...</span>
 							{/if}
@@ -366,9 +394,13 @@
 					</div>
 
 					{#if data.auditLogsData.page < data.auditLogsData.totalPages}
-						<a href="?page={data.auditLogsData.page + 1}&search={searchVal}&role={selectedRole}&action={selectedAction}" class="page-nav-btn">
+						<button
+							type="button"
+							onclick={() => goToPage(data.auditLogsData.page + 1)}
+							class="page-nav-btn cursor-pointer"
+						>
 							Selanjutnya &rarr;
-						</a>
+						</button>
 					{:else}
 						<span class="page-nav-btn page-nav-btn--disabled">Selanjutnya &rarr;</span>
 					{/if}
