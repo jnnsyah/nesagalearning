@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	let {
 		open = $bindable(false),
 		title = 'Konfirmasi Tindakan',
@@ -11,7 +13,8 @@
 		saveLoading = false,
 		onconfirm,
 		oncancel,
-		onsave
+		onsave,
+		children
 	}: {
 		open?: boolean;
 		title?: string;
@@ -25,6 +28,7 @@
 		onconfirm?: () => void;
 		oncancel?: () => void;
 		onsave?: () => void;
+		children?: Snippet;
 	} = $props();
 
 	function handleCancel() {
@@ -78,6 +82,11 @@
 			<div class="content-body">
 				<h2 class="confirm-title">{title}</h2>
 				<p class="confirm-msg">{message}</p>
+				{#if children}
+					<div class="confirm-children text-left mt-3">
+						{@render children()}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Action Buttons -->

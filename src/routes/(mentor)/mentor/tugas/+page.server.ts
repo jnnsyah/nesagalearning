@@ -60,7 +60,7 @@ export const actions: Actions = {
 
 		try {
 			await SubmissionService.reviewSubmission({
-				reviewerId: locals.user.id,
+				reviewerId: Number(locals.user.id),
 				submissionId: parseResult.data.submissionId,
 				status: parseResult.data.status,
 				feedback: parseResult.data.feedback

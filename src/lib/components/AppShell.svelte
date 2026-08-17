@@ -9,6 +9,7 @@
 		fullName?: string;
 		username?: string;
 		role?: 'siswa' | 'mentor' | 'guru' | 'admin' | string;
+		avatarUrl?: string | null;
 	}
 
 	let {
@@ -83,6 +84,12 @@
 					label: 'Penilaian Tugas',
 					exact: false,
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`
+				},
+				{
+					href: '/mentor/profile',
+					label: 'Profil Saya',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
 				}
 			];
 		}
@@ -112,6 +119,12 @@
 					label: 'Daftar Pertemuan',
 					exact: false,
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+				},
+				{
+					href: '/guru/profile',
+					label: 'Profil Saya',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
 				}
 			];
 		}
@@ -149,10 +162,22 @@
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
 				},
 				{
-					href: '/admin/master',
-					label: 'Master Data',
+					href: '/admin/kelas',
+					label: 'Manajemen Kelas',
 					exact: false,
-					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+				},
+				{
+					href: '/admin/master',
+					label: 'Master Data Operasional',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M21 19c0 1.66-4 3-9 3s-9-1.34-9-3"/></svg>`
+				},
+				{
+					href: '/admin/profile',
+					label: 'Profil Saya',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
 				}
 			];
 		}
@@ -182,6 +207,12 @@
 				label: 'Jadwal',
 				exact: false,
 				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+			},
+			{
+				href: '/siswa/profile',
+				label: 'Profil Saya',
+				exact: false,
+				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
 			}
 		];
 	});
@@ -236,17 +267,27 @@
 		<div class="sidebar__user">
 			<div class="sidebar-user-divider"></div>
 			{#if sidebarCollapsed}
-				<div class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
-					{currentUser?.fullName?.charAt(0) ?? 'U'}
-				</div>
+				<a href="/{role}/profile" class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
+					{#if currentUser?.avatarUrl}
+						<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
+					{:else}
+						{currentUser?.fullName?.charAt(0) ?? 'U'}
+					{/if}
+				</a>
 			{:else}
-				<div class="user-profile-box">
-					<div class="user-avatar">{currentUser?.fullName?.charAt(0) ?? 'U'}</div>
+				<a href="/{role}/profile" class="user-profile-box user-profile-box--link" title="Lihat Profil Saya">
+					<div class="user-avatar">
+						{#if currentUser?.avatarUrl}
+							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
+						{:else}
+							{currentUser?.fullName?.charAt(0) ?? 'U'}
+						{/if}
+					</div>
 					<div class="user-profile-info">
 						<div class="user-name">{currentUser?.fullName ?? 'Pengguna'}</div>
 						<div class="user-badge" style="color: {currentRoleMeta.color};">{currentRoleMeta.badge}</div>
 					</div>
-				</div>
+				</a>
 				<button
 					type="button"
 					onclick={() => (showLogoutModal = true)}
@@ -304,10 +345,16 @@
 			</div>
 
 			<div class="topbar-right">
-				<div class="user-pill hide-mobile">
-					<div class="user-pill-avatar">{currentUser?.fullName?.charAt(0) ?? 'U'}</div>
+				<a href="/{role}/profile" class="user-pill hide-mobile" title="Lihat Profil Saya">
+					<div class="user-pill-avatar">
+						{#if currentUser?.avatarUrl}
+							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
+						{:else}
+							{currentUser?.fullName?.charAt(0) ?? 'U'}
+						{/if}
+					</div>
 					<span class="user-pill-name">{currentUser?.fullName ?? 'User'}</span>
-				</div>
+				</a>
 				<button
 					type="button"
 					onclick={() => (showLogoutModal = true)}
@@ -532,6 +579,13 @@
 		align-items: center;
 		gap: 10px;
 		padding: 4px;
+		text-decoration: none;
+		border-radius: var(--radius-md);
+		transition: background 150ms ease;
+	}
+
+	.user-profile-box--link:hover {
+		background: var(--primary-light);
 	}
 
 	.user-avatar {
@@ -548,6 +602,14 @@
 		justify-content: center;
 		flex-shrink: 0;
 		box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+		overflow: hidden;
+	}
+
+	.user-avatar-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		border-radius: 50%;
 	}
 
 	.user-avatar-sm {
@@ -563,7 +625,13 @@
 		align-items: center;
 		justify-content: center;
 		margin: 4px auto;
-		cursor: default;
+		cursor: pointer;
+		text-decoration: none;
+		overflow: hidden;
+	}
+
+	.user-avatar-sm:hover {
+		transform: scale(1.05);
 	}
 
 	.user-profile-info {
@@ -709,6 +777,14 @@
 		font-size: 13px;
 		font-weight: 600;
 		color: var(--text-primary);
+		text-decoration: none;
+		transition: all 150ms ease;
+	}
+
+	.user-pill:hover {
+		background: var(--primary-light);
+		border-color: var(--primary-border);
+		color: var(--primary);
 	}
 
 	.user-pill-avatar {
@@ -723,6 +799,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
 	}
 
 	.user-pill-name {

@@ -159,7 +159,13 @@ export async function seed() {
 			name: 'Kelas 1 - TA 2026/2027',
 			isActive: true
 		})
+		.onConflictDoNothing()
 		.returning();
+
+	const currentKelas1 = kelas1 || (await db.query.kelasInstance.findFirst());
+	if (!currentKelas1) {
+		throw new Error('Failed to resolve KelasInstance');
+	}
 
 	// 6. Keanggotaan & MentorAssignment
 	console.log('Seeding keanggotaan & mentor assignments...');
@@ -175,7 +181,7 @@ export async function seed() {
 			.insert(schema.keanggotaan)
 			.values({
 				userId: targetSiswa1.id,
-				kelasInstanceId: kelas1.id,
+				kelasInstanceId: currentKelas1.id,
 				status: 'aktif'
 			})
 			.onConflictDoNothing();
@@ -184,7 +190,7 @@ export async function seed() {
 			.insert(schema.streakCounter)
 			.values({
 				userId: targetSiswa1.id,
-				kelasInstanceId: kelas1.id,
+				kelasInstanceId: currentKelas1.id,
 				currentStreak: 0,
 				maxStreak: 0
 			})
@@ -196,7 +202,7 @@ export async function seed() {
 			.insert(schema.keanggotaan)
 			.values({
 				userId: targetSiswa2.id,
-				kelasInstanceId: kelas1.id,
+				kelasInstanceId: currentKelas1.id,
 				status: 'aktif'
 			})
 			.onConflictDoNothing();
@@ -205,7 +211,7 @@ export async function seed() {
 			.insert(schema.streakCounter)
 			.values({
 				userId: targetSiswa2.id,
-				kelasInstanceId: kelas1.id,
+				kelasInstanceId: currentKelas1.id,
 				currentStreak: 0,
 				maxStreak: 0
 			})
@@ -217,7 +223,7 @@ export async function seed() {
 			.insert(schema.mentorAssignment)
 			.values({
 				userId: targetMentor.id,
-				kelasInstanceId: kelas1.id
+				kelasInstanceId: currentKelas1.id
 			})
 			.onConflictDoNothing();
 	}
@@ -247,6 +253,49 @@ export async function seed() {
 	for (const cfg of configs) {
 		await db.insert(schema.pointConfig).values(cfg).onConflictDoNothing();
 	}
+
+	// 8. Operational Master Data (Room, ActivityType, Avatar, BadgeType)
+	console.log('Seeding operational master data...');
+	await db
+		.insert(schema.room)
+		.values([
+			{ name: 'Lab Komputer 1 (TKJ)', description: 'Gedung B Lantai 2 — Lab Komputer & Server' },
+			{ name: 'Lab Komputer 2 (RPL)', description: 'Gedung B Lantai 2 — Software Development' },
+			{ name: 'Ruang Teori 101', description: 'Gedung A Lantai 1 — Ruang Kuliah & Presentasi' }
+		])
+		.onConflictDoNothing();
+
+	await db
+		.insert(schema.activityType)
+		.values([
+			{ code: 'teori', name: 'Teori (Pendalaman Konsep)', description: 'Sesi instruksional & penyampaian modul teori utama.' },
+			{ code: 'praktik', name: 'Praktik (Hands-on Lab)', description: 'Praktik langsung pembuatan proyek & latihan coding.' },
+			{ code: 'teori_praktik', name: 'Teori & Praktik', description: 'Kombinasi penyampaian konsep dan latihan praktikal.' },
+			{ code: 'games', name: 'Games / Challenge', description: 'Tantangan interaktif & permainan edukatif.' },
+			{ code: 'quiz', name: 'Quiz / Evaluasi', description: 'Sesi kuis terstruktur & penilaian pemahaman.' },
+			{ code: 'santai', name: 'Santai / Networking', description: 'Sesi diskusi santai, keakraban & sharing session.' }
+		])
+		.onConflictDoNothing();
+
+	await db
+		.insert(schema.avatar)
+		.values([
+			{ name: 'Cyber Explorer', imageUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=explorer' },
+			{ name: 'Pixel Wizard', imageUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=wizard' },
+			{ name: 'Code Ninja', imageUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=ninja' }
+		])
+		.onConflictDoNothing();
+
+	await db
+		.insert(schema.badgeType)
+		.values([
+			{ name: 'First Code', description: 'Menyelesaikan 1 submission tugas pertama', criteria: 'Submit 1 task approved', triggerType: 'tasks_approved', triggerThreshold: 1 },
+			{ name: 'Streak Master 5x', description: 'Hadir 5 kali berturut-turut tanpa absen', criteria: '5x streak', triggerType: 'streak_milestone', triggerThreshold: 5 },
+			{ name: 'Point Hunter 500', description: 'Mengumpulkan total akumulasi 500 poin', criteria: '500 Poin', triggerType: 'total_points', triggerThreshold: 500 },
+			{ name: 'Rajin Presensi', description: 'Hadir presensi sebanyak 10 kali', criteria: '10x Presensi', triggerType: 'attendance_count', triggerThreshold: 10 },
+			{ name: 'Special Recognition', description: 'Lencana khusus dari mentor/admin', criteria: 'Penghargaan khusus', triggerType: 'manual_award', triggerThreshold: 0 }
+		])
+		.onConflictDoNothing();
 
 	console.log('✅ Database seeding complete!');
 }

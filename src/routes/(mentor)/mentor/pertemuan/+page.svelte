@@ -743,14 +743,16 @@
 								label="Tipe Aktivitas"
 								required
 								bind:value={formActivityType}
-								options={[
-									{ value: 'teori', label: 'Teori (Pendalaman Konsep)' },
-									{ value: 'praktik', label: 'Praktik (Hands-on Lab)' },
-									{ value: 'teori_praktik', label: 'Teori & Praktik' },
-									{ value: 'games', label: 'Games / Challenge' },
-									{ value: 'quiz', label: 'Quiz / Evaluasi' },
-									{ value: 'santai', label: 'Santai / Networking' }
-								]}
+								options={data.activityTypesOptions && data.activityTypesOptions.length > 0
+									? data.activityTypesOptions
+									: [
+											{ value: 'teori', label: 'Teori (Pendalaman Konsep)' },
+											{ value: 'praktik', label: 'Praktik (Hands-on Lab)' },
+											{ value: 'teori_praktik', label: 'Teori & Praktik' },
+											{ value: 'games', label: 'Games / Challenge' },
+											{ value: 'quiz', label: 'Quiz / Evaluasi' },
+											{ value: 'santai', label: 'Santai / Networking' }
+										]}
 								placeholder="-- Pilih Tipe Aktivitas --"
 							/>
 						</div>

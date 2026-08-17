@@ -14,7 +14,8 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 		{ label: 'Kurikulum Saya', href: '/siswa/kurikulum', icon: 'book' },
 		{ label: 'Jadwal & Pertemuan', href: '/siswa/pertemuan', icon: 'calendar' },
 		{ label: 'Tugas Saya', href: '/siswa/tugas', icon: 'task' },
-		{ label: 'Poin & Ranking', href: '/siswa/leaderboard', icon: 'trophy' }
+		{ label: 'Poin & Ranking', href: '/siswa/leaderboard', icon: 'trophy' },
+		{ label: 'Profil Saya', href: '/siswa/profile', icon: 'user' }
 	],
 	mentor: [
 		{ label: 'Dashboard', href: '/mentor', icon: 'dashboard' },
@@ -22,20 +23,22 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 		{ label: 'Kelola Presensi', href: '/mentor/presensi', icon: 'users' },
 		{ label: 'Kurikulum', href: '/mentor/kurikulum', icon: 'book' },
 		{ label: 'Data Siswa', href: '/mentor/siswa', icon: 'users' },
-		{ label: 'Grading Tugas', href: '/mentor/grading', icon: 'task', badge: 'PENDING' }
+		{ label: 'Grading Tugas', href: '/mentor/grading', icon: 'task', badge: 'PENDING' },
+		{ label: 'Profil Saya', href: '/mentor/profile', icon: 'user' }
 	],
 	guru: [
 		{ label: 'Dashboard Overview', href: '/guru', icon: 'dashboard' },
 		{ label: 'Pantau Kurikulum', href: '/guru/kurikulum', icon: 'book' },
 		{ label: 'Rekap Presensi', href: '/guru/presensi', icon: 'calendar' },
-		{ label: 'Laporan Siswa', href: '/guru/siswa', icon: 'users' }
+		{ label: 'Laporan Siswa', href: '/guru/siswa', icon: 'users' },
+		{ label: 'Profil Saya', href: '/guru/profile', icon: 'user' }
 	],
 	admin: [
 		{ label: 'Control Center', href: '/admin', icon: 'dashboard' },
 		{ label: 'Kelola User', href: '/admin/users', icon: 'users' },
-		{ label: 'Tahun Ajaran', href: '/admin/tahun-ajaran', icon: 'calendar' },
-		{ label: 'Kenaikan Kelas', href: '/admin/promosi', icon: 'trending-up' },
-		{ label: 'Konfigurasi Poin', href: '/admin/points', icon: 'settings' }
+		{ label: 'Master Operasional', href: '/admin/master', icon: 'database' },
+		{ label: 'Audit Log System', href: '/admin/audit-logs', icon: 'activity' },
+		{ label: 'Profil Saya', href: '/admin/profile', icon: 'user' }
 	]
 };
 

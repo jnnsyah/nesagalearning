@@ -34,3 +34,11 @@ export const avatar = pgTable('avatar', {
 	imageUrl: text('image_url').notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const activityType = pgTable('activity_type', {
+	id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+	code: text('code').notNull().unique(),
+	name: text('name').notNull(),
+	description: text('description'),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});

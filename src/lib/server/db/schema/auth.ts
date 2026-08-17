@@ -5,6 +5,7 @@ export const user = pgTable(
 	{
 		id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
 		username: text('username').notNull().unique(),
+		nisn: text('nisn').unique(),
 		email: text('email').unique(),
 		passwordHash: text('password_hash').notNull(),
 		fullName: text('full_name').notNull(),
@@ -15,7 +16,10 @@ export const user = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(table) => [index('idx_user_role').on(table.role)]
+	(table) => [
+		index('idx_user_role').on(table.role),
+		index('idx_user_nisn').on(table.nisn)
+	]
 );
 
 export const session = pgTable(

@@ -16,7 +16,8 @@
 		searchable = true,
 		disabled = false,
 		error = '',
-		id = ''
+		id = '',
+		onchange
 	}: {
 		name?: string;
 		label?: string;
@@ -28,6 +29,7 @@
 		disabled?: boolean;
 		error?: string;
 		id?: string;
+		onchange?: (value: string | number | null) => void;
 	} = $props();
 
 	let isOpen       = $state(false);
@@ -47,10 +49,25 @@
 			: options
 	);
 
+	function toggleOpen() {
+		if (disabled) return;
+		if (!isOpen) {
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(new CustomEvent('nlc:close-popovers', { detail: { source: containerEl } }));
+			}
+			isOpen = true;
+		} else {
+			isOpen = false;
+		}
+	}
+
 	function selectOption(opt: Option) {
 		value = opt.value;
 		isOpen = false;
 		searchQuery = '';
+		if (onchange) {
+			onchange(opt.value);
+		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -64,6 +81,23 @@
 			isOpen = false;
 		}
 	}
+
+	// Single active popover enforcement: close when any other popover is opened
+	$effect(() => {
+		function handleClosePopovers(e: Event) {
+			const customEvt = e as CustomEvent;
+			if (customEvt.detail?.source !== containerEl) {
+				isOpen = false;
+			}
+		}
+
+		if (typeof window !== 'undefined') {
+			window.addEventListener('nlc:close-popovers', handleClosePopovers);
+			return () => {
+				window.removeEventListener('nlc:close-popovers', handleClosePopovers);
+			};
+		}
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} onclick={handleClickOutside} />
@@ -89,7 +123,7 @@
 		class:select-trigger--open={isOpen}
 		class:select-trigger--error={!!error}
 		{disabled}
-		onclick={() => (isOpen = !isOpen)}
+		onclick={toggleOpen}
 		aria-haspopup="listbox"
 		aria-expanded={isOpen}
 	>
@@ -260,7 +294,7 @@
 		top: calc(100% + 6px);
 		left: 0;
 		right: 0;
-		z-index: 70;
+		z-index: 1000;
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);

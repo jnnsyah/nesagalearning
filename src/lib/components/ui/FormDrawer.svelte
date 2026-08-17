@@ -21,10 +21,33 @@
 		open = false;
 		onclose();
 	}
+
+	// Lock body scroll when drawer is open to prevent page scrolling through overlay
+	$effect(() => {
+		if (open) {
+			const scrollY = window.scrollY;
+			document.body.style.overflow = 'hidden';
+			document.body.style.position = 'fixed';
+			document.body.style.top = `-${scrollY}px`;
+			document.body.style.width = '100%';
+			return () => {
+				document.body.style.overflow = '';
+				document.body.style.position = '';
+				document.body.style.top = '';
+				document.body.style.width = '';
+				window.scrollTo(0, scrollY);
+			};
+		}
+	});
 </script>
 
 {#if open}
-	<div class="drawer-overlay" onclick={handleOverlayClick} role="presentation">
+	<div
+		class="drawer-overlay"
+		onclick={handleOverlayClick}
+		onwheel={(e) => e.stopPropagation()}
+		role="presentation"
+	>
 		<aside
 			class="form-drawer"
 			onclick={(e) => e.stopPropagation()}
@@ -74,6 +97,7 @@
 		display: flex;
 		justify-content: flex-end;
 		animation: fadeIn 200ms ease;
+		overscroll-behavior: contain;
 	}
 
 	.form-drawer {
@@ -148,6 +172,7 @@
 	.form-drawer__body {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding: 24px;
 	}
 

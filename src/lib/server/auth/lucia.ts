@@ -21,7 +21,8 @@ export const lucia = new Lucia(adapter, {
 			role: attributes.role as 'admin' | 'guru' | 'mentor' | 'siswa',
 			avatarUrl: attributes.avatarUrl,
 			googleId: attributes.googleId,
-			isActive: attributes.isActive
+			isActive: attributes.isActive,
+			nisn: attributes.nisn ?? null
 		};
 	}
 });

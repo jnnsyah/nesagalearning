@@ -1,9 +1,10 @@
 import { db } from '../db';
-import { subPhase, phase } from '../db/schema/curriculum';
+import { subPhase, phase, curriculumTrack } from '../db/schema/curriculum';
 import { pertemuan, attendance } from '../db/schema/session';
 import { task, submission } from '../db/schema/task';
-import { keanggotaan } from '../db/schema/academic';
-import { eq, and, inArray } from 'drizzle-orm';
+import { keanggotaan, kelasInstance, tahunAjaran, tingkat } from '../db/schema/academic';
+import { pointLog } from '../db/schema/gamification';
+import { eq, and, inArray, asc, ne, sum } from 'drizzle-orm';
 
 export interface SubPhaseProgressStatus {
 	subPhaseId: number;
@@ -20,6 +21,23 @@ export interface PhaseProgressSummary {
 	totalSubPhases: number;
 	completedSubPhases: number;
 	progressPercentage: number;
+}
+
+export interface HistoricalClassProgress {
+	kelasInstanceId: number;
+	kelasName: string;
+	tahunAjaranName: string;
+	tingkatName: string;
+	trackTitle: string;
+	status: string;
+	joinedAt: Date;
+	totalPointsEarned: number;
+	attendanceSummary: {
+		hadir: number;
+		excused: number;
+		total: number;
+	};
+	phaseProgress: PhaseProgressSummary[];
 }
 
 export class ProgressService {
@@ -131,37 +149,33 @@ export class ProgressService {
 		userId: number,
 		kelasInstanceId: number
 	): Promise<PhaseProgressSummary[]> {
-		// Get all phases & subPhases for the kelasInstance's curriculum track
-		const membership = await db.query.keanggotaan.findFirst({
-			where: and(eq(keanggotaan.userId, userId), eq(keanggotaan.kelasInstanceId, kelasInstanceId)),
-			with: {
-				kelasInstance: {
-					with: {
-						curriculumTrack: {
-							with: {
-								phases: {
-									with: {
-										subPhases: true
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		});
+		// 1. Get curriculumTrackId from kelasInstance
+		const [kelas] = await db
+			.select({ curriculumTrackId: kelasInstance.curriculumTrackId })
+			.from(kelasInstance)
+			.where(eq(kelasInstance.id, kelasInstanceId));
 
-		if (!membership || !membership.kelasInstance?.curriculumTrack) {
+		if (!kelas || !kelas.curriculumTrackId) {
 			return [];
 		}
 
-		const phases = membership.kelasInstance.curriculumTrack.phases ?? [];
+		// 2. Get phases for curriculum track
+		const phasesList = await db
+			.select({ id: phase.id, title: phase.title })
+			.from(phase)
+			.where(eq(phase.curriculumTrackId, kelas.curriculumTrackId))
+			.orderBy(asc(phase.sortOrder));
+
 		const summary: PhaseProgressSummary[] = [];
 
-		for (const p of phases) {
-			const subPhasesList = p.subPhases ?? [];
-			let completedCount = 0;
+		for (const p of phasesList) {
+			const subPhasesList = await db
+				.select({ id: subPhase.id })
+				.from(subPhase)
+				.where(eq(subPhase.phaseId, p.id))
+				.orderBy(asc(subPhase.sortOrder));
 
+			let completedCount = 0;
 			for (const sp of subPhasesList) {
 				const isCompleted = await ProgressService.checkSubPhaseCompletion(
 					userId,
@@ -187,5 +201,88 @@ export class ProgressService {
 		}
 
 		return summary;
+	}
+
+	/**
+	 * Get read-only historical progress for a student across past grade levels (naik/tinggal/keluar)
+	 */
+	static async getStudentHistoricalProgress(userId: number): Promise<HistoricalClassProgress[]> {
+		const pastMemberships = await db
+			.select({
+				kelasInstanceId: keanggotaan.kelasInstanceId,
+				status: keanggotaan.status,
+				joinedAt: keanggotaan.joinedAt,
+				kelasName: kelasInstance.name,
+				tahunAjaranName: tahunAjaran.name,
+				tingkatName: tingkat.name,
+				trackTitle: curriculumTrack.title
+			})
+			.from(keanggotaan)
+			.innerJoin(kelasInstance, eq(keanggotaan.kelasInstanceId, kelasInstance.id))
+			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
+			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
+			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
+			.where(and(eq(keanggotaan.userId, userId), ne(keanggotaan.status, 'aktif')))
+			.orderBy(asc(tahunAjaran.startedAt));
+
+		const results: HistoricalClassProgress[] = [];
+
+		for (const mem of pastMemberships) {
+			const phaseProgress = await ProgressService.getStudentPhaseProgress(
+				userId,
+				mem.kelasInstanceId
+			);
+
+			const [pointsRes] = await db
+				.select({ total: sum(pointLog.amount) })
+				.from(pointLog)
+				.where(
+					and(
+						eq(pointLog.userId, userId),
+						eq(pointLog.kelasInstanceId, mem.kelasInstanceId)
+					)
+				);
+
+			const totalPointsEarned = pointsRes?.total ? Number(pointsRes.total) : 0;
+
+			const attendances = await db
+				.select({
+					status: attendance.status
+				})
+				.from(attendance)
+				.innerJoin(pertemuan, eq(attendance.pertemuanId, pertemuan.id))
+				.where(
+					and(
+						eq(attendance.userId, userId),
+						eq(pertemuan.kelasInstanceId, mem.kelasInstanceId)
+					)
+				);
+
+			let hadirCount = 0;
+			let excusedCount = 0;
+			for (const att of attendances) {
+				if (att.status === 'hadir') hadirCount++;
+				if (att.status === 'excused') excusedCount++;
+			}
+
+			results.push({
+				kelasInstanceId: mem.kelasInstanceId,
+				kelasName: mem.kelasName,
+				tahunAjaranName: mem.tahunAjaranName,
+				tingkatName: mem.tingkatName,
+				trackTitle: mem.trackTitle,
+				status: mem.status,
+				joinedAt: mem.joinedAt,
+				totalPointsEarned,
+				attendanceSummary: {
+					hadir: hadirCount,
+					excused: excusedCount,
+					total: attendances.length
+				},
+				phaseProgress
+			});
+		}
+
+		return results;
 	}
 }

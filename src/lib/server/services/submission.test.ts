@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import { submitTaskSchema, reviewSubmissionSchema } from '$lib/validators/submission';
 
 describe('Submission Service & Validation Logic', () => {
@@ -7,7 +8,7 @@ describe('Submission Service & Validation Logic', () => {
 			taskId: 1,
 			link: 'https://github.com/smk-nesaga/tkj-lab-1'
 		});
-		expect(result.success).toBe(true);
+		assert.equal(result.success, true);
 	});
 
 	it('validates mentor review status approval', () => {
@@ -16,7 +17,7 @@ describe('Submission Service & Validation Logic', () => {
 			status: 'approved',
 			feedback: 'Pekerjaan sangat rapi!'
 		});
-		expect(result.success).toBe(true);
+		assert.equal(result.success, true);
 	});
 
 	it('validates mentor review status revision request', () => {
@@ -25,6 +26,6 @@ describe('Submission Service & Validation Logic', () => {
 			status: 'revisi',
 			feedback: 'Tolong perbaiki routing IP pada interface eth0'
 		});
-		expect(result.success).toBe(true);
+		assert.equal(result.success, true);
 	});
 });

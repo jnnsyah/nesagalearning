@@ -62,6 +62,8 @@ export const badgeType = pgTable('badge_type', {
 	description: text('description'),
 	iconUrl: text('icon_url'),
 	criteria: text('criteria'),
+	triggerType: text('trigger_type').notNull().default('manual_award'),
+	triggerThreshold: integer('trigger_threshold').notNull().default(0),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

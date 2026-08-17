@@ -15,11 +15,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	try {
+		const userId = Number(locals.user.id);
 		// Fetch student's active class membership
 		const [activeMembership] = await db
 			.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
 			.from(keanggotaan)
-			.where(and(eq(keanggotaan.userId, locals.user.id), eq(keanggotaan.status, 'aktif')))
+			.where(and(eq(keanggotaan.userId, userId), eq(keanggotaan.status, 'aktif')))
 			.limit(1);
 
 		if (!activeMembership) {
@@ -31,7 +32,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 
 		const tasks = await SubmissionService.getStudentTasksWithStatus(
-			locals.user.id,
+			userId,
 			activeMembership.kelasInstanceId
 		);
 
@@ -72,7 +73,7 @@ export const actions: Actions = {
 
 		try {
 			await SubmissionService.submitTask({
-				userId: locals.user.id,
+				userId: Number(locals.user.id),
 				taskId: parseResult.data.taskId,
 				link: parseResult.data.link
 			});
@@ -101,7 +102,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			await SubmissionService.cancelSubmission(locals.user.id, submissionId);
+			await SubmissionService.cancelSubmission(Number(locals.user.id), submissionId);
 			return {
 				success: true,
 				message: 'Pengiriman tugas berhasil dibatalkan.'

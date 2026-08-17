@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import { submitTaskSchema, reviewSubmissionSchema } from './submission';
 
 describe('Submission Validators', () => {
@@ -9,9 +10,9 @@ describe('Submission Validators', () => {
 				link: 'https://github.com/student/tkj-project'
 			};
 			const result = submitTaskSchema.safeParse(validData);
-			expect(result.success).toBe(true);
+			assert.equal(result.success, true);
 			if (result.success) {
-				expect(result.data.link).toBe('https://github.com/student/tkj-project');
+				assert.equal(result.data.link, 'https://github.com/student/tkj-project');
 			}
 		});
 
@@ -21,9 +22,9 @@ describe('Submission Validators', () => {
 				link: 'github.com/student/tkj-project'
 			};
 			const result = submitTaskSchema.safeParse(validData);
-			expect(result.success).toBe(true);
+			assert.equal(result.success, true);
 			if (result.success) {
-				expect(result.data.link).toBe('https://github.com/student/tkj-project');
+				assert.equal(result.data.link, 'https://github.com/student/tkj-project');
 			}
 		});
 
@@ -33,7 +34,7 @@ describe('Submission Validators', () => {
 				link: ''
 			};
 			const result = submitTaskSchema.safeParse(invalidData);
-			expect(result.success).toBe(false);
+			assert.equal(result.success, false);
 		});
 	});
 
@@ -45,7 +46,7 @@ describe('Submission Validators', () => {
 				feedback: 'Bagus sekali, konfigurasi router tepat!'
 			};
 			const result = reviewSubmissionSchema.safeParse(validData);
-			expect(result.success).toBe(true);
+			assert.equal(result.success, true);
 		});
 
 		it('should validate revision review input without feedback', () => {
@@ -54,7 +55,7 @@ describe('Submission Validators', () => {
 				status: 'revisi'
 			};
 			const result = reviewSubmissionSchema.safeParse(validData);
-			expect(result.success).toBe(true);
+			assert.equal(result.success, true);
 		});
 
 		it('should reject invalid status', () => {
@@ -63,7 +64,7 @@ describe('Submission Validators', () => {
 				status: 'invalid_status'
 			};
 			const result = reviewSubmissionSchema.safeParse(invalidData);
-			expect(result.success).toBe(false);
+			assert.equal(result.success, false);
 		});
 	});
 });

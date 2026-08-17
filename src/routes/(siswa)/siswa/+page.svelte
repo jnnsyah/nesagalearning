@@ -4,6 +4,15 @@
 	let role = $derived(data.user?.role ?? 'siswa');
 	let uid = $derived(`USR/S-${String(data.user?.id ?? '000').padStart(3, '0')}`);
 	let firstName = $derived(data.user?.fullName?.split(' ')[0] ?? 'Siswa');
+
+	let totalPoints = $derived(data.profileStats?.totalPoints ?? 0);
+	let currentStreak = $derived(data.profileStats?.currentStreak ?? 0);
+	let attendanceCount = $derived(data.profileStats?.attendanceCount ?? 0);
+	let kelasName = $derived(data.activeMembership?.kelasName ?? 'Kelas Aktif');
+	let tahunAjaranName = $derived(data.activeMembership?.tahunAjaranName ?? 'TA Aktif');
+	let phaseProgressList = $derived(data.phaseProgress ?? []);
+	let pendingTasksList = $derived(data.pendingTasks ?? []);
+	let historicalList = $derived(data.historicalProgress ?? []);
 </script>
 
 <svelte:head>
@@ -20,7 +29,7 @@
 				<div>
 					<div class="flex items-center gap-2 mb-1">
 						<span class="badge badge-hadir">{role.toUpperCase()}</span>
-						<span class="type-mono text-muted">KLS-01 · TA 2026/2027</span>
+						<span class="type-mono text-muted">{kelasName} · {tahunAjaranName}</span>
 					</div>
 					<h1 class="welcome-name">Halo, {firstName}!</h1>
 					<p class="type-mono text-muted">@{data.user?.username} · {uid}</p>
@@ -49,8 +58,8 @@
 			</div>
 			<div class="stat-card__body">
 				<div class="stat-card__label">Total Poin</div>
-				<div class="stat-card__value">0</div>
-				<div class="stat-card__meta">TA 2026/2027 · KLS-01</div>
+				<div class="stat-card__value">{totalPoints}</div>
+				<div class="stat-card__meta">{tahunAjaranName} · {kelasName}</div>
 			</div>
 		</div>
 
@@ -60,7 +69,7 @@
 			</div>
 			<div class="stat-card__body">
 				<div class="stat-card__label">Streak Pertemuan</div>
-				<div class="stat-card__value">0</div>
+				<div class="stat-card__value">{currentStreak}</div>
 				<div class="stat-card__meta">Pertemuan Berturut-turut</div>
 			</div>
 		</div>
@@ -70,9 +79,9 @@
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 			</div>
 			<div class="stat-card__body">
-				<div class="stat-card__label">Tingkat Kehadiran</div>
-				<div class="stat-card__value">0%</div>
-				<div class="stat-card__meta">Dari Total Sesi</div>
+				<div class="stat-card__label">Kehadiran Ter-record</div>
+				<div class="stat-card__value">{attendanceCount}</div>
+				<div class="stat-card__meta">Total Sesi Diikuti</div>
 			</div>
 		</div>
 	</section>
@@ -86,54 +95,117 @@
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 					<span>Tugas Pending</span>
 				</div>
-				<span class="badge badge-pending">0 Tugas</span>
+				<span class="badge {pendingTasksList.length > 0 ? 'badge-pending' : 'badge-hadir'}">{pendingTasksList.length} Tugas</span>
 			</div>
-			<div class="empty-state">
-				<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+			{#if pendingTasksList.length === 0}
+				<div class="empty-state">
+					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+					</div>
+					<p class="empty-title">Semua Beres!</p>
+					<p class="empty-sub">Tidak ada tugas pending. Semua sudah dikerjakan atau belum diberikan.</p>
 				</div>
-				<p class="empty-title">Semua Beres!</p>
-				<p class="empty-sub">Tidak ada tugas pending. Semua sudah dikerjakan atau belum diberikan.</p>
-			</div>
+			{:else}
+				<div class="task-list p-3 space-y-2">
+					{#each pendingTasksList as t}
+						<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+							<div>
+								<span class="text-xs font-bold text-indigo-600 block">{t.pertemuanTitle}</span>
+								<h4 class="text-sm font-semibold text-slate-800 mt-0.5">{t.taskTitle}</h4>
+								<p class="text-xs text-slate-500 mt-1 line-clamp-1">{t.taskDescription || 'Tidak ada deskripsi'}</p>
+							</div>
+							<a href="/siswa/tugas" class="btn-ghost-sm text-xs font-bold shrink-0">Kerjakan →</a>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</section>
 
-		<!-- Progress Fase Kurikulum -->
+		<!-- Progress Fase Kurikulum Aktif -->
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-					<span>Progress Kurikulum</span>
+					<span>Progress Kurikulum (Kelas Aktif)</span>
 				</div>
-				<span class="type-mono text-muted" style="font-size: 11px;">TKJ Track</span>
+				<span class="type-mono text-muted" style="font-size: 11px;">{kelasName}</span>
 			</div>
 			<div class="phase-list">
-				{#each [
-					{ phase: 'FASE 1', name: 'Mengoperasikan Komputer', pct: 0, status: 'in-progress' },
-					{ phase: 'FASE 2', name: 'Perakitan PC & Diagnostik', pct: 0, status: 'locked' },
-					{ phase: 'FASE 3', name: 'Dasar Jaringan Komputer', pct: 0, status: 'locked' },
-					{ phase: 'FASE 4', name: 'Cisco Packet Tracer & Routing', pct: 0, status: 'locked' },
-				] as item}
-					<div class="phase-item" class:phase-item--active={item.status === 'in-progress'}>
-						<div class="phase-item__header">
-							<div>
-								<span class="phase-label">{item.phase}</span>
-								<p class="phase-name">{item.name}</p>
+				{#if phaseProgressList.length === 0}
+					<div class="p-6 text-center text-slate-500 text-xs font-medium">
+						Belum ada data progress kurikulum untuk kelas ini.
+					</div>
+				{:else}
+					{#each phaseProgressList as item, index}
+						<div class="phase-item" class:phase-item--active={item.progressPercentage > 0 && item.progressPercentage < 100}>
+							<div class="phase-item__header">
+								<div>
+									<span class="phase-label">FASE {index + 1}</span>
+									<p class="phase-name">{item.phaseTitle}</p>
+								</div>
+								{#if item.progressPercentage === 100}
+									<span class="badge badge-hadir">Selesai</span>
+								{:else if item.progressPercentage > 0}
+									<span class="badge badge-live">Berjalan</span>
+								{:else}
+									<span class="badge badge-pending">Belum Mulai</span>
+								{/if}
 							</div>
-							{#if item.status === 'locked'}
-								<span class="badge badge-pending">Terkunci</span>
-							{:else}
-								<span class="badge badge-live">Aktif</span>
-							{/if}
+							<div class="phase-bar mt-2">
+								<div class="phase-bar__fill" style="width: {item.progressPercentage}%;"></div>
+							</div>
+							<div class="phase-item__foot flex justify-between items-center">
+								<span>{item.completedSubPhases} dari {item.totalSubPhases} Sub-fase Selesai</span>
+								<span class="font-bold text-slate-700">{item.progressPercentage}%</span>
+							</div>
 						</div>
-						<div class="phase-bar mt-2">
-							<div class="phase-bar__fill" style="width: {item.pct}%;"></div>
+					{/each}
+				{/if}
+			</div>
+		</section>
+	</div>
+
+	<!-- Riwayat Tingkat Terdahulu (Read-only) -->
+	{#if historicalList.length > 0}
+		<section class="panel mt-6">
+			<div class="section-header">
+				<div class="flex items-center gap-2">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+					<span>Riwayat Tingkat & Kenaikan Kelas (Read-Only)</span>
+				</div>
+				<span class="badge badge-hadir">{historicalList.length} Kelas Lulus/Pernah Diikuti</span>
+			</div>
+			<div class="p-4 space-y-4">
+				{#each historicalList as history}
+					<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+						<div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+							<div>
+								<div class="flex items-center gap-2">
+									<span class="badge badge-hadir text-uppercase">{history.status}</span>
+									<span class="text-xs font-bold text-slate-500">{history.tahunAjaranName} · {history.tingkatName}</span>
+								</div>
+								<h3 class="text-base font-extrabold text-slate-800 mt-1">{history.kelasName} — {history.trackTitle}</h3>
+							</div>
+							<div class="text-right">
+								<span class="text-xs text-slate-500 font-medium block">Poin Diraih di Kelas Ini</span>
+								<span class="text-sm font-black text-indigo-600">+{history.totalPointsEarned} Poin</span>
+							</div>
 						</div>
-						<div class="phase-item__foot">0 dari 4 Sub-fase Selesai</div>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200 text-xs">
+							<div>
+								<span class="text-slate-500 block font-medium">Ringkasan Presensi Sesi:</span>
+								<span class="font-bold text-slate-700">{history.attendanceSummary.hadir} Hadir, {history.attendanceSummary.excused} Excused (Total {history.attendanceSummary.total} Sesi)</span>
+							</div>
+							<div>
+								<span class="text-slate-500 block font-medium">Progress Fase Selesai:</span>
+								<span class="font-bold text-slate-700">{history.phaseProgress.filter(p => p.progressPercentage === 100).length} dari {history.phaseProgress.length} Fase (100% Selesai)</span>
+							</div>
+						</div>
 					</div>
 				{/each}
 			</div>
 		</section>
-	</div>
+	{/if}
 </div>
 
 <style>

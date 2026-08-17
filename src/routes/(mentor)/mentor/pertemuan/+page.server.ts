@@ -6,19 +6,26 @@ import { db } from '$lib/server/db';
 import { kelasInstance } from '$lib/server/db/schema/academic';
 import { subPhase } from '$lib/server/db/schema/curriculum';
 
+import { OperationalMasterAdminService } from '$lib/server/services/operational-master-admin.service';
+
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
 
-	const meetings = await PertemuanService.getAllPertemuan();
-	const kelases = await db.select({ id: kelasInstance.id, name: kelasInstance.name }).from(kelasInstance);
-	const subPhases = await db.select({ id: subPhase.id, title: subPhase.title }).from(subPhase);
+	const [meetings, kelases, subPhases, masterData] = await Promise.all([
+		PertemuanService.getAllPertemuan(),
+		db.select({ id: kelasInstance.id, name: kelasInstance.name }).from(kelasInstance),
+		db.select({ id: subPhase.id, title: subPhase.title }).from(subPhase),
+		OperationalMasterAdminService.getOperationalMasterData()
+	]);
 
 	return {
 		meetings,
 		kelases,
-		subPhases
+		subPhases,
+		activityTypesOptions: masterData.activityTypes.map((a) => ({ value: a.code, label: a.name })),
+		roomsOptions: masterData.rooms.map((r) => ({ value: r.name, label: r.name }))
 	};
 };
 

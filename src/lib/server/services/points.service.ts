@@ -3,6 +3,7 @@ import { pointLog, streakCounter } from '../db/schema/gamification';
 import { attendance, pertemuan } from '../db/schema/session';
 import { eq, and, asc, inArray } from 'drizzle-orm';
 import { calculateStreak, STREAK_MILESTONES } from './streak.service';
+import { BadgeEvaluatorService } from './badge-evaluator.service';
 
 export class PointsService {
 	/**
@@ -129,6 +130,8 @@ export class PointsService {
 			}
 		}
 
+		await BadgeEvaluatorService.evaluateAndAwardBadges(userId);
+
 		return {
 			pointsAwarded: pointsAmount,
 			currentStreak: newStreak,
@@ -199,8 +202,16 @@ export class PointsService {
 		}
 
 		let amount = 100;
-		if (taskSize === 'kecil') amount = 50;
-		if (taskSize === 'besar') amount = 200;
+		let source = 'task_sedang';
+		if (taskSize === 'kecil') {
+			amount = 50;
+			source = 'task_kecil';
+		} else if (taskSize === 'besar') {
+			amount = 200;
+			source = 'task_besar';
+		}
+
+		const taskSources = ['task_kecil', 'task_sedang', 'task_besar', 'task_approved'];
 
 		// Check if task points already awarded (idempotent)
 		const existingLogs = await db
@@ -213,7 +224,7 @@ export class PointsService {
 				and(
 					eq(pointLog.userId, userId),
 					eq(pointLog.kelasInstanceId, kelasInstanceId),
-					eq(pointLog.source, 'task_approved'),
+					inArray(pointLog.source, taskSources),
 					eq(pointLog.referenceId, taskId)
 				)
 			)
@@ -226,7 +237,7 @@ export class PointsService {
 		await db.insert(pointLog).values({
 			userId,
 			kelasInstanceId,
-			source: 'task_approved',
+			source,
 			amount,
 			referenceId: taskId,
 			referenceType: 'task',

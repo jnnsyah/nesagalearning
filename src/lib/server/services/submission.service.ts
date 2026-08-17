@@ -133,7 +133,26 @@ export class SubmissionService {
 		}
 
 		if (subRecord.currentStatus === status && status === 'approved') {
-			// Already approved, return existing record gracefully
+			// Ensure points & progress check are awarded even if already approved
+			let kelasInstanceId = subRecord.kelasInstanceId;
+			if (!kelasInstanceId) {
+				const [membership] = await db
+					.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
+					.from(keanggotaan)
+					.where(
+						and(eq(keanggotaan.userId, subRecord.userId), eq(keanggotaan.status, 'aktif'))
+					);
+				if (membership) kelasInstanceId = membership.kelasInstanceId;
+			}
+			if (kelasInstanceId) {
+				const taskSize = subRecord.taskSize || 'sedang';
+				await PointsService.awardTaskPoints(
+					subRecord.userId,
+					kelasInstanceId,
+					subRecord.taskId,
+					taskSize
+				);
+			}
 			return subRecord;
 		}
 

@@ -24,6 +24,7 @@ interface DatabaseUserAttributes {
 	avatarUrl: string | null;
 	googleId: string | null;
 	isActive: boolean;
+	nisn: string | null;
 }
 
 export {};

@@ -149,12 +149,18 @@
 					required
 					class="field-input"
 				>
-					<option value="teori">Teori</option>
-					<option value="praktik">Praktik</option>
-					<option value="teori_praktik">Teori &amp; Praktik</option>
-					<option value="games">Games</option>
-					<option value="quiz">Quiz</option>
-					<option value="santai">Santai</option>
+					{#if data.activityTypesOptions && data.activityTypesOptions.length > 0}
+						{#each data.activityTypesOptions as act}
+							<option value={act.value}>{act.label}</option>
+						{/each}
+					{:else}
+						<option value="teori">Teori</option>
+						<option value="praktik">Praktik</option>
+						<option value="teori_praktik">Teori &amp; Praktik</option>
+						<option value="games">Games</option>
+						<option value="quiz">Quiz</option>
+						<option value="santai">Santai</option>
+					{/if}
 				</select>
 			</div>
 		</div>
