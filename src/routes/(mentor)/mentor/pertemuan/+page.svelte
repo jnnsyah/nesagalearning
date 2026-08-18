@@ -1778,43 +1778,39 @@
 	}
 
 	.status-pill-live {
-		display: inline-flex;
-		align-items: center;
-		padding: 3px 9px;
-		border-radius: 9999px;
+		display: inline-block;
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
 		background: #dcfce7;
 		color: #15803d;
 		border: 1px solid #86efac;
-		font-family: var(--font-macro);
-		font-size: 10.5px;
-		font-weight: 800;
-		box-shadow: 0 0 8px rgba(22, 163, 74, 0.2);
 	}
 
 	.status-pill-upcoming {
-		display: inline-flex;
-		align-items: center;
-		padding: 3px 9px;
-		border-radius: 9999px;
+		display: inline-block;
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
 		background: #e0e7ff;
 		color: #3730a3;
 		border: 1px solid #a5b4fc;
-		font-family: var(--font-macro);
-		font-size: 10.5px;
-		font-weight: 800;
 	}
 
 	.status-pill-completed {
-		display: inline-flex;
-		align-items: center;
-		padding: 3px 9px;
-		border-radius: 9999px;
+		display: inline-block;
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
 		background: #f1f5f9;
 		color: #475569;
 		border: 1px solid #cbd5e1;
-		font-family: var(--font-macro);
-		font-size: 10.5px;
-		font-weight: 800;
 	}
 
 	.info-text {
