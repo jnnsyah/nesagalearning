@@ -9,8 +9,9 @@
 
 	let { data } = $props();
 
-	// Form Drawer State for Student Curriculum Progress
+	// Form Drawer State for Student Progress & Attendance
 	let drawerOpen = $state(false);
+	let activeDrawerMode = $state<'curriculum' | 'attendance'>('curriculum');
 	let selectedStudent = $state<StudentRosterItem | null>(null);
 
 	// Filters State
@@ -27,11 +28,12 @@
 
 	// Auto-open drawer if studentId is present in URL
 	$effect(() => {
-		if (data.selectedStudentUserId && data.studentProgress) {
+		if (data.selectedStudentUserId) {
 			const found = data.rosterData.roster.find((r) => r.userId === data.selectedStudentUserId);
 			if (found) {
 				untrack(() => {
 					selectedStudent = found;
+					activeDrawerMode = data.drawerMode || 'curriculum';
 					drawerOpen = true;
 				});
 			}
@@ -73,7 +75,7 @@
 	}
 
 	function handleKelasChange(val: string | number | null) {
-		updateUrlFilters({ kelasInstanceId: String(val ?? ''), studentId: null });
+		updateUrlFilters({ kelasInstanceId: String(val ?? ''), studentId: null, drawer: null });
 	}
 
 	function handleRiskFilterChange(val: string | number | null) {
@@ -88,6 +90,9 @@
 		if (selectedRiskFilter !== 'all') params.set('risk', selectedRiskFilter);
 		if (data.selectedStudentUserId && !newParams.hasOwnProperty('studentId')) {
 			params.set('studentId', String(data.selectedStudentUserId));
+		}
+		if (data.drawerMode && !newParams.hasOwnProperty('drawer')) {
+			params.set('drawer', data.drawerMode);
 		}
 
 		for (const [key, val] of Object.entries(newParams)) {
@@ -108,13 +113,21 @@
 
 	function openStudentProgress(student: StudentRosterItem) {
 		selectedStudent = student;
-		updateUrlFilters({ studentId: String(student.userId) });
+		activeDrawerMode = 'curriculum';
+		updateUrlFilters({ studentId: String(student.userId), drawer: 'curriculum' });
+		drawerOpen = true;
+	}
+
+	function openStudentAttendance(student: StudentRosterItem) {
+		selectedStudent = student;
+		activeDrawerMode = 'attendance';
+		updateUrlFilters({ studentId: String(student.userId), drawer: 'attendance' });
 		drawerOpen = true;
 	}
 
 	function handleDrawerClose() {
 		drawerOpen = false;
-		updateUrlFilters({ studentId: null });
+		updateUrlFilters({ studentId: null, drawer: null });
 	}
 </script>
 
@@ -318,7 +331,7 @@
 								<td class="text-center text-slate-400 font-mono text-sm">
 									{student.totalAlpha}
 								</td>
-								<!-- Kehadiran Progress Bar + Detail Icon -->
+								<!-- Kehadiran Progress Bar + Open Attendance Drawer SVG Icon -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										<span class="font-bold text-slate-800">{student.attendanceRate}%</span>
@@ -331,16 +344,17 @@
 												style="width: {student.attendanceRate}%;"
 											></div>
 										</div>
-										<a
-											href="/guru/siswa/{student.userId}"
+										<button
+											type="button"
 											class="btn-cell-icon"
-											title="Lihat Detail Profil & Presensi Siswa"
+											title="Lihat Riwayat Sesi Presensi Siswa"
+											onclick={() => openStudentAttendance(student)}
 										>
 											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-										</a>
+										</button>
 									</div>
 								</td>
-								<!-- Kurikulum Composite Progress Bar + SVG Action Icon -->
+								<!-- Kurikulum Composite Progress Bar + Open Curriculum Drawer SVG Icon -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										{#if student.hasAnyStarted}
@@ -374,17 +388,17 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     SPACIOUS FORM DRAWER FOR INDIVIDUAL STUDENT CURRICULUM PROGRESS
+     DRAWER: PROGRESS KURIKULUM & RIWAYAT SESI PRESENSI SISWA
      ══════════════════════════════════════════════════════════ -->
 <FormDrawer
 	bind:open={drawerOpen}
 	onclose={handleDrawerClose}
-	title="Detail Progress Phase Kurikulum Siswa"
+	title={activeDrawerMode === 'attendance' ? 'Riwayat Sesi Presensi Siswa' : 'Detail Progress Phase Kurikulum Siswa'}
 	subtitle={selectedStudent ? `${selectedStudent.fullName} (${selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`})` : ''}
 >
 	{#if selectedStudent}
 		<div class="drawer-progress-container space-y-6 py-2">
-			<!-- Student Hero Header Card (Spacious Light Theme) -->
+			<!-- Student Hero Header Card (Light Slate Theme) -->
 			<div class="student-hero-card">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-4">
@@ -405,16 +419,23 @@
 					</div>
 
 					<div class="overall-progress-box">
-						{#if data.studentProgress?.student.hasAnyStarted}
-							<span class="progress-val-text">
-								{data.studentProgress.student.overallProgress}%
+						{#if activeDrawerMode === 'attendance'}
+							<span class="progress-val-text text-emerald-700">
+								{selectedStudent.attendanceRate}%
 							</span>
-							<span class="progress-lbl-text">Progres Komposit</span>
+							<span class="progress-lbl-text">Kehadiran Sesi</span>
 						{:else}
-							<span class="progress-val-text-empty">
-								Belum Dimulai
-							</span>
-							<span class="progress-lbl-text">Status Sesi Kelas</span>
+							{#if data.studentProgress?.student.hasAnyStarted}
+								<span class="progress-val-text">
+									{data.studentProgress.student.overallProgress}%
+								</span>
+								<span class="progress-lbl-text">Progres Komposit</span>
+							{:else}
+								<span class="progress-val-text-empty">
+									Belum Dimulai
+								</span>
+								<span class="progress-lbl-text">Status Sesi Kelas</span>
+							{/if}
 						{/if}
 					</div>
 				</div>
@@ -435,101 +456,161 @@
 				</div>
 			</div>
 
-			<!-- Curriculum Phase Cards Breakdown -->
-			{#if !data.studentProgress}
-				<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
-					<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-					<p class="text-xs text-slate-500 font-mono">Memuat rincian progres fase kurikulum siswa...</p>
-				</div>
-			{:else if data.studentProgress.phases.length === 0}
-				<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
-					<p class="text-xs text-slate-500 font-mono">Belum ada modul/fase kurikulum yang ditautkan ke kelas ini.</p>
-				</div>
-			{:else}
-				<div class="phases-stack space-y-6">
-					<div class="flex items-center justify-between pb-1 border-b border-slate-200">
-						<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
-							Rincian Fase Kurikulum ({data.studentProgress.phases.length} Fase)
-						</h5>
-						<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
+			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS -->
+			{#if activeDrawerMode === 'attendance'}
+				{#if !data.studentAttendanceHistory}
+					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
+						<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+						<p class="text-xs text-slate-500 font-mono">Memuat riwayat sesi presensi siswa...</p>
 					</div>
+				{:else if data.studentAttendanceHistory.logs.length === 0}
+					<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
+						<p class="text-xs text-slate-500 font-mono">Belum ada sesi pertemuan diselenggarakan untuk kelas ini.</p>
+					</div>
+				{:else}
+					<div class="attendance-logs-stack space-y-4">
+						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
+							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
+								Riwayat Pertemuan Sesi ({data.studentAttendanceHistory.logs.length} Sesi)
+							</h5>
+							<span class="text-xs text-slate-400 font-mono">Kronologis Sesi</span>
+						</div>
 
-					{#each data.studentProgress.phases as phaseItem}
-						<div class="phase-progress-card">
-							<!-- Phase Header Row -->
-							<div class="flex items-center justify-between gap-3 mb-3">
-								<div class="flex items-center gap-2.5">
-									<span class="phase-badge-pill">{phaseItem.phaseCode}</span>
-									<h5 class="font-extrabold text-slate-900 text-sm">{phaseItem.title}</h5>
-								</div>
-								{#if phaseItem.hasStartedSubPhases}
-									<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
-								{:else}
-									<span class="badge badge-subtle text-[11px]">BELUM BERJALAN</span>
-								{/if}
-							</div>
-
-							<!-- Phase Progress Bar -->
-							<div class="progress-track-bar mb-4">
-								<div
-									class="progress-fill-bar"
-									style="width: {phaseItem.hasStartedSubPhases ? phaseItem.completionRate : 0}%;"
-								></div>
-							</div>
-
-							<!-- SubPhases List with Generous Spacing -->
-							<div class="subphases-list-stack space-y-3">
-								{#each phaseItem.subPhases as subP}
-									<div class="subphase-card" class:subphase-unstarted={!subP.isStarted}>
-										<div class="flex items-center justify-between gap-3 mb-2">
-											<h6 class="text-xs font-bold text-slate-900 truncate">{subP.title}</h6>
-											{#if subP.isStarted}
-												<span class="subphase-percent-tag">{subP.completionRate}%</span>
-											{:else}
-												<span class="badge badge-subtle text-[10px]">BELUM DIMULAI</span>
-											{/if}
+						<div class="space-y-3">
+							{#each data.studentAttendanceHistory.logs as sessionLog}
+								<div class="session-log-card">
+									<div class="flex items-start justify-between gap-3">
+										<div>
+											<span class="text-xs font-mono font-semibold text-slate-400">#{sessionLog.sessionId} — {sessionLog.sessionDate} ({sessionLog.startTime})</span>
+											<h6 class="font-extrabold text-slate-900 text-sm mt-0.5">{sessionLog.sessionTitle}</h6>
 										</div>
 
-										<div class="flex items-center gap-2 flex-wrap">
-											{#if !subP.isStarted}
-												<span class="meta-pill meta-pill-gray">
-													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-													<span>Belum ada sesi / tugas diselenggarakan</span>
-												</span>
+										<div class="flex-shrink-0 text-right">
+											{#if sessionLog.status === 'hadir'}
+												<span class="badge badge-success text-[11px]">HADIR</span>
+											{:else if sessionLog.status === 'excused'}
+												<span class="badge badge-warning text-[11px]">IZIN / SAKIT</span>
 											{:else}
-												<span class="meta-pill meta-pill-slate">
-													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
-													<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
-												</span>
-
-												{#if subP.totalTasksCount > 0}
-													<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
-														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-														<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
-													</span>
-												{/if}
-
-												{#if subP.hasQuiz}
-													{#if subP.quizPassed}
-														<span class="meta-pill meta-pill-emerald">
-															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-															<span>Quiz Lulus</span>
-														</span>
-													{:else}
-														<span class="meta-pill meta-pill-gray">
-															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-															<span>Quiz Pending</span>
-														</span>
-													{/if}
-												{/if}
+												<span class="badge badge-error text-[11px]">ALPHA</span>
 											{/if}
 										</div>
 									</div>
-								{/each}
-							</div>
+
+									{#if sessionLog.status !== 'alpha'}
+										<div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
+											<span class="meta-pill meta-pill-slate">
+												Metode: {sessionLog.method === 'qr' ? '📷 QR Code' : '📝 Presensi Manual'}
+											</span>
+											{#if sessionLog.manualReason}
+												<span class="text-slate-600 italic bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+													"{sessionLog.manualReason}"
+												</span>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							{/each}
 						</div>
-					{/each}
-				</div>
+					</div>
+				{/if}
+
+			<!-- DRAWER CONTENT 2: CURRICULUM PROGRESS BREAKDOWN -->
+			{:else}
+				{#if !data.studentProgress}
+					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
+						<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+						<p class="text-xs text-slate-500 font-mono">Memuat rincian progres fase kurikulum siswa...</p>
+					</div>
+				{:else if data.studentProgress.phases.length === 0}
+					<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
+						<p class="text-xs text-slate-500 font-mono">Belum ada modul/fase kurikulum yang ditautkan ke kelas ini.</p>
+					</div>
+				{:else}
+					<div class="phases-stack space-y-6">
+						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
+							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
+								Rincian Fase Kurikulum ({data.studentProgress.phases.length} Fase)
+							</h5>
+							<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
+						</div>
+
+						{#each data.studentProgress.phases as phaseItem}
+							<div class="phase-progress-card">
+								<!-- Phase Header Row -->
+								<div class="flex items-center justify-between gap-3 mb-3">
+									<div class="flex items-center gap-2.5">
+										<span class="phase-badge-pill">{phaseItem.phaseCode}</span>
+										<h5 class="font-extrabold text-slate-900 text-sm">{phaseItem.title}</h5>
+									</div>
+									{#if phaseItem.hasStartedSubPhases}
+										<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
+									{:else}
+										<span class="badge badge-subtle text-[11px]">BELUM BERJALAN</span>
+									{/if}
+								</div>
+
+								<!-- Phase Progress Bar -->
+								<div class="progress-track-bar mb-4">
+									<div
+										class="progress-fill-bar"
+										style="width: {phaseItem.hasStartedSubPhases ? phaseItem.completionRate : 0}%;"
+									></div>
+								</div>
+
+								<!-- SubPhases List with Generous Spacing -->
+								<div class="subphases-list-stack space-y-3">
+									{#each phaseItem.subPhases as subP}
+										<div class="subphase-card" class:subphase-unstarted={!subP.isStarted}>
+											<div class="flex items-center justify-between gap-3 mb-2">
+												<h6 class="text-xs font-bold text-slate-900 truncate">{subP.title}</h6>
+												{#if subP.isStarted}
+													<span class="subphase-percent-tag">{subP.completionRate}%</span>
+												{:else}
+													<span class="badge badge-subtle text-[10px]">BELUM DIMULAI</span>
+												{/if}
+											</div>
+
+											<div class="flex items-center gap-2 flex-wrap">
+												{#if !subP.isStarted}
+													<span class="meta-pill meta-pill-gray">
+														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+														<span>Belum ada sesi / tugas diselenggarakan</span>
+													</span>
+												{:else}
+													<span class="meta-pill meta-pill-slate">
+														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
+														<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
+													</span>
+
+													{#if subP.totalTasksCount > 0}
+														<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
+															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+															<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
+														</span>
+													{/if}
+
+													{#if subP.hasQuiz}
+														{#if subP.quizPassed}
+															<span class="meta-pill meta-pill-emerald">
+																<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+																<span>Quiz Lulus</span>
+															</span>
+														{:else}
+															<span class="meta-pill meta-pill-gray">
+																<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+																<span>Quiz Pending</span>
+															</span>
+														{/if}
+													{/if}
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			{/if}
 		</div>
 	{/if}
@@ -922,6 +1003,15 @@
 		font-size: 10px;
 		color: #64748b;
 		margin-top: 2px;
+	}
+
+	/* Session Log Card */
+	.session-log-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
+		padding: 14px 16px;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 	}
 
 	/* Phase Cards */

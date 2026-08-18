@@ -11,6 +11,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const tahunAjaranIdParam = url.searchParams.get('tahunAjaranId');
 	const kelasInstanceIdParam = url.searchParams.get('kelasInstanceId');
 	const studentIdParam = url.searchParams.get('studentId');
+	const drawerMode = (url.searchParams.get('drawer') as 'curriculum' | 'attendance') || 'curriculum';
 	const searchQuery = url.searchParams.get('q') || '';
 	const riskFilter = (url.searchParams.get('risk') as any) || 'all';
 
@@ -27,17 +28,29 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	});
 
 	let studentProgress = null;
+	let studentAttendanceHistory = null;
+
 	if (selectedStudentUserId && rosterData.selectedKelas) {
-		studentProgress = await MentorStudentRosterService.getStudentCurriculumProgress(
-			selectedStudentUserId,
-			rosterData.selectedKelas.id
-		);
+		const [progressRes, historyRes] = await Promise.all([
+			MentorStudentRosterService.getStudentCurriculumProgress(
+				selectedStudentUserId,
+				rosterData.selectedKelas.id
+			),
+			MentorStudentRosterService.getStudentAttendanceHistory(
+				selectedStudentUserId,
+				rosterData.selectedKelas.id
+			)
+		]);
+		studentProgress = progressRes;
+		studentAttendanceHistory = historyRes;
 	}
 
 	return {
 		user: locals.user,
 		rosterData,
 		selectedStudentUserId,
-		studentProgress
+		drawerMode,
+		studentProgress,
+		studentAttendanceHistory
 	};
 };

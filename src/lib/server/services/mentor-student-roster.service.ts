@@ -92,6 +92,35 @@ export interface StudentProgressDetail {
 	phases: StudentPhaseDetail[];
 }
 
+export interface StudentSessionAttendanceLog {
+	sessionId: number;
+	sessionTitle: string;
+	sessionDate: string;
+	startTime: string;
+	activityType: string;
+	status: 'hadir' | 'excused' | 'alpha';
+	method: 'qr' | 'manual' | null;
+	manualReason: string | null;
+	recordedAt: Date | null;
+}
+
+export interface StudentAttendanceHistoryDetail {
+	student: {
+		userId: number;
+		fullName: string;
+		username: string;
+		nisn: string | null;
+		avatarUrl: string | null;
+		kelasName: string;
+		totalHadir: number;
+		totalExcused: number;
+		totalAlpha: number;
+		totalSessionsCount: number;
+		attendanceRate: number;
+	};
+	logs: StudentSessionAttendanceLog[];
+}
+
 export interface MentorRosterViewData {
 	tahunAjaranOptions: TahunAjaranOption[];
 	selectedTahunAjaran: TahunAjaranOption | null;
@@ -801,6 +830,122 @@ export const MentorStudentRosterService = {
 				hasAnyStarted
 			},
 			phases
+		};
+	},
+
+	/**
+	 * Fetch detailed student session attendance log history for drawer view
+	 */
+	async getStudentAttendanceHistory(
+		studentUserId: number,
+		kelasInstanceId: number
+	): Promise<StudentAttendanceHistoryDetail | null> {
+		const [classRow] = await db
+			.select({
+				id: kelasInstance.id,
+				name: kelasInstance.name
+			})
+			.from(kelasInstance)
+			.where(eq(kelasInstance.id, kelasInstanceId));
+
+		if (!classRow) return null;
+
+		const [studentUser] = await db
+			.select({
+				id: user.id,
+				fullName: user.fullName,
+				username: user.username,
+				nisn: user.nisn,
+				avatarUrl: user.avatarUrl
+			})
+			.from(user)
+			.where(eq(user.id, studentUserId));
+
+		if (!studentUser) return null;
+
+		const sessionsRaw = await db
+			.select({
+				id: pertemuan.id,
+				title: pertemuan.title,
+				sessionDate: pertemuan.sessionDate,
+				startTime: pertemuan.startTime,
+				activityType: pertemuan.activityType
+			})
+			.from(pertemuan)
+			.where(eq(pertemuan.kelasInstanceId, kelasInstanceId))
+			.orderBy(desc(pertemuan.sessionDate));
+
+		const sessionIds = sessionsRaw.map((s) => s.id);
+
+		const attendanceRecords = sessionIds.length > 0
+			? await db
+					.select({
+						pertemuanId: attendance.pertemuanId,
+						status: attendance.status,
+						method: attendance.method,
+						manualReason: attendance.manualReason,
+						recordedAt: attendance.recordedAt
+					})
+					.from(attendance)
+					.where(and(eq(attendance.userId, studentUserId), inArray(attendance.pertemuanId, sessionIds)))
+			: [];
+
+		const attendanceMap = new Map<number, typeof attendanceRecords[0]>();
+		for (const a of attendanceRecords) {
+			attendanceMap.set(a.pertemuanId, a);
+		}
+
+		let totalHadir = 0;
+		let totalExcused = 0;
+		let totalAlpha = 0;
+
+		const logs: StudentSessionAttendanceLog[] = sessionsRaw.map((s) => {
+			const att = attendanceMap.get(s.id);
+			let status: 'hadir' | 'excused' | 'alpha' = 'alpha';
+
+			if (att?.status === 'hadir') {
+				status = 'hadir';
+				totalHadir++;
+			} else if (att?.status === 'excused') {
+				status = 'excused';
+				totalExcused++;
+			} else {
+				status = 'alpha';
+				totalAlpha++;
+			}
+
+			return {
+				sessionId: s.id,
+				sessionTitle: s.title,
+				sessionDate: String(s.sessionDate),
+				startTime: String(s.startTime),
+				activityType: s.activityType,
+				status,
+				method: (att?.method as 'qr' | 'manual' | null) || null,
+				manualReason: att?.manualReason || null,
+				recordedAt: att?.recordedAt || null
+			};
+		});
+
+		const totalSessionsCount = sessionsRaw.length;
+		const recordedCount = totalHadir + totalExcused + totalAlpha;
+		const attendanceRate = recordedCount > 0 ? Math.round((totalHadir / recordedCount) * 100) : 0;
+
+		return {
+			student: {
+				userId: studentUser.id,
+				fullName: studentUser.fullName,
+				username: studentUser.username,
+				nisn: studentUser.nisn,
+				avatarUrl: studentUser.avatarUrl,
+				kelasName: classRow.name,
+				totalHadir,
+				totalExcused,
+				totalAlpha,
+				totalSessionsCount,
+				attendanceRate
+			},
+			logs
 		};
 	}
 };
