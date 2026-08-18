@@ -5,122 +5,85 @@ import type { GuruAttendanceDetailViewData } from '$lib/server/services/guru-att
 
 /**
  * Export Rekap Presensi to Excel (.xlsx) file
+ * Single sheet format with Document Title & Header Information block, identical to PDF layout.
  */
 export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	const taName = data.selectedTahunAjaran?.name || 'Semua_TA';
 	const kelasName = data.selectedKelas?.name || 'Semua_Kelas';
-	const dateStr = new Date().toLocaleDateString('id-ID');
+	const dateStr = new Date().toLocaleDateString('id-ID', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
 
 	const wb = XLSX.utils.book_new();
 
-	// ── SHEET 1: RINGKASAN REKAP ──
-	const summaryRows = [
-		['REKAPITULASI PRESENSI SISWA — NESAGA LEARNING COMMUNITY (NLC)'],
-		[`Tahun Ajaran: ${taName}`, `Rombel: ${kelasName}`, `Tanggal Export: ${dateStr}`],
+	// Build Single Sheet Rows
+	const excelRows: (string | number)[][] = [
+		['NESAGA LEARNING COMMUNITY (NLC)'],
+		['LAPORAN REKAPITULASI PRESENSI SISWA'],
 		[],
-		['METRIK UTAMA PRESENSI'],
-		['Indikator Metrik', 'Nilai', 'Keterangan'],
-		['Total Pertemuan Kelas', `${data.summary.totalSessionsCount} Sesi`, 'Jumlah sesi pertemuan terselenggara'],
-		['Total Siswa Terdaftar', `${data.summary.totalStudentsCount} Siswa`, 'Siswa aktif terdaftar'],
-		['Tingkat Kehadiran Overall', `${data.summary.overallAttendanceRate}%`, 'Persentase presensi hadir'],
-		['Tingkat Izin / Sakit', `${data.summary.excusedRate}%`, 'Persentase berhalangan sah'],
-		['Tingkat Tanpa Keterangan', `${data.summary.alphaRate}%`, 'Persentase alpha / unrecorded'],
-		['Metode QR Scan', `${data.summary.qrCount} kali`, 'Scan mandiri via token QR'],
-		['Metode Manual Batch', `${data.summary.manualCount} kali`, 'Pencatatan manual oleh mentor']
+		[`Tahun Ajaran: ${taName}`, `Rombel: ${kelasName}`, `Tanggal Cetak: ${dateStr}`],
+		[
+			`Total Pertemuan: ${data.summary.totalSessionsCount} Sesi`,
+			`Total Siswa Terdaftar: ${data.summary.totalStudentsCount} Siswa`
+		],
+		[
+			`Kehadiran Overall: ${data.summary.overallAttendanceRate}%`,
+			`Izin / Sakit: ${data.summary.excusedRate}%`,
+			`Alpha: ${data.summary.alphaRate}%`
+		],
+		[],
+		[
+			'No',
+			'Nama Siswa',
+			'NISN',
+			'Total Pertemuan',
+			'Total Hadir',
+			'Total Izin',
+			'Total Alpha',
+			'% Kehadiran',
+			'Status Risiko'
+		]
 	];
 
-	const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
-	wsSummary['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 40 }];
-	XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
+	// Append Student Rows
+	data.students.forEach((st, idx) => {
+		let statusText = 'Baik';
+		if (st.attendanceRate < 50) statusText = 'Perhatian Khusus';
+		else if (st.attendanceRate < 80) statusText = 'Cukup';
 
-	// ── SHEET 2: MATRIKS PRESENSI ──
-	const matrixHeaders = [
-		'No',
-		'Nama Lengkap Siswa',
-		'NISN',
-		'Total Pertemuan',
-		...data.sessions.map((s) => `${s.title} (${s.sessionDate})`),
-		'Total Hadir',
-		'Total Izin',
-		'Total Alpha',
-		'Kehadiran (%)'
-	];
-
-	const matrixRows = data.students.map((st, idx) => {
-		const sessionCols = data.sessions.map((sess) => {
-			const stStatus = st.sessionsMap[sess.id]?.status;
-			if (stStatus === 'hadir') return 'Hadir (H)';
-			if (stStatus === 'excused') return 'Izin (I)';
-			return 'Alpha (A)';
-		});
-
-		return [
+		excelRows.push([
 			idx + 1,
 			st.fullName,
 			st.nisn || '-',
 			data.summary.totalSessionsCount,
-			...sessionCols,
 			st.totalHadir,
 			st.totalExcused,
 			st.totalAlpha,
-			`${st.attendanceRate}%`
-		];
+			`${st.attendanceRate}%`,
+			statusText
+		]);
 	});
 
-	const wsMatrix = XLSX.utils.aoa_to_sheet([matrixHeaders, ...matrixRows]);
-	wsMatrix['!cols'] = [
-		{ wch: 5 },
-		{ wch: 28 },
-		{ wch: 16 },
-		{ wch: 16 },
-		...data.sessions.map(() => ({ wch: 22 })),
-		{ wch: 12 },
-		{ wch: 12 },
-		{ wch: 12 },
-		{ wch: 15 }
-	];
-	XLSX.utils.book_append_sheet(wb, wsMatrix, 'Matriks Presensi');
+	const ws = XLSX.utils.aoa_to_sheet(excelRows);
 
-	// ── SHEET 3: AUDIT LOG RIWAYAT ──
-	const logHeaders = [
-		'No',
-		'Waktu Recorded (WIB)',
-		'Nama Siswa',
-		'NISN',
-		'Pertemuan Sesi',
-		'Tanggal Sesi',
-		'Metode Presensi',
-		'Status Presensi',
-		'Catatan Alasan'
+	// Column Widths
+	ws['!cols'] = [
+		{ wch: 6 },  // No
+		{ wch: 32 }, // Nama Siswa
+		{ wch: 18 }, // NISN
+		{ wch: 18 }, // Total Pertemuan
+		{ wch: 14 }, // Total Hadir
+		{ wch: 14 }, // Total Izin
+		{ wch: 14 }, // Total Alpha
+		{ wch: 16 }, // % Kehadiran
+		{ wch: 20 }  // Status Risiko
 	];
 
-	const logRows = data.recentLogs.map((rl, idx) => [
-		idx + 1,
-		new Date(rl.recordedAt).toLocaleString('id-ID'),
-		rl.fullName,
-		rl.nisn || '-',
-		rl.pertemuanTitle,
-		rl.sessionDate,
-		rl.method.toUpperCase(),
-		rl.status === 'hadir' ? 'HADIR' : 'EXCUSED (IZIN)',
-		rl.manualReason || '-'
-	]);
+	XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi');
 
-	const wsLogs = XLSX.utils.aoa_to_sheet([logHeaders, ...logRows]);
-	wsLogs['!cols'] = [
-		{ wch: 5 },
-		{ wch: 22 },
-		{ wch: 28 },
-		{ wch: 16 },
-		{ wch: 25 },
-		{ wch: 14 },
-		{ wch: 15 },
-		{ wch: 15 },
-		{ wch: 30 }
-	];
-	XLSX.utils.book_append_sheet(wb, wsLogs, 'Log Riwayat Presensi');
-
-	// Trigger download
+	// Download file
 	const filename = `Rekap_Presensi_${kelasName.replace(/\s+/g, '_')}_TA${taName.replace(/\s+/g, '_')}.xlsx`;
 	XLSX.writeFile(wb, filename);
 }
