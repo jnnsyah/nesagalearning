@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
@@ -13,11 +14,12 @@
 	// Master-Detail Navigation State
 	let selectedPertemuanId = $state<number | null>(null);
 
-	// Level 1 Filters State (like /mentor/pertemuan)
+	// Level 1 Filters State
 	let selectedKelasFilter = $state<string>('all');
 	let selectedTrackFilter = $state<string>('all');
 	let selectedActivityFilter = $state<string>('all');
 
+	// Level 2 Filters State
 	let searchQuery = $state('');
 	let selectedStatusFilter = $state<string>('all');
 	let selectedTaskSize = $state<string>('all');
@@ -93,6 +95,20 @@
 		})
 	);
 
+	let isLevel1FilterActive = $derived(
+		selectedKelasFilter !== 'all' ||
+		selectedTrackFilter !== 'all' ||
+		selectedActivityFilter !== 'all' ||
+		searchQuery.trim() !== ''
+	);
+
+	function resetLevel1Filters() {
+		selectedKelasFilter = 'all';
+		selectedTrackFilter = 'all';
+		selectedActivityFilter = 'all';
+		searchQuery = '';
+	}
+
 	// Level 2: Submissions for the selected meeting
 	let selectedMeetingSubmissions = $derived(
 		(data.submissions || []).filter((sub) => {
@@ -115,6 +131,18 @@
 			return true;
 		})
 	);
+
+	let isLevel2FilterActive = $derived(
+		selectedStatusFilter !== 'all' ||
+		selectedTaskSize !== 'all' ||
+		searchQuery.trim() !== ''
+	);
+
+	function resetLevel2Filters() {
+		selectedStatusFilter = 'all';
+		selectedTaskSize = 'all';
+		searchQuery = '';
+	}
 
 	let pendingCountTotal = $derived(
 		(data.submissions || []).filter((s) => s.status === 'pending').length
@@ -185,7 +213,7 @@
 					</nav>
 					<h1 class="page-title">Daftar Pertemuan Ber-Tugas</h1>
 					<p class="page-sub">
-						Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa, memberikan feedback, dan menyetujui poin.
+						Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa, memberikan umpan balik, dan menyetujui perolehan poin.
 					</p>
 				</div>
 			</div>
@@ -249,28 +277,36 @@
 			</div>
 		</div>
 
-		<!-- Filter & Search Bar Pertemuan (Level 1 Master View) -->
-		<div class="filter-panel">
-			<div class="filter-grid">
-				<div class="filter-search-col">
-					<div class="search-input-wrap">
-						<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<circle cx="11" cy="11" r="8" />
-							<line x1="21" y1="21" x2="16.65" y2="16.65" />
-						</svg>
-						<input
-							type="text"
-							bind:value={searchQuery}
-							placeholder="Cari nama sesi pertemuan, judul tugas, atau track kurikulum..."
-							class="search-input"
-						/>
-						{#if searchQuery}
-							<button type="button" onclick={() => (searchQuery = '')} class="search-clear-btn">✕</button>
-						{/if}
-					</div>
+		<!-- Filter Card Level 1 (Master Grid View) -->
+		<div class="page-filter-card mb-8">
+			<!-- Row 1: Search Bar & Conditional Reset -->
+			<div class="filter-row-top">
+				<div class="flex-1">
+					<TextInput
+						id="search-l1-input"
+						label="Cari Pertemuan / Task"
+						placeholder="Ketik nama sesi pertemuan, judul tugas, atau track kurikulum..."
+						bind:value={searchQuery}
+					/>
 				</div>
 
-				<div class="filter-select-col">
+				{#if isLevel1FilterActive}
+					<div class="flex-shrink-0">
+						<button
+							type="button"
+							class="btn-reset-filters-active"
+							onclick={resetLevel1Filters}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							<span>Reset Filter</span>
+						</button>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Row 2: Filter Kelas, Track, Aktivitas -->
+			<div class="filter-row-bottom">
+				<div>
 					<CustomSelect
 						id="kelas-filter-l1"
 						label="Filter Kelas"
@@ -279,19 +315,19 @@
 					/>
 				</div>
 
-				<div class="filter-select-col">
+				<div>
 					<CustomSelect
 						id="track-filter-l1"
-						label="Filter Track"
+						label="Filter Track Kurikulum"
 						bind:value={selectedTrackFilter}
 						options={trackOptions}
 					/>
 				</div>
 
-				<div class="filter-select-col">
+				<div>
 					<CustomSelect
 						id="activity-filter-l1"
-						label="Tipe Sesi"
+						label="Tipe Aktivitas Sesi"
 						bind:value={selectedActivityFilter}
 						options={activityOptions}
 					/>
@@ -309,7 +345,7 @@
 					</svg>
 				</div>
 				<div class="empty-title">Tidak Ada Pertemuan Ber-Tugas Ditemukan</div>
-				<div class="empty-sub">Belum ada sesi pertemuan yang memiliki penugasan task sesuai pencarian.</div>
+				<div class="empty-sub">Belum ada sesi pertemuan yang memiliki penugasan task sesuai kriteria pencarian.</div>
 			</div>
 		{:else}
 			<div class="meeting-summary-grid">
@@ -415,28 +451,36 @@
 			</div>
 		{/if}
 
-		<!-- Filter Panel Level 2 (Status & Bobot & Search Siswa) -->
-		<div class="filter-panel">
-			<div class="filter-grid">
-				<div class="filter-search-col">
-					<div class="search-input-wrap">
-						<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<circle cx="11" cy="11" r="8" />
-							<line x1="21" y1="21" x2="16.65" y2="16.65" />
-						</svg>
-						<input
-							type="text"
-							bind:value={searchQuery}
-							placeholder="Cari nama siswa atau username..."
-							class="search-input"
-						/>
-						{#if searchQuery}
-							<button type="button" onclick={() => (searchQuery = '')} class="search-clear-btn">✕</button>
-						{/if}
-					</div>
+		<!-- Filter Card Level 2 (Detail Submisi Sesi) -->
+		<div class="page-filter-card mb-8">
+			<!-- Row 1: Search Bar & Conditional Reset -->
+			<div class="filter-row-top">
+				<div class="flex-1">
+					<TextInput
+						id="search-l2-input"
+						label="Cari Siswa / Username"
+						placeholder="Ketik nama siswa atau username..."
+						bind:value={searchQuery}
+					/>
 				</div>
 
-				<div class="filter-select-col-half">
+				{#if isLevel2FilterActive}
+					<div class="flex-shrink-0">
+						<button
+							type="button"
+							class="btn-reset-filters-active"
+							onclick={resetLevel2Filters}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							<span>Reset Filter</span>
+						</button>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Row 2: Status Submisi, Bobot Task -->
+			<div class="filter-row-bottom-2col">
+				<div>
 					<CustomSelect
 						id="status-filter-l2"
 						label="Status Submisi"
@@ -450,10 +494,10 @@
 					/>
 				</div>
 
-				<div class="filter-select-col-half">
+				<div>
 					<CustomSelect
 						id="task-size-filter-l2"
-						label="Bobot Tugas"
+						label="Bobot Task"
 						bind:value={selectedTaskSize}
 						options={[
 							{ value: 'all', label: 'Semua Bobot' },
@@ -484,123 +528,138 @@
 					<span class="table-bar-title">Menampilkan {selectedMeetingSubmissions.length} Submisi Siswa</span>
 				</div>
 
-				<table class="data-table">
-					<thead>
-						<tr>
-							<th>Siswa &amp; Kelas</th>
-							<th>Tugas &amp; Track</th>
-							<th>Link Submisi</th>
-							<th>Waktu Kirim</th>
-							<th>Status</th>
-							<th style="text-align: right;">Aksi</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each selectedMeetingSubmissions as sub (sub.id)}
+				<div class="table-responsive">
+					<table class="data-table">
+						<thead>
 							<tr>
-								<td>
-									<div class="student-block">
-										<span class="student-name">{sub.studentName}</span>
-										<span class="student-username">@{sub.studentUsername} · {sub.kelasName}</span>
-									</div>
-								</td>
-								<td>
-									<div class="task-block">
-										<span class="task-title">{sub.taskTitle}</span>
-										{#if sub.phaseTitle && sub.subPhaseTitle}
-											<span class="curriculum-path" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;">
-												{sub.phaseTitle} &rsaquo; {sub.subPhaseTitle}
-											</span>
-										{/if}
-									</div>
-								</td>
-								<td>
-									<a
-										href={sub.link}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="link-url"
-										title={sub.link}
-									>
-										<span>Buka Link</span>
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-											<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-											<polyline points="15 3 21 3 21 9" />
-											<line x1="10" y1="14" x2="21" y2="3" />
-										</svg>
-									</a>
-								</td>
-								<td>
-									<span class="time-text">{formatIndoDate(sub.submittedAt)}</span>
-								</td>
-								<td>
-									{#if sub.status === 'pending'}
-										<span class="badge badge-pending">PENDING</span>
-									{:else if sub.status === 'approved'}
-										<span class="badge badge-approved">DISETUJUI</span>
-									{:else}
-										<span class="badge badge-revisi">REVISI</span>
-									{/if}
-								</td>
-								<td style="text-align: right;">
-									<div class="action-buttons-cell">
-										{#if sub.status === 'approved'}
-											<span class="badge badge-approved" style="padding: 6px 12px; font-size: 11px;">
-												✓ Disetujui
-											</span>
-											<button
-												type="button"
-												onclick={() => openReviewModal(sub, 'revisi')}
-												class="btn-action btn-revisi"
-												title="Minta Revisi Ulang"
-											>
-												Revisi
-											</button>
-										{:else if sub.status === 'revisi'}
-											<button
-												type="button"
-												onclick={() => openReviewModal(sub, 'approved')}
-												class="btn-action btn-approve"
-												title="Setujui & Beri Poin"
-											>
-												Setujui
-											</button>
-											<span class="badge badge-revisi" style="padding: 6px 12px; font-size: 11px;">
-												Revisi
-											</span>
-										{:else}
-											<button
-												type="button"
-												onclick={() => openReviewModal(sub, 'approved')}
-												class="btn-action btn-approve"
-												title="Setujui & Beri Poin"
-											>
-												Setujui
-											</button>
-											<button
-												type="button"
-												onclick={() => openReviewModal(sub, 'revisi')}
-												class="btn-action btn-revisi"
-												title="Minta Revisi"
-											>
-												Revisi
-											</button>
-										{/if}
-									</div>
-								</td>
+								<th style="width: 48px; text-align: center;">No.</th>
+								<th>Siswa &amp; Kelas</th>
+								<th>Tugas &amp; Track</th>
+								<th>Link Submisi</th>
+								<th>Waktu Kirim</th>
+								<th>Status</th>
+								<th style="text-align: right;">Aksi</th>
 							</tr>
-							{#if sub.feedback}
-								<tr class="feedback-row">
-									<td colspan="6">
-										<div class="feedback-box">
-											<strong>Catatan Mentor:</strong> {sub.feedback}
+						</thead>
+						<tbody>
+							{#each selectedMeetingSubmissions as sub, idx (sub.id)}
+								<tr>
+									<td style="text-align: center; font-weight: 700; color: #64748b;">
+										{idx + 1}
+									</td>
+									<td>
+										<div class="student-block">
+											<span class="student-name">{sub.studentName}</span>
+											<span class="student-username">@{sub.studentUsername} · {sub.kelasName}</span>
+										</div>
+									</td>
+									<td>
+										<div class="task-block">
+											<span class="task-title">{sub.taskTitle}</span>
+											{#if sub.phaseTitle && sub.subPhaseTitle}
+												<span class="curriculum-path">
+													{sub.phaseTitle} &rsaquo; {sub.subPhaseTitle}
+												</span>
+											{/if}
+										</div>
+									</td>
+									<td>
+										<a
+											href={sub.link}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="link-url"
+											title={sub.link}
+										>
+											<span>Buka Link</span>
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+												<polyline points="15 3 21 3 21 9" />
+												<line x1="10" y1="14" x2="21" y2="3" />
+											</svg>
+										</a>
+									</td>
+									<td>
+										<span class="time-text">{formatIndoDate(sub.submittedAt)}</span>
+									</td>
+									<td>
+										{#if sub.status === 'pending'}
+											<span class="badge badge-pending">PENDING</span>
+										{:else if sub.status === 'approved'}
+											<span class="badge badge-approved">DISETUJUI</span>
+										{:else}
+											<span class="badge badge-revisi">REVISI</span>
+										{/if}
+									</td>
+									<td style="text-align: right;">
+										<div class="action-buttons-cell">
+											{#if sub.status === 'approved'}
+												<span class="status-pill-approved">
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+														<polyline points="20 6 9 17 4 12" />
+													</svg>
+													<span>Disetujui</span>
+												</span>
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'revisi')}
+													class="btn-action btn-revisi"
+													title="Minta Revisi Ulang"
+												>
+													Revisi
+												</button>
+											{:else if sub.status === 'revisi'}
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'approved')}
+													class="btn-action btn-approve"
+													title="Setujui & Beri Poin"
+												>
+													Setujui
+												</button>
+												<span class="status-pill-revisi">
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+														<circle cx="12" cy="12" r="10" />
+														<line x1="12" y1="8" x2="12" y2="12" />
+														<line x1="12" y1="16" x2="12.01" y2="16" />
+													</svg>
+													<span>Revisi</span>
+												</span>
+											{:else}
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'approved')}
+													class="btn-action btn-approve"
+													title="Setujui & Beri Poin"
+												>
+													Setujui
+												</button>
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'revisi')}
+													class="btn-action btn-revisi"
+													title="Minta Revisi"
+												>
+													Revisi
+												</button>
+											{/if}
 										</div>
 									</td>
 								</tr>
-							{/if}
-						{/each}
-					</tbody>
-				</table>
+								{#if sub.feedback}
+									<tr class="feedback-row">
+										<td></td>
+										<td colspan="6">
+											<div class="feedback-box">
+												<strong>Catatan Mentor:</strong> {sub.feedback}
+											</div>
+										</td>
+									</tr>
+								{/if}
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
 		{/if}
 	{/if}
@@ -619,7 +678,12 @@
 						{activeReviewTarget.studentName} — {activeReviewTarget.taskTitle}
 					</p>
 				</div>
-				<button type="button" onclick={closeReviewModal} class="modal-close-btn" aria-label="Tutup">✕</button>
+				<button type="button" onclick={closeReviewModal} class="modal-close-btn" aria-label="Tutup">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="18" y1="6" x2="6" y2="18" />
+						<line x1="6" y1="6" x2="18" y2="18" />
+					</svg>
+				</button>
 			</div>
 
 			<form
@@ -642,7 +706,7 @@
 					{#if activeReviewTarget.phaseTitle && activeReviewTarget.subPhaseTitle}
 						<div><strong>Kurikulum:</strong> {activeReviewTarget.phaseTitle} &rsaquo; {activeReviewTarget.subPhaseTitle}</div>
 					{/if}
-					<div><strong>Link Submisi:</strong> <a href={activeReviewTarget.link} target="_blank" class="preview-link">{activeReviewTarget.link}</a></div>
+					<div><strong>Link Submisi:</strong> <a href={activeReviewTarget.link} target="_blank" rel="noopener noreferrer" class="preview-link">{activeReviewTarget.link}</a></div>
 					<div><strong>Ukuran Task:</strong> {activeReviewTarget.taskSize.toUpperCase()} ({activeReviewTarget.taskSize === 'kecil' ? '+50 Poin' : activeReviewTarget.taskSize === 'besar' ? '+200 Poin' : '+100 Poin'})</div>
 				</div>
 
@@ -679,8 +743,8 @@
 
 <style>
 	.content-area {
-		padding: 24px 32px 60px;
-		max-width: 1400px;
+		padding: 24px 28px 48px;
+		max-width: 1280px;
 		margin: 0 auto;
 		width: 100%;
 	}
@@ -788,14 +852,12 @@
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		font-family: var(--font-body);
+		padding: 8px 14px;
 		font-size: 13px;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--text-secondary);
-		padding: 9px 16px;
 		cursor: pointer;
 		transition: all 150ms ease;
-		text-decoration: none;
 	}
 
 	.btn-ghost:hover {
@@ -859,140 +921,121 @@
 		line-height: 1.1;
 	}
 
-	/* Filter Panel */
-	.filter-panel {
+	/* Filter Card Layout Standard */
+	.page-filter-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 16px;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 24px;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 20px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
-	.filter-grid {
-		display: grid;
-		grid-template-columns: repeat(12, 1fr);
-		gap: 12px;
-		align-items: flex-end;
-	}
-
-	.filter-search-col {
-		grid-column: 1 / -1;
-		width: 100%;
-	}
-
-	.filter-select-col,
-	.filter-select-col-half {
-		grid-column: span 12;
-	}
-
-	@media (min-width: 768px) {
-		.filter-search-col {
-			grid-column: 1 / -1;
-		}
-
-		.filter-select-col {
-			grid-column: span 4;
-		}
-
-		.filter-select-col-half {
-			grid-column: span 6;
-		}
-	}
-
-	.search-input-wrap {
-		position: relative;
+	.filter-row-top {
 		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 14px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		align-items: flex-start;
+	}
+
+	.filter-row-bottom-2col {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 16px;
+		align-items: flex-start;
+	}
+
+	@media (max-width: 768px) {
+		.filter-row-bottom, .filter-row-bottom-2col {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.btn-reset-filters-active {
+		display: inline-flex;
 		align-items: center;
-	}
-
-	.search-icon {
-		position: absolute;
-		left: 12px;
-		color: var(--text-muted);
-		pointer-events: none;
-	}
-
-	.search-input {
-		width: 100%;
-		padding: 9px 34px;
-		background: var(--bg-inset);
-		border: 1.5px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		font-family: var(--font-body);
+		gap: 6px;
+		height: 38px;
+		padding: 0 16px;
+		background: #fee2e2;
+		color: #b91c1c;
+		border: 1px solid #fca5a5;
+		border-radius: 8px;
 		font-size: 13px;
-		color: var(--text-primary);
-		outline: none;
-		transition: border-color 150ms ease, box-shadow 150ms ease;
-	}
-
-	.search-input:focus {
-		border-color: var(--primary);
-		box-shadow: 0 0 0 3px var(--primary-light);
-	}
-
-	.search-clear-btn {
-		position: absolute;
-		right: 10px;
-		background: none;
-		border: none;
-		color: var(--text-muted);
-		font-size: 12px;
+		font-weight: 700;
 		cursor: pointer;
-		padding: 4px;
+		transition: background 150ms ease;
 	}
 
-	/* Meeting Summary Cards Grid (Level 1) */
+	.btn-reset-filters-active:hover {
+		background: #fecaca;
+	}
+
+	/* Meeting Summary Grid (Level 1) */
 	.meeting-summary-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+		grid-template-columns: repeat(2, 1fr);
 		gap: 20px;
+	}
+
+	@media (max-width: 1024px) {
+		.meeting-summary-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.meeting-summary-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 20px;
+		padding: 22px;
 		box-shadow: var(--shadow-sm);
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+		transition: transform 180ms ease, box-shadow 180ms ease;
 	}
 
 	.meeting-summary-card:hover {
-		border-color: var(--primary-border);
-		box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.12);
 		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
 	}
 
 	.card-top-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 8px;
+		gap: 10px;
+		flex-wrap: wrap;
 	}
 
 	.track-badge {
 		font-family: var(--font-mono);
 		font-size: 11px;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--primary);
 		background: var(--primary-light);
-		padding: 4px 8px;
-		border-radius: var(--radius-sm);
+		padding: 4px 10px;
+		border-radius: 6px;
+		border: 1px solid var(--primary-border);
 	}
 
 	.task-size-pill {
 		font-family: var(--font-mono);
-		font-size: 10.5px;
+		font-size: 11px;
 		font-weight: 700;
-		color: var(--text-secondary);
-		background: var(--bg-inset);
-		border: 1px solid var(--border-hard);
-		padding: 3px 8px;
-		border-radius: var(--radius-full);
+		color: #047857;
+		background: #d1fae5;
+		padding: 4px 10px;
+		border-radius: 6px;
+		border: 1px solid #6ee7b7;
 	}
 
 	.meeting-card-title {
@@ -1000,7 +1043,8 @@
 		font-size: 1.15rem;
 		font-weight: 800;
 		color: var(--text-primary);
-		margin: 8px 0 2px;
+		margin-top: 8px;
+		margin-bottom: 2px;
 	}
 
 	.meeting-card-date {
@@ -1013,17 +1057,17 @@
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 12px;
+		padding: 12px 14px;
 		margin-bottom: 16px;
 	}
 
 	.task-info-label {
-		display: block;
 		font-size: 11px;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--text-muted);
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		display: block;
+		margin-bottom: 2px;
 	}
 
 	.task-info-title {
@@ -1035,7 +1079,6 @@
 		font-size: 12px;
 		color: var(--text-secondary);
 		margin-top: 4px;
-		line-height: 1.4;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
@@ -1043,12 +1086,11 @@
 		overflow: hidden;
 	}
 
-	/* Submission Stats Grid inside Meeting Card */
 	.submission-stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 8px;
-		margin-bottom: 16px;
+		margin-bottom: 18px;
 	}
 
 	.stat-pill {
@@ -1058,152 +1100,177 @@
 		justify-content: center;
 		padding: 8px 4px;
 		border-radius: var(--radius-md);
-		border: 1px solid transparent;
 		text-align: center;
 	}
 
-	.stat-pending {
-		background: #fef3c7;
-		border-color: #fde68a;
-		color: #b45309;
-	}
-
-	.stat-approved {
-		background: #dcfce7;
-		border-color: #bbf7d0;
-		color: #15803d;
-	}
-
-	.stat-revisi {
-		background: #ffe4e6;
-		border-color: #fecdd3;
-		color: #be123c;
-	}
-
-	.stat-total {
-		background: var(--bg-inset);
-		border-color: var(--border-hard);
-		color: var(--text-primary);
-	}
-
-	.stat-num {
+	.stat-pill .stat-num {
 		font-family: var(--font-macro);
-		font-size: 14px;
+		font-size: 1.1rem;
 		font-weight: 800;
 		line-height: 1;
 	}
 
-	.stat-txt {
+	.stat-pill .stat-txt {
 		font-size: 10px;
-		font-weight: 600;
-		margin-top: 3px;
-		white-space: nowrap;
+		font-weight: 700;
+		margin-top: 2px;
 	}
 
-	.card-action-bar {
-		margin-top: auto;
+	.stat-pending {
+		background: #fef3c7;
+		color: #b45309;
+		border: 1px solid #fde68a;
 	}
 
-	/* High Density Table & Level 2 Views */
+	.stat-approved {
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #bbf7d0;
+	}
+
+	.stat-revisi {
+		background: #ffe4e6;
+		color: #be123c;
+		border: 1px solid #fecdd3;
+	}
+
+	.stat-total {
+		background: var(--bg-inset);
+		color: var(--text-primary);
+		border: 1px solid var(--border-hard);
+	}
+
+	/* Table Panel View (Level 2) */
 	.table-panel {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-sm);
-		overflow-x: auto;
+		overflow: hidden;
 	}
 
 	.table-bar-header {
+		padding: 14px 20px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border-hard);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 14px 20px;
-		background: #ffffff;
-		border-bottom: 1px solid var(--border-hard);
 	}
 
 	.table-bar-title {
-		font-family: var(--font-macro);
-		font-size: 13.5px;
+		font-family: var(--font-mono);
+		font-size: 12px;
 		font-weight: 700;
-		color: var(--text-primary);
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.table-responsive {
+		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.data-table {
 		width: 100%;
-		border-collapse: collapse;
-		text-align: left;
+		min-width: 680px;
+		border-collapse: separate;
+		border-spacing: 0;
 	}
 
 	.data-table th {
-		background: var(--bg-inset);
+		background: #ffffff;
 		padding: 12px 16px;
 		font-family: var(--font-mono);
 		font-size: 11px;
 		font-weight: 700;
 		color: var(--text-muted);
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		border-bottom: 1px solid var(--border-hard);
+		border-bottom: 1.5px solid var(--border-hard);
+		white-space: nowrap;
 	}
 
 	.data-table td {
 		padding: 14px 16px;
-		border-bottom: 1px solid var(--border-subtle);
+		border-bottom: 1px solid var(--border-soft);
 		font-size: 13px;
-		color: var(--text-primary);
 		vertical-align: middle;
 	}
 
-	.data-table tbody tr:hover {
+	.data-table tr:hover td {
 		background: #f8fafc;
 	}
 
-	.student-block, .task-block {
+	.student-block {
 		display: flex;
 		flex-direction: column;
 	}
 
-	.student-name, .task-title {
+	.student-name {
 		font-weight: 700;
 		color: var(--text-primary);
 	}
 
 	.student-username {
+		font-family: var(--font-mono);
 		font-size: 11.5px;
 		color: var(--text-muted);
 	}
 
-	.link-url {
-		font-family: var(--font-mono);
-		font-size: 12px;
-		color: var(--primary);
+	.task-block {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.task-title {
 		font-weight: 600;
-		text-decoration: none;
+		color: var(--text-primary);
+	}
+
+	.curriculum-path {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--text-muted);
+		margin-top: 2px;
+	}
+
+	.link-url {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
+		color: var(--primary);
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none;
+		padding: 4px 8px;
+		background: var(--primary-light);
+		border: 1px solid var(--primary-border);
+		border-radius: var(--radius-sm);
+		transition: background 150ms ease;
 	}
 
 	.link-url:hover {
-		text-decoration: underline;
+		background: #e0e7ff;
 	}
 
 	.time-text {
+		font-family: var(--font-mono);
 		font-size: 12px;
 		color: var(--text-secondary);
 	}
 
-	/* Badges */
 	.badge {
+		display: inline-block;
 		font-family: var(--font-mono);
-		font-size: 10.5px;
-		font-weight: 700;
-		padding: 4px 10px;
-		border-radius: var(--radius-full);
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
+		font-size: 10px;
+		font-weight: 800;
+		padding: 4px 8px;
+		border-radius: 6px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 
 	.badge-pending {
@@ -1224,6 +1291,32 @@
 		border: 1px solid #fecdd3;
 	}
 
+	.status-pill-approved {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 5px 10px;
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #bbf7d0;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 700;
+	}
+
+	.status-pill-revisi {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 5px 10px;
+		background: #ffe4e6;
+		color: #be123c;
+		border: 1px solid #fecdd3;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 700;
+	}
+
 	.action-buttons-cell {
 		display: flex;
 		align-items: center;
@@ -1236,56 +1329,53 @@
 		font-size: 12px;
 		font-weight: 700;
 		padding: 6px 12px;
-		border-radius: var(--radius-md);
+		border-radius: 6px;
 		border: none;
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
 
 	.btn-approve {
-		background: #dcfce7;
-		color: #15803d;
-		border: 1px solid #bbf7d0;
-	}
-
-	.btn-approve:hover {
 		background: #16a34a;
 		color: white;
 	}
 
-	.btn-revisi {
-		background: #ffe4e6;
-		color: #be123c;
-		border: 1px solid #fecdd3;
+	.btn-approve:hover {
+		background: #15803d;
 	}
 
-	.btn-revisi:hover {
+	.btn-revisi {
 		background: #e11d48;
 		color: white;
 	}
 
+	.btn-revisi:hover {
+		background: #be123c;
+	}
+
 	.feedback-row td {
-		background: #fafafa;
-		padding: 10px 16px 14px;
+		background: #fff1f2;
+		border-bottom: 1.5px solid #fecdd3;
+		padding: 10px 16px;
 	}
 
 	.feedback-box {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-left: 3px solid #d97706;
-		padding: 10px 14px;
-		border-radius: var(--radius-sm);
-		font-size: 12.5px;
-		color: var(--text-secondary);
+		font-size: 12px;
+		color: #9f1239;
+		line-height: 1.4;
 	}
 
-	/* Empty State */
+	/* Empty State Card */
 	.empty-card {
 		background: #ffffff;
-		border: 1px dashed var(--border-hard);
+		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 60px 20px;
+		padding: 48px 24px;
 		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.empty-icon {
@@ -1297,52 +1387,57 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin: 0 auto 16px;
+		margin-bottom: 12px;
 	}
 
 	.empty-title {
 		font-family: var(--font-macro);
-		font-size: 16px;
-		font-weight: 700;
+		font-size: 1rem;
+		font-weight: 800;
 		color: var(--text-primary);
+		margin-bottom: 4px;
 	}
 
 	.empty-sub {
 		font-size: 13px;
 		color: var(--text-muted);
-		max-width: 400px;
-		margin: 6px auto 0;
+		max-width: 420px;
 	}
 
-	/* Review Modal */
+	/* Form Scrim & Modal Review */
 	.form-scrim {
 		position: fixed;
 		inset: 0;
-		background: rgba(15, 23, 42, 0.45);
+		z-index: 999;
+		background: rgba(15, 23, 42, 0.55);
 		backdrop-filter: blur(4px);
-		z-index: 99;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 20px;
+		padding: 16px;
 	}
 
 	.review-modal {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-xl);
-		box-shadow: var(--shadow-xl);
+		border-radius: 16px;
 		width: 100%;
 		max-width: 520px;
+		box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
 		overflow: hidden;
+		animation: modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@keyframes modalPop {
+		from { opacity: 0; transform: scale(0.95) translateY(10px); }
+		to { opacity: 1; transform: scale(1) translateY(0); }
 	}
 
 	.modal-header {
+		padding: 20px 24px 16px;
+		border-bottom: 1px solid var(--border-hard);
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		padding: 20px 24px;
-		border-bottom: 1px solid var(--border-hard);
 	}
 
 	.modal-title {
@@ -1365,10 +1460,17 @@
 		font-size: 16px;
 		cursor: pointer;
 		padding: 4px;
+		border-radius: 6px;
+		transition: background 150ms ease;
+	}
+
+	.modal-close-btn:hover {
+		background: var(--bg-inset);
+		color: var(--text-primary);
 	}
 
 	.modal-body {
-		padding: 24px;
+		padding: 20px 24px 24px;
 	}
 
 	.info-preview-box {
@@ -1394,75 +1496,5 @@
 		align-items: center;
 		justify-content: flex-end;
 		gap: 12px;
-	}
-
-	/* Mobile Responsiveness Enhancements */
-	@media (max-width: 640px) {
-		.header-card {
-			padding: 16px;
-		}
-
-		.meeting-summary-grid {
-			grid-template-columns: 1fr;
-			gap: 14px;
-		}
-
-		.meeting-summary-card {
-			padding: 16px;
-		}
-
-		.submission-stats-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 6px;
-		}
-
-		.stat-pill {
-			padding: 6px 4px;
-		}
-
-		.stat-num {
-			font-size: 13px;
-		}
-
-		.stat-txt {
-			font-size: 9.5px;
-		}
-
-		.form-scrim {
-			padding: 12px;
-		}
-
-		.review-modal {
-			max-height: 90vh;
-			overflow-y: auto;
-			border-radius: var(--radius-lg);
-		}
-
-		.modal-header,
-		.modal-body {
-			padding: 16px;
-		}
-
-		.modal-footer {
-			flex-direction: column-reverse;
-			gap: 8px;
-			width: 100%;
-		}
-
-		.modal-footer button {
-			width: 100%;
-			justify-content: center;
-		}
-
-		.data-table {
-			min-width: 680px;
-		}
-
-		.table-bar-header {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 8px;
-			padding: 12px 16px;
-		}
 	}
 </style>
