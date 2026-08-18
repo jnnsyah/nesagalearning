@@ -121,7 +121,7 @@
 	]);
 
 	let trackOptions = $derived([
-		{ value: 'all', label: 'Semua Track Kurikulum' },
+		{ value: 'all', label: 'Semua Track Pembelajaran' },
 		...Array.from(
 			new Set(
 				(data.meetingSummaries || [])
@@ -347,7 +347,7 @@
 					<TextInput
 						id="search-l1-input"
 						label="Cari Pertemuan / Task"
-						placeholder="Ketik nama sesi pertemuan, judul tugas, atau track kurikulum..."
+						placeholder="Ketik nama sesi pertemuan, judul tugas, atau track pembelajaran..."
 						bind:value={searchQuery}
 					/>
 				</div>
@@ -380,7 +380,7 @@
 				<div>
 					<CustomSelect
 						id="track-filter-l1"
-						label="Filter Track Kurikulum"
+						label="Filter Track Pembelajaran"
 						bind:value={selectedTrackFilter}
 						options={trackOptions}
 					/>
@@ -415,7 +415,7 @@
 					<div class="meeting-summary-card">
 						<div class="card-top-row mb-2">
 							<span class="track-badge">
-								{m.phaseTitle || 'Kurikulum Track'} &rsaquo; {m.subPhaseTitle || 'Sub-Phase'}
+								{m.phaseTitle || 'Track Pembelajaran'} &rsaquo; {m.subPhaseTitle || 'Sub-Phase'}
 							</span>
 							<span class="task-size-pill">
 								{m.taskSize.toUpperCase()} (+{m.taskSize === 'kecil' ? '50' : m.taskSize === 'besar' ? '200' : '100'} Poin)

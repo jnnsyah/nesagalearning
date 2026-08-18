@@ -128,7 +128,7 @@
 					{/if}
 				</div>
 				<p class="hero-subtitle">
-					{data.kelas.tahunAjaranName} • Tingkat {data.kelas.tingkatName} • Trek Kurikulum: {data.kelas.curriculumTrackTitle}
+					{data.kelas.tahunAjaranName} • Tingkat {data.kelas.tingkatName} • Track Pembelajaran: {data.kelas.curriculumTrackTitle}
 				</p>
 			</div>
 		</div>

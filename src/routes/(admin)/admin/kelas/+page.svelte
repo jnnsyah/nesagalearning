@@ -611,7 +611,7 @@
 						<tr>
 							<th>NAMA KELAS</th>
 							<th>TAHUN AJARAN</th>
-							<th>TINGKAT &amp; TREK KURIKULUM</th>
+							<th>TINGKAT &amp; TRACK PEMBELAJARAN</th>
 							<th>MENTOR PENANGGUNG JAWAB</th>
 							<th>SISWA AKTIF</th>
 							<th>STATUS</th>
@@ -764,7 +764,7 @@
 						</div>
 						<div>
 							<h4 class="drawer-card__title">1. Struktur Akademik Kelas</h4>
-							<p class="drawer-card__desc">Tentukan tahun ajaran, tingkat, dan trek kurikulum</p>
+							<p class="drawer-card__desc">Tentukan tahun ajaran, tingkat, dan track pembelajaran</p>
 						</div>
 					</div>
 					<div class="drawer-card__body space-y-3.5">
@@ -786,7 +786,7 @@
 
 						<CustomSelect
 							name="curriculumTrackId"
-							label="Trek Kurikulum Pembelajaran"
+							label="Track Pembelajaran"
 							required
 							bind:value={formTrackId}
 							options={formTrackOptions}

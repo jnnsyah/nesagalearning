@@ -275,7 +275,7 @@
 					<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 				</div>
 				<h3 class="empty-title">Belum Ada Fase</h3>
-				<p class="empty-sub">Tambahkan fase pertama untuk mulai menyusun kurikulum track ini.</p>
+				<p class="empty-sub">Tambahkan fase pertama untuk mulai menyusun track pembelajaran ini.</p>
 				<button onclick={openCreatePhaseDrawer} class="btn-create" style="width: auto;">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 					Tambah Fase Pertama

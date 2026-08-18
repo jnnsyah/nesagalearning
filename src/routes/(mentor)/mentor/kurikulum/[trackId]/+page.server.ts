@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	]);
 
 	if (!track) {
-		throw error(4404, 'Track Kurikulum tidak ditemukan');
+		throw error(4404, 'Track Pembelajaran tidak ditemukan');
 	}
 
 	return {

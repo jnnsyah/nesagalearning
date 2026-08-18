@@ -38,9 +38,9 @@ export const actions: Actions = {
 
 		try {
 			await CurriculumService.createTrack(parse.data);
-			return { success: true, message: 'Track Kurikulum berhasil dibuat' };
+			return { success: true, message: 'Track Pembelajaran berhasil dibuat' };
 		} catch (err: any) {
-			return fail(500, { error: err?.message || 'Gagal membuat track kurikulum' });
+			return fail(500, { error: err?.message || 'Gagal membuat track pembelajaran' });
 		}
 	},
 
@@ -63,7 +63,7 @@ export const actions: Actions = {
 
 		try {
 			await CurriculumService.updateTrack(id, parse.data);
-			return { success: true, message: 'Track Kurikulum berhasil diperbarui' };
+			return { success: true, message: 'Track Pembelajaran berhasil diperbarui' };
 		} catch (err: any) {
 			return fail(500, { error: err?.message || 'Gagal memperbarui track' });
 		}
@@ -96,7 +96,7 @@ export const actions: Actions = {
 
 		try {
 			await CurriculumService.deleteTrack(id);
-			return { success: true, message: 'Track Kurikulum berhasil dihapus' };
+			return { success: true, message: 'Track Pembelajaran berhasil dihapus' };
 		} catch (err: any) {
 			return fail(500, { error: err?.message || 'Gagal menghapus track' });
 		}

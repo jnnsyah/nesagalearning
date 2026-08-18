@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createKelasSchema = z.object({
 	tahunAjaranId: z.number().positive('Tahun ajaran harus dipilih.'),
 	tingkatId: z.number().positive('Tingkat harus dipilih.'),
-	curriculumTrackId: z.number().positive('Trek kurikulum harus dipilih.'),
+	curriculumTrackId: z.number().positive('Track pembelajaran harus dipilih.'),
 	name: z
 		.string()
 		.trim()
@@ -17,7 +17,7 @@ export const updateKelasSchema = z.object({
 	id: z.number().positive('ID kelas tidak valid.'),
 	tahunAjaranId: z.number().positive('Tahun ajaran harus dipilih.'),
 	tingkatId: z.number().positive('Tingkat harus dipilih.'),
-	curriculumTrackId: z.number().positive('Trek kurikulum harus dipilih.'),
+	curriculumTrackId: z.number().positive('Track pembelajaran harus dipilih.'),
 	name: z
 		.string()
 		.trim()

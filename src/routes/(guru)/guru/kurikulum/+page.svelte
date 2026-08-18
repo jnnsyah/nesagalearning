@@ -108,7 +108,7 @@
 <div class="page-container">
 	{#if data.monitoringData.viewMode === 'grid'}
 		<!-- ══════════════════════════════════════════════════════════
-		     TIER 1: GRID VIEW (Katalog Kartu Kurikulum Track)
+		     TIER 1: GRID VIEW (Katalog Kartu Track Pembelajaran)
 		     ══════════════════════════════════════════════════════════ -->
 		<header class="page-hero">
 			<div class="hero-top-row">
@@ -145,7 +145,7 @@
 				<div class="empty-icon-circle">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 4 4v14a3 3 0 0 1 3-3h7z"/></svg>
 				</div>
-				<h3 class="font-bold text-slate-800 text-base">Belum Ada Kurikulum Track Dipublikasi</h3>
+				<h3 class="font-bold text-slate-800 text-base">Belum Ada Track Pembelajaran Dipublikasi</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
 					Tidak ditemukan alur kurikulum aktif untuk Tahun Ajaran {data.monitoringData.selectedTahunAjaran?.name || ''}.
 				</p>
@@ -300,7 +300,7 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     SUMMARY STAT CARDS
 		     ══════════════════════════════════════════════════════════ -->
-		<section class="stats-grid" aria-label="Ringkasan Kurikulum Track">
+		<section class="stats-grid" aria-label="Ringkasan Track Pembelajaran">
 			<div class="stat-card">
 				<div class="stat-icon-box icon-phase">
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>

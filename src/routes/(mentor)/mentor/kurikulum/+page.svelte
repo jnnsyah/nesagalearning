@@ -126,7 +126,7 @@
 			id="btn-buat-track"
 			onclick={openCreateForm}
 			class="btn-create"
-			aria-label="Buat track kurikulum baru (Alt+N)"
+			aria-label="Buat track pembelajaran baru (Alt+N)"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 				<line x1="12" y1="5" x2="12" y2="19"/>
@@ -259,7 +259,7 @@
 				{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
 					Tidak ada track yang sesuai filter. Coba ubah kriteria pencarian.
 				{:else}
-					Belum ada track kurikulum. Buat track pertama untuk memulai.
+					Belum ada track pembelajaran. Buat track pertama untuk memulai.
 				{/if}
 			</p>
 			{#if searchQuery || selectedTingkat !== null || selectedStatus !== 'all'}
@@ -387,7 +387,7 @@
 		onclick={(e) => e.target === e.currentTarget && (inspectingTrackId = null)}
 		role="dialog"
 		aria-modal="true"
-		aria-label="Detail track kurikulum"
+		aria-label="Detail track pembelajaran"
 	>
 		<aside class="drawer">
 			<div class="drawer__header">
@@ -462,7 +462,7 @@
 		onclick={(e) => e.target === e.currentTarget && closeFormDrawer()}
 		role="dialog"
 		aria-modal="true"
-		aria-label={editingTrack ? 'Edit track kurikulum' : 'Buat track kurikulum baru'}
+		aria-label={editingTrack ? 'Edit track pembelajaran' : 'Buat track pembelajaran baru'}
 	>
 		<aside class="form-drawer">
 			<!-- Mobile drag handle pill -->
@@ -475,7 +475,7 @@
 						{editingTrack ? 'EDIT TRACK' : 'TRACK BARU'}
 					</span>
 					<h2 class="form-drawer__title">
-						{editingTrack ? 'Edit Track Kurikulum' : 'Buat Track Kurikulum Baru'}
+						{editingTrack ? 'Edit Track Pembelajaran' : 'Buat Track Pembelajaran Baru'}
 					</h2>
 					<p class="form-drawer__sub">
 						{editingTrack ? 'Perbarui informasi dasar & status publikasi track.' : 'Isi detail informasi dasar untuk track baru.'}
@@ -567,7 +567,7 @@
 {#if deleteTrackTarget}
 	<ConfirmModal
 		open={true}
-		title="Hapus Track Kurikulum?"
+		title="Hapus Track Pembelajaran?"
 		message={`Apakah Anda yakin ingin menghapus track "${deleteTrackTarget.title}"? Seluruh fase, sub-fase, dan materi di dalamnya akan terhapus secara permanen.`}
 		variant="danger"
 		confirmText="Ya, Hapus Track"
@@ -592,7 +592,7 @@
 				isDeletingTrack = false;
 				deleteTrackTarget = null;
 				if (result.type === 'success') {
-					toast.success('Track kurikulum berhasil dihapus');
+					toast.success('Track pembelajaran berhasil dihapus');
 				} else if (result.type === 'failure') {
 					toast.error((result.data as any)?.error || 'Gagal menghapus track');
 				}
