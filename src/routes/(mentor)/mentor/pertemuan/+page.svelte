@@ -132,6 +132,31 @@
 		return `${d.getDate()} ${bulanIndo[d.getMonth()]} ${d.getFullYear()}`;
 	}
 
+	function getMeetingStatus(m: MeetingItem): 'live' | 'upcoming' | 'completed' {
+		const todayIsoStr = new Date().toISOString().slice(0, 10);
+		if (m.sessionDate < todayIsoStr) return 'completed';
+		if (m.sessionDate > todayIsoStr) return 'upcoming';
+
+		const now = new Date();
+		const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+		const [startH, startM] = (m.startTime || '00:00').split(':').map(Number);
+		const [endH, endM] = (m.endTime || '23:59').split(':').map(Number);
+
+		const startMinutes = (startH || 0) * 60 + (startM || 0);
+		const endMinutes = (endH || 0) * 60 + (endM || 0);
+
+		if (currentMinutes >= startMinutes - 15 && currentMinutes <= endMinutes + 30) {
+			return 'live';
+		}
+
+		if (currentMinutes < startMinutes - 15) {
+			return 'upcoming';
+		}
+
+		return 'completed';
+	}
+
 	// Auto-detect weekend (Saturday = 6, Sunday = 0) whenever session date changes
 	$effect(() => {
 		if (formSessionDate) {
@@ -713,6 +738,7 @@
 						<th>Judul Pertemuan &amp; Sub-Fase</th>
 						<th>Kelas</th>
 						<th>Tanggal &amp; Waktu</th>
+						<th>Status Sesi</th>
 						<th>Tipe Aktivitas</th>
 						<th>Slide Materi</th>
 						<th>Kehadiran</th>
@@ -722,6 +748,7 @@
 				<tbody>
 					{#each paginatedMeetings as m, idx (m.id)}
 						{@const badge = getActivityBadgeStyle(m.activityType)}
+						{@const status = getMeetingStatus(m)}
 						<tr>
 							<td class="font-mono text-xs text-slate-400">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
 							<td>
@@ -745,6 +772,15 @@
 									</div>
 									<span class="text-slate-500">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</span>
 								</div>
+							</td>
+							<td>
+								{#if status === 'live'}
+									<span class="status-pill-live">LIVE HARI INI</span>
+								{:else if status === 'upcoming'}
+									<span class="status-pill-upcoming">AKAN DATANG</span>
+								{:else}
+									<span class="status-pill-completed">SELESAI</span>
+								{/if}
 							</td>
 							<td>
 								<span class="activity-badge {badge.bg} {badge.text} {badge.border}">
@@ -1740,6 +1776,46 @@
 
 	.info-dot {
 		color: var(--text-ghost);
+	}
+
+	.status-pill-live {
+		display: inline-flex;
+		align-items: center;
+		padding: 3px 9px;
+		border-radius: 9999px;
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #86efac;
+		font-family: var(--font-macro);
+		font-size: 10.5px;
+		font-weight: 800;
+		box-shadow: 0 0 8px rgba(22, 163, 74, 0.2);
+	}
+
+	.status-pill-upcoming {
+		display: inline-flex;
+		align-items: center;
+		padding: 3px 9px;
+		border-radius: 9999px;
+		background: #e0e7ff;
+		color: #3730a3;
+		border: 1px solid #a5b4fc;
+		font-family: var(--font-macro);
+		font-size: 10.5px;
+		font-weight: 800;
+	}
+
+	.status-pill-completed {
+		display: inline-flex;
+		align-items: center;
+		padding: 3px 9px;
+		border-radius: 9999px;
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		font-family: var(--font-macro);
+		font-size: 10.5px;
+		font-weight: 800;
 	}
 
 	.info-text {
