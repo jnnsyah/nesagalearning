@@ -32,6 +32,9 @@
 	let reviewFeedback = $state('');
 	let isSubmitting = $state(false);
 
+	// Key to force re-render iframe on Refresh click
+	let iframeKey = $state(0);
+
 	let activeMeetingSummary = $derived(
 		(data.meetingSummaries || []).find((m) => m.pertemuanId === selectedPertemuanId) || null
 	);
@@ -103,6 +106,11 @@
 			const prevSub = filteredRosterSubmissions[currentIndex - 1];
 			selectedSubmissionId = prevSub.id;
 		}
+	}
+
+	function refreshPreview() {
+		iframeKey++;
+		toast.success('Preview diperbarui');
 	}
 
 	let kelasOptions = $derived([
@@ -499,6 +507,19 @@
 
 			<div class="studio-topbar-right">
 				{#if activeSubmission}
+					<button
+						type="button"
+						onclick={refreshPreview}
+						class="btn-studio-refresh"
+						title="Muat Ulang Preview Proyek"
+					>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M21.5 2v6h-6M2.5 22v-6h6" />
+							<path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16" />
+						</svg>
+						<span>Refresh</span>
+					</button>
+
 					<a
 						href={activeSubmission.link}
 						target="_blank"
@@ -631,30 +652,47 @@
 							<span class="url-text" title={activeSubmission.link}>{activeSubmission.link}</span>
 						</div>
 
-						<a
-							href={activeSubmission.link}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="btn-open-tab-mini"
-						>
-							<span>Buka Tab Baru</span>
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-								<polyline points="15 3 21 3 21 9" />
-								<line x1="10" y1="14" x2="21" y2="3" />
-							</svg>
-						</a>
+						<div class="flex items-center gap-1.5 flex-shrink-0">
+							<button
+								type="button"
+								onclick={refreshPreview}
+								class="btn-open-tab-mini"
+								title="Muat Ulang Preview Proyek"
+							>
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<path d="M21.5 2v6h-6M2.5 22v-6h6" />
+									<path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16" />
+								</svg>
+								<span>Refresh</span>
+							</button>
+
+							<a
+								href={activeSubmission.link}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn-open-tab-mini"
+							>
+								<span>Buka Tab Baru</span>
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+									<polyline points="15 3 21 3 21 9" />
+									<line x1="10" y1="14" x2="21" y2="3" />
+								</svg>
+							</a>
+						</div>
 					</div>
 
 					<!-- Preview Frame Wrap -->
 					<div class="pane-review-frame-wrap">
 						{#if isIframeEmbeddable(activeSubmission.link)}
-							<iframe
-								src={activeSubmission.link}
-								title="Preview Pekerjaan Siswa"
-								class="pane-review-iframe"
-								sandbox="allow-scripts allow-same-origin allow-forms"
-							></iframe>
+							{#key iframeKey}
+								<iframe
+									src={activeSubmission.link}
+									title="Preview Pekerjaan Siswa"
+									class="pane-review-iframe"
+									sandbox="allow-scripts allow-same-origin allow-forms"
+								></iframe>
+							{/key}
 						{:else}
 							<!-- External Inspector Card for GitHub / Drive / Figma / Canva / Replit -->
 							<div class="pane-review-external">
@@ -1351,7 +1389,29 @@
 	.studio-topbar-right {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 8px;
+	}
+
+	.btn-studio-refresh {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		background: #ffffff;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-studio-refresh:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
 	.btn-studio-link {
@@ -1635,6 +1695,9 @@
 		border-radius: 5px;
 		text-decoration: none;
 		flex-shrink: 0;
+		border: 1px solid #c7d2fe;
+		cursor: pointer;
+		transition: background 150ms ease;
 	}
 
 	.btn-open-tab-mini:hover {
