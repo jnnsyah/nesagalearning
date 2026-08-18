@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import DatePicker from '$lib/components/ui/DatePicker.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 	import { untrack } from 'svelte';
@@ -13,6 +14,29 @@
 	let drawerOpen = $state(false);
 	let activeDrawerMode = $state<'curriculum' | 'attendance'>('curriculum');
 	let selectedStudent = $state<StudentRosterItem | null>(null);
+
+	// Attendance Drawer Filters State
+	let drawerStatusFilter = $state<'all' | 'hadir' | 'excused' | 'alpha'>('all');
+	let drawerStartDate = $state('');
+	let drawerEndDate = $state('');
+	let drawerSearchQuery = $state('');
+
+	// Derived filtered attendance logs
+	const filteredAttendanceLogs = $derived.by(() => {
+		const logs = data.studentAttendanceHistory?.logs || [];
+		return logs.filter((log) => {
+			if (drawerStatusFilter !== 'all' && log.status !== drawerStatusFilter) return false;
+			if (drawerStartDate && log.sessionDate < drawerStartDate) return false;
+			if (drawerEndDate && log.sessionDate > drawerEndDate) return false;
+			if (drawerSearchQuery.trim()) {
+				const q = drawerSearchQuery.trim().toLowerCase();
+				const matchTitle = log.sessionTitle.toLowerCase().includes(q);
+				const matchDate = log.sessionDate.toLowerCase().includes(q);
+				if (!matchTitle && !matchDate) return false;
+			}
+			return true;
+		});
+	});
 
 	// Filters State
 	let selectedTaId = $derived(
@@ -121,6 +145,11 @@
 	function openStudentAttendance(student: StudentRosterItem) {
 		selectedStudent = student;
 		activeDrawerMode = 'attendance';
+		// Reset inner drawer filters
+		drawerStatusFilter = 'all';
+		drawerStartDate = '';
+		drawerEndDate = '';
+		drawerSearchQuery = '';
 		updateUrlFilters({ studentId: String(student.userId), drawer: 'attendance' });
 		drawerOpen = true;
 	}
@@ -456,7 +485,7 @@
 				</div>
 			</div>
 
-			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS (SPACIOUS & UNCLUTTERED) -->
+			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS (WITH FILTER BAR & DISTINCT THEMES) -->
 			{#if activeDrawerMode === 'attendance'}
 				{#if !data.studentAttendanceHistory}
 					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
@@ -468,61 +497,135 @@
 						<p class="text-xs text-slate-500 font-mono">Belum ada sesi pertemuan diselenggarakan untuk kelas ini.</p>
 					</div>
 				{:else}
-					<div class="attendance-logs-stack space-y-5">
+					<div class="attendance-logs-stack space-y-4">
+						<!-- Attendance Logs Filter Bar inside Drawer -->
+						<div class="drawer-filter-card mb-4">
+							<div class="grid grid-cols-2 gap-3 mb-3">
+								<div>
+									<label for="drawer-status-filter" class="filter-label">Filter Status</label>
+									<CustomSelect
+										id="drawer-status-filter"
+										options={[
+											{ value: 'all', label: 'Semua Status Sesi' },
+											{ value: 'hadir', label: 'Hadir Saja' },
+											{ value: 'excused', label: 'Izin / Sakit' },
+											{ value: 'alpha', label: 'Alpha / Tanpa Keterangan' }
+										]}
+										bind:value={drawerStatusFilter}
+										searchable={false}
+									/>
+								</div>
+
+								<div>
+									<label for="drawer-search-input" class="filter-label">Cari Sesi / Topik</label>
+									<TextInput
+										id="drawer-search-input"
+										placeholder="Ketik judul / tanggal..."
+										bind:value={drawerSearchQuery}
+									/>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<DatePicker
+										id="drawer-start-date"
+										label="Dari Tanggal"
+										placeholder="Pilih tgl awal..."
+										bind:value={drawerStartDate}
+									/>
+								</div>
+								<div>
+									<DatePicker
+										id="drawer-end-date"
+										label="Sampai Tanggal"
+										placeholder="Pilih tgl akhir..."
+										bind:value={drawerEndDate}
+									/>
+								</div>
+							</div>
+
+							{#if drawerStatusFilter !== 'all' || drawerStartDate || drawerEndDate || drawerSearchQuery}
+								<div class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-200">
+									<span class="text-xs text-slate-600 font-mono font-medium">
+										Menampilkan <strong>{filteredAttendanceLogs.length}</strong> dari {data.studentAttendanceHistory.logs.length} sesi
+									</span>
+									<button
+										type="button"
+										class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
+										onclick={() => {
+											drawerStatusFilter = 'all';
+											drawerStartDate = '';
+											drawerEndDate = '';
+											drawerSearchQuery = '';
+										}}
+									>
+										Reset Filter
+									</button>
+								</div>
+							{/if}
+						</div>
+
 						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
 							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
-								Riwayat Pertemuan Sesi ({data.studentAttendanceHistory.logs.length} Sesi)
+								Daftar Sesi Pertemuan ({filteredAttendanceLogs.length} Sesi)
 							</h5>
 							<span class="text-xs text-slate-400 font-mono">Kronologis Sesi</span>
 						</div>
 
-						<div class="space-y-4">
-							{#each data.studentAttendanceHistory.logs as sessionLog}
-								<div
-									class="session-log-card"
-									class:session-log-hadir={sessionLog.status === 'hadir'}
-									class:session-log-excused={sessionLog.status === 'excused'}
-									class:session-log-alpha={sessionLog.status === 'alpha'}
-								>
-									<div class="flex items-start justify-between gap-4">
-										<div class="space-y-1">
-											<div class="flex items-center gap-2 flex-wrap">
-												<span class="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-													Sesi #{sessionLog.sessionId}
-												</span>
-												<span class="font-mono text-xs text-slate-500">
-													📅 {sessionLog.sessionDate} • 🕒 {sessionLog.startTime}
-												</span>
+						{#if filteredAttendanceLogs.length === 0}
+							<div class="py-8 text-center bg-slate-50 rounded-xl border border-slate-200">
+								<p class="text-xs text-slate-500 font-mono">Tidak ada sesi presensi yang sesuai dengan filter.</p>
+							</div>
+						{:else}
+							<div class="space-y-4">
+								{#each filteredAttendanceLogs as sessionLog}
+									<div
+										class="session-log-card"
+										class:session-log-hadir={sessionLog.status === 'hadir'}
+										class:session-log-excused={sessionLog.status === 'excused'}
+										class:session-log-alpha={sessionLog.status === 'alpha'}
+									>
+										<div class="flex items-start justify-between gap-4">
+											<div class="space-y-1">
+												<div class="flex items-center gap-2 flex-wrap">
+													<span class="font-mono font-bold text-xs text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-100 shadow-sm">
+														Sesi #{sessionLog.sessionId}
+													</span>
+													<span class="font-mono text-xs text-slate-600 font-medium">
+														📅 {sessionLog.sessionDate} • 🕒 {sessionLog.startTime}
+													</span>
+												</div>
+												<h6 class="font-extrabold text-slate-900 text-sm leading-snug pt-0.5">{sessionLog.sessionTitle}</h6>
 											</div>
-											<h6 class="font-extrabold text-slate-900 text-sm leading-snug pt-0.5">{sessionLog.sessionTitle}</h6>
+
+											<div class="flex-shrink-0">
+												{#if sessionLog.status === 'hadir'}
+													<span class="badge badge-success text-[11px] px-2.5 py-1">HADIR</span>
+												{:else if sessionLog.status === 'excused'}
+													<span class="badge badge-warning text-[11px] px-2.5 py-1">IZIN / SAKIT</span>
+												{:else}
+													<span class="badge badge-error text-[11px] px-2.5 py-1">ALPHA</span>
+												{/if}
+											</div>
 										</div>
 
-										<div class="flex-shrink-0">
-											{#if sessionLog.status === 'hadir'}
-												<span class="badge badge-success text-[11px] px-2.5 py-1">HADIR</span>
-											{:else if sessionLog.status === 'excused'}
-												<span class="badge badge-warning text-[11px] px-2.5 py-1">IZIN / SAKIT</span>
-											{:else}
-												<span class="badge badge-error text-[11px] px-2.5 py-1">ALPHA</span>
-											{/if}
-										</div>
-									</div>
-
-									{#if sessionLog.status !== 'alpha'}
-										<div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100 flex-wrap text-xs">
-											<span class="meta-pill meta-pill-slate">
-												Metode: {sessionLog.method === 'qr' ? '📷 QR Code' : '📝 Presensi Manual'}
-											</span>
-											{#if sessionLog.manualReason}
-												<span class="text-slate-700 font-medium bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-													Catatan: "{sessionLog.manualReason}"
+										{#if sessionLog.status !== 'alpha'}
+											<div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-200/60 flex-wrap text-xs">
+												<span class="meta-pill meta-pill-slate">
+													Metode: {sessionLog.method === 'qr' ? '📷 QR Code' : '📝 Presensi Manual'}
 												</span>
-											{/if}
-										</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
+												{#if sessionLog.manualReason}
+													<span class="text-slate-700 font-medium bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+														Catatan: "{sessionLog.manualReason}"
+													</span>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -1017,11 +1120,16 @@
 		margin-top: 2px;
 	}
 
-	/* Session Log Card (Spacious & Clean Layout) */
-	.session-log-card {
-		background: #ffffff;
+	/* Drawer Filter Card */
+	.drawer-filter-card {
+		background: #f8fafc;
 		border: 1px solid #e2e8f0;
-		border-left: 4px solid #cbd5e1;
+		border-radius: 12px;
+		padding: 16px;
+	}
+
+	/* Session Log Card (Distinct Card Themes per Status) */
+	.session-log-card {
 		border-radius: 12px;
 		padding: 16px 18px;
 		box-shadow: 0 1px 3px rgba(0,0,0,0.03);
@@ -1029,16 +1137,21 @@
 	}
 
 	.session-log-hadir {
-		border-left-color: #22c55e !important;
+		background: #f0fdf4 !important;
+		border: 1px solid #bbf7d0 !important;
+		border-left: 5px solid #22c55e !important;
 	}
 
 	.session-log-excused {
-		border-left-color: #f59e0b !important;
+		background: #fffbeb !important;
+		border: 1px solid #fde68a !important;
+		border-left: 5px solid #f59e0b !important;
 	}
 
 	.session-log-alpha {
-		border-left-color: #ef4444 !important;
-		background: #fafafa !important;
+		background: #fff1f2 !important;
+		border: 1px solid #fecdd3 !important;
+		border-left: 5px solid #f43f5e !important;
 	}
 
 	/* Phase Cards */
@@ -1126,7 +1239,7 @@
 
 	.meta-pill-slate {
 		background: #ffffff;
-		border: 1px solid #e2e8f0;
+		border: 1px solid #cbd5e1;
 		color: #475569;
 	}
 
