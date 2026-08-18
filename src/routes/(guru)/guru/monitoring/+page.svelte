@@ -21,11 +21,16 @@
 	);
 
 	let classDropdownOptions = $derived(
-		(data.classOptions || []).map((c: any) => ({
-			value: String(c.id),
-			label: `${c.name} (${c.tahunAjaranName})${!c.isActive || !c.tahunAjaranIsActive ? ' [TERARSIP]' : ''}`,
-			description: `Tingkat ${c.tingkatName}`
-		}))
+		(data.classOptions || []).map((c: any) => {
+			let tag = '';
+			if (!c.tahunAjaranIsActive) tag = ' [TA BELUM DIMULAI]';
+			else if (!c.isActive) tag = ' [TERARSIP]';
+			return {
+				value: String(c.id),
+				label: `${c.name} (${c.tahunAjaranName})${tag}`,
+				description: `Tingkat ${c.tingkatName}`
+			};
+		})
 	);
 
 	const riskOptions = [
@@ -152,7 +157,8 @@
 					{#each data.cardsData.classCards as card}
 						<div
 							class="class-health-card cursor-pointer"
-							class:class-health-card--archived={card.isArchived}
+							class:class-health-card--archived={card.classState === 'archived'}
+							class:class-health-card--upcoming={card.classState === 'upcoming'}
 							onclick={() => selectKelasCard(card.kelasId)}
 							role="button"
 							tabindex="0"
@@ -164,18 +170,24 @@
 									<span class="class-card-tingkat">Tingkat {card.tingkatName} • {card.totalStudents} Siswa</span>
 								</div>
 								<div class="flex items-center gap-1.5 flex-wrap justify-end">
-									{#if card.isArchived}
+									{#if card.classState === 'upcoming'}
+										<span class="badge badge-amber inline-flex items-center gap-1">
+											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+											<span>TA BELUM DIMULAI</span>
+										</span>
+									{:else if card.classState === 'archived'}
 										<span class="badge badge-neutral inline-flex items-center gap-1">
 											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
 											<span>TERARSIP</span>
 										</span>
+									{:else}
+										<span
+											class="badge"
+											style="background: {card.healthColor}18; color: {card.healthColor}; border: 1px solid {card.healthColor}40;"
+										>
+											{card.healthStatus}
+										</span>
 									{/if}
-									<span
-										class="badge"
-										style="background: {card.healthColor}18; color: {card.healthColor}; border: 1px solid {card.healthColor}40;"
-									>
-										{card.healthStatus}
-									</span>
 								</div>
 							</div>
 
@@ -183,25 +195,29 @@
 								<div class="metric-pill">
 									<span class="metric-label">% Kehadiran</span>
 									<span class="metric-value">
-										{card.totalStudents === 0 ? '-' : `${card.avgAttendanceRate}%`}
+										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgAttendanceRate}%`}
 									</span>
 								</div>
 								<div class="metric-pill">
 									<span class="metric-label">% Tugas Selesai</span>
 									<span class="metric-value">
-										{card.totalStudents === 0 ? '-' : `${card.avgTaskCompletionRate}%`}
+										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgTaskCompletionRate}%`}
 									</span>
 								</div>
 								<div class="metric-pill">
 									<span class="metric-label">Streak Rata-rata</span>
 									<span class="metric-value">
-										{card.totalStudents === 0 ? '-' : `${card.avgStreak} Hari`}
+										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgStreak} Hari`}
 									</span>
 								</div>
 							</div>
 
 							<div class="class-card-footer">
-								{#if card.totalStudents === 0}
+								{#if card.classState === 'upcoming'}
+									<span class="neutral-count-pill">
+										Belum Ada Aktivitas
+									</span>
+								{:else if card.totalStudents === 0}
 									<span class="neutral-count-pill">
 										Belum Ada Siswa
 									</span>
@@ -247,10 +263,17 @@
 					</div>
 					<div class="hero-title-group">
 						<h1 class="hero-title">{data.summary.kelasName} — Health Dashboard</h1>
-						{#if data.summary.isArchived}
-							<span class="badge badge-neutral">TERARSIP</span>
-						{/if}
-						{#if data.summary.healthStatus === 'KRITIS'}
+						{#if data.summary.classState === 'upcoming'}
+							<span class="badge badge-amber inline-flex items-center gap-1">
+								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+								<span>TA BELUM DIMULAI</span>
+							</span>
+						{:else if data.summary.classState === 'archived'}
+							<span class="badge badge-neutral inline-flex items-center gap-1">
+								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+								<span>TERARSIP</span>
+							</span>
+						{:else if data.summary.healthStatus === 'KRITIS'}
 							<span class="badge badge-warning">KRITIS</span>
 						{:else if data.summary.healthStatus === 'WASPADA'}
 							<span class="badge badge-amber">WASPADA</span>
@@ -787,6 +810,24 @@
 	.class-health-card--archived .class-card-metrics {
 		background: #f1f5f9;
 		border-color: #e2e8f0;
+	}
+
+	.class-health-card--upcoming {
+		background: #fffdf5;
+		border: 1.5px solid #fde68a;
+		box-shadow: none;
+	}
+
+	.class-health-card--upcoming:hover {
+		background: #ffffff;
+		border-color: #d97706;
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+	}
+
+	.class-health-card--upcoming .class-card-metrics {
+		background: #fef3c7;
+		border-color: #fde68a;
 	}
 
 	.class-card-header {

@@ -22,6 +22,8 @@ export interface AcademicYearOption {
 	isActive: boolean;
 }
 
+export type ClassStateStatus = 'active' | 'upcoming' | 'archived';
+
 export interface ClassHealthCardItem {
 	kelasId: number;
 	kelasName: string;
@@ -36,6 +38,7 @@ export interface ClassHealthCardItem {
 	healthStatus: 'SEHAT' | 'WASPADA' | 'KRITIS';
 	healthColor: string;
 	isArchived: boolean;
+	classState: ClassStateStatus;
 }
 
 export interface ClassHealthSummary {
@@ -50,6 +53,7 @@ export interface ClassHealthSummary {
 	healthStatus: 'SEHAT' | 'WASPADA' | 'KRITIS';
 	healthColor: string;
 	isArchived: boolean;
+	classState: ClassStateStatus;
 	attendanceTiers: {
 		excellentCount: number; // 90% - 100%
 		goodCount: number;      // 75% - 89%
@@ -169,6 +173,14 @@ export const ClassHealthService = {
 
 		for (const c of classes) {
 			const { summary, alertStudentsCount } = await this.getClassHealthSummary(c.id);
+
+			let classState: ClassStateStatus = 'active';
+			if (!c.isActive) {
+				classState = 'archived';
+			} else if (!c.tahunAjaranIsActive) {
+				classState = 'upcoming';
+			}
+
 			classCards.push({
 				kelasId: c.id,
 				kelasName: c.name,
@@ -182,7 +194,8 @@ export const ClassHealthService = {
 				alertStudentsCount,
 				healthStatus: summary.healthStatus,
 				healthColor: summary.healthColor,
-				isArchived: !c.isActive
+				isArchived: classState === 'archived',
+				classState
 			});
 		}
 
@@ -208,6 +221,15 @@ export const ClassHealthService = {
 			: classOptions.find((c) => c.isActive) || classOptions[0] || null;
 
 		const activeKelasId = selectedKelas?.id ?? null;
+
+		let classState: ClassStateStatus = 'active';
+		if (selectedKelas) {
+			if (!selectedKelas.isActive) {
+				classState = 'archived';
+			} else if (!selectedKelas.tahunAjaranIsActive) {
+				classState = 'upcoming';
+			}
+		}
 
 		// 1. Get student memberships for this class (including historical enrollments)
 		const membershipConditions = [];
@@ -251,7 +273,8 @@ export const ClassHealthService = {
 					avgStreak: 0,
 					healthStatus: 'SEHAT',
 					healthColor: '#16a34a',
-					isArchived: selectedKelas ? (!selectedKelas.isActive || !selectedKelas.tahunAjaranIsActive) : false,
+					isArchived: classState === 'archived',
+					classState,
 					attendanceTiers: {
 						excellentCount: 0,
 						goodCount: 0,
@@ -399,7 +422,8 @@ export const ClassHealthService = {
 				avgStreak,
 				healthStatus,
 				healthColor,
-				isArchived: selectedKelas ? !selectedKelas.isActive : false,
+				isArchived: classState === 'archived',
+				classState,
 				attendanceTiers: {
 					excellentCount,
 					goodCount,
