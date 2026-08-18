@@ -11,6 +11,7 @@ export interface ClassOption {
 	name: string;
 	tahunAjaranId: number;
 	tahunAjaranName: string;
+	tahunAjaranIsActive: boolean;
 	tingkatName: string;
 	isActive: boolean;
 }
@@ -34,6 +35,7 @@ export interface ClassHealthCardItem {
 	alertStudentsCount: number;
 	healthStatus: 'SEHAT' | 'WASPADA' | 'KRITIS';
 	healthColor: string;
+	isArchived: boolean;
 }
 
 export interface ClassHealthSummary {
@@ -47,6 +49,7 @@ export interface ClassHealthSummary {
 	avgStreak: number;
 	healthStatus: 'SEHAT' | 'WASPADA' | 'KRITIS';
 	healthColor: string;
+	isArchived: boolean;
 	attendanceTiers: {
 		excellentCount: number; // 90% - 100%
 		goodCount: number;      // 75% - 89%
@@ -98,13 +101,14 @@ export const ClassHealthService = {
 				name: kelasInstance.name,
 				tahunAjaranId: kelasInstance.tahunAjaranId,
 				tahunAjaranName: tahunAjaran.name,
+				tahunAjaranIsActive: tahunAjaran.isActive,
 				tingkatName: tingkat.name,
 				isActive: kelasInstance.isActive
 			})
 			.from(kelasInstance)
 			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
 			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
-			.orderBy(desc(tahunAjaran.isActive), desc(kelasInstance.createdAt));
+			.orderBy(desc(tahunAjaran.isActive), desc(kelasInstance.isActive), desc(kelasInstance.createdAt));
 
 		return classes;
 	},
@@ -144,14 +148,16 @@ export const ClassHealthService = {
 			return { academicYears, selectedTahunAjaran, classCards: [] };
 		}
 
-		// Get all classes for this academic year
+		// Get all classes for this academic year (active + archived)
 		const classes = await db
 			.select({
 				id: kelasInstance.id,
 				name: kelasInstance.name,
 				tahunAjaranId: kelasInstance.tahunAjaranId,
 				tahunAjaranName: tahunAjaran.name,
-				tingkatName: tingkat.name
+				tahunAjaranIsActive: tahunAjaran.isActive,
+				tingkatName: tingkat.name,
+				isActive: kelasInstance.isActive
 			})
 			.from(kelasInstance)
 			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
@@ -175,7 +181,8 @@ export const ClassHealthService = {
 				avgStreak: summary.avgStreak,
 				alertStudentsCount,
 				healthStatus: summary.healthStatus,
-				healthColor: summary.healthColor
+				healthColor: summary.healthColor,
+				isArchived: !c.isActive || !c.tahunAjaranIsActive
 			});
 		}
 
@@ -202,8 +209,8 @@ export const ClassHealthService = {
 
 		const activeKelasId = selectedKelas?.id ?? null;
 
-		// 1. Get student memberships
-		const membershipConditions = [eq(keanggotaan.status, 'aktif')];
+		// 1. Get student memberships for this class (including historical enrollments)
+		const membershipConditions = [];
 		if (activeKelasId) {
 			membershipConditions.push(eq(keanggotaan.kelasInstanceId, activeKelasId));
 		}
@@ -244,6 +251,7 @@ export const ClassHealthService = {
 					avgStreak: 0,
 					healthStatus: 'SEHAT',
 					healthColor: '#16a34a',
+					isArchived: selectedKelas ? (!selectedKelas.isActive || !selectedKelas.tahunAjaranIsActive) : false,
 					attendanceTiers: {
 						excellentCount: 0,
 						goodCount: 0,
@@ -391,6 +399,7 @@ export const ClassHealthService = {
 				avgStreak,
 				healthStatus,
 				healthColor,
+				isArchived: selectedKelas ? (!selectedKelas.isActive || !selectedKelas.tahunAjaranIsActive) : false,
 				attendanceTiers: {
 					excellentCount,
 					goodCount,
@@ -427,10 +436,9 @@ export const ClassHealthService = {
 			return { items: [], total: 0, page, limit, totalPages: 1 };
 		}
 
-		// 1. Get active students in class
+		// 1. Get students in class (including historical enrollments for archived classes)
 		const membershipConditions = [
-			eq(keanggotaan.kelasInstanceId, activeKelasId),
-			eq(keanggotaan.status, 'aktif')
+			eq(keanggotaan.kelasInstanceId, activeKelasId)
 		];
 
 		if (params.search && params.search.trim() !== '') {

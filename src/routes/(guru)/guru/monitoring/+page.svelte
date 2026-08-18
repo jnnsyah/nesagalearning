@@ -23,7 +23,7 @@
 	let classDropdownOptions = $derived(
 		(data.classOptions || []).map((c: any) => ({
 			value: String(c.id),
-			label: `${c.name} (${c.tahunAjaranName})`,
+			label: `${c.name} (${c.tahunAjaranName})${!c.isActive || !c.tahunAjaranIsActive ? ' [TERARSIP]' : ''}`,
 			description: `Tingkat ${c.tingkatName}`
 		}))
 	);
@@ -162,12 +162,17 @@
 									<h3 class="class-card-name">{card.kelasName}</h3>
 									<span class="class-card-tingkat">Tingkat {card.tingkatName} • {card.totalStudents} Siswa</span>
 								</div>
-								<span
-									class="badge"
-									style="background: {card.healthColor}18; color: {card.healthColor}; border: 1px solid {card.healthColor}40;"
-								>
-									{card.healthStatus}
-								</span>
+								<div class="flex items-center gap-1.5 flex-wrap justify-end">
+									{#if card.isArchived}
+										<span class="badge badge-neutral">TERARSIP</span>
+									{/if}
+									<span
+										class="badge"
+										style="background: {card.healthColor}18; color: {card.healthColor}; border: 1px solid {card.healthColor}40;"
+									>
+										{card.healthStatus}
+									</span>
+								</div>
 							</div>
 
 							<div class="class-card-metrics">
@@ -238,6 +243,9 @@
 					</div>
 					<div class="hero-title-group">
 						<h1 class="hero-title">{data.summary.kelasName} — Health Dashboard</h1>
+						{#if data.summary.isArchived}
+							<span class="badge badge-neutral">TERARSIP</span>
+						{/if}
 						{#if data.summary.healthStatus === 'KRITIS'}
 							<span class="badge badge-warning">KRITIS</span>
 						{:else if data.summary.healthStatus === 'WASPADA'}
