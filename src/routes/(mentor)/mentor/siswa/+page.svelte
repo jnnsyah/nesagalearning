@@ -61,6 +61,66 @@
 		updateUrlFilters({ risk: String(val ?? 'all') });
 	}
 
+	// Sorting State
+	let selectedSort = $state<
+		| 'nama_az'
+		| 'nama_za'
+		| 'poin_tertinggi'
+		| 'kehadiran_terendah'
+		| 'kehadiran_tertinggi'
+		| 'progress_tertinggi'
+		| 'progress_terendah'
+	>('nama_az');
+
+	const sortOptions = [
+		{ value: 'nama_az', label: 'Urutkan: Nama Siswa (A - Z)' },
+		{ value: 'nama_za', label: 'Urutkan: Nama Siswa (Z - A)' },
+		{ value: 'poin_tertinggi', label: 'Urutkan: Poin Terbanyak' },
+		{ value: 'kehadiran_terendah', label: 'Urutkan: Kehadiran Terendah (Risiko Presensi)' },
+		{ value: 'kehadiran_tertinggi', label: 'Urutkan: Kehadiran Tertinggi' },
+		{ value: 'progress_tertinggi', label: 'Urutkan: Progress Pembelajaran Terbanyak' },
+		{ value: 'progress_terendah', label: 'Urutkan: Progress Pembelajaran Terendah' }
+	];
+
+	let sortedRoster = $derived.by(() => {
+		const list = [...(data.rosterData.roster || [])];
+		if (selectedSort === 'nama_az') {
+			list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+		} else if (selectedSort === 'nama_za') {
+			list.sort((a, b) => (b.fullName || '').localeCompare(a.fullName || ''));
+		} else if (selectedSort === 'poin_tertinggi') {
+			list.sort((a, b) => b.totalPoints - a.totalPoints);
+		} else if (selectedSort === 'kehadiran_terendah') {
+			list.sort((a, b) => a.attendanceRate - b.attendanceRate);
+		} else if (selectedSort === 'kehadiran_tertinggi') {
+			list.sort((a, b) => b.attendanceRate - a.attendanceRate);
+		} else if (selectedSort === 'progress_tertinggi') {
+			list.sort((a, b) => b.overallProgress - a.overallProgress);
+		} else if (selectedSort === 'progress_terendah') {
+			list.sort((a, b) => a.overallProgress - b.overallProgress);
+		}
+		return list;
+	});
+
+	// Pagination State
+	let currentPage = $state(1);
+	const itemsPerPage = 10; // 10 rows per page
+
+	let totalPages = $derived(Math.ceil(sortedRoster.length / itemsPerPage) || 1);
+
+	let paginatedRoster = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		return sortedRoster.slice(start, start + itemsPerPage);
+	});
+
+	$effect(() => {
+		data.rosterData.roster;
+		selectedSort;
+		untrack(() => {
+			currentPage = 1;
+		});
+	});
+
 	function updateUrlFilters(newParams: Record<string, string | null>) {
 		const params = new URLSearchParams();
 		if (selectedTaId) params.set('tahunAjaranId', selectedTaId);
@@ -219,6 +279,16 @@
 					searchable={false}
 				/>
 			</div>
+
+			<div class="w-64">
+				<label for="roster-sort" class="filter-label">Urutkan Siswa</label>
+				<CustomSelect
+					id="roster-sort"
+					options={sortOptions}
+					bind:value={selectedSort}
+					searchable={false}
+				/>
+			</div>
 		</form>
 	</div>
 
@@ -226,7 +296,7 @@
 	     ROSTER DATA TABLE (WITH INLINE PROGRESS BARS & DIRECT NAV LINKS)
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="recap-card" aria-label="Daftar Siswa Roster">
-		{#if data.rosterData.roster.length === 0}
+		{#if sortedRoster.length === 0}
 			<div class="empty-card py-12 text-center">
 				<div class="empty-icon-circle">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -253,9 +323,9 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.rosterData.roster as student, idx}
+						{#each paginatedRoster as student, idx}
 							<tr class="hover:bg-slate-50 transition-colors">
-								<td class="text-center text-xs font-mono text-slate-400">{idx + 1}</td>
+								<td class="text-center text-xs font-mono text-slate-400">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
 								<td>
 									<div class="student-profile-flex">
 										<div class="avatar-circle">
@@ -341,6 +411,48 @@
 					</tbody>
 				</table>
 			</div>
+
+			<!-- Pagination Bar -->
+			{#if sortedRoster.length > 0}
+				<div class="pagination-bar">
+					<div class="pagination-info">
+						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedRoster.length)}</strong> dari <strong>{sortedRoster.length}</strong> Siswa
+					</div>
+
+					{#if totalPages > 1}
+						<div class="pagination-actions">
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								‹ Prev
+							</button>
+
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
+								<button
+									type="button"
+									class="btn-pagination-num"
+									class:btn-pagination-num--active={currentPage === pageNum}
+									onclick={() => (currentPage = pageNum)}
+								>
+									{pageNum}
+								</button>
+							{/each}
+
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next ›
+							</button>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
 	</section>
 </div>
@@ -636,6 +748,89 @@
 	.btn-detail-action:hover {
 		background: #c7d2fe;
 		color: #312e81;
+	}
+
+	/* Pagination Bar */
+	.pagination-bar {
+		padding: 14px 20px;
+		background: #ffffff;
+		border-top: 1px solid #e2e8f0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+	}
+
+	.pagination-info {
+		font-size: 13px;
+		color: #64748b;
+	}
+
+	.pagination-info strong {
+		color: #0f172a;
+	}
+
+	.pagination-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-pagination-nav {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 12px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-nav:hover:not(:disabled) {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+	}
+
+	.btn-pagination-nav:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.btn-pagination-num {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		font-family: var(--font-mono, monospace);
+		font-size: 12px;
+		font-weight: 700;
+		color: #475569;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-num:hover {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+	}
+
+	.btn-pagination-num--active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		border-color: #4f46e5 !important;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 	}
 
 	@media (max-width: 640px) {
