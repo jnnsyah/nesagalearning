@@ -94,3 +94,24 @@ export const mentorAssignment = pgTable(
 		index('idx_mentor_assignment_kelas').on(table.kelasInstanceId)
 	]
 );
+
+export const advisorNote = pgTable(
+	'advisor_note',
+	{
+		id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+		studentId: bigint('student_id', { mode: 'number' })
+			.notNull()
+			.references(() => user.id),
+		advisorId: bigint('advisor_id', { mode: 'number' })
+			.notNull()
+			.references(() => user.id),
+		note: text('note').notNull(),
+		category: text('category').notNull().default('intervensi'), // 'intervensi' | 'konseling' | 'catatan_umum'
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		index('idx_advisor_note_student').on(table.studentId),
+		index('idx_advisor_note_advisor').on(table.advisorId)
+	]
+);
