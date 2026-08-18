@@ -832,15 +832,16 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		z-index: 50;
+		z-index: 999;
 		background: rgba(255, 255, 255, 0.98);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
 		border-top: 1px solid var(--border-hard);
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
-		box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
+		grid-template-columns: repeat(5, 1fr);
+		align-items: flex-end;
+		padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px));
+		box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
 	}
 
 	.bottom-nav-item {
