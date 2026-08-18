@@ -376,13 +376,21 @@
 		<!-- Filter Bar -->
 		<FilterBar>
 			{#snippet search()}
-				<div class="flex items-center gap-2 w-full">
-					<div class="flex-1">
+				<div class="flex items-center gap-3 w-full flex-wrap sm:flex-nowrap">
+					<div class="flex-1 min-w-[220px]">
 						<TextInput
 							name="search"
 							placeholder="Cari siswa real-time (Nama / Username)…"
 							bind:value={searchVal}
 							clearable
+						/>
+					</div>
+					<div class="w-full sm:w-60 flex-shrink-0">
+						<CustomSelect
+							name="riskLevel"
+							options={riskOptions}
+							bind:value={selectedRiskLevel}
+							onchange={applyFilters}
 						/>
 					</div>
 					{#if searchVal || selectedRiskLevel !== 'semua'}
@@ -396,15 +404,6 @@
 						</button>
 					{/if}
 				</div>
-			{/snippet}
-
-			{#snippet filters()}
-				<CustomSelect
-					name="riskLevel"
-					options={riskOptions}
-					bind:value={selectedRiskLevel}
-					onchange={applyFilters}
-				/>
 			{/snippet}
 		</FilterBar>
 
