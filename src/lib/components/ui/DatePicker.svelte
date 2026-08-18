@@ -294,19 +294,21 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 3px;
 		width: 100%;
 	}
 
 	.field-label {
 		font-family: var(--font-macro);
-		font-size: 12px;
+		font-size: 11.5px;
 		font-weight: 700;
-		color: var(--text-primary);
+		color: #475569;
 		display: flex;
 		align-items: center;
 		gap: 4px;
 		line-height: 1.2;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
 	}
 
 	.req-star {

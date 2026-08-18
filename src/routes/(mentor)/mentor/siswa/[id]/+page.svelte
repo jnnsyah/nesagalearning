@@ -360,7 +360,7 @@
 				</div>
 
 				<!-- Row 2: Status Filter, Dari Tanggal, Sampai Tanggal -->
-				<div class="grid grid-cols-3 gap-4 items-start">
+				<div class="pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 items-start">
 					<div>
 						<CustomSelect
 							id="page-status-filter"
