@@ -52,8 +52,11 @@
 		"@tiptap/starter-kit": "^3.30.0",
 		"@types/qrcode": "^1.5.6",
 		"bcryptjs": "^3.0.3",
+		"jspdf": "^4.2.1",
+		"jspdf-autotable": "^5.0.8",
 		"lucia": "^3.2.2",
 		"qrcode": "^1.5.4",
+		"xlsx": "^0.18.5",
 		"zod": "^4.4.3"
 	}
 }

@@ -4,6 +4,8 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import { untrack } from 'svelte';
 
+	import { exportAttendanceToExcel, exportAttendanceToPDF } from '$lib/utils/attendance-exporter';
+
 	let { data } = $props();
 
 	// Derived values for filter controls
@@ -83,41 +85,14 @@
 		updateFilters({ tab });
 	}
 
-	function exportToCSV() {
+	function handleExportExcel() {
 		if (data.recapData.students.length === 0) return;
+		exportAttendanceToExcel(data.recapData);
+	}
 
-		const headers = ['No', 'Nama Siswa', 'NISN/Username', 'Kelas', ...data.recapData.sessions.map((s) => `Sesi: ${s.title} (${s.sessionDate})`), 'Total Hadir', 'Total Izin/Sakit', 'Total Alpha', 'Persentase Kehadiran'];
-
-		const rows = data.recapData.students.map((st, idx) => {
-			const sessionStatuses = data.recapData.sessions.map((sess) => {
-				const stStatus = st.sessionsMap[sess.id]?.status;
-				if (stStatus === 'hadir') return 'Hadir';
-				if (stStatus === 'excused') return 'Izin/Sakit';
-				return 'Alpha';
-			});
-
-			return [
-				idx + 1,
-				`"${st.fullName}"`,
-				`"${st.username}"`,
-				`"${st.kelasName}"`,
-				...sessionStatuses,
-				st.totalHadir,
-				st.totalExcused,
-				st.totalAlpha,
-				`"${st.attendanceRate}%"`
-			];
-		});
-
-		const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.setAttribute('href', url);
-		link.setAttribute('download', `Rekap_Presensi_${data.recapData.selectedKelas?.name || 'Semua_Kelas'}_TA${data.recapData.selectedTahunAjaran?.name || ''}.csv`);
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+	function handleExportPDF() {
+		if (data.recapData.students.length === 0) return;
+		exportAttendanceToPDF(data.recapData);
 	}
 </script>
 
@@ -145,15 +120,27 @@
 				</p>
 			</div>
 
-			<div class="flex items-center gap-3 flex-wrap">
+			<div class="flex items-center gap-2 flex-wrap">
 				<button
 					type="button"
-					onclick={exportToCSV}
+					onclick={handleExportExcel}
 					disabled={data.recapData.students.length === 0}
-					class="btn-export-csv"
+					class="btn-export-excel"
+					title="Export ke Excel (.xlsx)"
 				>
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-					<span>Export CSV Rekap</span>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+					<span>Export Excel (.xlsx)</span>
+				</button>
+
+				<button
+					type="button"
+					onclick={handleExportPDF}
+					disabled={data.recapData.students.length === 0}
+					class="btn-export-pdf"
+					title="Export ke Dokumen PDF (.pdf)"
+				>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h6"/><path d="M9 11h6"/></svg>
+					<span>Export PDF (.pdf)</span>
 				</button>
 			</div>
 		</div>
@@ -519,28 +506,50 @@
 		margin-top: 4px;
 	}
 
-	.btn-export-csv {
+	.btn-export-excel {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
 		padding: 8px 14px;
-		background: #ffffff;
-		color: #334155;
-		border: 1px solid #cbd5e1;
+		background: #16a34a;
+		color: #ffffff;
+		border: none;
 		border-radius: 8px;
 		font-size: 13px;
 		font-weight: 700;
 		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease;
+		transition: background 0.15s ease;
 	}
 
-	.btn-export-csv:hover:not(:disabled) {
-		background: #f8fafc;
-		border-color: #94a3b8;
-		color: #0f172a;
+	.btn-export-excel:hover:not(:disabled) {
+		background: #15803d;
 	}
 
-	.btn-export-csv:disabled {
+	.btn-export-excel:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.btn-export-pdf {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		background: #dc2626;
+		color: #ffffff;
+		border: none;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.btn-export-pdf:hover:not(:disabled) {
+		background: #b91c1c;
+	}
+
+	.btn-export-pdf:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
