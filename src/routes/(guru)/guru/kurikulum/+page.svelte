@@ -5,47 +5,84 @@
 
 	let { data } = $props();
 
-	// Active filter state
-	let selectedTingkatId = $state(
-		data.monitoringData.selectedTingkat?.id ? String(data.monitoringData.selectedTingkat.id) : ''
-	);
-	let selectedTrackId = $state(
-		data.monitoringData.selectedTrack?.id ? String(data.monitoringData.selectedTrack.id) : ''
-	);
+	// Active filter local state derived from server load data
+	let selectedTaId = $state('');
+	let selectedTingkatId = $state('');
+	let selectedKelasId = $state('');
+
+	// Keep local state in sync when server data changes
+	$effect(() => {
+		selectedTaId = data.monitoringData.selectedTahunAjaran?.id
+			? String(data.monitoringData.selectedTahunAjaran.id)
+			: '';
+		selectedTingkatId = data.monitoringData.selectedTingkat?.id
+			? String(data.monitoringData.selectedTingkat.id)
+			: '';
+		selectedKelasId = data.monitoringData.selectedKelas?.id
+			? String(data.monitoringData.selectedKelas.id)
+			: '';
+	});
 
 	// Collapsible phase state
 	let expandedPhases = $state<Record<number, boolean>>({});
 
-	// Initialize all phases as expanded by default
+	// Initialize all phases expanded
 	$effect(() => {
-		const nextState: Record<number, boolean> = {};
+		const nextState: Record<number, boolean> = { ...expandedPhases };
 		for (const p of data.monitoringData.phases) {
-			nextState[p.id] = expandedPhases[p.id] !== undefined ? expandedPhases[p.id] : true;
+			if (nextState[p.id] === undefined) {
+				nextState[p.id] = true;
+			}
 		}
 		expandedPhases = nextState;
 	});
 
-	// Transform options for CustomSelect
-	const tingkatSelectOptions = $derived([
-		{ value: '', label: 'Semua Tingkat' },
-		...data.monitoringData.tingkatOptions.map((t) => ({
-			value: String(t.id),
-			label: t.name
-		}))
-	]);
-
-	const trackSelectOptions = $derived(
-		data.monitoringData.trackOptions.map((tr) => ({
-			value: String(tr.id),
-			label: `${tr.tingkatName} — ${tr.title}`
+	// Dropdown Options
+	const taSelectOptions = $derived(
+		data.monitoringData.tahunAjaranOptions.map((ta) => ({
+			value: String(ta.id),
+			label: ta.isActive ? `${ta.name} (Aktif)` : ta.name
 		}))
 	);
 
-	function handleFilterChange() {
+	const tingkatSelectOptions = $derived(
+		data.monitoringData.tingkatOptions.map((t) => ({
+			value: String(t.id),
+			label: t.name
+		}))
+	);
+
+	const kelasSelectOptions = $derived([
+		{ value: '', label: 'Semua Rombel / Kelas' },
+		...data.monitoringData.kelasOptions.map((k) => ({
+			value: String(k.id),
+			label: k.name
+		}))
+	]);
+
+	function updateFilters(newTaId?: string, newTingkatId?: string, newKelasId?: string) {
+		const ta = newTaId !== undefined ? newTaId : selectedTaId;
+		const tk = newTingkatId !== undefined ? newTingkatId : selectedTingkatId;
+		const kl = newKelasId !== undefined ? newKelasId : selectedKelasId;
+
 		const params = new URLSearchParams();
-		if (selectedTingkatId) params.set('tingkatId', selectedTingkatId);
-		if (selectedTrackId) params.set('trackId', selectedTrackId);
+		if (ta) params.set('tahunAjaranId', ta);
+		if (tk) params.set('tingkatId', tk);
+		if (kl) params.set('kelasInstanceId', kl);
+
 		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true });
+	}
+
+	function handleTaChange(val: string | number | null) {
+		updateFilters(String(val ?? ''), undefined, '');
+	}
+
+	function handleTingkatChange(val: string | number | null) {
+		updateFilters(undefined, String(val ?? ''), '');
+	}
+
+	function handleKelasChange(val: string | number | null) {
+		updateFilters(undefined, undefined, String(val ?? ''));
 	}
 
 	function togglePhase(phaseId: number) {
@@ -54,7 +91,7 @@
 </script>
 
 <svelte:head>
-	<title>Pantau Kurikulum & Progres Modul — Guru Pembimbing | NLC</title>
+	<title>Pantau Kurikulum — Guru Pembimbing | NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -65,62 +102,96 @@
 		<div class="hero-top-row">
 			<div>
 				<div class="hero-title-group">
-					<h1 class="hero-title">Pantau Kurikulum & Progres Modul</h1>
-					{#if data.monitoringData.selectedTrack}
+					<h1 class="hero-title">Pantau Kurikulum per Tahun Ajaran</h1>
+					{#if data.monitoringData.selectedTahunAjaran}
 						<span class="badge badge-primary">
-							{data.monitoringData.selectedTrack.tingkatName}
+							TA {data.monitoringData.selectedTahunAjaran.name}
+						</span>
+					{/if}
+					{#if data.monitoringData.selectedTingkat}
+						<span class="badge badge-subtle">
+							{data.monitoringData.selectedTingkat.name}
 						</span>
 					{/if}
 				</div>
 				<p class="hero-subtitle">
-					Supervisi struktur modul kurikulum, ketercapaian materi, quiz, dan persentase penyelesaian siswa per fase pembelajaran.
+					Supervisi ketercapaian kurikulum yang diterapakan pada tahun ajaran dan tingkat kelas tertentu.
 				</p>
 			</div>
+
+			{#if data.monitoringData.activeTrackTitle}
+				<div class="track-title-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+					<span>{data.monitoringData.activeTrackTitle}</span>
+				</div>
+			{/if}
 		</div>
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     FILTER BAR: TINGKAT & CURRICULUM TRACK
+	     FILTER BAR: TAHUN AJARAN, TINGKAT, & ROMBEL
 	     ══════════════════════════════════════════════════════════ -->
-	<FilterBar>
-		{#snippet search()}
-			<div class="flex flex-col gap-1">
-				<label for="track-select" class="filter-label">Pilih Curriculum Track</label>
+	<div class="filters-card">
+		<div class="filters-grid">
+			<!-- Select 1: Tahun Ajaran -->
+			<div class="filter-col">
+				<label for="ta-select" class="filter-label">Tahun Ajaran</label>
 				<CustomSelect
-					id="track-select"
-					name="trackId"
-					options={trackSelectOptions}
-					bind:value={selectedTrackId}
-					onchange={handleFilterChange}
-					placeholder="Pilih Alur Kurikulum..."
-					searchable={true}
+					id="ta-select"
+					name="tahunAjaranId"
+					options={taSelectOptions}
+					value={selectedTaId}
+					onchange={handleTaChange}
+					searchable={false}
 				/>
 			</div>
-		{/snippet}
 
-		{#snippet filters()}
-			<div class="col-span-2 flex flex-col gap-1">
-				<label for="tingkat-select" class="filter-label">Filter Tingkat Kelas</label>
+			<!-- Select 2: Tingkat Kelas -->
+			<div class="filter-col">
+				<label for="tingkat-select" class="filter-label">Tingkat Kelas</label>
 				<CustomSelect
 					id="tingkat-select"
 					name="tingkatId"
 					options={tingkatSelectOptions}
-					bind:value={selectedTingkatId}
-					onchange={handleFilterChange}
+					value={selectedTingkatId}
+					onchange={handleTingkatChange}
 					searchable={false}
 				/>
 			</div>
-		{/snippet}
-	</FilterBar>
 
-	{#if !data.monitoringData.selectedTrack}
+			<!-- Select 3: Rombongan Belajar (Kelas) -->
+			<div class="filter-col">
+				<label for="kelas-select" class="filter-label">Rombongan Belajar</label>
+				<CustomSelect
+					id="kelas-select"
+					name="kelasInstanceId"
+					options={kelasSelectOptions}
+					value={selectedKelasId}
+					onchange={handleKelasChange}
+					searchable={true}
+				/>
+			</div>
+		</div>
+	</div>
+
+	{#if data.monitoringData.summary.totalExecutingClasses === 0}
+		<div class="empty-card py-12 text-center">
+			<div class="empty-icon-circle">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+			</div>
+			<h3 class="font-bold text-slate-800 text-base">Belum Ada Rombel yang Berjalan</h3>
+			<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+				Tidak ditemukan rombongan belajar (kelas) aktif untuk {data.monitoringData.selectedTingkat?.name || 'Tingkat ini'} pada Tahun Ajaran {data.monitoringData.selectedTahunAjaran?.name || ''}.
+			</p>
+		</div>
+	{:else if !data.monitoringData.activeTrackTitle}
 		<div class="empty-card py-12 text-center">
 			<div class="empty-icon-circle">
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
 			</div>
-			<h3 class="font-bold text-slate-800 text-base">Belum Ada Curriculum Track Dipilih</h3>
+			<h3 class="font-bold text-slate-800 text-base">Belum Ada Curriculum Track Ditugaskan</h3>
 			<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-				Silakan pilih alur kurikulum pada filter di atas untuk memantau struktur materi dan ketercapaian modul pembelajaran.
+				Rombongan belajar pada {data.monitoringData.selectedTingkat?.name} TA {data.monitoringData.selectedTahunAjaran?.name} belum ditugaskan alur kurikulum oleh Admin / Mentor.
 			</p>
 		</div>
 	{:else}
@@ -145,7 +216,7 @@
 				</div>
 				<div class="stat-info">
 					<span class="stat-value">{data.monitoringData.summary.totalMateri} Materi</span>
-					<span class="stat-label">Konten Bacaan & Teori</span>
+					<span class="stat-label">Konten Teori & Lab</span>
 					<span class="stat-subtext">{data.monitoringData.summary.totalQuizzes} Evaluation Quizzes</span>
 				</div>
 			</div>
@@ -156,8 +227,8 @@
 				</div>
 				<div class="stat-info">
 					<span class="stat-value">{data.monitoringData.summary.totalExecutingClasses} Kelas</span>
-					<span class="stat-label">Rombel Eksekusi</span>
-					<span class="stat-subtext">{data.monitoringData.summary.totalStudents} Siswa Aktif Terdaftar</span>
+					<span class="stat-label">Rombel Dipantau</span>
+					<span class="stat-subtext">{data.monitoringData.summary.totalStudents} Siswa Terdaftar</span>
 				</div>
 			</div>
 
@@ -168,7 +239,7 @@
 				<div class="stat-info">
 					<span class="stat-value">{data.monitoringData.summary.avgTrackCompletionRate}%</span>
 					<span class="stat-label">Ketercapaian Kurikulum</span>
-					<span class="stat-subtext">Rata-rata Penyelesaian Siswa</span>
+					<span class="stat-subtext">Rata-rata Penyelesaian Modul</span>
 				</div>
 			</div>
 		</section>
@@ -178,9 +249,14 @@
 		     ══════════════════════════════════════════════════════════ -->
 		<section class="phases-section">
 			<div class="section-header">
-				<h2 class="section-title">Breakdown Modul & Progres Siswa ({data.monitoringData.phases.length} Phase)</h2>
-				<span class="text-xs text-slate-500 font-mono">
-					{data.monitoringData.selectedTrack.title}
+				<div>
+					<h2 class="section-title">Breakdown Modul Pembelajaran ({data.monitoringData.phases.length} Phase)</h2>
+					<p class="section-subtitle">
+						Dipantau untuk {data.monitoringData.selectedKelas?.name || `Seluruh Kelas ${data.monitoringData.selectedTingkat?.name}`} (TA {data.monitoringData.selectedTahunAjaran?.name})
+					</p>
+				</div>
+				<span class="text-xs text-slate-500 font-mono bg-slate-100 px-2.5 py-1 rounded-md">
+					Track: {data.monitoringData.activeTrackTitle}
 				</span>
 			</div>
 
@@ -190,7 +266,7 @@
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
 					</div>
 					<p class="font-bold text-slate-800 text-sm">Belum Ada Phase pada Track Ini</p>
-					<p class="text-xs text-slate-500 mt-1">Mentor / Admin belum menambahkan struktur modul pembelajaran untuk kurikulum ini.</p>
+					<p class="text-xs text-slate-500 mt-1">Mentor / Admin belum menambahkan modul pembelajaran untuk kurikulum ini.</p>
 				</div>
 			{:else}
 				<div class="phases-stack">
@@ -216,7 +292,7 @@
 								<div class="flex items-center gap-4 flex-shrink-0">
 									<div class="phase-progress-widget">
 										<div class="flex items-center justify-between text-xs font-mono mb-1">
-											<span class="text-slate-500">Rata-rata Progres</span>
+											<span class="text-slate-500">Progres Ketercapaian</span>
 											<span class="font-bold text-slate-800">{p.avgCompletionRate}%</span>
 										</div>
 										<div class="mini-progress-track w-32">
@@ -337,10 +413,18 @@
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
+	.hero-top-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
 	.hero-title-group {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 10px;
 		flex-wrap: wrap;
 	}
 
@@ -355,6 +439,43 @@
 		font-size: 13px;
 		color: var(--text-muted, #64748b);
 		margin-top: 4px;
+	}
+
+	.track-title-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-mono, monospace);
+		font-size: 12px;
+		font-weight: 700;
+		color: #4f46e5;
+		background: #e0e7ff;
+		border: 1px solid #c7d2fe;
+		padding: 6px 12px;
+		border-radius: 8px;
+	}
+
+	/* Filters Card */
+	.filters-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #cbd5e1);
+		border-radius: var(--radius-lg, 12px);
+		padding: 16px 20px;
+		margin-bottom: 24px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+	}
+
+	.filters-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		align-items: center;
+	}
+
+	.filter-col {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 	}
 
 	.filter-label {
@@ -402,7 +523,7 @@
 
 	.stat-info {
 		display: flex;
-		flex-col: column;
+		flex-direction: column;
 		min-width: 0;
 	}
 
@@ -438,17 +559,25 @@
 
 	.section-header {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		margin-bottom: 20px;
 		padding-bottom: 12px;
 		border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+		gap: 12px;
+		flex-wrap: wrap;
 	}
 
 	.section-title {
 		font-size: 16px;
 		font-weight: 700;
 		color: var(--text-main, #0f172a);
+	}
+
+	.section-subtitle {
+		font-size: 12px;
+		color: var(--text-muted, #64748b);
+		margin-top: 2px;
 	}
 
 	.phases-stack {
@@ -659,6 +788,9 @@
 
 	/* Mobile responsiveness */
 	@media (max-width: 1024px) {
+		.filters-grid {
+			grid-template-columns: 1fr;
+		}
 		.stats-grid {
 			grid-template-columns: repeat(2, 1fr);
 		}
