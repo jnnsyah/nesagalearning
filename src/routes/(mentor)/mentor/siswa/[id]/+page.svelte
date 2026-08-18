@@ -790,7 +790,7 @@
 		align-items: flex-end;
 		justify-content: space-between;
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-bottom: 14px;
 	}
 
 	.filter-row-bottom {
@@ -798,8 +798,6 @@
 		grid-template-columns: repeat(3, 1fr);
 		gap: 16px;
 		align-items: flex-start;
-		padding-top: 20px;
-		border-top: 1px solid #e2e8f0;
 	}
 
 	.filter-label {

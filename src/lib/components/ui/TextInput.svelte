@@ -95,7 +95,7 @@
 	.text-input-field {
 		display: flex;
 		flex-direction: column;
-		gap: 3px;
+		gap: 4px;
 		width: 100%;
 	}
 
