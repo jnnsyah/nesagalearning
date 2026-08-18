@@ -309,6 +309,7 @@
 		line-height: 1.2;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
+		margin-bottom: 0 !important;
 	}
 
 	.req-star {
