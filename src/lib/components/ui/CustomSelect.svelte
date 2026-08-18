@@ -17,6 +17,7 @@
 		disabled = false,
 		error = '',
 		id = '',
+		direction = 'down',
 		onchange
 	}: {
 		name?: string;
@@ -29,6 +30,7 @@
 		disabled?: boolean;
 		error?: string;
 		id?: string;
+		direction?: 'down' | 'up';
 		onchange?: (value: string | number | null) => void;
 	} = $props();
 
@@ -143,7 +145,7 @@
 
 	<!-- Floating Dropdown Popover -->
 	{#if isOpen}
-		<div class="dropdown-popover" role="listbox" tabIndex={-1}>
+		<div class="dropdown-popover" class:dropdown-popover--up={direction === 'up'} role="listbox" tabIndex={-1}>
 			{#if searchable && options.length > 5}
 				<div class="search-box">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
@@ -310,8 +312,20 @@
 		flex-direction: column;
 	}
 
+	.dropdown-popover--up {
+		top: auto;
+		bottom: calc(100% + 6px);
+		box-shadow: 0 -12px 32px rgba(15, 23, 42, 0.16);
+		animation: popoverFadeUp 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
 	@keyframes popoverFade {
 		from { opacity: 0; transform: translateY(-6px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes popoverFadeUp {
+		from { opacity: 0; transform: translateY(6px); }
 		to   { opacity: 1; transform: translateY(0); }
 	}
 

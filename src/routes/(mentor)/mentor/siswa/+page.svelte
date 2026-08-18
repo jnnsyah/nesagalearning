@@ -434,6 +434,7 @@
 								bind:value={itemsPerPage}
 								options={pageSizeOptions}
 								searchable={false}
+								direction="up"
 							/>
 						</div>
 					</div>
@@ -643,7 +644,7 @@
 		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: var(--radius-lg, 12px);
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	.table-scroll-container {
@@ -778,6 +779,8 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 14px;
+		position: relative;
+		z-index: 20;
 	}
 
 	.pagination-info {

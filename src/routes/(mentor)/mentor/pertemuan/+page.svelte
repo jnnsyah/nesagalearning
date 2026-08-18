@@ -687,6 +687,7 @@
 							bind:value={itemsPerPage}
 							options={pageSizeOptions}
 							searchable={false}
+							direction="up"
 						/>
 					</div>
 				</div>
@@ -1961,6 +1962,8 @@
 		justify-content: space-between;
 		gap: 14px;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		position: relative;
+		z-index: 20;
 	}
 
 	.pagination-info {

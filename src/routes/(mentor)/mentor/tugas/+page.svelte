@@ -592,6 +592,7 @@ let rosterSortOptions = [
 								bind:value={itemsPerPage}
 								options={pageSizeOptions}
 								searchable={false}
+								direction="up"
 							/>
 						</div>
 					</div>
@@ -1258,6 +1259,8 @@ let rosterSortOptions = [
 		justify-content: space-between;
 		gap: 14px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+		position: relative;
+		z-index: 20;
 	}
 
 	.pagination-info {
