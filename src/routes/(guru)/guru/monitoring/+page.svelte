@@ -106,7 +106,7 @@
 </script>
 
 <svelte:head>
-	<title>Class Health Monitoring & Intervensi Guru Advisor | NLC</title>
+	<title>Class Health Monitoring & Pendampingan Guru Pembimbing | NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -118,7 +118,7 @@
 			<div class="hero-content-row">
 				<div>
 					<div class="hero-title-group">
-						<h1 class="hero-title">Class Health Monitoring & Intervensi Advisor</h1>
+						<h1 class="hero-title">Class Health Monitoring & Pendampingan Pembimbing</h1>
 						{#if data.cardsData.selectedTahunAjaran}
 							<span class="badge badge-primary">
 								{data.cardsData.selectedTahunAjaran.name}
@@ -126,7 +126,7 @@
 						{/if}
 					</div>
 					<p class="hero-subtitle">
-						Pilih rombongan belajar (kelas) di bawah ini untuk memantau kesehatan kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan intervensi.
+						Pilih rombongan belajar (kelas) di bawah ini untuk memantau kesehatan kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan pendampingan.
 					</p>
 				</div>
 				<div class="w-64 flex-shrink-0">
@@ -469,7 +469,7 @@
 		<section class="card-table">
 			<div class="card-header-flex">
 				<div>
-					<h3 class="card-title">Daftar Kesehatan Siswa & Intervensi Advisor</h3>
+					<h3 class="card-title">Daftar Kesehatan Siswa & Pendampingan Pembimbing</h3>
 					<p class="card-subtitle">Menampilkan {data.rosterData.items.length} dari {data.rosterData.total} Siswa Terdaftar</p>
 				</div>
 				<span class="count-pill count-pill-sky">{data.rosterData.total} Siswa Total</span>
@@ -484,7 +484,7 @@
 							<th>Penyelesaian Tugas</th>
 							<th>Streak Hari</th>
 							<th>Status Risiko</th>
-							<th class="text-right">Aksi Advisor</th>
+							<th class="text-right">Aksi Pembimbing</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -578,10 +578,10 @@
 										<a
 											href="/guru/siswa/{s.studentId}"
 											class="btn-action-profile"
-											title="Lihat Detail & Catatan Advisor"
+											title="Lihat Detail & Catatan Pembimbing"
 										>
 											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-											<span>Detail Advisor</span>
+											<span>Detail Pembimbing</span>
 										</a>
 									</td>
 								</tr>

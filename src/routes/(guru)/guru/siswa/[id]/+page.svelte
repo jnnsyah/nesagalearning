@@ -11,9 +11,9 @@
 	let selectedCategory = $state('intervensi');
 
 	const categoryOptions = [
-		{ value: 'intervensi', label: 'Intervensi Akademik' },
-		{ value: 'konseling', label: 'Konseling & Bimbingan' },
-		{ value: 'catatan_umum', label: 'Catatan Umum Advisor' }
+		{ value: 'intervensi', label: 'Pendampingan Akademik' },
+		{ value: 'konseling', label: 'Bimbingan & Konseling' },
+		{ value: 'catatan_umum', label: 'Catatan Umum Pembimbing' }
 	];
 
 	function formatDate(dateInput: Date | string) {
@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-	<title>Detail Advisor Siswa — {data.detailData.student.fullName} | NLC</title>
+	<title>Detail Pembimbing Siswa — {data.detailData.student.fullName} | NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -80,16 +80,16 @@
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     ALERT BANNER (IF INTERVENTION NEEDED)
+	     ALERT BANNER (IF PENDAMPINGAN NEEDED)
 	     ══════════════════════════════════════════════════════════ -->
 	{#if data.detailData.summary.alertReasons.length > 0}
-		<section class="alert-banner" aria-label="Peringatan Intervensi Advisor">
+		<section class="alert-banner" aria-label="Peringatan Pendampingan Siswa">
 			<div class="alert-banner-header">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-				<h2 class="alert-banner-title">Peringatan Intervensi Advisor Required</h2>
+				<h2 class="alert-banner-title">Peringatan Pendampingan Siswa Required</h2>
 			</div>
 			<p class="alert-banner-desc">
-				Siswa ini terdeteksi membutuhkan perhatian dan tindakan intervensi khusus berdasarkan indikator berikut:
+				Siswa ini terdeteksi memerlukan perhatian dan pendampingan khusus dari Guru Pembimbing berdasarkan indikator berikut:
 			</p>
 			<ul class="alert-list">
 				{#each data.detailData.summary.alertReasons as reason}
@@ -152,7 +152,7 @@
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     MAIN CONTENT TABS: ADVISOR NOTES & ACTIVITY HISTORY
+	     MAIN CONTENT TABS: PEMBIMBING NOTES & ACTIVITY HISTORY
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="card-section">
 		<div class="tab-navigation">
@@ -163,7 +163,7 @@
 				onclick={() => (activeTab = 'notes')}
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-				<span>Catatan Intervensi Advisor ({data.detailData.notes.length})</span>
+				<span>Catatan Pendampingan Siswa ({data.detailData.notes.length})</span>
 			</button>
 
 			<button
@@ -187,12 +187,12 @@
 			</button>
 		</div>
 
-		<!-- TAB 1: ADVISOR INTERVENTION NOTES -->
+		<!-- TAB 1: PEMBIMBING NOTES -->
 		{#if activeTab === 'notes'}
 			<div class="tab-content">
 				<!-- Add Note Form -->
 				<div class="add-note-box">
-					<h3 class="box-title">Tambah Catatan Intervensi / Konseling Baru</h3>
+					<h3 class="box-title">Tambah Catatan Pendampingan & Bimbingan Baru</h3>
 					{#if form?.error}
 						<div class="form-error-banner">
 							{form.error}
@@ -228,7 +228,7 @@
 
 						<TextArea
 							name="note"
-							placeholder="Tuliskan catatan intervensi, kendala siswa, hasil bimbingan, atau tindak lanjut advisor di sini…"
+							placeholder="Tuliskan catatan pendampingan, kebiasaan belajar, hasil bimbingan, atau rekomendasi tindak lanjut di sini…"
 							bind:value={newNoteText}
 							rows={3}
 							required
@@ -241,7 +241,7 @@
 								class="btn-primary-action"
 							>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-								<span>{isSubmitting ? 'Simpan...' : 'Simpan Catatan Advisor'}</span>
+								<span>{isSubmitting ? 'Simpan...' : 'Simpan Catatan Pembimbing'}</span>
 							</button>
 						</div>
 					</form>
@@ -249,12 +249,14 @@
 
 				<!-- Notes Timeline -->
 				<div class="notes-timeline">
-					<h3 class="box-title mb-4">Riwayat Catatan Intervensi ({data.detailData.notes.length})</h3>
+					<h3 class="box-title mb-4">Riwayat Catatan Pendampingan ({data.detailData.notes.length})</h3>
 
 					{#if data.detailData.notes.length === 0}
 						<div class="empty-state-box py-8 text-center">
-							<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-slate-400 mb-2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-							<p class="font-bold text-slate-800 text-sm">Belum ada catatan intervensi</p>
+							<div class="empty-icon-circle">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+							</div>
+							<p class="font-bold text-slate-800 text-sm">Belum ada catatan pendampingan</p>
 							<p class="text-xs text-slate-500 mt-1">Gunakan formulir di atas untuk menambahkan catatan bimbingan pertama untuk siswa ini.</p>
 						</div>
 					{:else}
@@ -819,5 +821,17 @@
 		color: var(--primary, #4f46e5);
 		text-decoration: underline;
 		word-break: break-all;
+	}
+
+	.empty-icon-circle {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: #f1f5f9;
+		color: #64748b;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 10px;
 	}
 </style>

@@ -45,7 +45,7 @@ export const actions: Actions = {
 
 			return {
 				success: true,
-				message: 'Catatan intervensi advisor berhasil disimpan'
+				message: 'Catatan pendampingan berhasil disimpan'
 			};
 		} catch (err: any) {
 			console.error('Failed to add advisor note:', err);
