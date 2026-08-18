@@ -5,11 +5,11 @@ import type { GuruAttendanceDetailViewData } from '$lib/server/services/guru-att
 
 /**
  * Export Rekap Presensi to Excel (.xlsx) file
- * Single sheet format with Document Title & Header Information block, identical to PDF layout.
+ * Single sheet format with merged title block and structured key-value metadata grid.
  */
 export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
-	const taName = data.selectedTahunAjaran?.name || 'Semua_TA';
-	const kelasName = data.selectedKelas?.name || 'Semua_Kelas';
+	const taName = data.selectedTahunAjaran?.name || 'Semua TA';
+	const kelasName = data.selectedKelas?.name || 'Semua Rombel';
 	const dateStr = new Date().toLocaleDateString('id-ID', {
 		day: 'numeric',
 		month: 'long',
@@ -18,21 +18,16 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 
 	const wb = XLSX.utils.book_new();
 
-	// Build Single Sheet Rows
+	// Build Single Sheet Rows with Key-Value Metadata Grid
 	const excelRows: (string | number)[][] = [
 		['NESAGA LEARNING COMMUNITY (NLC)'],
 		['LAPORAN REKAPITULASI PRESENSI SISWA'],
 		[],
-		[`Tahun Ajaran: ${taName}`, `Rombel: ${kelasName}`, `Tanggal Cetak: ${dateStr}`],
-		[
-			`Total Pertemuan: ${data.summary.totalSessionsCount} Sesi`,
-			`Total Siswa Terdaftar: ${data.summary.totalStudentsCount} Siswa`
-		],
-		[
-			`Kehadiran Overall: ${data.summary.overallAttendanceRate}%`,
-			`Izin / Sakit: ${data.summary.excusedRate}%`,
-			`Alpha: ${data.summary.alphaRate}%`
-		],
+		['INFORMASI KELAS & METRIK PRESENSI'],
+		['Tahun Ajaran', '', taName, '', 'Rombel Kelas', '', kelasName, '', ''],
+		['Total Pertemuan', '', `${data.summary.totalSessionsCount} Sesi`, '', 'Total Siswa Terdaftar', '', `${data.summary.totalStudentsCount} Siswa`, '', ''],
+		['Kehadiran Overall', '', `${data.summary.overallAttendanceRate}%`, '', 'Tingkat Izin / Sakit', '', `${data.summary.excusedRate}%`, '', ''],
+		['Tingkat Alpha', '', `${data.summary.alphaRate}%`, '', 'Tanggal Cetak Laporan', '', dateStr, '', ''],
 		[],
 		[
 			'No',
@@ -68,17 +63,46 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 
 	const ws = XLSX.utils.aoa_to_sheet(excelRows);
 
-	// Column Widths
+	// Cell Merges (!merges) to prevent text overflow & align headers
+	ws['!merges'] = [
+		// Title & Subtitle across all 9 columns (A to I)
+		{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+		{ s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+		{ s: { r: 3, c: 0 }, e: { r: 3, c: 8 } },
+
+		// Metadata Grid Key-Value Merges
+		{ s: { r: 4, c: 0 }, e: { r: 4, c: 1 } },
+		{ s: { r: 4, c: 2 }, e: { r: 4, c: 3 } },
+		{ s: { r: 4, c: 4 }, e: { r: 4, c: 5 } },
+		{ s: { r: 4, c: 6 }, e: { r: 4, c: 8 } },
+
+		{ s: { r: 5, c: 0 }, e: { r: 5, c: 1 } },
+		{ s: { r: 5, c: 2 }, e: { r: 5, c: 3 } },
+		{ s: { r: 5, c: 4 }, e: { r: 5, c: 5 } },
+		{ s: { r: 5, c: 6 }, e: { r: 5, c: 8 } },
+
+		{ s: { r: 6, c: 0 }, e: { r: 6, c: 1 } },
+		{ s: { r: 6, c: 2 }, e: { r: 6, c: 3 } },
+		{ s: { r: 6, c: 4 }, e: { r: 6, c: 5 } },
+		{ s: { r: 6, c: 6 }, e: { r: 6, c: 8 } },
+
+		{ s: { r: 7, c: 0 }, e: { r: 7, c: 1 } },
+		{ s: { r: 7, c: 2 }, e: { r: 7, c: 3 } },
+		{ s: { r: 7, c: 4 }, e: { r: 7, c: 5 } },
+		{ s: { r: 7, c: 6 }, e: { r: 7, c: 8 } }
+	];
+
+	// Column Widths (!cols)
 	ws['!cols'] = [
-		{ wch: 6 },  // No
-		{ wch: 32 }, // Nama Siswa
-		{ wch: 18 }, // NISN
-		{ wch: 18 }, // Total Pertemuan
-		{ wch: 14 }, // Total Hadir
-		{ wch: 14 }, // Total Izin
-		{ wch: 14 }, // Total Alpha
-		{ wch: 16 }, // % Kehadiran
-		{ wch: 20 }  // Status Risiko
+		{ wch: 6 },  // A: No
+		{ wch: 30 }, // B: Nama Siswa
+		{ wch: 18 }, // C: NISN
+		{ wch: 18 }, // D: Total Pertemuan
+		{ wch: 14 }, // E: Total Hadir
+		{ wch: 14 }, // F: Total Izin
+		{ wch: 14 }, // G: Total Alpha
+		{ wch: 16 }, // H: % Kehadiran
+		{ wch: 20 }  // I: Status Risiko
 	];
 
 	XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi');
@@ -138,7 +162,7 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		47
 	);
 
-	// Table Data (No username column, no Rombel column, added Total Pertemuan column)
+	// Table Data
 	const tableHeaders = [
 		'No',
 		'Nama Siswa',
