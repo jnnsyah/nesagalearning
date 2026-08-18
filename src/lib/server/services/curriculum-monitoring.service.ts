@@ -20,19 +20,26 @@ export interface TahunAjaranOption {
 	isActive: boolean;
 }
 
-export interface TingkatOption {
+export interface TrackSummaryCard {
 	id: number;
-	name: string;
-	levelOrder: number;
+	title: string;
+	description: string | null;
+	tingkatId: number;
+	tingkatName: string;
+	executingClassesCount: number;
+	executingClassNames: string[];
+	totalStudents: number;
+	totalPhases: number;
+	totalSubPhases: number;
+	totalMateri: number;
+	totalQuizzes: number;
+	avgCompletionRate: number;
+	trackState: 'active' | 'upcoming' | 'archived';
 }
 
 export interface ClassInstanceOption {
 	id: number;
 	name: string;
-	tingkatId: number;
-	tahunAjaranId: number;
-	curriculumTrackId: number | null;
-	curriculumTrackTitle: string | null;
 }
 
 export interface SubPhaseProgressItem {
@@ -60,14 +67,26 @@ export interface PhaseProgressGroup {
 	subPhases: SubPhaseProgressItem[];
 }
 
-export interface CurriculumMonitoringData {
+export interface CurriculumGridViewData {
+	viewMode: 'grid';
 	tahunAjaranOptions: TahunAjaranOption[];
-	tingkatOptions: TingkatOption[];
-	kelasOptions: ClassInstanceOption[];
 	selectedTahunAjaran: TahunAjaranOption | null;
-	selectedTingkat: TingkatOption | null;
+	trackCards: TrackSummaryCard[];
+}
+
+export interface CurriculumDetailViewData {
+	viewMode: 'detail';
+	tahunAjaranOptions: TahunAjaranOption[];
+	selectedTahunAjaran: TahunAjaranOption | null;
+	selectedTrack: {
+		id: number;
+		title: string;
+		description: string | null;
+		tingkatId: number;
+		tingkatName: string;
+	};
+	kelasOptions: ClassInstanceOption[];
 	selectedKelas: ClassInstanceOption | null;
-	activeTrackTitle: string | null;
 	summary: {
 		totalPhases: number;
 		totalSubPhases: number;
@@ -80,9 +99,11 @@ export interface CurriculumMonitoringData {
 	phases: PhaseProgressGroup[];
 }
 
+export type CurriculumMonitoringData = CurriculumGridViewData | CurriculumDetailViewData;
+
 export const CurriculumMonitoringService = {
 	/**
-	 * Get all academic years
+	 * Get all academic years sorted by active first
 	 */
 	async getTahunAjaranOptions(): Promise<TahunAjaranOption[]> {
 		return await db
@@ -96,155 +117,298 @@ export const CurriculumMonitoringService = {
 	},
 
 	/**
-	 * Get master grade levels (Tingkat)
+	 * Fetch Tier 1: Grid of Curriculum Track Cards for an Academic Year
 	 */
-	async getTingkatOptions(): Promise<TingkatOption[]> {
-		return await db
+	async getTrackCards(tahunAjaranId?: number): Promise<CurriculumGridViewData> {
+		const tahunAjaranOptions = await this.getTahunAjaranOptions();
+
+		const selectedTahunAjaran = tahunAjaranId
+			? tahunAjaranOptions.find((ta) => ta.id === tahunAjaranId) || null
+			: tahunAjaranOptions.find((ta) => ta.isActive) || tahunAjaranOptions[0] || null;
+
+		if (!selectedTahunAjaran) {
+			return {
+				viewMode: 'grid',
+				tahunAjaranOptions,
+				selectedTahunAjaran: null,
+				trackCards: []
+			};
+		}
+
+		const activeTaId = selectedTahunAjaran.id;
+
+		// Determine trackState
+		let trackState: 'active' | 'upcoming' | 'archived' = 'active';
+		if (!selectedTahunAjaran.isActive) {
+			trackState = 'archived';
+		}
+
+		// Get all curriculum tracks associated with class instances running in this Academic Year
+		const runningClassesWithTracks = await db
 			.select({
-				id: tingkat.id,
-				name: tingkat.name,
-				levelOrder: tingkat.levelOrder
+				kelasId: kelasInstance.id,
+				kelasName: kelasInstance.name,
+				tingkatId: kelasInstance.tingkatId,
+				tingkatName: tingkat.name,
+				trackId: curriculumTrack.id,
+				trackTitle: curriculumTrack.title,
+				trackDesc: curriculumTrack.description
 			})
-			.from(tingkat)
-			.orderBy(tingkat.levelOrder);
+			.from(kelasInstance)
+			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
+			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
+			.where(eq(kelasInstance.tahunAjaranId, activeTaId))
+			.orderBy(tingkat.levelOrder, curriculumTrack.title);
+
+		// Group classes by Track ID
+		const trackMap = new Map<number, {
+			id: number;
+			title: string;
+			description: string | null;
+			tingkatId: number;
+			tingkatName: string;
+			kelasIds: number[];
+			classNames: string[];
+		}>();
+
+		for (const row of runningClassesWithTracks) {
+			if (!trackMap.has(row.trackId)) {
+				trackMap.set(row.trackId, {
+					id: row.trackId,
+					title: row.trackTitle,
+					description: row.trackDesc,
+					tingkatId: row.tingkatId,
+					tingkatName: row.tingkatName,
+					kelasIds: [],
+					classNames: []
+				});
+			}
+			const entry = trackMap.get(row.trackId)!;
+			entry.kelasIds.push(row.kelasId);
+			entry.classNames.push(row.kelasName);
+		}
+
+		// Also fetch any standalone published curriculum tracks for completeness
+		const allTracks = await db
+			.select({
+				id: curriculumTrack.id,
+				title: curriculumTrack.title,
+				description: curriculumTrack.description,
+				tingkatId: curriculumTrack.tingkatId,
+				tingkatName: tingkat.name
+			})
+			.from(curriculumTrack)
+			.innerJoin(tingkat, eq(curriculumTrack.tingkatId, tingkat.id))
+			.where(eq(curriculumTrack.isPublished, true))
+			.orderBy(tingkat.levelOrder, curriculumTrack.title);
+
+		for (const tr of allTracks) {
+			if (!trackMap.has(tr.id)) {
+				trackMap.set(tr.id, {
+					id: tr.id,
+					title: tr.title,
+					description: tr.description,
+					tingkatId: tr.tingkatId,
+					tingkatName: tr.tingkatName,
+					kelasIds: [],
+					classNames: []
+				});
+			}
+		}
+
+		const trackCards: TrackSummaryCard[] = [];
+
+		for (const tr of trackMap.values()) {
+			const executingClassIds = tr.kelasIds;
+
+			// 1. Total Students enrolled in executing classes
+			let totalStudents = 0;
+			let studentIds: number[] = [];
+			if (executingClassIds.length > 0) {
+				const students = await db
+					.select({ userId: keanggotaan.userId })
+					.from(keanggotaan)
+					.where(and(inArray(keanggotaan.kelasInstanceId, executingClassIds), eq(keanggotaan.status, 'aktif')));
+
+				studentIds = students.map((s) => s.userId);
+				totalStudents = studentIds.length;
+			}
+
+			// 2. Count Phases, SubPhases, Materi, Quizzes for this Track
+			const phasesRes = await db
+				.select({ id: phase.id })
+				.from(phase)
+				.where(eq(phase.curriculumTrackId, tr.id));
+
+			const phaseIds = phasesRes.map((p) => p.id);
+			const totalPhases = phaseIds.length;
+
+			let totalSubPhases = 0;
+			let totalMateriCount = 0;
+			let totalQuizzesCount = 0;
+			let avgCompletionRate = 0;
+
+			if (phaseIds.length > 0) {
+				const subPhasesRes = await db
+					.select({ id: subPhase.id })
+					.from(subPhase)
+					.where(inArray(subPhase.phaseId, phaseIds));
+
+				const subPhaseIds = subPhasesRes.map((sp) => sp.id);
+				totalSubPhases = subPhaseIds.length;
+
+				if (subPhaseIds.length > 0) {
+					const [materiRes] = await db
+						.select({ total: count(materi.id) })
+						.from(materi)
+						.where(inArray(materi.subPhaseId, subPhaseIds));
+					totalMateriCount = Number(materiRes?.total ?? 0);
+
+					const [quizRes] = await db
+						.select({ total: count(quiz.id) })
+						.from(quiz)
+						.where(inArray(quiz.subPhaseId, subPhaseIds));
+					totalQuizzesCount = Number(quizRes?.total ?? 0);
+
+					// Calculate overall completion rate
+					if (executingClassIds.length > 0 && studentIds.length > 0) {
+						const sessionsRes = await db
+							.select({ id: pertemuan.id })
+							.from(pertemuan)
+							.where(
+								and(
+									inArray(pertemuan.subPhaseId, subPhaseIds),
+									inArray(pertemuan.kelasInstanceId, executingClassIds)
+								)
+							);
+
+						const sessionIds = sessionsRes.map((s) => s.id);
+						if (sessionIds.length > 0) {
+							const [attRes] = await db
+								.select({ total: count(attendance.id) })
+								.from(attendance)
+								.where(
+									and(
+										inArray(attendance.pertemuanId, sessionIds),
+										inArray(attendance.userId, studentIds),
+										eq(attendance.status, 'hadir')
+									)
+								);
+
+							const totalAttended = Number(attRes?.total ?? 0);
+							const maxPossible = sessionIds.length * totalStudents;
+							avgCompletionRate = maxPossible > 0 ? Math.min(100, Math.round((totalAttended / maxPossible) * 100)) : 0;
+						}
+					}
+				}
+			}
+
+			trackCards.push({
+				id: tr.id,
+				title: tr.title,
+				description: tr.description,
+				tingkatId: tr.tingkatId,
+				tingkatName: tr.tingkatName,
+				executingClassesCount: tr.kelasIds.length,
+				executingClassNames: tr.classNames,
+				totalStudents,
+				totalPhases,
+				totalSubPhases,
+				totalMateri: totalMateriCount,
+				totalQuizzes: totalQuizzesCount,
+				avgCompletionRate,
+				trackState: tr.kelasIds.length === 0 ? 'upcoming' : trackState
+			});
+		}
+
+		return {
+			viewMode: 'grid',
+			tahunAjaranOptions,
+			selectedTahunAjaran,
+			trackCards
+		};
 	},
 
 	/**
-	 * Get curriculum monitoring data based on Academic Year + Grade Level + Rombel
+	 * Fetch Tier 2: Detailed Phase & SubPhase Hierarchy for a Specific Track in an Academic Year
 	 */
-	async getCurriculumMonitoring(params: {
+	async getTrackDetail(params: {
+		trackId: number;
 		tahunAjaranId?: number;
-		tingkatId?: number;
 		kelasInstanceId?: number;
-	}): Promise<CurriculumMonitoringData> {
-		const [tahunAjaranOptions, tingkatOptions] = await Promise.all([
-			this.getTahunAjaranOptions(),
-			this.getTingkatOptions()
-		]);
+	}): Promise<CurriculumDetailViewData> {
+		const tahunAjaranOptions = await this.getTahunAjaranOptions();
 
-		// Resolve Selected Academic Year (default to active TA)
 		const selectedTahunAjaran = params.tahunAjaranId
 			? tahunAjaranOptions.find((ta) => ta.id === params.tahunAjaranId) || null
 			: tahunAjaranOptions.find((ta) => ta.isActive) || tahunAjaranOptions[0] || null;
 
-		const activeTaId = selectedTahunAjaran?.id;
+		const activeTaId = selectedTahunAjaran?.id || 1;
 
-		// Resolve Selected Tingkat (default to first Tingkat)
-		const selectedTingkat = params.tingkatId
-			? tingkatOptions.find((t) => t.id === params.tingkatId) || null
-			: tingkatOptions[0] || null;
+		// 1. Fetch Track Profile
+		const [trackRow] = await db
+			.select({
+				id: curriculumTrack.id,
+				title: curriculumTrack.title,
+				description: curriculumTrack.description,
+				tingkatId: curriculumTrack.tingkatId,
+				tingkatName: tingkat.name
+			})
+			.from(curriculumTrack)
+			.innerJoin(tingkat, eq(curriculumTrack.tingkatId, tingkat.id))
+			.where(eq(curriculumTrack.id, params.trackId));
 
-		const activeTingkatId = selectedTingkat?.id;
-
-		if (!activeTaId || !activeTingkatId) {
-			return {
-				tahunAjaranOptions,
-				tingkatOptions,
-				kelasOptions: [],
-				selectedTahunAjaran,
-				selectedTingkat,
-				selectedKelas: null,
-				activeTrackTitle: null,
-				summary: {
-					totalPhases: 0,
-					totalSubPhases: 0,
-					totalMateri: 0,
-					totalQuizzes: 0,
-					totalExecutingClasses: 0,
-					totalStudents: 0,
-					avgTrackCompletionRate: 0
-				},
-				phases: []
-			};
+		if (!trackRow) {
+			throw new Error('Curriculum Track tidak ditemukan');
 		}
 
-		// Fetch Class Instances for the selected Academic Year & Tingkat
+		// 2. Fetch Classes executing this Track in this Academic Year
 		const runningClasses = await db
 			.select({
 				id: kelasInstance.id,
-				name: kelasInstance.name,
-				tingkatId: kelasInstance.tingkatId,
-				tahunAjaranId: kelasInstance.tahunAjaranId,
-				curriculumTrackId: kelasInstance.curriculumTrackId,
-				curriculumTrackTitle: curriculumTrack.title
+				name: kelasInstance.name
 			})
 			.from(kelasInstance)
-			.leftJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
 			.where(
 				and(
 					eq(kelasInstance.tahunAjaranId, activeTaId),
-					eq(kelasInstance.tingkatId, activeTingkatId)
+					eq(kelasInstance.curriculumTrackId, params.trackId)
 				)
 			)
 			.orderBy(kelasInstance.name);
 
 		const kelasOptions: ClassInstanceOption[] = runningClasses.map((c) => ({
 			id: c.id,
-			name: c.name,
-			tingkatId: c.tingkatId,
-			tahunAjaranId: c.tahunAjaranId,
-			curriculumTrackId: c.curriculumTrackId,
-			curriculumTrackTitle: c.curriculumTrackTitle
+			name: c.name
 		}));
 
-		// Resolve Selected Specific Class Instance if provided
 		const selectedKelas = params.kelasInstanceId
 			? kelasOptions.find((k) => k.id === params.kelasInstanceId) || null
 			: null;
 
-		// Determine target class IDs for metrics calculation
-		const targetClasses = selectedKelas
-			? [selectedKelas]
-			: kelasOptions;
+		const targetClassIds = selectedKelas
+			? [selectedKelas.id]
+			: kelasOptions.map((c) => c.id);
 
-		const targetClassIds = targetClasses.map((c) => c.id);
+		// 3. Fetch Enrolled Active Students
+		let totalStudents = 0;
+		let studentIds: number[] = [];
+		if (targetClassIds.length > 0) {
+			const activeStudents = await db
+				.select({ userId: keanggotaan.userId })
+				.from(keanggotaan)
+				.where(
+					and(
+						inArray(keanggotaan.kelasInstanceId, targetClassIds),
+						eq(keanggotaan.status, 'aktif')
+					)
+				);
 
-		// Determine Curriculum Track ID (take track from target classes)
-		const targetTrackId = selectedKelas?.curriculumTrackId
-			? selectedKelas.curriculumTrackId
-			: targetClasses.find((c) => c.curriculumTrackId !== null)?.curriculumTrackId || null;
-
-		const activeTrackTitle = selectedKelas?.curriculumTrackTitle
-			|| targetClasses.find((c) => c.curriculumTrackTitle !== null)?.curriculumTrackTitle
-			|| null;
-
-		if (targetClassIds.length === 0 || !targetTrackId) {
-			return {
-				tahunAjaranOptions,
-				tingkatOptions,
-				kelasOptions,
-				selectedTahunAjaran,
-				selectedTingkat,
-				selectedKelas,
-				activeTrackTitle,
-				summary: {
-					totalPhases: 0,
-					totalSubPhases: 0,
-					totalMateri: 0,
-					totalQuizzes: 0,
-					totalExecutingClasses: targetClassIds.length,
-					totalStudents: 0,
-					avgTrackCompletionRate: 0
-				},
-				phases: []
-			};
+			studentIds = activeStudents.map((s) => s.userId);
+			totalStudents = studentIds.length;
 		}
 
-		// 1. Fetch Enrolled Active Students in Target Classes
-		const activeStudents = await db
-			.select({ userId: keanggotaan.userId })
-			.from(keanggotaan)
-			.where(
-				and(
-					inArray(keanggotaan.kelasInstanceId, targetClassIds),
-					eq(keanggotaan.status, 'aktif')
-				)
-			);
-
-		const studentIds = activeStudents.map((s) => s.userId);
-		const totalStudents = studentIds.length;
-
-		// 2. Fetch Phases for the Assigned Curriculum Track
+		// 4. Fetch Phases for this Track
 		const trackPhases = await db
 			.select({
 				id: phase.id,
@@ -253,20 +417,19 @@ export const CurriculumMonitoringService = {
 				sortOrder: phase.sortOrder
 			})
 			.from(phase)
-			.where(eq(phase.curriculumTrackId, targetTrackId))
+			.where(eq(phase.curriculumTrackId, params.trackId))
 			.orderBy(phase.sortOrder);
 
 		const phaseIds = trackPhases.map((p) => p.id);
 
 		if (phaseIds.length === 0) {
 			return {
+				viewMode: 'detail',
 				tahunAjaranOptions,
-				tingkatOptions,
-				kelasOptions,
 				selectedTahunAjaran,
-				selectedTingkat,
+				selectedTrack: trackRow,
+				kelasOptions,
 				selectedKelas,
-				activeTrackTitle,
 				summary: {
 					totalPhases: 0,
 					totalSubPhases: 0,
@@ -280,7 +443,7 @@ export const CurriculumMonitoringService = {
 			};
 		}
 
-		// 3. Fetch SubPhases for all Phases in this Track
+		// 5. Fetch SubPhases
 		const subPhasesList = await db
 			.select({
 				id: subPhase.id,
@@ -295,7 +458,7 @@ export const CurriculumMonitoringService = {
 
 		const subPhaseIds = subPhasesList.map((sp) => sp.id);
 
-		// 4. Fetch Materi & Quizzes count
+		// 6. Fetch Materi & Quizzes
 		const materiCounts = subPhaseIds.length > 0
 			? await db
 					.select({
@@ -328,7 +491,7 @@ export const CurriculumMonitoringService = {
 			quizMap.set(q.subPhaseId, { title: q.title, passingScore: q.passingScore });
 		}
 
-		// 5. Fetch Meetings/Pertemuan executed in target classes
+		// 7. Fetch Meetings & Attendance
 		const subPhaseSessions = (subPhaseIds.length > 0 && targetClassIds.length > 0)
 			? await db
 					.select({
@@ -352,7 +515,6 @@ export const CurriculumMonitoringService = {
 			sessionMap.set(sess.subPhaseId, list);
 		}
 
-		// 6. Fetch Attendance records
 		const allSessionIds = subPhaseSessions.map((s) => s.id);
 		const attendanceCounts = (allSessionIds.length > 0 && studentIds.length > 0)
 			? await db
@@ -376,7 +538,7 @@ export const CurriculumMonitoringService = {
 			attendanceSessionMap.set(ac.pertemuanId, Number(ac.attendedCount));
 		}
 
-		// 7. Aggregate Hierarchy & Calculate Completion Rate
+		// 8. Build Hierarchy with Progress Metrics
 		let totalSubPhasesCount = 0;
 		let totalMateriCount = 0;
 		let totalQuizzesCount = quizzesList.length;
@@ -465,13 +627,12 @@ export const CurriculumMonitoringService = {
 			: 0;
 
 		return {
+			viewMode: 'detail',
 			tahunAjaranOptions,
-			tingkatOptions,
-			kelasOptions,
 			selectedTahunAjaran,
-			selectedTingkat,
+			selectedTrack: trackRow,
+			kelasOptions,
 			selectedKelas,
-			activeTrackTitle,
 			summary: {
 				totalPhases: trackPhases.length,
 				totalSubPhases: totalSubPhasesCount,

@@ -2,21 +2,25 @@ import type { PageServerLoad } from './$types';
 import { CurriculumMonitoringService } from '$lib/server/services/curriculum-monitoring.service';
 
 export const load: PageServerLoad = async ({ url }) => {
+	const trackIdParam = url.searchParams.get('trackId');
 	const tahunAjaranIdParam = url.searchParams.get('tahunAjaranId');
-	const tingkatIdParam = url.searchParams.get('tingkatId');
 	const kelasInstanceIdParam = url.searchParams.get('kelasInstanceId');
 
+	const trackId = trackIdParam ? Number(trackIdParam) : undefined;
 	const tahunAjaranId = tahunAjaranIdParam ? Number(tahunAjaranIdParam) : undefined;
-	const tingkatId = tingkatIdParam ? Number(tingkatIdParam) : undefined;
 	const kelasInstanceId = kelasInstanceIdParam ? Number(kelasInstanceIdParam) : undefined;
 
-	const monitoringData = await CurriculumMonitoringService.getCurriculumMonitoring({
-		tahunAjaranId,
-		tingkatId,
-		kelasInstanceId
-	});
-
-	return {
-		monitoringData
-	};
+	if (trackId) {
+		// Tier 2: Detail View for specific Curriculum Track
+		const monitoringData = await CurriculumMonitoringService.getTrackDetail({
+			trackId,
+			tahunAjaranId,
+			kelasInstanceId
+		});
+		return { monitoringData };
+	} else {
+		// Tier 1: Grid Card View of all Curriculum Tracks in Academic Year
+		const monitoringData = await CurriculumMonitoringService.getTrackCards(tahunAjaranId);
+		return { monitoringData };
+	}
 };
