@@ -8,6 +8,7 @@
 	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
 	let formTrackId = $state<number | string | null>(data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '');
 	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
+	let formLocation = $state<string | number | null>(data.roomsOptions[0]?.value ?? '');
 
 	let isUploading = $state(false);
 	let uploadedUrl = $state('');
@@ -262,15 +263,21 @@
 			</div>
 
 			<div>
-				<label for="location" class="field-label">
-					Lokasi / Ruangan
-				</label>
-				<input
-					id="location"
-					type="text"
+				<CustomSelect
 					name="location"
-					placeholder="Ruang Lab Komputer 1"
-					class="field-input"
+					label="Lokasi / Ruangan Master Data"
+					bind:value={formLocation}
+					options={data.roomsOptions && data.roomsOptions.length > 0
+						? data.roomsOptions
+						: [
+								{ value: 'Lab Komputer 1', label: 'Lab Komputer 1' },
+								{ value: 'Lab Komputer 2', label: 'Lab Komputer 2' },
+								{ value: 'Ruang Teori A', label: 'Ruang Teori A' },
+								{ value: 'Ruang Teori B', label: 'Ruang Teori B' },
+								{ value: 'Online / Google Meet', label: 'Online / Google Meet' }
+							]}
+					placeholder="-- Pilih Ruangan / Lokasi --"
+					searchable={false}
 				/>
 			</div>
 		</div>

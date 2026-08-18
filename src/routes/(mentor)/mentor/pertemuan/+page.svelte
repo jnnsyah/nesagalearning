@@ -982,12 +982,21 @@
 						</div>
 
 						<div class="mt-4">
-							<TextInput
+							<CustomSelect
 								name="location"
-								label="Lokasi / Ruangan (Opsional)"
+								label="Lokasi / Ruangan Master Data"
 								bind:value={formLocation}
-								placeholder="Contoh: Lab Komputer 1 / Google Meet"
-								clearable
+								options={data.roomsOptions && data.roomsOptions.length > 0
+									? data.roomsOptions
+									: [
+											{ value: 'Lab Komputer 1', label: 'Lab Komputer 1' },
+											{ value: 'Lab Komputer 2', label: 'Lab Komputer 2' },
+											{ value: 'Ruang Teori A', label: 'Ruang Teori A' },
+											{ value: 'Ruang Teori B', label: 'Ruang Teori B' },
+											{ value: 'Online / Google Meet', label: 'Online / Google Meet' }
+										]}
+								placeholder="-- Pilih Ruangan / Lokasi --"
+								searchable={false}
 							/>
 						</div>
 
