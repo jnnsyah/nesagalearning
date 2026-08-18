@@ -182,7 +182,7 @@ export const ClassHealthService = {
 				alertStudentsCount,
 				healthStatus: summary.healthStatus,
 				healthColor: summary.healthColor,
-				isArchived: !c.isActive || !c.tahunAjaranIsActive
+				isArchived: !c.isActive
 			});
 		}
 
@@ -399,7 +399,7 @@ export const ClassHealthService = {
 				avgStreak,
 				healthStatus,
 				healthColor,
-				isArchived: selectedKelas ? (!selectedKelas.isActive || !selectedKelas.tahunAjaranIsActive) : false,
+				isArchived: selectedKelas ? !selectedKelas.isActive : false,
 				attendanceTiers: {
 					excellentCount,
 					goodCount,
