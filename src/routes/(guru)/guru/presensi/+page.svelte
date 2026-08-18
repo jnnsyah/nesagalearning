@@ -2,8 +2,10 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import { untrack } from 'svelte';
 	import { exportAttendanceToExcel, exportAttendanceToPDF } from '$lib/utils/attendance-exporter';
+	import type { StudentRecapRow } from '$lib/server/services/guru-attendance-recap.service';
 
 	let { data } = $props();
 
@@ -21,6 +23,15 @@
 	let activeTab = $derived(
 		data.recapData.viewMode === 'detail' ? data.recapData.activeTab || 'matrix' : 'matrix'
 	);
+
+	// Slide-over drawer state for student detail logs
+	let drawerOpen = $state(false);
+	let selectedStudentForDrawer = $state<StudentRecapRow | null>(null);
+
+	function openStudentDrawer(student: StudentRecapRow) {
+		selectedStudentForDrawer = student;
+		drawerOpen = true;
+	}
 
 	// Sync local search input when server search query changes
 	$effect(() => {
@@ -191,7 +202,6 @@
 								<h3 class="class-card-title mt-2">{cCard.name}</h3>
 							</div>
 
-							<!-- Body Mini Metrics -->
 							<div class="class-card-body">
 								<div class="metrics-mini-grid">
 									<div class="mini-stat">
@@ -208,7 +218,6 @@
 									</div>
 								</div>
 
-								<!-- Overall Progress Bar -->
 								<div class="progress-box mt-3">
 									<div class="flex items-center justify-between text-xs font-mono mb-1">
 										<span class="text-slate-500">Tingkat Presensi Hadir</span>
@@ -261,7 +270,7 @@
 						<span class="badge badge-primary">{data.recapData.selectedKelas.tingkatName}</span>
 					</div>
 					<p class="hero-subtitle">
-						Pemantauan matriks keikutsertaan presensi QR & manual siswa per pertemuan sesi kelas.
+						Ringkasan keikutsertaan presensi siswa. Klik tombol "Detail Presensi" pada siswa untuk melihat timeline pertemuan.
 					</p>
 				</div>
 
@@ -374,7 +383,7 @@
 					aria-selected={activeTab === 'matrix'}
 				>
 					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-					<span>Matriks Presensi Siswa</span>
+					<span>Rekap Matriks Siswa</span>
 					<span class="tab-count-pill">{data.recapData.students.length}</span>
 				</button>
 
@@ -394,7 +403,7 @@
 		</div>
 
 		<!-- ══════════════════════════════════════════════════════════
-		     TAB CONTENT 1: MATRIKS PRESENSI SISWA
+		     TAB CONTENT 1: REKAP MATRIKS SISWA (CLEAN & COMPACT TABLE)
 		     ══════════════════════════════════════════════════════════ -->
 		{#if activeTab === 'matrix'}
 			<section class="recap-card" aria-label="Matriks Rekap Presensi">
@@ -410,29 +419,23 @@
 					</div>
 				{:else}
 					<div class="table-scroll-container">
-						<table class="recap-matrix-table">
+						<table class="data-table">
 							<thead>
 								<tr>
-									<th class="col-sticky-student">Siswa & Rombel</th>
-									{#each data.recapData.sessions as sess}
-										<th class="col-session-header" title="{sess.title} — {sess.kelasName} ({sess.sessionDate})">
-											<div class="sess-title-text">{sess.title}</div>
-											<div class="sess-meta-text">
-												<span>{sess.sessionDate}</span>
-												<span class="sess-tag">{sess.kelasName}</span>
-											</div>
-										</th>
-									{/each}
-									<th class="col-summary-hdr text-center">Hadir</th>
-									<th class="col-summary-hdr text-center">Izin</th>
-									<th class="col-summary-hdr text-center">Alpha</th>
-									<th class="col-summary-hdr text-right">Rata-rata %</th>
+									<th class="w-12 text-center">No</th>
+									<th>Nama Siswa & Rombel</th>
+									<th class="text-center">Hadir</th>
+									<th class="text-center">Izin / Sakit</th>
+									<th class="text-center">Alpha</th>
+									<th class="text-right">% Kehadiran</th>
+									<th class="text-center w-36">Aksi</th>
 								</tr>
 							</thead>
 							<tbody>
-								{#each data.recapData.students as student}
-									<tr>
-										<td class="col-sticky-student">
+								{#each data.recapData.students as student, idx}
+									<tr class="hover:bg-slate-50 transition-colors">
+										<td class="text-center text-xs font-mono text-slate-400">{idx + 1}</td>
+										<td>
 											<div class="student-name-box">
 												<span class="student-fullname">{student.fullName}</span>
 												<div class="student-sub-info">
@@ -441,42 +444,16 @@
 												</div>
 											</div>
 										</td>
-
-										{#each data.recapData.sessions as sess}
-											{@const statusObj = student.sessionsMap[sess.id]}
-											<td class="col-status-cell text-center">
-												{#if statusObj?.status === 'hadir'}
-													<span
-														class="status-pill status-pill--hadir"
-														title="Hadir via {statusObj.method?.toUpperCase()} — {statusObj.recordedAt ? new Date(statusObj.recordedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}"
-													>
-														H
-													</span>
-												{:else if statusObj?.status === 'excused'}
-													<span
-														class="status-pill status-pill--excused"
-														title="Izin/Sakit: {statusObj.manualReason || 'Tanpa catatan'}"
-													>
-														I
-													</span>
-												{:else}
-													<span class="status-pill status-pill--alpha" title="Tidak Hadir / Alpha">
-														A
-													</span>
-												{/if}
-											</td>
-										{/each}
-
-										<td class="col-stat-num text-center text-emerald-700 font-bold">
+										<td class="text-center font-bold text-emerald-700 font-mono text-sm">
 											{student.totalHadir}
 										</td>
-										<td class="col-stat-num text-center text-amber-700 font-semibold">
+										<td class="text-center font-semibold text-amber-700 font-mono text-sm">
 											{student.totalExcused}
 										</td>
-										<td class="col-stat-num text-center text-slate-400">
+										<td class="text-center text-slate-400 font-mono text-sm">
 											{student.totalAlpha}
 										</td>
-										<td class="col-rate-cell text-right font-mono">
+										<td class="text-right font-mono">
 											<div class="flex items-center justify-end gap-2">
 												<span class="font-bold text-slate-800">{student.attendanceRate}%</span>
 												<div class="rate-mini-track">
@@ -489,6 +466,16 @@
 													></div>
 												</div>
 											</div>
+										</td>
+										<td class="text-center">
+											<button
+												type="button"
+												class="btn-view-detail-log"
+												onclick={() => openStudentDrawer(student)}
+											>
+												<span>Detail Log</span>
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+											</button>
 										</td>
 									</tr>
 								{/each}
@@ -581,6 +568,113 @@
 				{/if}
 			</section>
 		{/if}
+
+		<!-- ══════════════════════════════════════════════════════════
+		     STUDENT ATTENDANCE SLIDER / DRAWER (FORM DRAWER REUSE)
+		     ══════════════════════════════════════════════════════════ -->
+		<FormDrawer
+			bind:open={drawerOpen}
+			title="Detail Timeline Presensi Siswa"
+			subtitle={selectedStudentForDrawer ? `${selectedStudentForDrawer.fullName} (@${selectedStudentForDrawer.username})` : ''}
+		>
+			{#if selectedStudentForDrawer}
+				<!-- Student Info Card Header -->
+				<div class="drawer-student-card">
+					<div class="flex items-center justify-between gap-3">
+						<div>
+							<h4 class="font-extrabold text-slate-900 text-base">{selectedStudentForDrawer.fullName}</h4>
+							<div class="student-sub-info mt-1">
+								<span class="text-xs text-slate-500 font-mono">@{selectedStudentForDrawer.username}</span>
+								<span class="rombel-pill">{selectedStudentForDrawer.kelasName}</span>
+							</div>
+						</div>
+						<div class="text-right">
+							<span class="text-xl font-extrabold text-slate-900">{selectedStudentForDrawer.attendanceRate}%</span>
+							<span class="block text-[10px] text-slate-400 font-mono uppercase">Kehadiran</span>
+						</div>
+					</div>
+
+					<div class="metrics-mini-grid mt-4">
+						<div class="mini-stat">
+							<span class="mini-stat-val text-emerald-700">{selectedStudentForDrawer.totalHadir}</span>
+							<span class="mini-stat-lbl">Hadir</span>
+						</div>
+						<div class="mini-stat">
+							<span class="mini-stat-val text-amber-700">{selectedStudentForDrawer.totalExcused}</span>
+							<span class="mini-stat-lbl">Izin/Sakit</span>
+						</div>
+						<div class="mini-stat">
+							<span class="mini-stat-val text-slate-400">{selectedStudentForDrawer.totalAlpha}</span>
+							<span class="mini-stat-lbl">Alpha</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Session Logs Timeline -->
+				<div class="drawer-sessions-section mt-6">
+					<div class="flex items-center justify-between mb-3">
+						<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
+							Histori Log Pertemuan ({data.recapData.sessions.length} Sesi)
+						</h5>
+					</div>
+
+					{#if data.recapData.sessions.length === 0}
+						<p class="text-xs text-slate-400 font-mono text-center py-6">Belum ada sesi pertemuan diselenggarakan.</p>
+					{:else}
+						<div class="session-timeline-stack">
+							{#each data.recapData.sessions as sess, idx}
+								{@const stStatus = selectedStudentForDrawer.sessionsMap[sess.id]}
+								<div
+									class="session-timeline-item"
+									class:item--hadir={stStatus?.status === 'hadir'}
+									class:item--excused={stStatus?.status === 'excused'}
+									class:item--alpha={stStatus?.status === 'alpha'}
+								>
+									<div class="flex items-start justify-between gap-3">
+										<div>
+											<div class="flex items-center gap-2 flex-wrap">
+												<span class="text-[11px] font-mono font-bold text-slate-400">#Sesi {idx + 1}</span>
+												<span class="badge badge-subtle">{sess.activityType}</span>
+												<span class="text-xs text-slate-400 font-mono">{sess.sessionDate}</span>
+											</div>
+											<h5 class="font-bold text-slate-900 text-sm mt-1">{sess.title}</h5>
+										</div>
+
+										<div class="flex-shrink-0">
+											{#if stStatus?.status === 'hadir'}
+												<span class="badge badge-success inline-flex items-center gap-1">
+													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+													<span>HADIR ({stStatus.method?.toUpperCase() || 'QR'})</span>
+												</span>
+											{:else if stStatus?.status === 'excused'}
+												<span class="badge badge-warning inline-flex items-center gap-1">
+													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+													<span>IZIN / SAKIT</span>
+												</span>
+											{:else}
+												<span class="badge badge-subtle">ALPHA</span>
+											{/if}
+										</div>
+									</div>
+
+									{#if stStatus?.manualReason}
+										<div class="reason-note mt-2">
+											<span class="font-bold text-slate-700">Alasan:</span> {stStatus.manualReason}
+										</div>
+									{/if}
+
+									{#if stStatus?.recordedAt}
+										<div class="text-[10px] text-slate-400 font-mono mt-2 text-right">
+											Waktu Presensi: {new Date(stStatus.recordedAt).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</FormDrawer>
 	{/if}
 </div>
 
@@ -978,40 +1072,6 @@
 		-webkit-overflow-scrolling: touch;
 	}
 
-	.recap-matrix-table {
-		width: 100%;
-		border-collapse: collapse;
-		min-width: 680px;
-		font-size: 13px;
-	}
-
-	.recap-matrix-table th {
-		background: #f8fafc;
-		color: #475569;
-		font-size: 11px;
-		font-weight: 700;
-		font-family: var(--font-mono, monospace);
-		text-transform: uppercase;
-		padding: 10px 12px;
-		border-bottom: 1px solid #e2e8f0;
-		white-space: nowrap;
-	}
-
-	.col-sticky-student {
-		position: sticky;
-		left: 0;
-		background: #ffffff;
-		z-index: 2;
-		min-width: 220px;
-		text-align: left;
-		border-right: 2px solid #e2e8f0;
-		padding-left: 16px !important;
-	}
-
-	th.col-sticky-student {
-		background: #f8fafc;
-	}
-
 	.student-name-box {
 		display: flex;
 		flex-direction: column;
@@ -1046,103 +1106,6 @@
 		border-radius: 4px;
 	}
 
-	.col-session-header {
-		min-width: 110px;
-		text-align: center;
-		border-right: 1px solid #f1f5f9;
-	}
-
-	.sess-title-text {
-		font-size: 12px;
-		font-weight: 700;
-		color: #0f172a;
-		text-transform: none;
-		max-width: 120px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.sess-meta-text {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 4px;
-		margin-top: 2px;
-		font-size: 10px;
-		color: #94a3b8;
-	}
-
-	.sess-tag {
-		background: #f1f5f9;
-		color: #475569;
-		padding: 0 4px;
-		border-radius: 3px;
-	}
-
-	.recap-matrix-table td {
-		padding: 10px 12px;
-		border-bottom: 1px solid #f1f5f9;
-		border-right: 1px solid #f8fafc;
-	}
-
-	.recap-matrix-table tr:hover td {
-		background: #faf5ff;
-	}
-
-	.recap-matrix-table tr:hover td.col-sticky-student {
-		background: #ffffff;
-	}
-
-	.col-status-cell {
-		width: 44px;
-	}
-
-	.status-pill {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 26px;
-		height: 26px;
-		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 800;
-		font-family: var(--font-mono, monospace);
-		cursor: default;
-	}
-
-	.status-pill--hadir {
-		background: #dcfce7;
-		color: #15803d;
-	}
-
-	.status-pill--excused {
-		background: #fef3c7;
-		color: #b45309;
-	}
-
-	.status-pill--alpha {
-		background: #f1f5f9;
-		color: #94a3b8;
-	}
-
-	.col-summary-hdr {
-		min-width: 60px;
-		background: #f8fafc;
-		border-left: 1px solid #e2e8f0;
-	}
-
-	.col-stat-num {
-		font-family: var(--font-mono, monospace);
-		font-size: 13px;
-		border-left: 1px solid #f1f5f9;
-	}
-
-	.col-rate-cell {
-		min-width: 120px;
-		border-left: 2px solid #e2e8f0;
-	}
-
 	.rate-mini-track {
 		width: 40px;
 		height: 6px;
@@ -1160,7 +1123,26 @@
 	.fill-amber { background: #f59e0b; }
 	.fill-red { background: #ef4444; }
 
-	/* Data Table for Logs */
+	.btn-view-detail-log {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 5px 10px;
+		background: #e0e7ff;
+		color: #4338ca;
+		border: none;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.btn-view-detail-log:hover {
+		background: #c7d2fe;
+	}
+
+	/* Data Table for Logs & Compact Matrix */
 	.data-table {
 		width: 100%;
 		border-collapse: collapse;
@@ -1187,6 +1169,50 @@
 
 	.data-table tr:hover td {
 		background: #f8fafc;
+	}
+
+	/* Drawer Custom Styles */
+	.drawer-student-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
+		padding: 16px;
+	}
+
+	.session-timeline-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.session-timeline-item {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 12px 14px;
+		transition: border-color 0.15s ease;
+	}
+
+	.item--hadir {
+		border-left: 4px solid #22c55e;
+	}
+
+	.item--excused {
+		border-left: 4px solid #f59e0b;
+	}
+
+	.item--alpha {
+		border-left: 4px solid #cbd5e1;
+		background: #fafafa;
+	}
+
+	.reason-note {
+		font-size: 12px;
+		color: #475569;
+		background: #f1f5f9;
+		padding: 6px 10px;
+		border-radius: 6px;
+		font-family: var(--font-mono, monospace);
 	}
 
 	@media (max-width: 640px) {
