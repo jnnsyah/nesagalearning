@@ -170,13 +170,13 @@
 
 								<div class="card-footer-actions mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
 									<a
-										href="/guru/presensi?kelasInstanceId={cClass.id}"
+										href="/guru/presensi?kelasInstanceId={cClass.id}&tahunAjaranId={data.dashboardData.selectedTahunAjaran?.id || ''}"
 										class="btn-action-sm btn-action-indigo flex-1 text-center"
 									>
 										<span>Rekap Presensi</span>
 									</a>
 									<a
-										href="/guru/kurikulum?kelasInstanceId={cClass.id}"
+										href="/guru/kurikulum?kelasInstanceId={cClass.id}&tahunAjaranId={data.dashboardData.selectedTahunAjaran?.id || ''}"
 										class="btn-action-sm btn-action-outline flex-1 text-center"
 									>
 										<span>Matriks Kurikulum</span>
