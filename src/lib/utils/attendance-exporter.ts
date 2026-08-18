@@ -38,8 +38,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		'No',
 		'Nama Lengkap Siswa',
 		'NISN',
-		'Username',
-		'Rombel Kelas',
+		'Total Pertemuan',
 		...data.sessions.map((s) => `${s.title} (${s.sessionDate})`),
 		'Total Hadir',
 		'Total Izin',
@@ -59,8 +58,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 			idx + 1,
 			st.fullName,
 			st.nisn || '-',
-			st.username,
-			st.kelasName,
+			data.summary.totalSessionsCount,
 			...sessionCols,
 			st.totalHadir,
 			st.totalExcused,
@@ -72,10 +70,9 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	const wsMatrix = XLSX.utils.aoa_to_sheet([matrixHeaders, ...matrixRows]);
 	wsMatrix['!cols'] = [
 		{ wch: 5 },
-		{ wch: 25 },
-		{ wch: 15 },
-		{ wch: 15 },
-		{ wch: 12 },
+		{ wch: 28 },
+		{ wch: 16 },
+		{ wch: 16 },
 		...data.sessions.map(() => ({ wch: 22 })),
 		{ wch: 12 },
 		{ wch: 12 },
@@ -90,8 +87,6 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		'Waktu Recorded (WIB)',
 		'Nama Siswa',
 		'NISN',
-		'Username',
-		'Rombel',
 		'Pertemuan Sesi',
 		'Tanggal Sesi',
 		'Metode Presensi',
@@ -104,8 +99,6 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		new Date(rl.recordedAt).toLocaleString('id-ID'),
 		rl.fullName,
 		rl.nisn || '-',
-		rl.username,
-		rl.kelasName,
 		rl.pertemuanTitle,
 		rl.sessionDate,
 		rl.method.toUpperCase(),
@@ -117,12 +110,10 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	wsLogs['!cols'] = [
 		{ wch: 5 },
 		{ wch: 22 },
+		{ wch: 28 },
+		{ wch: 16 },
 		{ wch: 25 },
-		{ wch: 15 },
-		{ wch: 15 },
-		{ wch: 12 },
-		{ wch: 25 },
-		{ wch: 12 },
+		{ wch: 14 },
 		{ wch: 15 },
 		{ wch: 15 },
 		{ wch: 30 }
@@ -184,13 +175,12 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		47
 	);
 
-	// Table Data
+	// Table Data (No username column, no Rombel column, added Total Pertemuan column)
 	const tableHeaders = [
 		'No',
 		'Nama Siswa',
 		'NISN',
-		'Username',
-		'Rombel',
+		'Total Pertemuan',
 		'Total Hadir',
 		'Total Izin',
 		'Total Alpha',
@@ -207,8 +197,7 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 			idx + 1,
 			st.fullName,
 			st.nisn || '-',
-			st.username,
-			st.kelasName,
+			data.summary.totalSessionsCount,
 			st.totalHadir,
 			st.totalExcused,
 			st.totalAlpha,
@@ -235,15 +224,14 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		},
 		columnStyles: {
 			0: { halign: 'center', cellWidth: 10 },
-			1: { cellWidth: 50 },
-			2: { cellWidth: 25 },
-			3: { cellWidth: 25 },
-			4: { cellWidth: 22 },
-			5: { halign: 'center', cellWidth: 22 },
-			6: { halign: 'center', cellWidth: 22 },
-			7: { halign: 'center', cellWidth: 22 },
-			8: { halign: 'right', cellWidth: 22, fontStyle: 'bold' },
-			9: { halign: 'center', cellWidth: 25 }
+			1: { cellWidth: 65 },
+			2: { cellWidth: 30 },
+			3: { halign: 'center', cellWidth: 28 },
+			4: { halign: 'center', cellWidth: 24 },
+			5: { halign: 'center', cellWidth: 24 },
+			6: { halign: 'center', cellWidth: 24 },
+			7: { halign: 'right', cellWidth: 25, fontStyle: 'bold' },
+			8: { halign: 'center', cellWidth: 35 }
 		},
 		alternateRowStyles: {
 			fillColor: [248, 250, 252]
