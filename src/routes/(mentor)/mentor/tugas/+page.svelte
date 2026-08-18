@@ -1,28 +1,49 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
-	import TextInput from '$lib/components/ui/TextInput.svelte';
-	import TextArea from '$lib/components/ui/TextArea.svelte';
-	import { toast } from '$lib/stores/toast';
-	import type { PageData, ActionData } from './$types';
+	import { untrack } from 'svelte';
+import { enhance } from '$app/forms';
+import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+import TextInput from '$lib/components/ui/TextInput.svelte';
+import TextArea from '$lib/components/ui/TextArea.svelte';
+import { toast } from '$lib/stores/toast';
+import type { PageData, ActionData } from './$types';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	type SubmissionItem = (typeof data.submissions)[number];
-	type MeetingSummaryItem = (typeof data.meetingSummaries)[number];
+type SubmissionItem = (typeof data.submissions)[number];
+type MeetingSummaryItem = (typeof data.meetingSummaries)[number];
 
-	// Master-Detail Navigation State
-	let selectedPertemuanId = $state<number | null>(null);
-	let selectedSubmissionId = $state<number | null>(null);
+// Master-Detail Navigation State
+let selectedPertemuanId = $state<number | null>(null);
+let selectedSubmissionId = $state<number | null>(null);
 
-	// Level 1 Filters State
-	let selectedKelasFilter = $state<string>('all');
-	let selectedTrackFilter = $state<string>('all');
-	let selectedActivityFilter = $state<string>('all');
+// Level 1 Filters & Sorting State
+let selectedKelasFilter = $state<string>('all');
+let selectedTrackFilter = $state<string>('all');
+let selectedActivityFilter = $state<string>('all');
+let selectedSortLevel1 = $state<
+	'pending_banyak' | 'terbaru' | 'terlama' | 'tugas_az' | 'poin_tertinggi'
+>('pending_banyak');
 
-	// Level 2 Studio Filters (Pane 1 Roster Search & Filter)
-	let rosterSearchQuery = $state('');
-	let rosterStatusFilter = $state<'all' | 'pending' | 'approved' | 'revisi'>('all');
+let sortOptionsLevel1 = [
+	{ value: 'pending_banyak', label: 'Urutkan: Pending Periksa Terbanyak' },
+	{ value: 'terbaru', label: 'Urutkan: Tanggal Sesi Terbaru' },
+	{ value: 'terlama', label: 'Urutkan: Tanggal Sesi Terlama' },
+	{ value: 'tugas_az', label: 'Urutkan: Judul Pertemuan (A - Z)' },
+	{ value: 'poin_tertinggi', label: 'Urutkan: Bobot Poin Terbesar' }
+];
+
+// Level 2 Studio Filters & Sorting (Pane 1 Roster Search, Filter & Sort)
+let rosterSearchQuery = $state('');
+let rosterStatusFilter = $state<'all' | 'pending' | 'approved' | 'revisi'>('all');
+let rosterSort = $state<'urgensi' | 'terbaru' | 'terlama' | 'nama_az' | 'nama_za'>('urgensi');
+
+let rosterSortOptions = [
+	{ value: 'urgensi', label: 'Urutkan: Status Urgensi (Pending → Revisi → Disetujui)' },
+	{ value: 'terbaru', label: 'Urutkan: Waktu Dikumpul Terbaru' },
+	{ value: 'terlama', label: 'Urutkan: Waktu Dikumpul Terlama' },
+	{ value: 'nama_az', label: 'Urutkan: Nama Siswa (A - Z)' },
+	{ value: 'nama_za', label: 'Urutkan: Nama Siswa (Z - A)' }
+];
 
 	// Level 1 Search Query
 	let searchQuery = $state('');
@@ -60,12 +81,33 @@
 		})
 	);
 
+	let sortedRosterSubmissions = $derived.by(() => {
+		const list = [...filteredRosterSubmissions];
+		if (rosterSort === 'urgensi') {
+			const statusWeight: Record<string, number> = { pending: 1, revisi: 2, approved: 3 };
+			list.sort((a, b) => {
+				const diff = (statusWeight[a.status] || 99) - (statusWeight[b.status] || 99);
+				if (diff !== 0) return diff;
+				return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
+			});
+		} else if (rosterSort === 'terbaru') {
+			list.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+		} else if (rosterSort === 'terlama') {
+			list.sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
+		} else if (rosterSort === 'nama_az') {
+			list.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
+		} else if (rosterSort === 'nama_za') {
+			list.sort((a, b) => (b.studentName || '').localeCompare(a.studentName || ''));
+		}
+		return list;
+	});
+
 	let activeSubmission = $derived.by(() => {
 		if (selectedSubmissionId !== null) {
 			const found = meetingSubmissions.find((s) => s.id === selectedSubmissionId);
 			if (found) return found;
 		}
-		return filteredRosterSubmissions[0] || meetingSubmissions[0] || null;
+		return sortedRosterSubmissions[0] || meetingSubmissions[0] || null;
 	});
 
 	// Whenever activeSubmission changes, sync local form state
@@ -91,19 +133,19 @@
 	});
 
 	function advanceToNextStudent() {
-		if (!activeSubmission || filteredRosterSubmissions.length <= 1) return;
-		const currentIndex = filteredRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
-		if (currentIndex !== -1 && currentIndex < filteredRosterSubmissions.length - 1) {
-			const nextSub = filteredRosterSubmissions[currentIndex + 1];
+		if (!activeSubmission || sortedRosterSubmissions.length <= 1) return;
+		const currentIndex = sortedRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
+		if (currentIndex !== -1 && currentIndex < sortedRosterSubmissions.length - 1) {
+			const nextSub = sortedRosterSubmissions[currentIndex + 1];
 			selectedSubmissionId = nextSub.id;
 		}
 	}
 
 	function advanceToPrevStudent() {
-		if (!activeSubmission || filteredRosterSubmissions.length <= 1) return;
-		const currentIndex = filteredRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
+		if (!activeSubmission || sortedRosterSubmissions.length <= 1) return;
+		const currentIndex = sortedRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
 		if (currentIndex > 0) {
-			const prevSub = filteredRosterSubmissions[currentIndex - 1];
+			const prevSub = sortedRosterSubmissions[currentIndex - 1];
 			selectedSubmissionId = prevSub.id;
 		}
 	}
@@ -139,7 +181,7 @@
 		{ value: 'games', label: 'Quiz / Challenge' }
 	]);
 
-	// Level 1: Filtered Meeting Summaries Grid
+	// Level 1: Filtered & Sorted Meeting Summaries Grid
 	let filteredMeetingSummaries = $derived(
 		(data.meetingSummaries || []).filter((m) => {
 			if (selectedKelasFilter !== 'all' && m.kelasName !== selectedKelasFilter) {
@@ -164,10 +206,58 @@
 		})
 	);
 
+	let sortedMeetingSummaries = $derived.by(() => {
+		const list = [...filteredMeetingSummaries];
+		if (selectedSortLevel1 === 'pending_banyak') {
+			list.sort(
+				(a, b) =>
+					b.stats.pending - a.stats.pending ||
+					new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime()
+			);
+		} else if (selectedSortLevel1 === 'terbaru') {
+			list.sort(
+				(a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime()
+			);
+		} else if (selectedSortLevel1 === 'terlama') {
+			list.sort(
+				(a, b) => new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime()
+			);
+		} else if (selectedSortLevel1 === 'tugas_az') {
+			list.sort((a, b) => (a.pertemuanTitle || '').localeCompare(b.pertemuanTitle || ''));
+		} else if (selectedSortLevel1 === 'poin_tertinggi') {
+			const pointsMap: Record<string, number> = { kecil: 50, sedang: 100, besar: 200 };
+			list.sort((a, b) => (pointsMap[b.taskSize] || 100) - (pointsMap[a.taskSize] || 100));
+		}
+		return list;
+	});
+
+	// Level 1 Pagination
+	let currentPage = $state(1);
+	const itemsPerPage = 8; // 8 cards per page (2x4 grid)
+
+	let totalPages = $derived(Math.ceil(sortedMeetingSummaries.length / itemsPerPage) || 1);
+
+	let paginatedMeetingSummaries = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		return sortedMeetingSummaries.slice(start, start + itemsPerPage);
+	});
+
+	$effect(() => {
+		selectedKelasFilter;
+		selectedTrackFilter;
+		selectedActivityFilter;
+		selectedSortLevel1;
+		searchQuery;
+		untrack(() => {
+			currentPage = 1;
+		});
+	});
+
 	let isLevel1FilterActive = $derived(
 		selectedKelasFilter !== 'all' ||
 		selectedTrackFilter !== 'all' ||
 		selectedActivityFilter !== 'all' ||
+		selectedSortLevel1 !== 'pending_banyak' ||
 		searchQuery.trim() !== ''
 	);
 
@@ -175,7 +265,9 @@
 		selectedKelasFilter = 'all';
 		selectedTrackFilter = 'all';
 		selectedActivityFilter = 'all';
+		selectedSortLevel1 = 'pending_banyak';
 		searchQuery = '';
+		currentPage = 1;
 	}
 
 	let pendingCountTotal = $derived(
@@ -366,7 +458,7 @@
 				{/if}
 			</div>
 
-			<!-- Row 2: Filter Kelas, Track, Aktivitas -->
+			<!-- Row 2: Filter Kelas, Track, Aktivitas, Urutkan -->
 			<div class="filter-row-bottom">
 				<div>
 					<CustomSelect
@@ -394,11 +486,20 @@
 						options={activityOptions}
 					/>
 				</div>
+
+				<div>
+					<CustomSelect
+						id="sort-filter-l1"
+						label="Urutkan Sesi Pertemuan"
+						bind:value={selectedSortLevel1}
+						options={sortOptionsLevel1}
+					/>
+				</div>
 			</div>
 		</div>
 
 		<!-- Grid Cards Pertemuan (Master View) -->
-		{#if filteredMeetingSummaries.length === 0}
+		{#if sortedMeetingSummaries.length === 0}
 			<div class="empty-card">
 				<div class="empty-icon">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -411,7 +512,7 @@
 			</div>
 		{:else}
 			<div class="meeting-summary-grid">
-				{#each filteredMeetingSummaries as m (m.pertemuanId)}
+				{#each paginatedMeetingSummaries as m (m.pertemuanId)}
 					<div class="meeting-summary-card">
 						<div class="card-top-row mb-2">
 							<span class="track-badge">
@@ -468,6 +569,48 @@
 					</div>
 				{/each}
 			</div>
+
+			<!-- Pagination Control Bar -->
+			{#if sortedMeetingSummaries.length > 0}
+				<div class="pagination-bar">
+					<div class="pagination-info">
+						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedMeetingSummaries.length)}</strong> dari <strong>{sortedMeetingSummaries.length}</strong> Sesi Pertemuan
+					</div>
+
+					{#if totalPages > 1}
+						<div class="pagination-actions">
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								‹ Prev
+							</button>
+
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
+								<button
+									type="button"
+									class="btn-pagination-num"
+									class:btn-pagination-num--active={currentPage === pageNum}
+									onclick={() => (currentPage = pageNum)}
+								>
+									{pageNum}
+								</button>
+							{/each}
+
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next ›
+							</button>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -560,6 +703,16 @@
 						/>
 					</div>
 
+					<!-- Roster Sort Dropdown -->
+					<div class="mb-2">
+						<CustomSelect
+							id="roster-sort-select"
+							bind:value={rosterSort}
+							options={rosterSortOptions}
+							searchable={false}
+						/>
+					</div>
+
 					<!-- Status Filter Pills -->
 					<div class="roster-filter-pills">
 						<button
@@ -599,12 +752,12 @@
 
 				<!-- Student Submissions Roster List -->
 				<div class="pane-roster-list">
-					{#if filteredRosterSubmissions.length === 0}
+					{#if sortedRosterSubmissions.length === 0}
 						<div class="roster-empty">
 							<p>Tidak ada siswa ditemukan.</p>
 						</div>
 					{:else}
-						{#each filteredRosterSubmissions as sub (sub.id)}
+						{#each sortedRosterSubmissions as sub (sub.id)}
 							<button
 								type="button"
 								class="roster-item"
@@ -864,7 +1017,7 @@
 								type="button"
 								onclick={advanceToPrevStudent}
 								class="btn-nav-prev"
-								disabled={filteredRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) <= 0}
+								disabled={sortedRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) <= 0}
 							>
 								‹ Siswa Sblm
 							</button>
@@ -873,7 +1026,7 @@
 								type="button"
 								onclick={advanceToNextStudent}
 								class="btn-nav-next"
-								disabled={filteredRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) >= filteredRosterSubmissions.length - 1}
+								disabled={sortedRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) >= sortedRosterSubmissions.length - 1}
 							>
 								Siswa Lanjut ›
 							</button>
@@ -1057,15 +1210,107 @@
 
 	.filter-row-bottom {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 		align-items: flex-start;
 	}
 
-	@media (max-width: 768px) {
+	@media (max-width: 1024px) {
+		.filter-row-bottom {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 640px) {
 		.filter-row-bottom {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	/* Pagination Bar */
+	.pagination-bar {
+		margin-top: 24px;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 12px 20px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+	}
+
+	.pagination-info {
+		font-size: 13px;
+		color: #64748b;
+	}
+
+	.pagination-info strong {
+		color: #0f172a;
+	}
+
+	.pagination-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-pagination-nav {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 12px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-nav:hover:not(:disabled) {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+	}
+
+	.btn-pagination-nav:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.btn-pagination-num {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 700;
+		color: #475569;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-num:hover {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+	}
+
+	.btn-pagination-num--active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		border-color: #4f46e5 !important;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 	}
 
 	.btn-reset-filters-active {
