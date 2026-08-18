@@ -464,9 +464,9 @@
 	</div>
 
 {:else}
-	<!-- LEVEL 2: DEDICATED FULL-VIEWPORT 3-PANE STUDIO WORKSPACE (TANPA TOPBAR / SIDEBAR NAV) -->
+	<!-- LEVEL 2: DEDICATED FULL-VIEWPORT 3-PANE STUDIO WORKSPACE (LIGHT MODE) -->
 	<div class="studio-workspace-scrim" role="region" aria-label="Studio Penilaian Task">
-		<!-- Studio Top Header Bar (54px) -->
+		<!-- Studio Top Header Bar (54px - Light Mode) -->
 		<header class="studio-topbar">
 			<div class="studio-topbar-left">
 				<button type="button" onclick={closeStudioView} class="btn-studio-back" title="Kembali ke Daftar Pertemuan">
@@ -1251,12 +1251,12 @@
 		max-width: 420px;
 	}
 
-	/* STUDIO WORKSPACE LAYOUT (FULL-VIEWPORT 3-PANE) */
+	/* STUDIO WORKSPACE LAYOUT (FULL-VIEWPORT 3-PANE LIGHT MODE) */
 	.studio-workspace-scrim {
 		position: fixed;
 		inset: 0;
 		z-index: 9999;
-		background: #0f172a;
+		background: #f8fafc;
 		display: flex;
 		flex-direction: column;
 		width: 100vw;
@@ -1266,14 +1266,15 @@
 
 	.studio-topbar {
 		height: 54px;
-		background: #0f172a;
-		border-bottom: 1px solid #334155;
-		color: #ffffff;
+		background: #ffffff;
+		border-bottom: 1px solid #e2e8f0;
+		color: #0f172a;
 		padding: 0 20px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		flex-shrink: 0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 	}
 
 	.studio-topbar-left {
@@ -1287,9 +1288,9 @@
 		align-items: center;
 		gap: 8px;
 		padding: 7px 12px;
-		background: #1e293b;
-		color: #cbd5e1;
-		border: 1px solid #334155;
+		background: #ffffff;
+		color: #475569;
+		border: 1px solid #cbd5e1;
 		border-radius: 8px;
 		font-family: var(--font-macro);
 		font-size: 12px;
@@ -1299,14 +1300,15 @@
 	}
 
 	.btn-studio-back:hover {
-		background: #334155;
-		color: #ffffff;
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
 	.studio-topbar-divider {
 		width: 1px;
 		height: 22px;
-		background: #334155;
+		background: #e2e8f0;
 	}
 
 	.studio-topbar-meta {
@@ -1318,14 +1320,14 @@
 		font-family: var(--font-macro);
 		font-size: 13.5px;
 		font-weight: 800;
-		color: #f8fafc;
+		color: #0f172a;
 		line-height: 1.2;
 	}
 
 	.studio-topbar-sub {
 		font-family: var(--font-mono);
 		font-size: 11px;
-		color: #94a3b8;
+		color: #64748b;
 	}
 
 	.studio-topbar-center {
@@ -1338,9 +1340,9 @@
 		align-items: center;
 		gap: 8px;
 		padding: 6px 14px;
-		background: #1e1b4b;
-		color: #c7d2fe;
-		border: 1px solid #3730a3;
+		background: #e0e7ff;
+		color: #3730a3;
+		border: 1px solid #c7d2fe;
 		border-radius: 20px;
 		font-family: var(--font-mono);
 		font-size: 11.5px;
@@ -1357,9 +1359,9 @@
 		align-items: center;
 		gap: 6px;
 		padding: 6px 12px;
-		background: #312e81;
-		color: #a5b4fc;
-		border: 1px solid #4338ca;
+		background: #eef2ff;
+		color: #4f46e5;
+		border: 1px solid #c7d2fe;
 		border-radius: 6px;
 		font-family: var(--font-mono);
 		font-size: 11px;
@@ -1369,8 +1371,8 @@
 	}
 
 	.btn-studio-link:hover {
-		background: #3730a3;
-		color: #ffffff;
+		background: #e0e7ff;
+		color: #3730a3;
 	}
 
 	.btn-studio-close {
@@ -1379,18 +1381,18 @@
 		justify-content: center;
 		width: 34px;
 		height: 34px;
-		background: #1e293b;
-		color: #94a3b8;
-		border: 1px solid #334155;
+		background: #ffffff;
+		color: #64748b;
+		border: 1px solid #cbd5e1;
 		border-radius: 8px;
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
 
 	.btn-studio-close:hover {
-		background: #ef4444;
-		color: #ffffff;
-		border-color: #dc2626;
+		background: #fee2e2;
+		color: #b91c1c;
+		border-color: #fca5a5;
 	}
 
 	/* 3-PANE CONTAINER (1/6 : 4/6 : 1/6) */
@@ -1400,7 +1402,7 @@
 		width: 100%;
 		height: calc(100vh - 54px);
 		overflow: hidden;
-		background: #0f172a;
+		background: #f8fafc;
 	}
 
 	@media (max-width: 960px) {
@@ -1564,14 +1566,29 @@
 		flex-shrink: 0;
 	}
 
+	.badge-approved {
+		background: #dcfce7;
+		color: #15803d;
+	}
+
+	.badge-revisi {
+		background: #ffe4e6;
+		color: #be123c;
+	}
+
+	.badge-pending {
+		background: #fef3c7;
+		color: #b45309;
+	}
+
 	/* PANE 2: REVIEW WORKSPACE & LIVE PREVIEW (4/6 LEBAR) */
 	.pane-review {
 		flex: 4;
-		background: #0f172a;
+		background: #f8fafc;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		border-right: 1px solid #cbd5e1;
+		border-right: 1px solid #e2e8f0;
 	}
 
 	.pane-review-empty {
@@ -1580,15 +1597,15 @@
 		align-items: center;
 		justify-content: center;
 		padding: 48px;
-		color: #94a3b8;
+		color: #64748b;
 		font-size: 14px;
 		text-align: center;
 	}
 
 	.pane-review-url-bar {
 		padding: 10px 16px;
-		background: #1e293b;
-		border-bottom: 1px solid #334155;
+		background: #ffffff;
+		border-bottom: 1px solid #e2e8f0;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -1599,7 +1616,7 @@
 	.url-text {
 		font-family: var(--font-mono);
 		font-size: 11.5px;
-		color: #cbd5e1;
+		color: #334155;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1612,8 +1629,8 @@
 		font-family: var(--font-mono);
 		font-size: 11px;
 		font-weight: 700;
-		color: #a5b4fc;
-		background: #312e81;
+		color: #4f46e5;
+		background: #eef2ff;
 		padding: 4px 10px;
 		border-radius: 5px;
 		text-decoration: none;
@@ -1621,8 +1638,7 @@
 	}
 
 	.btn-open-tab-mini:hover {
-		background: #3730a3;
-		color: #ffffff;
+		background: #e0e7ff;
 	}
 
 	.pane-review-frame-wrap {
@@ -1633,7 +1649,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #0f172a;
+		background: #f8fafc;
 	}
 
 	.pane-review-iframe {
@@ -1873,6 +1889,10 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 16px;
+		box-shadow: var(--shadow-sm);
 	}
 
 	.external-icon {
@@ -1906,7 +1926,7 @@
 		font-family: var(--font-mono);
 		font-size: 11px;
 		color: #475569;
-		background: #ffffff;
+		background: #f8fafc;
 		border: 1px solid #cbd5e1;
 		border-radius: 8px;
 		padding: 8px 12px;
