@@ -484,14 +484,13 @@
 							<th>Penyelesaian Tugas</th>
 							<th>Streak Hari</th>
 							<th>Status Risiko</th>
-							<th>Catatan Intervensi</th>
 							<th class="text-right">Aksi Advisor</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#if data.rosterData.items.length === 0}
 							<tr>
-								<td colspan="7" class="empty-table-cell">
+								<td colspan="6" class="empty-table-cell">
 									<div class="empty-state-box">
 										<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 										<p class="font-bold text-slate-800 text-sm mt-2">Tidak ada siswa yang sesuai kriteria filter</p>
@@ -572,20 +571,6 @@
 											<span class="badge badge-amber">WASPADA</span>
 										{:else}
 											<span class="badge badge-success">SEHAT</span>
-										{/if}
-									</td>
-
-									<td>
-										{#if s.alertReasons.length > 0}
-											<div class="flex flex-wrap gap-1">
-												{#each s.alertReasons as reason}
-													<span class="alert-tag">
-														{reason}
-													</span>
-												{/each}
-											</div>
-										{:else}
-											<span class="text-xs text-emerald-600 font-medium">Performa Baik</span>
 										{/if}
 									</td>
 
