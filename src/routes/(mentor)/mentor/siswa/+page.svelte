@@ -147,6 +147,19 @@
 		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true });
 	}
 
+	let isRosterFilterActive = $derived(
+		searchInput.trim() !== '' ||
+		selectedRiskFilter !== 'all' ||
+		selectedSort !== 'nama_az'
+	);
+
+	function resetRosterFilters() {
+		searchInput = '';
+		selectedRiskFilter = 'all';
+		selectedSort = 'nama_az';
+		updateUrlFilters({ q: '', risk: 'all' });
+	}
+
 	function handleSearchSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		updateUrlFilters({ q: searchInput.trim() });
@@ -259,43 +272,63 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     FILTER BAR & SEARCH
 	     ══════════════════════════════════════════════════════════ -->
-	<div class="filter-card mb-5">
-		<form onsubmit={handleSearchSubmit} class="filter-controls-grid">
-			<div class="search-input-col">
-				<label for="roster-search-input" class="filter-label">Cari Nama Siswa / NISN</label>
-				<div class="search-input-wrapper">
-					<TextInput
-						id="roster-search-input"
-						name="q"
-						placeholder="Ketik nama atau NISN siswa..."
-						bind:value={searchInput}
-					/>
-					<button type="submit" class="btn-search-trigger" title="Cari">
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					</button>
+	<!-- Filter Card 2-Row Layout Standard -->
+	<div class="page-filter-card mb-5">
+		<form onsubmit={handleSearchSubmit}>
+			<!-- Row 1: Search Bar & Conditional Reset -->
+			<div class="filter-row-top">
+				<div class="flex-1">
+					<label for="roster-search-input" class="filter-label">Cari Nama Siswa / NISN</label>
+					<div class="search-input-wrapper">
+						<TextInput
+							id="roster-search-input"
+							name="q"
+							placeholder="Ketik nama atau NISN siswa..."
+							bind:value={searchInput}
+						/>
+						<button type="submit" class="btn-search-trigger" title="Cari">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						</button>
+					</div>
 				</div>
+
+				{#if isRosterFilterActive}
+					<div class="flex-shrink-0">
+						<button
+							type="button"
+							class="btn-reset-filters-active"
+							onclick={resetRosterFilters}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							<span>Reset Filter</span>
+						</button>
+					</div>
+				{/if}
 			</div>
 
-			<div class="w-56">
-				<label for="risk-filter" class="filter-label">Filter Tingkat Risiko</label>
-				<CustomSelect
-					id="risk-filter"
-					name="risk"
-					options={riskFilterOptions}
-					value={selectedRiskFilter}
-					onchange={handleRiskFilterChange}
-					searchable={false}
-				/>
-			</div>
+			<!-- Row 2: Select Controls Grid -->
+			<div class="filter-row-bottom">
+				<div>
+					<label for="risk-filter" class="filter-label">Filter Tingkat Risiko</label>
+					<CustomSelect
+						id="risk-filter"
+						name="risk"
+						options={riskFilterOptions}
+						value={selectedRiskFilter}
+						onchange={handleRiskFilterChange}
+						searchable={false}
+					/>
+				</div>
 
-			<div class="w-64">
-				<label for="roster-sort" class="filter-label">Urutkan Siswa</label>
-				<CustomSelect
-					id="roster-sort"
-					options={sortOptions}
-					bind:value={selectedSort}
-					searchable={false}
-				/>
+				<div>
+					<label for="roster-sort" class="filter-label">Urutkan Siswa</label>
+					<CustomSelect
+						id="roster-sort"
+						options={sortOptions}
+						bind:value={selectedSort}
+						searchable={false}
+					/>
+				</div>
 			</div>
 		</form>
 	</div>
@@ -880,7 +913,56 @@
 		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 	}
 
+	/* Filter Card Layout Standard */
+	.page-filter-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 20px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+	}
+
+	.filter-row-top {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 14px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 16px;
+		align-items: flex-start;
+	}
+
+	.btn-reset-filters-active {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 38px;
+		padding: 0 16px;
+		background: #fee2e2;
+		color: #dc2626;
+		border: 1px solid #fca5a5;
+		border-radius: 8px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-reset-filters-active:hover {
+		background: #fca5a5;
+		color: #991b1b;
+	}
+
 	@media (max-width: 640px) {
+		.filter-row-bottom {
+			grid-template-columns: 1fr;
+		}
 		.page-container {
 			padding: 16px 16px 36px;
 		}

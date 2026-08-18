@@ -338,6 +338,25 @@
 		const now = new Date();
 		const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 		return dateStr.startsWith(yearMonth);
+	let isFilterActive = $derived(
+		(selectedKelas !== null && selectedKelas !== 'all') ||
+		(selectedActivity !== null && selectedActivity !== 'all') ||
+		(selectedTimeFilter !== null && selectedTimeFilter !== 'all') ||
+		sortBy !== 'date_desc' ||
+		searchQuery.trim() !== '' ||
+		startDate !== '' ||
+		endDate !== ''
+	);
+
+	function resetFilters() {
+		selectedKelas = 'all';
+		selectedActivity = 'all';
+		selectedTimeFilter = 'all';
+		sortBy = 'date_desc';
+		searchQuery = '';
+		startDate = '';
+		endDate = '';
+		currentPage = 1;
 	}
 
 	let filteredMeetings = $derived(
@@ -528,86 +547,101 @@
 		</div>
 	</div>
 
-	<!-- Controls & Search Bar (Custom Reusable UI Component) -->
-	<FilterBar>
-		{#snippet search()}
-			<TextInput
-				placeholder="Cari kata kunci judul atau topik..."
-				bind:value={searchQuery}
-				clearable
-			/>
-		{/snippet}
-		{#snippet filters()}
-			<!-- Kelas Instance Selector -->
-			<CustomSelect
-				bind:value={selectedKelas}
-				options={[
-					{ value: 'all', label: 'Semua Kelas Instance' },
-					...data.kelases.map((k) => ({ value: k.id.toString(), label: k.name }))
-				]}
-				placeholder="Semua Kelas Instance"
-				searchable={false}
-			/>
+	<!-- Filter Card 2-Row Layout Standard -->
+	<div class="page-filter-card mb-8">
+		<!-- Row 1: Search Bar & Conditional Reset -->
+		<div class="filter-row-top">
+			<div class="flex-1">
+				<TextInput
+					id="search-pertemuan-input"
+					label="Cari Sesi Pertemuan"
+					placeholder="Ketik kata kunci judul atau topik pertemuan..."
+					bind:value={searchQuery}
+				/>
+			</div>
 
-			<!-- Activity Type Selector -->
-			<CustomSelect
-				bind:value={selectedActivity}
-				options={[
-					{ value: 'all', label: 'Semua Tipe Aktivitas' },
-					{ value: 'teori', label: 'Teori' },
-					{ value: 'praktik', label: 'Praktik' },
-					{ value: 'teori_praktik', label: 'Teori &amp; Praktik' },
-					{ value: 'games', label: 'Games' },
-					{ value: 'quiz', label: 'Quiz' },
-					{ value: 'santai', label: 'Santai' }
-				]}
-				placeholder="Semua Tipe Aktivitas"
-				searchable={false}
-			/>
+			{#if isFilterActive}
+				<div class="flex-shrink-0">
+					<button
+						type="button"
+						class="btn-reset-filters-active"
+						onclick={resetFilters}
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+						<span>Reset Filter</span>
+					</button>
+				</div>
+			{/if}
+		</div>
 
-			<!-- Time Filter Selector (termasuk Bulan Ini) -->
-			<CustomSelect
-				bind:value={selectedTimeFilter}
-				options={[
-					{ value: 'all', label: 'Semua Periode' },
-					{ value: 'upcoming', label: 'Mendatang (>= Hari Ini)' },
-					{ value: 'today', label: 'Hari Ini' },
-					{ value: 'this_week', label: 'Minggu Ini' },
-					{ value: 'this_month', label: 'Bulan Ini' },
-					{ value: 'past', label: 'Terlewat / Lampau' },
-					{ value: 'weekend', label: 'Khusus Weekend' }
-				]}
-				placeholder="Semua Periode Waktu"
-				searchable={false}
-			/>
+		<!-- Row 2: Select Controls Grid -->
+		<div class="filter-row-bottom">
+			<div>
+				<CustomSelect
+					id="kelas-select-filter"
+					label="Filter Kelas"
+					bind:value={selectedKelas}
+					options={[
+						{ value: 'all', label: 'Semua Kelas Instance' },
+						...data.kelases.map((k) => ({ value: k.id.toString(), label: k.name }))
+					]}
+					searchable={false}
+				/>
+			</div>
 
-			<!-- Rentang Tanggal: Dari -->
-			<DatePicker
-				bind:value={startDate}
-				placeholder="Dari Tanggal..."
-			/>
+			<div>
+				<CustomSelect
+					id="activity-select-filter"
+					label="Tipe Aktivitas"
+					bind:value={selectedActivity}
+					options={[
+						{ value: 'all', label: 'Semua Tipe Aktivitas' },
+						{ value: 'teori', label: 'Teori' },
+						{ value: 'praktik', label: 'Praktik' },
+						{ value: 'teori_praktik', label: 'Teori & Praktik' },
+						{ value: 'games', label: 'Games' },
+						{ value: 'quiz', label: 'Quiz' },
+						{ value: 'santai', label: 'Santai' }
+					]}
+					searchable={false}
+				/>
+			</div>
 
-			<!-- Rentang Tanggal: Sampai -->
-			<DatePicker
-				bind:value={endDate}
-				placeholder="Sampai Tanggal..."
-			/>
+			<div>
+				<CustomSelect
+					id="time-select-filter"
+					label="Periode Waktu"
+					bind:value={selectedTimeFilter}
+					options={[
+						{ value: 'all', label: 'Semua Periode' },
+						{ value: 'upcoming', label: 'Mendatang (>= Hari Ini)' },
+						{ value: 'today', label: 'Hari Ini' },
+						{ value: 'this_week', label: 'Minggu Ini' },
+						{ value: 'this_month', label: 'Bulan Ini' },
+						{ value: 'past', label: 'Terlewat / Lampau' },
+						{ value: 'weekend', label: 'Khusus Weekend' }
+					]}
+					searchable={false}
+				/>
+			</div>
 
-			<!-- Sorting Filter Selector -->
-			<CustomSelect
-				bind:value={sortBy}
-				options={[
-					{ value: 'date_desc', label: 'Urutkan: Tanggal (Terbaru)' },
-					{ value: 'date_asc', label: 'Urutkan: Tanggal (Terlama)' },
-					{ value: 'title_asc', label: 'Urutkan: Judul (A - Z)' },
-					{ value: 'title_desc', label: 'Urutkan: Judul (Z - A)' },
-					{ value: 'kelas_asc', label: 'Urutkan: Kelas (A - Z)' }
-				]}
-				placeholder="Urutkan..."
-				searchable={false}
-			/>
-		{/snippet}
-	</FilterBar>
+			<div>
+				<CustomSelect
+					id="sort-select-filter"
+					label="Urutkan Sesi"
+					bind:value={sortBy}
+					options={[
+						{ value: 'date_desc', label: 'Urutkan: Tanggal (Terbaru)' },
+						{ value: 'date_asc', label: 'Urutkan: Tanggal (Terlama)' },
+						{ value: 'title_asc', label: 'Urutkan: Judul (A - Z)' },
+						{ value: 'title_desc', label: 'Urutkan: Judul (Z - A)' },
+						{ value: 'kelas_asc', label: 'Urutkan: Kelas (A - Z)' }
+					]}
+					searchable={false}
+				/>
+			</div>
+		</div>
+	</div>
 
 	<!-- Meetings High-Density Data Table -->
 	{#if filteredMeetings.length === 0}
@@ -2126,6 +2160,70 @@
 		border-color: #cbd5e1;
 	}
 
+	.btn-pagination-num.active {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4f46e5;
+	}
+
+	/* Filter Card Layout Standard */
+	.page-filter-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 20px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+	}
+
+	.filter-row-top {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 14px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 16px;
+		align-items: flex-start;
+	}
+
+	@media (max-width: 1024px) {
+		.filter-row-bottom {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.filter-row-bottom {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.btn-reset-filters-active {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 38px;
+		padding: 0 16px;
+		background: #fee2e2;
+		color: #dc2626;
+		border: 1px solid #fca5a5;
+		border-radius: 8px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-reset-filters-active:hover {
+		background: #fca5a5;
+		color: #991b1b;
+	}
+
 	.btn-pagination-num--active {
 		background: #4f46e5 !important;
 		color: #ffffff !important;
@@ -2133,5 +2231,3 @@
 		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 	}
 </style>
-
-
