@@ -328,13 +328,13 @@
 	{:else}
 		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-3">
 			<!-- Filter Controls Grid Card -->
-			<div class="page-filter-card mb-6 space-y-4">
+			<div class="page-filter-card mb-8 space-y-4">
 				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->
 				<div class="flex items-end justify-between gap-4">
 					<div class="flex-1">
-						<label for="page-search-input" class="filter-label">Cari Pertemuan / Topik</label>
 						<TextInput
 							id="page-search-input"
+							label="Cari Pertemuan / Topik"
 							placeholder="Ketik judul sesi atau tanggal..."
 							bind:value={searchQuery}
 						/>
@@ -360,11 +360,11 @@
 				</div>
 
 				<!-- Row 2: Status Filter, Dari Tanggal, Sampai Tanggal -->
-				<div class="grid grid-cols-3 gap-4">
+				<div class="grid grid-cols-3 gap-4 items-start">
 					<div>
-						<label for="page-status-filter" class="filter-label">Filter Status</label>
 						<CustomSelect
 							id="page-status-filter"
+							label="Filter Status"
 							options={[
 								{ value: 'all', label: 'Semua Status Sesi' },
 								{ value: 'hadir', label: 'Hadir Saja' },
