@@ -1,26 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
-	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
-	import { toast } from '$lib/stores/toast';
 	import { untrack } from 'svelte';
 	import type { StudentRosterItem } from '$lib/server/services/mentor-student-roster.service';
 
-	let { data, form } = $props();
+	let { data } = $props();
 
-	// Form Drawer State for Quick Attendance
+	// Form Drawer State for Student Curriculum Progress
 	let drawerOpen = $state(false);
 	let selectedStudent = $state<StudentRosterItem | null>(null);
-
-	// Drawer Form Inputs
-	let selectedPertemuanId = $state<string>('');
-	let selectedStatus = $state<'hadir' | 'excused'>('hadir');
-	let manualReason = $state<string>('');
-	let isSubmitting = $state(false);
 
 	// Filters State
 	let selectedTaId = $derived(
@@ -34,14 +25,15 @@
 	let searchInput = $state(data.rosterData.searchQuery || '');
 	let selectedRiskFilter = $state(data.rosterData.riskFilter || 'all');
 
+	// Auto-open drawer if studentId is present in URL
 	$effect(() => {
-		if (form?.message) {
-			if (form.success) {
-				toast.success(form.message);
-				drawerOpen = false;
-				resetDrawerForm();
-			} else {
-				toast.error(form.message);
+		if (data.selectedStudentUserId && data.studentProgress) {
+			const found = data.rosterData.roster.find((r) => r.userId === data.selectedStudentUserId);
+			if (found) {
+				untrack(() => {
+					selectedStudent = found;
+					drawerOpen = true;
+				});
 			}
 		}
 	});
@@ -69,18 +61,11 @@
 		}))
 	);
 
-	const sessionSelectOptions = $derived(
-		data.rosterData.availableSessions.map((s) => ({
-			value: String(s.id),
-			label: `#${s.id} — ${s.title} (${s.sessionDate})`
-		}))
-	);
-
 	const riskFilterOptions = [
 		{ value: 'all', label: 'Semua Status' },
-		{ value: 'good', label: 'Kehadiran Baik (>=75%)' },
-		{ value: 'warning', label: 'Perlu Perhatian (<75%)' },
-		{ value: 'critical', label: 'Kritis (<50%)' }
+		{ value: 'good', label: 'Kehadiran Baik (>=60%)' },
+		{ value: 'warning', label: 'Perlu Perhatian (<60%)' },
+		{ value: 'critical', label: 'Kritis (<40%)' }
 	];
 
 	function handleTaChange(val: string | number | null) {
@@ -88,7 +73,7 @@
 	}
 
 	function handleKelasChange(val: string | number | null) {
-		updateUrlFilters({ kelasInstanceId: String(val ?? '') });
+		updateUrlFilters({ kelasInstanceId: String(val ?? ''), studentId: null });
 	}
 
 	function handleRiskFilterChange(val: string | number | null) {
@@ -101,6 +86,9 @@
 		if (selectedKelasId) params.set('kelasInstanceId', selectedKelasId);
 		if (searchInput.trim()) params.set('q', searchInput.trim());
 		if (selectedRiskFilter !== 'all') params.set('risk', selectedRiskFilter);
+		if (data.selectedStudentUserId && !newParams.hasOwnProperty('studentId')) {
+			params.set('studentId', String(data.selectedStudentUserId));
+		}
 
 		for (const [key, val] of Object.entries(newParams)) {
 			if (val === null || val === '') {
@@ -118,24 +106,20 @@
 		updateUrlFilters({ q: searchInput.trim() });
 	}
 
-	function openQuickAttendance(student: StudentRosterItem) {
+	function openStudentProgress(student: StudentRosterItem) {
 		selectedStudent = student;
-		resetDrawerForm();
-		if (data.rosterData.availableSessions.length > 0) {
-			selectedPertemuanId = String(data.rosterData.availableSessions[0].id);
-		}
+		updateUrlFilters({ studentId: String(student.userId) });
 		drawerOpen = true;
 	}
 
-	function resetDrawerForm() {
-		selectedPertemuanId = '';
-		selectedStatus = 'hadir';
-		manualReason = '';
+	function handleDrawerClose() {
+		drawerOpen = false;
+		updateUrlFilters({ studentId: null });
 	}
 </script>
 
 <svelte:head>
-	<title>Roster Siswa Kelas & Presensi Manual — Mentor NLC</title>
+	<title>Roster Siswa Kelas & Progress Kurikulum — Mentor NLC</title>
 </svelte:head>
 
 <ToastContainer />
@@ -148,7 +132,7 @@
 		<div class="hero-top-row">
 			<div>
 				<div class="hero-title-group">
-					<h1 class="hero-title">Roster Siswa & Quick Attendance</h1>
+					<h1 class="hero-title">Roster Siswa & Progress Kurikulum</h1>
 					{#if data.rosterData.selectedKelas}
 						<span class="badge badge-primary">
 							{data.rosterData.selectedKelas.name}
@@ -156,7 +140,7 @@
 					{/if}
 				</div>
 				<p class="hero-subtitle">
-					Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan catat presensi manual secara cepat.
+					Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase kurikulum siswa.
 				</p>
 			</div>
 
@@ -189,7 +173,7 @@
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     4 KEY METRIC STAT CARDS
+	     4 KEY METRIC STAT CARDS (60% MINIMUM ATTENDANCE THRESHOLD)
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="stats-grid" aria-label="Ringkasan Roster Siswa">
 		<div class="stat-card">
@@ -210,7 +194,7 @@
 			<div class="stat-info">
 				<span class="stat-value">{data.rosterData.summary.avgAttendanceRate}%</span>
 				<span class="stat-label">Rata-rata Kehadiran</span>
-				<span class="stat-subtext">Rata-rata Presensi Hadir</span>
+				<span class="stat-subtext">Presensi Hadir Sesi</span>
 			</div>
 		</div>
 
@@ -232,7 +216,7 @@
 			<div class="stat-info">
 				<span class="stat-value">{data.rosterData.summary.attentionNeededCount} Siswa</span>
 				<span class="stat-label">Perlu Perhatian</span>
-				<span class="stat-subtext">Kehadiran &lt; 75%</span>
+				<span class="stat-subtext">Kehadiran &lt; 60%</span>
 			</div>
 		</div>
 	</section>
@@ -297,7 +281,7 @@
 							<th class="text-center">Izin/Sakit</th>
 							<th class="text-center">Alpha</th>
 							<th class="text-right">% Kehadiran</th>
-							<th class="text-center w-40">Aksi Quick Presensi</th>
+							<th class="text-center w-44">Progress Kurikulum</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -340,9 +324,9 @@
 										<div class="rate-mini-track">
 											<div
 												class="rate-mini-fill"
-												class:fill-green={student.attendanceRate >= 75}
-												class:fill-amber={student.attendanceRate >= 50 && student.attendanceRate < 75}
-												class:fill-red={student.attendanceRate < 50}
+												class:fill-green={student.attendanceRate >= 60}
+												class:fill-amber={student.attendanceRate >= 40 && student.attendanceRate < 60}
+												class:fill-red={student.attendanceRate < 40}
 												style="width: {student.attendanceRate}%;"
 											></div>
 										</div>
@@ -351,11 +335,11 @@
 								<td class="text-center">
 									<button
 										type="button"
-										class="btn-quick-attendance"
-										onclick={() => openQuickAttendance(student)}
+										class="btn-view-progress"
+										onclick={() => openStudentProgress(student)}
 									>
-										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-										<span>Presensi Manual</span>
+										<span>Progress Kurikulum</span>
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
 									</button>
 								</td>
 							</tr>
@@ -368,123 +352,132 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     FORM DRAWER FOR QUICK MANUAL ATTENDANCE
+     FORM DRAWER FOR INDIVIDUAL STUDENT CURRICULUM PROGRESS
      ══════════════════════════════════════════════════════════ -->
 <FormDrawer
 	bind:open={drawerOpen}
-	title="Input Presensi Manual Siswa"
+	onclose={handleDrawerClose}
+	title="Detail Progress Phase Kurikulum Siswa"
 	subtitle={selectedStudent ? `${selectedStudent.fullName} (${selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`})` : ''}
 >
 	{#if selectedStudent}
-		<form
-			method="POST"
-			action="?/quickAttendance"
-			use:enhance={() => {
-				isSubmitting = true;
-				return async ({ update }) => {
-					isSubmitting = false;
-					await update();
-				};
-			}}
-			class="drawer-form-stack"
-		>
-			<input type="hidden" name="studentUserId" value={selectedStudent.userId} />
-
-			<!-- Student Header Card -->
-			<div class="drawer-student-card mb-5">
-				<div class="flex items-center gap-3">
-					<div class="avatar-circle w-12 h-12 text-lg">
-						{#if selectedStudent.avatarUrl}
-							<img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} class="w-full h-full object-cover rounded-full" />
-						{:else}
-							<span>{selectedStudent.fullName.charAt(0).toUpperCase()}</span>
-						{/if}
-					</div>
-					<div>
-						<h4 class="font-extrabold text-slate-900 text-base">{selectedStudent.fullName}</h4>
-						<div class="student-sub-info mt-0.5">
-							<span class="text-xs text-slate-500 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
-							<span class="rombel-pill">{selectedStudent.kelasName}</span>
+		<div class="drawer-progress-container">
+			<!-- Student Summary Header Card -->
+			<div class="drawer-student-card mb-6">
+				<div class="flex items-center justify-between gap-3">
+					<div class="flex items-center gap-3">
+						<div class="avatar-circle w-12 h-12 text-lg">
+							{#if selectedStudent.avatarUrl}
+								<img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} class="w-full h-full object-cover rounded-full" />
+							{:else}
+								<span>{selectedStudent.fullName.charAt(0).toUpperCase()}</span>
+							{/if}
+						</div>
+						<div>
+							<h4 class="font-extrabold text-slate-900 text-base">{selectedStudent.fullName}</h4>
+							<div class="student-sub-info mt-0.5">
+								<span class="text-xs text-slate-500 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
+								<span class="rombel-pill">{selectedStudent.kelasName}</span>
+							</div>
 						</div>
 					</div>
+
+					<div class="text-right">
+						<span class="text-xl font-extrabold text-indigo-700">
+							{data.studentProgress ? `${data.studentProgress.student.overallProgress}%` : '0%'}
+						</span>
+						<span class="block text-[10px] text-slate-400 font-mono uppercase">Progres Komposit</span>
+					</div>
+				</div>
+
+				<div class="metrics-mini-grid mt-4">
+					<div class="mini-stat">
+						<span class="mini-stat-val text-indigo-700">⭐ {selectedStudent.totalPoints}</span>
+						<span class="mini-stat-lbl">Total Poin</span>
+					</div>
+					<div class="mini-stat">
+						<span class="mini-stat-val text-emerald-700">{selectedStudent.attendanceRate}%</span>
+						<span class="mini-stat-lbl">Kehadiran</span>
+					</div>
+					<div class="mini-stat">
+						<span class="mini-stat-val text-slate-800">{selectedStudent.totalHadir}/{selectedStudent.totalSessionsCount}</span>
+						<span class="mini-stat-lbl">Hadir Sesi</span>
+					</div>
 				</div>
 			</div>
 
-			<!-- Select Pertemuan Sesi -->
-			<div class="form-group mb-4">
-				<label for="pertemuan-select" class="filter-label">Sesi Pertemuan Kelas</label>
-				{#if data.rosterData.availableSessions.length === 0}
-					<p class="text-xs text-amber-700 font-mono bg-amber-50 p-3 rounded-lg border border-amber-200">
-						Belum ada sesi pertemuan diselenggarakan untuk kelas ini.
-					</p>
-				{:else}
-					<CustomSelect
-						id="pertemuan-select"
-						name="pertemuanId"
-						options={sessionSelectOptions}
-						bind:value={selectedPertemuanId}
-						searchable={false}
-					/>
-				{/if}
-			</div>
-
-			<!-- Select Status Presensi -->
-			<div class="form-group mb-4">
-				<label for="status-toggle" class="filter-label">Status Presensi Manual</label>
-				<div class="status-toggle-grid">
-					<button
-						type="button"
-						class="toggle-status-btn"
-						class:toggle-active-hadir={selectedStatus === 'hadir'}
-						onclick={() => (selectedStatus = 'hadir')}
-					>
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-						<span>HADIR</span>
-					</button>
-
-					<button
-						type="button"
-						class="toggle-status-btn"
-						class:toggle-active-excused={selectedStatus === 'excused'}
-						onclick={() => (selectedStatus = 'excused')}
-					>
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-						<span>IZIN / SAKIT</span>
-					</button>
+			<!-- Curriculum Phase Cards Breakdown -->
+			{#if !data.studentProgress}
+				<div class="py-8 text-center">
+					<p class="text-xs text-slate-400 font-mono animate-pulse">Memuat rincian progres fase kurikulum siswa...</p>
 				</div>
-				<input type="hidden" name="status" value={selectedStatus} />
-			</div>
+			{:else if data.studentProgress.phases.length === 0}
+				<div class="empty-card py-8 text-center">
+					<p class="text-xs text-slate-400 font-mono">Belum ada modul/fase kurikulum yang ditautkan ke kelas ini.</p>
+				</div>
+			{:else}
+				<div class="phases-stack">
+					<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider mb-3">
+						Rincian Fase Kurikulum ({data.studentProgress.phases.length} Fase)
+					</h5>
 
-			<!-- Catatan Alasan -->
-			<div class="form-group mb-6">
-				<label for="reason-input" class="filter-label">Catatan / Alasan Presensi Manual (Wajib)</label>
-				<TextArea
-					id="reason-input"
-					name="manualReason"
-					rows={3}
-					placeholder="Contoh: Sakit demam berizin orang tua / Hadir manual karena kendala HP..."
-					bind:value={manualReason}
-				/>
-				<p class="text-[11px] text-slate-400 font-mono mt-1">Minimal 3 karakter catatan verifikasi presensi manual.</p>
-			</div>
+					{#each data.studentProgress.phases as phaseItem}
+						<div class="phase-progress-card">
+							<div class="flex items-center justify-between gap-2 mb-2">
+								<div>
+									<span class="badge badge-primary">{phaseItem.phaseCode}</span>
+									<h5 class="font-bold text-slate-900 text-sm mt-1">{phaseItem.title}</h5>
+								</div>
+								<div class="text-right">
+									<span class="text-sm font-extrabold text-slate-900">{phaseItem.completionRate}%</span>
+								</div>
+							</div>
 
-			<div class="drawer-footer-actions flex items-center gap-3 pt-4 border-t border-slate-100">
-				<button
-					type="button"
-					class="btn-cancel-drawer"
-					onclick={() => (drawerOpen = false)}
-				>
-					Batal
-				</button>
-				<button
-					type="submit"
-					class="btn-submit-drawer"
-					disabled={isSubmitting || !selectedPertemuanId || manualReason.trim().length < 3}
-				>
-					{isSubmitting ? 'Simpan Presensi...' : 'Simpan Presensi Manual'}
-				</button>
-			</div>
-		</form>
+							<div class="mini-progress-track mb-3">
+								<div
+									class="mini-progress-fill fill-indigo"
+									style="width: {phaseItem.completionRate}%;"
+								></div>
+							</div>
+
+							<!-- SubPhases List -->
+							<div class="subphases-list-stack">
+								{#each phaseItem.subPhases as subP}
+									<div class="subphase-item">
+										<div class="flex items-start justify-between gap-2">
+											<div class="flex-grow">
+												<span class="text-xs font-bold text-slate-800">{subP.title}</span>
+												<div class="flex items-center gap-2 mt-1 flex-wrap">
+													<span class="text-[11px] text-slate-500 font-mono">
+														Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}
+													</span>
+													{#if subP.totalTasksCount > 0}
+														<span class="text-[11px] font-mono" class:text-emerald-700={subP.approvedTasksCount > 0} class:text-slate-400={subP.approvedTasksCount === 0}>
+															Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved
+														</span>
+													{/if}
+												</div>
+											</div>
+
+											<div class="flex items-center gap-1.5 flex-shrink-0">
+												{#if subP.hasQuiz}
+													{#if subP.quizPassed}
+														<span class="badge badge-success text-[10px]">QUIZ LULUS</span>
+													{:else}
+														<span class="badge badge-subtle text-[10px]">QUIZ PENDING</span>
+													{/if}
+												{/if}
+												<span class="badge badge-primary text-[10px]">{subP.completionRate}%</span>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
 	{/if}
 </FormDrawer>
 
@@ -758,14 +751,15 @@
 	.fill-green { background: #22c55e; }
 	.fill-amber { background: #f59e0b; }
 	.fill-red { background: #ef4444; }
+	.fill-indigo { background: #4f46e5; }
 
-	.btn-quick-attendance {
+	.btn-view-progress {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
 		padding: 6px 12px;
-		background: #4f46e5;
-		color: #ffffff;
+		background: #e0e7ff;
+		color: #4338ca;
 		border: none;
 		border-radius: 6px;
 		font-size: 11px;
@@ -774,11 +768,11 @@
 		transition: background 0.15s ease;
 	}
 
-	.btn-quick-attendance:hover {
-		background: #4338ca;
+	.btn-view-progress:hover {
+		background: #c7d2fe;
 	}
 
-	/* Drawer Styles */
+	/* Drawer Progress Styles */
 	.drawer-student-card {
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
@@ -786,72 +780,30 @@
 		padding: 14px;
 	}
 
-	.status-toggle-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
-	}
-
-	.toggle-status-btn {
+	.phases-stack {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		padding: 10px;
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.phase-progress-card {
 		background: #ffffff;
-		color: #64748b;
-		font-size: 12px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.15s ease;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
+		padding: 14px;
 	}
 
-	.toggle-active-hadir {
-		background: #dcfce7 !important;
-		color: #15803d !important;
-		border-color: #22c55e !important;
+	.subphases-list-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
 	}
 
-	.toggle-active-excused {
-		background: #fef3c7 !important;
-		color: #b45309 !important;
-		border-color: #f59e0b !important;
-	}
-
-	.btn-cancel-drawer {
-		flex: 1;
-		padding: 10px;
-		background: #ffffff;
-		border: 1px solid #cbd5e1;
+	.subphase-item {
+		background: #f8fafc;
+		border: 1px solid #f1f5f9;
 		border-radius: 8px;
-		color: #475569;
-		font-size: 13px;
-		font-weight: 700;
-		cursor: pointer;
-	}
-
-	.btn-submit-drawer {
-		flex: 2;
-		padding: 10px;
-		background: #4f46e5;
-		border: none;
-		border-radius: 8px;
-		color: #ffffff;
-		font-size: 13px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
-
-	.btn-submit-drawer:hover:not(:disabled) {
-		background: #4338ca;
-	}
-
-	.btn-submit-drawer:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+		padding: 10px 12px;
 	}
 
 	@media (max-width: 640px) {
