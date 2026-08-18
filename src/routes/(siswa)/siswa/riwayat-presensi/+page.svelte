@@ -540,7 +540,32 @@
 
 	@media (max-width: 640px) {
 		.content-area {
-			padding: 16px;
+			padding: 16px 12px 80px;
+		}
+
+		.filter-bar {
+			padding: 8px 10px;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.tab-group {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+			padding-bottom: 2px;
+		}
+
+		.tab-group::-webkit-scrollbar {
+			display: none;
+		}
+
+		.tab-btn {
+			flex-shrink: 0;
+			white-space: nowrap;
+			padding: 6px 10px;
+			font-size: 11px;
 		}
 	}
 </style>
