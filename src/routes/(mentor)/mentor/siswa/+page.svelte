@@ -388,7 +388,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     DRAWER: PROGRESS KURIKULUM & RIWAYAT SESI PRESENSI SISWA
+     SPACIOUS DRAWER: PROGRESS KURIKULUM & RIWAYAT SESI PRESENSI SISWA
      ══════════════════════════════════════════════════════════ -->
 <FormDrawer
 	bind:open={drawerOpen}
@@ -397,8 +397,8 @@
 	subtitle={selectedStudent ? `${selectedStudent.fullName} (${selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`})` : ''}
 >
 	{#if selectedStudent}
-		<div class="drawer-progress-container space-y-6 py-2">
-			<!-- Student Hero Header Card (Light Slate Theme) -->
+		<div class="drawer-progress-container space-y-6 py-3">
+			<!-- Student Hero Header Card (Spacious Light Theme) -->
 			<div class="student-hero-card">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-4">
@@ -456,7 +456,7 @@
 				</div>
 			</div>
 
-			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS -->
+			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS (SPACIOUS & UNCLUTTERED) -->
 			{#if activeDrawerMode === 'attendance'}
 				{#if !data.studentAttendanceHistory}
 					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
@@ -468,7 +468,7 @@
 						<p class="text-xs text-slate-500 font-mono">Belum ada sesi pertemuan diselenggarakan untuk kelas ini.</p>
 					</div>
 				{:else}
-					<div class="attendance-logs-stack space-y-4">
+					<div class="attendance-logs-stack space-y-5">
 						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
 							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
 								Riwayat Pertemuan Sesi ({data.studentAttendanceHistory.logs.length} Sesi)
@@ -476,34 +476,46 @@
 							<span class="text-xs text-slate-400 font-mono">Kronologis Sesi</span>
 						</div>
 
-						<div class="space-y-3">
+						<div class="space-y-4">
 							{#each data.studentAttendanceHistory.logs as sessionLog}
-								<div class="session-log-card">
-									<div class="flex items-start justify-between gap-3">
-										<div>
-											<span class="text-xs font-mono font-semibold text-slate-400">#{sessionLog.sessionId} — {sessionLog.sessionDate} ({sessionLog.startTime})</span>
-											<h6 class="font-extrabold text-slate-900 text-sm mt-0.5">{sessionLog.sessionTitle}</h6>
+								<div
+									class="session-log-card"
+									class:session-log-hadir={sessionLog.status === 'hadir'}
+									class:session-log-excused={sessionLog.status === 'excused'}
+									class:session-log-alpha={sessionLog.status === 'alpha'}
+								>
+									<div class="flex items-start justify-between gap-4">
+										<div class="space-y-1">
+											<div class="flex items-center gap-2 flex-wrap">
+												<span class="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+													Sesi #{sessionLog.sessionId}
+												</span>
+												<span class="font-mono text-xs text-slate-500">
+													📅 {sessionLog.sessionDate} • 🕒 {sessionLog.startTime}
+												</span>
+											</div>
+											<h6 class="font-extrabold text-slate-900 text-sm leading-snug pt-0.5">{sessionLog.sessionTitle}</h6>
 										</div>
 
-										<div class="flex-shrink-0 text-right">
+										<div class="flex-shrink-0">
 											{#if sessionLog.status === 'hadir'}
-												<span class="badge badge-success text-[11px]">HADIR</span>
+												<span class="badge badge-success text-[11px] px-2.5 py-1">HADIR</span>
 											{:else if sessionLog.status === 'excused'}
-												<span class="badge badge-warning text-[11px]">IZIN / SAKIT</span>
+												<span class="badge badge-warning text-[11px] px-2.5 py-1">IZIN / SAKIT</span>
 											{:else}
-												<span class="badge badge-error text-[11px]">ALPHA</span>
+												<span class="badge badge-error text-[11px] px-2.5 py-1">ALPHA</span>
 											{/if}
 										</div>
 									</div>
 
 									{#if sessionLog.status !== 'alpha'}
-										<div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
+										<div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100 flex-wrap text-xs">
 											<span class="meta-pill meta-pill-slate">
 												Metode: {sessionLog.method === 'qr' ? '📷 QR Code' : '📝 Presensi Manual'}
 											</span>
 											{#if sessionLog.manualReason}
-												<span class="text-slate-600 italic bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-													"{sessionLog.manualReason}"
+												<span class="text-slate-700 font-medium bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+													Catatan: "{sessionLog.manualReason}"
 												</span>
 											{/if}
 										</div>
@@ -980,14 +992,14 @@
 	.banner-stats-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 10px;
+		gap: 12px;
 	}
 
 	.banner-stat-box {
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
-		padding: 10px 12px;
+		padding: 12px;
 		text-align: center;
 	}
 
@@ -1005,13 +1017,28 @@
 		margin-top: 2px;
 	}
 
-	/* Session Log Card */
+	/* Session Log Card (Spacious & Clean Layout) */
 	.session-log-card {
 		background: #ffffff;
 		border: 1px solid #e2e8f0;
-		border-radius: 10px;
-		padding: 14px 16px;
-		box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+		border-left: 4px solid #cbd5e1;
+		border-radius: 12px;
+		padding: 16px 18px;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+		transition: all 0.15s ease;
+	}
+
+	.session-log-hadir {
+		border-left-color: #22c55e !important;
+	}
+
+	.session-log-excused {
+		border-left-color: #f59e0b !important;
+	}
+
+	.session-log-alpha {
+		border-left-color: #ef4444 !important;
+		background: #fafafa !important;
 	}
 
 	/* Phase Cards */
