@@ -20,6 +20,7 @@
 	let tocList = $state<TocItem[]>([]);
 	let activeTocId = $state<string>('');
 	let isTocCollapsed = $state<boolean>(false);
+	let isMobileTocDrawerOpen = $state<boolean>(false);
 
 	$effect(() => {
 		isReadCompleted = data.isCompleted;
@@ -37,6 +38,7 @@
 		const el = document.getElementById(id);
 		if (el) {
 			activeTocId = id;
+			isMobileTocDrawerOpen = false;
 			el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}
@@ -180,7 +182,7 @@
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
-				<span class="bc-current truncate max-w-[200px]">{data.materi.title}</span>
+				<span class="bc-current truncate max-w-[140px] sm:max-w-[200px]">{data.materi.title}</span>
 			</nav>
 
 			<div class="flex items-center gap-2 mb-3 flex-wrap">
@@ -193,10 +195,10 @@
 
 			<!-- Reader Utility Controls Bar -->
 			<div class="reader-controls-bar mt-5 pt-4">
-				<div class="flex items-center gap-3 flex-wrap">
+				<div class="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-between sm:justify-start">
 					<!-- Font Size Adjuster -->
 					<div class="font-size-group">
-						<span class="ctrl-label">Ukuran Teks:</span>
+						<span class="ctrl-label">Ukuran:</span>
 						<button
 							type="button"
 							onclick={() => setFontSize('sm')}
@@ -233,7 +235,7 @@
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
 							</svg>
-							<span>Keluar Mode Fokus</span>
+							<span>Keluar Fokus</span>
 						{:else}
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
@@ -247,6 +249,7 @@
 				<form
 					method="POST"
 					action="?/toggleCompletion"
+					class="w-full sm:w-auto mt-2 sm:mt-0"
 					use:enhance={() => {
 						isSubmitting = true;
 						return async ({ result, update }) => {
@@ -267,7 +270,7 @@
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
+						class="btn-mark-read w-full sm:w-auto justify-center {isReadCompleted ? 'btn-read-completed' : ''}"
 					>
 						{#if isReadCompleted}
 							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -289,18 +292,18 @@
 		<!-- Slide Presentasi Attachment Card -->
 		{#if data.sessionSlide?.materialUrl}
 			<div class="slide-card mb-6">
-				<div class="flex items-center justify-between gap-4 flex-wrap">
-					<div class="flex items-center gap-3.5">
+				<div class="flex items-center justify-between gap-3 flex-wrap">
+					<div class="flex items-center gap-3">
 						<div class="slide-icon-wrap">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 								<polyline points="14 2 14 8 20 8" />
 							</svg>
 						</div>
 						<div>
-							<h4 class="slide-card-title">Slide Presentasi PPT Pertemuan</h4>
+							<h4 class="slide-card-title">Slide Presentasi PPT Sesi</h4>
 							<p class="slide-card-sub">
-								Materi presentasi untuk sesi <strong>{data.sessionSlide.pertemuanTitle}</strong>
+								Pertemuan: <strong>{data.sessionSlide.pertemuanTitle}</strong>
 							</p>
 						</div>
 					</div>
@@ -309,7 +312,7 @@
 						href={data.sessionSlide.materialUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="btn-download-slide"
+						class="btn-download-slide w-full sm:w-auto justify-center"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -374,7 +377,8 @@
 
 	<!-- Dedicated Right ToC Side Container (Separate Container Outside Main Container) -->
 	{#if tocList.length > 0}
-		<aside class="toc-right-container {isTocCollapsed ? 'toc-right-collapsed' : ''}">
+		<!-- Desktop Sticky Sidebar -->
+		<aside class="toc-right-container hidden lg:block {isTocCollapsed ? 'toc-right-collapsed' : ''}">
 			<!-- Collapse Toggle Button -->
 			<button
 				type="button"
@@ -430,6 +434,59 @@
 				</div>
 			{/if}
 		</aside>
+
+		<!-- Mobile Floating Action Pill & Bottom Sheet Drawer (< 1024px) -->
+		<div class="lg:hidden">
+			<button
+				type="button"
+				onclick={() => isMobileTocDrawerOpen = !isMobileTocDrawerOpen}
+				class="mobile-toc-fab"
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="8" y1="6" x2="21" y2="6" />
+					<line x1="8" y1="12" x2="21" y2="12" />
+					<line x1="8" y1="18" x2="21" y2="18" />
+					<line x1="3" y1="6" x2="3.01" y2="6" />
+					<line x1="3" y1="12" x2="3.01" y2="12" />
+					<line x1="3" y1="18" x2="3.01" y2="18" />
+				</svg>
+				<span>Daftar Isi ({tocList.length})</span>
+			</button>
+
+			{#if isMobileTocDrawerOpen}
+				<div class="mobile-toc-overlay" onclick={() => isMobileTocDrawerOpen = false} role="presentation">
+					<div class="mobile-toc-drawer" onclick={(e) => e.stopPropagation()} role="dialog">
+						<div class="drawer-handle-bar"></div>
+						<div class="drawer-header flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+							<h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="8" y1="6" x2="21" y2="6" />
+									<line x1="8" y1="12" x2="21" y2="12" />
+									<line x1="8" y1="18" x2="21" y2="18" />
+								</svg>
+								Daftar Isi &amp; Sub-Bab Topik
+							</h3>
+							<button type="button" onclick={() => isMobileTocDrawerOpen = false} class="text-xs font-bold text-slate-500">
+								Tutup
+							</button>
+						</div>
+
+						<nav class="drawer-toc-list space-y-1 max-h-[60vh] overflow-y-auto">
+							{#each tocList as item}
+								<button
+									type="button"
+									onclick={() => scrollToHeading(item.id)}
+									class="toc-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
+								>
+									<span class="toc-bullet"></span>
+									<span class="toc-text truncate">{item.text}</span>
+								</button>
+							{/each}
+						</nav>
+					</div>
+				</div>
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -493,7 +550,7 @@
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 24px;
+		padding: 20px 24px;
 		box-shadow: var(--shadow-sm);
 		margin-bottom: 20px;
 	}
@@ -544,7 +601,7 @@
 
 	.reader-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-size: clamp(1.3rem, 3.5vw, 1.8rem);
 		font-weight: 800;
 		color: var(--text-primary);
 		line-height: 1.25;
@@ -552,7 +609,7 @@
 	}
 
 	.reader-subtitle {
-		font-size: 13px;
+		font-size: 12.5px;
 		color: var(--text-secondary);
 	}
 
@@ -589,6 +646,7 @@
 		color: var(--text-secondary);
 		cursor: pointer;
 		transition: all 150ms ease;
+		min-height: 32px;
 	}
 
 	.size-btn:hover {
@@ -606,7 +664,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 4px 10px;
+		padding: 5px 12px;
 		border: 1px solid var(--border-hard);
 		background: #ffffff;
 		border-radius: 6px;
@@ -616,6 +674,7 @@
 		color: var(--text-secondary);
 		cursor: pointer;
 		transition: all 150ms ease;
+		min-height: 36px;
 	}
 
 	.ctrl-btn:hover {
@@ -633,7 +692,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 6px 14px;
+		padding: 7px 16px;
 		border: 1px solid var(--border-hard);
 		background: #ffffff;
 		color: var(--text-primary);
@@ -643,6 +702,7 @@
 		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
+		min-height: 38px;
 	}
 
 	.btn-mark-read:hover {
@@ -665,8 +725,8 @@
 	}
 
 	.slide-icon-wrap {
-		width: 42px;
-		height: 42px;
+		width: 40px;
+		height: 40px;
 		border-radius: 10px;
 		background: #e0e7ff;
 		color: #4f46e5;
@@ -701,6 +761,7 @@
 		font-weight: 700;
 		text-decoration: none;
 		transition: background 150ms ease;
+		min-height: 36px;
 	}
 
 	.btn-download-slide:hover {
@@ -767,7 +828,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 5px 8px;
+		padding: 6px 10px;
 		border: none;
 		background: transparent;
 		text-align: left;
@@ -777,6 +838,7 @@
 		cursor: pointer;
 		transition: all 150ms ease;
 		width: 100%;
+		min-height: 34px;
 	}
 
 	.toc-item.level-1 { font-weight: 800; color: var(--text-primary); }
@@ -804,6 +866,54 @@
 
 	.toc-item-active .toc-bullet {
 		background: #4f46e5 !important;
+	}
+
+	/* Mobile Floating Action Pill & Bottom Sheet */
+	.mobile-toc-fab {
+		position: fixed;
+		bottom: 74px;
+		right: 16px;
+		background: #4f46e5;
+		color: #ffffff;
+		padding: 10px 16px;
+		border-radius: 9999px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		border: none;
+		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		z-index: 80;
+		cursor: pointer;
+	}
+
+	.mobile-toc-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.6);
+		z-index: 99;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+	}
+
+	.mobile-toc-drawer {
+		background: #ffffff;
+		border-radius: 16px 16px 0 0;
+		width: 100%;
+		max-width: 600px;
+		padding: 16px 20px 24px;
+		box-shadow: var(--shadow-lg);
+	}
+
+	.drawer-handle-bar {
+		width: 36px;
+		height: 4px;
+		background: #cbd5e1;
+		border-radius: 9999px;
+		margin: 0 auto 12px;
 	}
 
 	/* Main Reading Article Card */
@@ -943,15 +1053,16 @@
 
 	.prose-reading :global(pre) {
 		margin: 0 !important;
-		padding: 16px 18px !important;
+		padding: 14px 16px !important;
 		background: #0f172a !important;
 		border: none !important;
 		border-radius: 0 !important;
 		font-family: var(--font-mono);
-		font-size: 13.5px;
-		line-height: 1.65;
+		font-size: 13px;
+		line-height: 1.6;
 		color: #e2e8f0 !important;
 		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.prose-reading :global(pre code) {
@@ -1012,6 +1123,7 @@
 		transition: all 150ms ease;
 		max-width: 48%;
 		flex: 1;
+		min-height: 48px;
 	}
 
 	.btn-lesson-nav:hover {
@@ -1034,31 +1146,15 @@
 		font-weight: 800;
 	}
 
-	@media (max-width: 1150px) {
-		.reader-outer-wrapper {
-			flex-direction: column;
-			align-items: center;
-		}
-		.toc-right-container {
-			position: relative;
-			top: 0;
-			width: 100%;
-			max-width: 860px;
-			margin-left: 0;
-			margin-bottom: 20px;
-			margin-top: 0;
-		}
-		.toc-right-collapsed {
-			width: 100%;
-		}
-	}
-
 	@media (max-width: 640px) {
 		.reader-outer-wrapper {
 			padding: 0 12px;
 		}
+		.reader-header-card {
+			padding: 16px;
+		}
 		.reading-article-card {
-			padding: 20px;
+			padding: 20px 16px;
 		}
 		.lesson-nav-footer {
 			flex-direction: column;
