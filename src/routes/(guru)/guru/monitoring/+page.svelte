@@ -152,6 +152,7 @@
 					{#each data.cardsData.classCards as card}
 						<div
 							class="class-health-card cursor-pointer"
+							class:class-health-card--archived={card.isArchived}
 							onclick={() => selectKelasCard(card.kelasId)}
 							role="button"
 							tabindex="0"
@@ -164,7 +165,10 @@
 								</div>
 								<div class="flex items-center gap-1.5 flex-wrap justify-end">
 									{#if card.isArchived}
-										<span class="badge badge-neutral">TERARSIP</span>
+										<span class="badge badge-neutral inline-flex items-center gap-1">
+											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+											<span>TERARSIP</span>
+										</span>
 									{/if}
 									<span
 										class="badge"
@@ -760,6 +764,29 @@
 		transform: translateY(-2px);
 		box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
 		border-color: var(--primary, #4f46e5);
+	}
+
+	.class-health-card--archived {
+		background: #f8fafc;
+		border: 1.5px dashed #cbd5e1;
+		box-shadow: none;
+	}
+
+	.class-health-card--archived:hover {
+		background: #ffffff;
+		border-color: #94a3b8;
+		border-style: solid;
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+	}
+
+	.class-health-card--archived .class-card-name {
+		color: #475569;
+	}
+
+	.class-health-card--archived .class-card-metrics {
+		background: #f1f5f9;
+		border-color: #e2e8f0;
 	}
 
 	.class-card-header {
