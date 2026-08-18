@@ -2,41 +2,10 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
-	import DatePicker from '$lib/components/ui/DatePicker.svelte';
-	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 	import { untrack } from 'svelte';
-	import type { StudentRosterItem } from '$lib/server/services/mentor-student-roster.service';
 
 	let { data } = $props();
-
-	// Form Drawer State for Student Progress & Attendance
-	let drawerOpen = $state(false);
-	let activeDrawerMode = $state<'curriculum' | 'attendance'>('curriculum');
-	let selectedStudent = $state<StudentRosterItem | null>(null);
-
-	// Attendance Drawer Filters State
-	let drawerStatusFilter = $state<'all' | 'hadir' | 'excused' | 'alpha'>('all');
-	let drawerStartDate = $state('');
-	let drawerEndDate = $state('');
-	let drawerSearchQuery = $state('');
-
-	// Derived filtered attendance logs
-	const filteredAttendanceLogs = $derived.by(() => {
-		const logs = data.studentAttendanceHistory?.logs || [];
-		return logs.filter((log) => {
-			if (drawerStatusFilter !== 'all' && log.status !== drawerStatusFilter) return false;
-			if (drawerStartDate && log.sessionDate < drawerStartDate) return false;
-			if (drawerEndDate && log.sessionDate > drawerEndDate) return false;
-			if (drawerSearchQuery.trim()) {
-				const q = drawerSearchQuery.trim().toLowerCase();
-				const matchTitle = log.sessionTitle.toLowerCase().includes(q);
-				const matchDate = log.sessionDate.toLowerCase().includes(q);
-				if (!matchTitle && !matchDate) return false;
-			}
-			return true;
-		});
-	});
 
 	// Filters State
 	let selectedTaId = $derived(
@@ -49,20 +18,6 @@
 
 	let searchInput = $state(data.rosterData.searchQuery || '');
 	let selectedRiskFilter = $state(data.rosterData.riskFilter || 'all');
-
-	// Auto-open drawer if studentId is present in URL
-	$effect(() => {
-		if (data.selectedStudentUserId) {
-			const found = data.rosterData.roster.find((r) => r.userId === data.selectedStudentUserId);
-			if (found) {
-				untrack(() => {
-					selectedStudent = found;
-					activeDrawerMode = data.drawerMode || 'curriculum';
-					drawerOpen = true;
-				});
-			}
-		}
-	});
 
 	// Sync search input from server props
 	$effect(() => {
@@ -99,7 +54,7 @@
 	}
 
 	function handleKelasChange(val: string | number | null) {
-		updateUrlFilters({ kelasInstanceId: String(val ?? ''), studentId: null, drawer: null });
+		updateUrlFilters({ kelasInstanceId: String(val ?? '') });
 	}
 
 	function handleRiskFilterChange(val: string | number | null) {
@@ -112,12 +67,6 @@
 		if (selectedKelasId) params.set('kelasInstanceId', selectedKelasId);
 		if (searchInput.trim()) params.set('q', searchInput.trim());
 		if (selectedRiskFilter !== 'all') params.set('risk', selectedRiskFilter);
-		if (data.selectedStudentUserId && !newParams.hasOwnProperty('studentId')) {
-			params.set('studentId', String(data.selectedStudentUserId));
-		}
-		if (data.drawerMode && !newParams.hasOwnProperty('drawer')) {
-			params.set('drawer', data.drawerMode);
-		}
 
 		for (const [key, val] of Object.entries(newParams)) {
 			if (val === null || val === '') {
@@ -133,30 +82,6 @@
 	function handleSearchSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		updateUrlFilters({ q: searchInput.trim() });
-	}
-
-	function openStudentProgress(student: StudentRosterItem) {
-		selectedStudent = student;
-		activeDrawerMode = 'curriculum';
-		updateUrlFilters({ studentId: String(student.userId), drawer: 'curriculum' });
-		drawerOpen = true;
-	}
-
-	function openStudentAttendance(student: StudentRosterItem) {
-		selectedStudent = student;
-		activeDrawerMode = 'attendance';
-		// Reset inner drawer filters
-		drawerStatusFilter = 'all';
-		drawerStartDate = '';
-		drawerEndDate = '';
-		drawerSearchQuery = '';
-		updateUrlFilters({ studentId: String(student.userId), drawer: 'attendance' });
-		drawerOpen = true;
-	}
-
-	function handleDrawerClose() {
-		drawerOpen = false;
-		updateUrlFilters({ studentId: null, drawer: null });
 	}
 </script>
 
@@ -298,7 +223,7 @@
 	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     ROSTER DATA TABLE (WITH INLINE PROGRESS BARS & SVG ACTION ICONS)
+	     ROSTER DATA TABLE (WITH INLINE PROGRESS BARS & DIRECT NAV LINKS)
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="recap-card" aria-label="Daftar Siswa Roster">
 		{#if data.rosterData.roster.length === 0}
@@ -340,7 +265,12 @@
 											{/if}
 										</div>
 										<div class="student-name-box">
-											<span class="student-fullname">{student.fullName}</span>
+											<a
+												href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}"
+												class="student-fullname hover:text-indigo-600 hover:underline transition-colors"
+											>
+												{student.fullName}
+											</a>
 											<div class="student-sub-info">
 												<span class="student-nisn">{student.nisn ? `NISN: ${student.nisn}` : `@${student.username}`}</span>
 												<span class="rombel-pill">{student.kelasName}</span>
@@ -363,7 +293,7 @@
 								<td class="text-center text-slate-400 font-mono text-sm">
 									{student.totalAlpha}
 								</td>
-								<!-- Kehadiran Progress Bar + Open Attendance Drawer SVG Icon -->
+								<!-- Kehadiran Progress Bar + Link to Attendance Tab on Student Detail Page -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										<span class="font-bold text-slate-800">{student.attendanceRate}%</span>
@@ -376,17 +306,16 @@
 												style="width: {student.attendanceRate}%;"
 											></div>
 										</div>
-										<button
-											type="button"
+										<a
+											href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}&tab=attendance"
 											class="btn-cell-icon"
-											title="Lihat Riwayat Sesi Presensi Siswa"
-											onclick={() => openStudentAttendance(student)}
+											title="Lihat Detail Riwayat Presensi Siswa"
 										>
 											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-										</button>
+										</a>
 									</div>
 								</td>
-								<!-- Kurikulum Composite Progress Bar + Open Curriculum Drawer SVG Icon -->
+								<!-- Kurikulum Composite Progress Bar + Link to Curriculum Tab on Student Detail Page -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										{#if student.hasAnyStarted}
@@ -400,14 +329,13 @@
 										{:else}
 											<span class="text-xs text-slate-400 font-normal">Belum Dimulai</span>
 										{/if}
-										<button
-											type="button"
+										<a
+											href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}&tab=curriculum"
 											class="btn-cell-icon btn-cell-icon-indigo"
 											title="Lihat Detail Progress Kurikulum"
-											onclick={() => openStudentProgress(student)}
 										>
 											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-										</button>
+										</a>
 									</div>
 								</td>
 							</tr>
@@ -418,334 +346,6 @@
 		{/if}
 	</section>
 </div>
-
-<!-- ══════════════════════════════════════════════════════════
-     SPACIOUS DRAWER: PROGRESS KURIKULUM & RIWAYAT SESI PRESENSI SISWA
-     ══════════════════════════════════════════════════════════ -->
-<FormDrawer
-	bind:open={drawerOpen}
-	onclose={handleDrawerClose}
-	title={activeDrawerMode === 'attendance' ? 'Riwayat Sesi Presensi Siswa' : 'Detail Progress Phase Kurikulum Siswa'}
-	subtitle={selectedStudent ? `${selectedStudent.fullName} (${selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`})` : ''}
->
-	{#if selectedStudent}
-		<div class="drawer-progress-container space-y-6 py-3">
-			<!-- Student Hero Header Card (Spacious Light Theme) -->
-			<div class="student-hero-card">
-				<div class="flex items-center justify-between gap-4">
-					<div class="flex items-center gap-4">
-						<div class="avatar-hero-circle">
-							{#if selectedStudent.avatarUrl}
-								<img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} class="w-full h-full object-cover rounded-full" />
-							{:else}
-								<span>{selectedStudent.fullName.charAt(0).toUpperCase()}</span>
-							{/if}
-						</div>
-						<div>
-							<h4 class="font-extrabold text-slate-900 text-base leading-snug">{selectedStudent.fullName}</h4>
-							<div class="flex items-center gap-2 mt-1.5">
-								<span class="text-xs text-slate-500 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
-								<span class="rombel-pill">{selectedStudent.kelasName}</span>
-							</div>
-						</div>
-					</div>
-
-					<div class="overall-progress-box">
-						{#if activeDrawerMode === 'attendance'}
-							<span class="progress-val-text text-emerald-700">
-								{selectedStudent.attendanceRate}%
-							</span>
-							<span class="progress-lbl-text">Kehadiran Sesi</span>
-						{:else}
-							{#if data.studentProgress?.student.hasAnyStarted}
-								<span class="progress-val-text">
-									{data.studentProgress.student.overallProgress}%
-								</span>
-								<span class="progress-lbl-text">Progres Komposit</span>
-							{:else}
-								<span class="progress-val-text-empty">
-									Belum Dimulai
-								</span>
-								<span class="progress-lbl-text">Status Sesi Kelas</span>
-							{/if}
-						{/if}
-					</div>
-				</div>
-
-				<div class="banner-stats-grid mt-5 pt-4 border-t border-slate-100">
-					<div class="banner-stat-box">
-						<span class="banner-stat-val text-amber-700 inline-flex items-center justify-center gap-1">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-amber-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-							<span>{selectedStudent.totalPoints} Pts</span>
-						</span>
-						<span class="banner-stat-lbl">Total Poin</span>
-					</div>
-					<div class="banner-stat-box">
-						<span class="banner-stat-val text-emerald-700">{selectedStudent.attendanceRate}%</span>
-						<span class="banner-stat-lbl">Kehadiran</span>
-					</div>
-					<div class="banner-stat-box">
-						<span class="banner-stat-val text-indigo-700">{selectedStudent.totalHadir}/{selectedStudent.totalSessionsCount}</span>
-						<span class="banner-stat-lbl">Hadir Sesi</span>
-					</div>
-				</div>
-			</div>
-
-			<!-- DRAWER CONTENT 1: ATTENDANCE SESSION HISTORY LOGS (WITH FILTER BAR & DISTINCT THEMES) -->
-			{#if activeDrawerMode === 'attendance'}
-				{#if !data.studentAttendanceHistory}
-					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
-						<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-						<p class="text-xs text-slate-500 font-mono">Memuat riwayat sesi presensi siswa...</p>
-					</div>
-				{:else if data.studentAttendanceHistory.logs.length === 0}
-					<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
-						<p class="text-xs text-slate-500 font-mono">Belum ada sesi pertemuan diselenggarakan untuk kelas ini.</p>
-					</div>
-				{:else}
-					<div class="attendance-logs-stack space-y-4">
-						<!-- Attendance Logs Filter Bar inside Drawer -->
-						<div class="drawer-filter-card mb-4">
-							<div class="grid grid-cols-2 gap-3 mb-3">
-								<div>
-									<label for="drawer-status-filter" class="filter-label">Filter Status</label>
-									<CustomSelect
-										id="drawer-status-filter"
-										options={[
-											{ value: 'all', label: 'Semua Status Sesi' },
-											{ value: 'hadir', label: 'Hadir Saja' },
-											{ value: 'excused', label: 'Izin / Sakit' },
-											{ value: 'alpha', label: 'Alpha / Tanpa Keterangan' }
-										]}
-										bind:value={drawerStatusFilter}
-										searchable={false}
-									/>
-								</div>
-
-								<div>
-									<label for="drawer-search-input" class="filter-label">Cari Sesi / Topik</label>
-									<TextInput
-										id="drawer-search-input"
-										placeholder="Ketik judul / tanggal..."
-										bind:value={drawerSearchQuery}
-									/>
-								</div>
-							</div>
-
-							<div class="grid grid-cols-2 gap-3">
-								<div>
-									<DatePicker
-										id="drawer-start-date"
-										label="Dari Tanggal"
-										placeholder="Pilih tgl awal..."
-										bind:value={drawerStartDate}
-									/>
-								</div>
-								<div>
-									<DatePicker
-										id="drawer-end-date"
-										label="Sampai Tanggal"
-										placeholder="Pilih tgl akhir..."
-										bind:value={drawerEndDate}
-									/>
-								</div>
-							</div>
-
-							{#if drawerStatusFilter !== 'all' || drawerStartDate || drawerEndDate || drawerSearchQuery}
-								<div class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-200">
-									<span class="text-xs text-slate-600 font-mono font-medium">
-										Menampilkan <strong>{filteredAttendanceLogs.length}</strong> dari {data.studentAttendanceHistory.logs.length} sesi
-									</span>
-									<button
-										type="button"
-										class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
-										onclick={() => {
-											drawerStatusFilter = 'all';
-											drawerStartDate = '';
-											drawerEndDate = '';
-											drawerSearchQuery = '';
-										}}
-									>
-										Reset Filter
-									</button>
-								</div>
-							{/if}
-						</div>
-
-						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
-							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
-								Daftar Sesi Pertemuan ({filteredAttendanceLogs.length} Sesi)
-							</h5>
-							<span class="text-xs text-slate-400 font-mono">Kronologis Sesi</span>
-						</div>
-
-						{#if filteredAttendanceLogs.length === 0}
-							<div class="py-8 text-center bg-slate-50 rounded-xl border border-slate-200">
-								<p class="text-xs text-slate-500 font-mono">Tidak ada sesi presensi yang sesuai dengan filter.</p>
-							</div>
-						{:else}
-							<div class="space-y-4">
-								{#each filteredAttendanceLogs as sessionLog}
-									<div
-										class="session-log-card"
-										class:session-log-hadir={sessionLog.status === 'hadir'}
-										class:session-log-excused={sessionLog.status === 'excused'}
-										class:session-log-alpha={sessionLog.status === 'alpha'}
-									>
-										<div class="flex items-start justify-between gap-4">
-											<div class="space-y-1">
-												<div class="flex items-center gap-2 flex-wrap">
-													<span class="font-mono font-bold text-xs text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-100 shadow-sm">
-														Sesi #{sessionLog.sessionId}
-													</span>
-													<span class="font-mono text-xs text-slate-600 font-medium inline-flex items-center gap-1.5">
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-														<span>{sessionLog.sessionDate}</span>
-														<span class="text-slate-300">•</span>
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-														<span>{sessionLog.startTime}</span>
-													</span>
-												</div>
-												<h6 class="font-extrabold text-slate-900 text-sm leading-snug pt-0.5">{sessionLog.sessionTitle}</h6>
-											</div>
-
-											<div class="flex-shrink-0">
-												{#if sessionLog.status === 'hadir'}
-													<span class="badge badge-success text-[11px] px-2.5 py-1">HADIR</span>
-												{:else if sessionLog.status === 'excused'}
-													<span class="badge badge-warning text-[11px] px-2.5 py-1">IZIN / SAKIT</span>
-												{:else}
-													<span class="badge badge-error text-[11px] px-2.5 py-1">ALPHA</span>
-												{/if}
-											</div>
-										</div>
-
-										{#if sessionLog.status !== 'alpha'}
-											<div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-200/60 flex-wrap text-xs">
-												<span class="meta-pill meta-pill-slate">
-													{#if sessionLog.method === 'qr'}
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-														<span>Metode: QR Code</span>
-													{:else}
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-														<span>Metode: Presensi Manual</span>
-													{/if}
-												</span>
-												{#if sessionLog.manualReason}
-													<span class="text-slate-700 font-medium bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-														Catatan: "{sessionLog.manualReason}"
-													</span>
-												{/if}
-											</div>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/if}
-
-			<!-- DRAWER CONTENT 2: CURRICULUM PROGRESS BREAKDOWN -->
-			{:else}
-				{#if !data.studentProgress}
-					<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
-						<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-						<p class="text-xs text-slate-500 font-mono">Memuat rincian progres fase kurikulum siswa...</p>
-					</div>
-				{:else if data.studentProgress.phases.length === 0}
-					<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
-						<p class="text-xs text-slate-500 font-mono">Belum ada modul/fase kurikulum yang ditautkan ke kelas ini.</p>
-					</div>
-				{:else}
-					<div class="phases-stack space-y-6">
-						<div class="flex items-center justify-between pb-1 border-b border-slate-200">
-							<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
-								Rincian Fase Kurikulum ({data.studentProgress.phases.length} Fase)
-							</h5>
-							<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
-						</div>
-
-						{#each data.studentProgress.phases as phaseItem}
-							<div class="phase-progress-card">
-								<!-- Phase Header Row -->
-								<div class="flex items-center justify-between gap-3 mb-3">
-									<div class="flex items-center gap-2.5">
-										<span class="phase-badge-pill">{phaseItem.phaseCode}</span>
-										<h5 class="font-extrabold text-slate-900 text-sm">{phaseItem.title}</h5>
-									</div>
-									{#if phaseItem.hasStartedSubPhases}
-										<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
-									{:else}
-										<span class="badge badge-subtle text-[11px]">BELUM BERJALAN</span>
-									{/if}
-								</div>
-
-								<!-- Phase Progress Bar -->
-								<div class="progress-track-bar mb-4">
-									<div
-										class="progress-fill-bar"
-										style="width: {phaseItem.hasStartedSubPhases ? phaseItem.completionRate : 0}%;"
-									></div>
-								</div>
-
-								<!-- SubPhases List with Generous Spacing -->
-								<div class="subphases-list-stack space-y-3">
-									{#each phaseItem.subPhases as subP}
-										<div class="subphase-card" class:subphase-unstarted={!subP.isStarted}>
-											<div class="flex items-center justify-between gap-3 mb-2">
-												<h6 class="text-xs font-bold text-slate-900 truncate">{subP.title}</h6>
-												{#if subP.isStarted}
-													<span class="subphase-percent-tag">{subP.completionRate}%</span>
-												{:else}
-													<span class="badge badge-subtle text-[10px]">BELUM DIMULAI</span>
-												{/if}
-											</div>
-
-											<div class="flex items-center gap-2 flex-wrap">
-												{#if !subP.isStarted}
-													<span class="meta-pill meta-pill-gray">
-														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-														<span>Belum ada sesi / tugas diselenggarakan</span>
-													</span>
-												{:else}
-													<span class="meta-pill meta-pill-slate">
-														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
-														<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
-													</span>
-
-													{#if subP.totalTasksCount > 0}
-														<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
-															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-															<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
-														</span>
-													{/if}
-
-													{#if subP.hasQuiz}
-														{#if subP.quizPassed}
-															<span class="meta-pill meta-pill-emerald">
-																<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-																<span>Quiz Lulus</span>
-															</span>
-														{:else}
-															<span class="meta-pill meta-pill-gray">
-																<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-																<span>Quiz Pending</span>
-															</span>
-														{/if}
-													{/if}
-												{/if}
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			{/if}
-		</div>
-	{/if}
-</FormDrawer>
 
 <style>
 	.page-container {
@@ -976,6 +576,7 @@
 		font-weight: 700;
 		color: #0f172a;
 		font-size: 13px;
+		text-decoration: none;
 	}
 
 	.student-sub-info {
@@ -1030,6 +631,7 @@
 		border: 1px solid #cbd5e1;
 		border-radius: 6px;
 		cursor: pointer;
+		text-decoration: none;
 		transition: all 0.15s ease;
 		flex-shrink: 0;
 	}
@@ -1048,227 +650,6 @@
 	.btn-cell-icon-indigo:hover {
 		background: #c7d2fe;
 		color: #312e81;
-	}
-
-	/* Drawer Student Hero Card Light */
-	.student-hero-card {
-		background: #ffffff;
-		border: 1px solid var(--border-hard, #cbd5e1);
-		border-radius: 14px;
-		padding: 20px;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-	}
-
-	.avatar-hero-circle {
-		width: 48px;
-		height: 48px;
-		border-radius: 50%;
-		background: #e0e7ff;
-		color: #4338ca;
-		font-weight: 800;
-		font-size: 18px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.overall-progress-box {
-		background: #e0e7ff;
-		border: 1px solid #c7d2fe;
-		border-radius: 10px;
-		padding: 10px 16px;
-		text-align: right;
-	}
-
-	.progress-val-text {
-		display: block;
-		font-size: 22px;
-		font-weight: 900;
-		color: #4338ca;
-		line-height: 1.1;
-	}
-
-	.progress-val-text-empty {
-		display: block;
-		font-size: 14px;
-		font-weight: 800;
-		font-family: var(--font-mono, monospace);
-		color: #64748b;
-		line-height: 1.1;
-	}
-
-	.progress-lbl-text {
-		display: block;
-		font-size: 9px;
-		font-family: var(--font-mono, monospace);
-		color: #4f46e5;
-		font-weight: 700;
-		text-transform: uppercase;
-		margin-top: 2px;
-	}
-
-	.banner-stats-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 12px;
-	}
-
-	.banner-stat-box {
-		background: #f8fafc;
-		border: 1px solid #e2e8f0;
-		border-radius: 8px;
-		padding: 12px;
-		text-align: center;
-	}
-
-	.banner-stat-val {
-		display: block;
-		font-size: 14px;
-		font-weight: 800;
-		font-family: var(--font-mono, monospace);
-	}
-
-	.banner-stat-lbl {
-		display: block;
-		font-size: 10px;
-		color: #64748b;
-		margin-top: 2px;
-	}
-
-	/* Drawer Filter Card */
-	.drawer-filter-card {
-		background: #f8fafc;
-		border: 1px solid #e2e8f0;
-		border-radius: 12px;
-		padding: 16px;
-	}
-
-	/* Session Log Card (Distinct Card Themes per Status) */
-	.session-log-card {
-		border-radius: 12px;
-		padding: 16px 18px;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-		transition: all 0.15s ease;
-	}
-
-	.session-log-hadir {
-		background: #f0fdf4 !important;
-		border: 1px solid #bbf7d0 !important;
-		border-left: 5px solid #22c55e !important;
-	}
-
-	.session-log-excused {
-		background: #fffbeb !important;
-		border: 1px solid #fde68a !important;
-		border-left: 5px solid #f59e0b !important;
-	}
-
-	.session-log-alpha {
-		background: #fff1f2 !important;
-		border: 1px solid #fecdd3 !important;
-		border-left: 5px solid #f43f5e !important;
-	}
-
-	/* Phase Cards */
-	.phase-progress-card {
-		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 18px 20px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-	}
-
-	.phase-badge-pill {
-		font-family: var(--font-mono, monospace);
-		font-size: 11px;
-		font-weight: 800;
-		background: #e0e7ff;
-		color: #3730a3;
-		padding: 3px 8px;
-		border-radius: 6px;
-		letter-spacing: 0.03em;
-	}
-
-	.phase-percent-badge {
-		font-family: var(--font-mono, monospace);
-		font-size: 14px;
-		font-weight: 800;
-		color: #3730a3;
-	}
-
-	.progress-track-bar {
-		width: 100%;
-		height: 8px;
-		background: #f1f5f9;
-		border-radius: 4px;
-		overflow: hidden;
-	}
-
-	.progress-fill-bar {
-		height: 100%;
-		background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-		border-radius: 4px;
-		transition: width 0.3s ease;
-	}
-
-	/* Subphase Card Item */
-	.subphase-card {
-		background: #f8fafc;
-		border: 1px solid #e2e8f0;
-		border-left: 4px solid #6366f1;
-		border-radius: 10px;
-		padding: 12px 14px;
-		transition: background 0.15s ease;
-	}
-
-	.subphase-unstarted {
-		border-left-color: #cbd5e1 !important;
-		background: #fafafa !important;
-	}
-
-	.subphase-card:hover {
-		background: #f1f5f9;
-	}
-
-	.subphase-percent-tag {
-		font-family: var(--font-mono, monospace);
-		font-size: 11px;
-		font-weight: 800;
-		background: #e0e7ff;
-		color: #4338ca;
-		padding: 2px 7px;
-		border-radius: 4px;
-	}
-
-	/* Meta Pills */
-	.meta-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 11px;
-		font-family: var(--font-mono, monospace);
-		font-weight: 600;
-		padding: 3px 8px;
-		border-radius: 6px;
-	}
-
-	.meta-pill-slate {
-		background: #ffffff;
-		border: 1px solid #cbd5e1;
-		color: #475569;
-	}
-
-	.meta-pill-emerald {
-		background: #dcfce7;
-		border: 1px solid #bbf7d0;
-		color: #15803d;
-	}
-
-	.meta-pill-gray {
-		background: #f1f5f9;
-		border: 1px solid #e2e8f0;
-		color: #94a3b8;
 	}
 
 	@media (max-width: 640px) {
