@@ -835,15 +835,23 @@
 		height: 58px;
 		box-sizing: content-box;
 		z-index: 999;
-		background: rgba(255, 255, 255, 0.96);
-		backdrop-filter: blur(16px);
-		-webkit-backdrop-filter: blur(16px);
-		border-top: 1px solid var(--border-hard);
 		display: grid;
 		grid-template-columns: repeat(5, 1fr);
 		align-items: center;
 		padding: 0 0 env(safe-area-inset-bottom, 0px);
+	}
+
+	.app-bottom-nav::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: rgba(255, 255, 255, 0.96);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border-top: 1px solid var(--border-hard);
 		box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.bottom-nav-item {
@@ -859,6 +867,7 @@
 		font-weight: 600;
 		transition: color 150ms ease;
 		position: relative;
+		z-index: 1;
 	}
 
 	.bottom-nav-item:hover,
