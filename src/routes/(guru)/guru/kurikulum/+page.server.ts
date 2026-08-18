@@ -8,6 +8,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const trackIdParam = url.searchParams.get('trackId');
 	const tahunAjaranIdParam = url.searchParams.get('tahunAjaranId');
 	const kelasInstanceIdParam = url.searchParams.get('kelasInstanceId');
+	const fromDashboard = url.searchParams.get('from') === 'dashboard';
 
 	let trackId = trackIdParam ? Number(trackIdParam) : undefined;
 	const tahunAjaranId = tahunAjaranIdParam ? Number(tahunAjaranIdParam) : undefined;
@@ -32,10 +33,20 @@ export const load: PageServerLoad = async ({ url }) => {
 			tahunAjaranId,
 			kelasInstanceId
 		});
-		return { monitoringData };
+		return {
+			monitoringData: {
+				...monitoringData,
+				fromDashboard
+			}
+		};
 	} else {
 		// Tier 1: Grid Card View of all Curriculum Tracks in Academic Year
 		const monitoringData = await CurriculumMonitoringService.getTrackCards(tahunAjaranId);
-		return { monitoringData };
+		return {
+			monitoringData: {
+				...monitoringData,
+				fromDashboard: false
+			}
+		};
 	}
 };

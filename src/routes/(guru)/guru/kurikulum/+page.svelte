@@ -71,6 +71,9 @@
 			if (data.monitoringData.selectedTahunAjaran?.id) {
 				params.set('tahunAjaranId', String(data.monitoringData.selectedTahunAjaran.id));
 			}
+			if (data.monitoringData.fromDashboard) {
+				params.set('from', 'dashboard');
+			}
 			if (kelasStr) params.set('kelasInstanceId', kelasStr);
 			goto(`?${params.toString()}`, { keepFocus: true, noScroll: true });
 		}
@@ -256,10 +259,17 @@
 		     ══════════════════════════════════════════════════════════ -->
 		<header class="page-hero">
 			<div class="hero-top-bar">
-				<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-					<span>Kembali ke Katalog Kurikulum (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
-				</button>
+				{#if data.monitoringData.fromDashboard}
+					<button type="button" onclick={() => goto(`/guru?tahunAjaranId=${data.monitoringData.selectedTahunAjaran?.id || ''}`)} class="btn-back-link">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span>Kembali ke Dashboard Guru</span>
+					</button>
+				{:else}
+					<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span>Kembali ke Katalog Kurikulum (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
+					</button>
+				{/if}
 			</div>
 
 			<div class="hero-content-flex">

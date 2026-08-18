@@ -83,6 +83,9 @@
 		if (data.recapData.selectedTahunAjaran?.id) {
 			params.set('tahunAjaranId', String(data.recapData.selectedTahunAjaran.id));
 		}
+		if (data.recapData.fromDashboard) {
+			params.set('from', 'dashboard');
+		}
 		if (searchInput.trim()) params.set('q', searchInput.trim());
 		if (activeTab !== 'matrix') params.set('tab', activeTab);
 
@@ -278,10 +281,17 @@
 		     ══════════════════════════════════════════════════════════ -->
 		<header class="page-hero">
 			<div class="hero-top-bar">
-				<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-					<span>Kembali ke Daftar Rombel (TA {data.recapData.selectedTahunAjaran?.name})</span>
-				</button>
+				{#if data.recapData.fromDashboard}
+					<button type="button" onclick={() => goto(`/guru?tahunAjaranId=${data.recapData.selectedTahunAjaran?.id || ''}`)} class="btn-back-link">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span>Kembali ke Dashboard Guru</span>
+					</button>
+				{:else}
+					<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span>Kembali ke Daftar Rombel (TA {data.recapData.selectedTahunAjaran?.name})</span>
+					</button>
+				{/if}
 			</div>
 
 			<div class="hero-top-row">

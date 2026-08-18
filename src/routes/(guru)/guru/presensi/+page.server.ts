@@ -6,6 +6,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const kelasInstanceIdParam = url.searchParams.get('kelasInstanceId');
 	const searchQuery = url.searchParams.get('q') || '';
 	const activeTab = (url.searchParams.get('tab') as 'matrix' | 'logs') || 'matrix';
+	const fromDashboard = url.searchParams.get('from') === 'dashboard';
 
 	const tahunAjaranId = tahunAjaranIdParam ? Number(tahunAjaranIdParam) : undefined;
 	const kelasInstanceId = kelasInstanceIdParam ? Number(kelasInstanceIdParam) : undefined;
@@ -18,10 +19,20 @@ export const load: PageServerLoad = async ({ url }) => {
 			searchQuery,
 			activeTab
 		});
-		return { recapData };
+		return {
+			recapData: {
+				...recapData,
+				fromDashboard
+			}
+		};
 	} else {
 		// Tier 1: Grid Cards of all Rombels in the Academic Year
 		const recapData = await GuruAttendanceRecapService.getGridCards(tahunAjaranId);
-		return { recapData };
+		return {
+			recapData: {
+				...recapData,
+				fromDashboard: false
+			}
+		};
 	}
 };
