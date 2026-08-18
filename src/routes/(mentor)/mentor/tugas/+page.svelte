@@ -24,7 +24,7 @@
 	let selectedStatusFilter = $state<string>('all');
 	let selectedTaskSize = $state<string>('all');
 
-	// Review modal state
+	// Review drawer state
 	let activeReviewTarget = $state<SubmissionItem | null>(null);
 	let reviewStatus = $state<'approved' | 'revisi'>('approved');
 	let reviewFeedback = $state('');
@@ -169,6 +169,12 @@
 		reviewFeedback = '';
 	}
 
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && activeReviewTarget) {
+			closeReviewModal();
+		}
+	}
+
 	function selectMeeting(pertemuanId: number) {
 		selectedPertemuanId = pertemuanId;
 		searchQuery = '';
@@ -225,6 +231,8 @@
 <svelte:head>
 	<title>Penilaian Tugas Siswa — Portal Mentor NLC</title>
 </svelte:head>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="content-area">
 	{#if selectedPertemuanId === null}
@@ -626,7 +634,7 @@
 												type="button"
 												onclick={() => openReviewModal(sub, sub.status === 'approved' ? 'revisi' : 'approved')}
 												class="btn-detail-split"
-												title="Buka Split Pane Preview & Penilaian"
+												title="Buka Layar Penuh Split Pane Preview & Penilaian"
 											>
 												<span>Periksa Task &rsaquo;</span>
 											</button>
@@ -689,81 +697,82 @@
 	{/if}
 </div>
 
-<!-- SPLIT PANE TASK REVIEW DRAWER / MODAL -->
+<!-- FULL-SCREEN SPLIT PANE TASK REVIEW DRAWER VIEW -->
 {#if activeReviewTarget}
-	<div class="form-scrim" role="dialog" aria-modal="true">
-		<div class="split-pane-modal">
-			<!-- Modal Top Bar Header -->
-			<div class="split-modal-header">
-				<div class="flex items-center gap-3">
-					<div class="modal-icon-wrap">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-							<polyline points="14 2 14 8 20 8" />
+	<div class="full-split-scrim" role="dialog" aria-modal="true">
+		<div class="full-split-view">
+			<!-- Topbar Header Bar (Covers standard navbar) -->
+			<div class="full-split-topbar">
+				<div class="topbar-left">
+					<button type="button" onclick={closeReviewModal} class="btn-topbar-back">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="19" y1="12" x2="5" y2="12" />
+							<polyline points="12 19 5 12 12 5" />
 						</svg>
-					</div>
-					<div>
-						<h3 class="modal-title">Peninjauan & Assessment Submisi</h3>
-						<p class="modal-sub">
-							{activeReviewTarget.studentName} (@{activeReviewTarget.studentUsername}) · {activeReviewTarget.kelasName}
-						</p>
+						<span>Tutup Penilaian (Esc)</span>
+					</button>
+					<div class="topbar-divider"></div>
+					<div class="topbar-student-info">
+						<span class="topbar-student-name">{activeReviewTarget.studentName}</span>
+						<span class="topbar-student-meta">@{activeReviewTarget.studentUsername} · {activeReviewTarget.kelasName}</span>
 					</div>
 				</div>
-				<button type="button" onclick={closeReviewModal} class="modal-close-btn" aria-label="Tutup">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<line x1="18" y1="6" x2="6" y2="18" />
-						<line x1="6" y1="6" x2="18" y2="18" />
-					</svg>
-				</button>
+
+				<div class="topbar-right">
+					{#if activeReviewTarget.status === 'approved'}
+						<span class="topbar-status-badge badge-approved">✓ DISETUJUI</span>
+					{:else if activeReviewTarget.status === 'revisi'}
+						<span class="topbar-status-badge badge-revisi">! REVISI</span>
+					{:else}
+						<span class="topbar-status-badge badge-pending">PENDING REVIEW</span>
+					{/if}
+
+					<a
+						href={activeReviewTarget.link}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn-topbar-link"
+					>
+						<span>Buka Tab Baru</span>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+							<polyline points="15 3 21 3 21 9" />
+							<line x1="10" y1="14" x2="21" y2="3" />
+						</svg>
+					</a>
+
+					<button type="button" onclick={closeReviewModal} class="btn-topbar-close" aria-label="Tutup">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+					</button>
+				</div>
 			</div>
 
-			<!-- Split Body (Left Pane 60% + Right Pane 40%) -->
-			<div class="split-body">
+			<!-- Full Split Body (Left 65% + Right 35%) -->
+			<div class="full-split-body">
 				<!-- LEFT PANE: LIVE PREVIEW IFRAME / LINK INSPECTOR -->
-				<div class="preview-pane">
-					<div class="preview-pane-header">
-						<div class="flex items-center gap-2">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10" />
-								<line x1="2" y1="12" x2="22" y2="12" />
-								<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-							</svg>
-							<span class="preview-pane-title">Preview Submisi Link</span>
-						</div>
-						<a
-							href={activeReviewTarget.link}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="btn-open-newtab"
-						>
-							<span>Buka di Tab Baru</span>
-							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-								<polyline points="15 3 21 3 21 9" />
-								<line x1="10" y1="14" x2="21" y2="3" />
-							</svg>
-						</a>
-					</div>
-
-					<div class="preview-frame-wrap">
-						{#if isIframeEmbeddable(activeReviewTarget.link)}
-							<iframe
-								src={activeReviewTarget.link}
-								title="Preview Submisi Task"
-								class="preview-iframe"
-								sandbox="allow-scripts allow-same-origin allow-forms"
-							></iframe>
-						{:else}
-							<!-- Embedded Link Card Inspector for GitHub / Drive / Figma / Canva / external sites -->
+				<div class="full-preview-pane">
+					{#if isIframeEmbeddable(activeReviewTarget.link)}
+						<iframe
+							src={activeReviewTarget.link}
+							title="Preview Submisi Task"
+							class="full-preview-iframe"
+							sandbox="allow-scripts allow-same-origin allow-forms"
+						></iframe>
+					{:else}
+						<!-- Embedded Link Card Inspector -->
+						<div class="full-external-wrap">
 							<div class="external-link-card">
 								<div class="external-icon">
-									<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
 										<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
 									</svg>
 								</div>
 								<h4 class="external-domain">{getDomainFromUrl(activeReviewTarget.link)}</h4>
-								<p class="external-sub">Tautan eksternal proyek siswa. Klik tombol di bawah untuk memeriksa kode/hasil pekerjaan siswa.</p>
+								<p class="external-sub">Tautan eksternal proyek siswa. Klik tombol di bawah untuk memeriksa kode / hasil pekerjaan di tab baru.</p>
 								<div class="external-url-box">{activeReviewTarget.link}</div>
 								<a
 									href={activeReviewTarget.link}
@@ -774,12 +783,12 @@
 									<span>Buka Proyek Siswa &rsaquo;</span>
 								</a>
 							</div>
-						{/if}
-					</div>
+						</div>
+					{/if}
 				</div>
 
-				<!-- RIGHT PANE: FORM ASSESSMENT & FEEDBACK -->
-				<div class="assessment-pane">
+				<!-- RIGHT PANE: ASSESSMENT & FEEDBACK FORM -->
+				<div class="full-assessment-pane">
 					<div class="assessment-pane-inner">
 						<!-- Summary Card -->
 						<div class="info-summary-card">
@@ -884,7 +893,7 @@
 									label={reviewStatus === 'approved' ? 'Catatan Umpan Balik / Catatan Mentor (Opsional)' : 'Catatan Instruksi Revisi (Wajib)'}
 									placeholder={reviewStatus === 'approved' ? 'Contoh: Konfigurasi BGP tepat, penataan kabel & struktur dokumen sangat baik.' : 'Contoh: Mohon lengkapi screencast pengujian ping IP router dan upload ulang link...'}
 									bind:value={reviewFeedback}
-									rows={5}
+									rows={6}
 									required={reviewStatus === 'revisi'}
 								/>
 							</div>
@@ -1577,263 +1586,192 @@
 		max-width: 420px;
 	}
 
-	/* Form Scrim & SPLIT PANE MODAL */
-	.form-scrim {
+	/* FULL-SCREEN SPLIT PANE DRAWER VIEW */
+	.full-split-scrim {
 		position: fixed;
 		inset: 0;
-		z-index: 999;
-		background: rgba(15, 23, 42, 0.65);
-		backdrop-filter: blur(5px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 24px;
-	}
-
-	.split-pane-modal {
-		background: #ffffff;
-		border-radius: 16px;
-		width: 100%;
-		max-width: 1180px;
-		height: 88vh;
-		max-height: 840px;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+		z-index: 9999;
+		background: #0f172a;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
-		animation: modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	@keyframes modalPop {
-		from { opacity: 0; transform: scale(0.96) translateY(12px); }
-		to { opacity: 1; transform: scale(1) translateY(0); }
-	}
-
-	.split-modal-header {
-		padding: 16px 24px;
-		border-bottom: 1px solid var(--border-hard);
+	.full-split-view {
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
 		background: #ffffff;
+		overflow: hidden;
+	}
+
+	.full-split-topbar {
+		height: 60px;
+		background: #0f172a;
+		color: #ffffff;
+		padding: 0 20px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		flex-shrink: 0;
+		border-bottom: 1px solid #334155;
 	}
 
-	.modal-icon-wrap {
-		width: 38px;
-		height: 38px;
-		border-radius: 10px;
-		background: #e0e7ff;
-		color: #4f46e5;
+	.topbar-left {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
+		gap: 16px;
 	}
 
-	.modal-title {
-		font-family: var(--font-macro);
-		font-size: 1.1rem;
-		font-weight: 800;
-		color: var(--text-primary);
-		line-height: 1.2;
-	}
-
-	.modal-sub {
-		font-size: 12.5px;
-		color: var(--text-muted);
-		margin-top: 1px;
-	}
-
-	.modal-close-btn {
-		border: none;
-		background: none;
-		color: var(--text-muted);
-		cursor: pointer;
-		padding: 6px;
+	.btn-topbar-back {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 14px;
+		background: #1e293b;
+		color: #cbd5e1;
+		border: 1px solid #334155;
 		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 12.5px;
+		font-weight: 700;
+		cursor: pointer;
 		transition: all 150ms ease;
 	}
 
-	.modal-close-btn:hover {
-		background: var(--bg-inset);
-		color: var(--text-primary);
+	.btn-topbar-back:hover {
+		background: #334155;
+		color: #ffffff;
 	}
 
-	/* Split Body Layout (Left 60% + Right 40%) */
-	.split-body {
-		display: flex;
-		flex: 1;
-		overflow: hidden;
+	.topbar-divider {
+		width: 1px;
+		height: 24px;
+		background: #334155;
 	}
 
-	@media (max-width: 900px) {
-		.split-body {
-			flex-direction: column;
-			overflow-y: auto;
-		}
-		.split-pane-modal {
-			height: 95vh;
-			max-height: none;
-		}
-	}
-
-	/* LEFT PANE: PREVIEW IFRAME */
-	.preview-pane {
-		flex: 1.4;
-		border-right: 1px solid var(--border-hard);
+	.topbar-student-info {
 		display: flex;
 		flex-direction: column;
-		background: #f8fafc;
 	}
 
-	@media (max-width: 900px) {
-		.preview-pane {
-			border-right: none;
-			border-bottom: 1px solid var(--border-hard);
-			min-height: 360px;
-		}
+	.topbar-student-name {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: #f8fafc;
 	}
 
-	.preview-pane-header {
-		padding: 12px 18px;
-		background: #ffffff;
-		border-bottom: 1px solid var(--border-hard);
+	.topbar-student-meta {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: #94a3b8;
+	}
+
+	.topbar-right {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		flex-shrink: 0;
+		gap: 12px;
 	}
 
-	.preview-pane-title {
+	.topbar-status-badge {
 		font-family: var(--font-mono);
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--text-secondary);
+		font-size: 11px;
+		font-weight: 800;
+		padding: 4px 10px;
+		border-radius: 6px;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
 	}
 
-	.btn-open-newtab {
+	.btn-topbar-link {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+		padding: 7px 12px;
+		background: #312e81;
+		color: #a5b4fc;
+		border: 1px solid #4338ca;
+		border-radius: 6px;
 		font-family: var(--font-mono);
 		font-size: 11.5px;
 		font-weight: 700;
-		color: #4f46e5;
-		background: #e0e7ff;
-		padding: 5px 10px;
-		border-radius: 6px;
 		text-decoration: none;
 		transition: background 150ms ease;
 	}
 
-	.btn-open-newtab:hover {
-		background: #c7d2fe;
+	.btn-topbar-link:hover {
+		background: #3730a3;
+		color: #ffffff;
 	}
 
-	.preview-frame-wrap {
-		flex: 1;
-		width: 100%;
-		height: 100%;
-		position: relative;
+	.btn-topbar-close {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: #1e293b;
+		color: #94a3b8;
+		border: 1px solid #334155;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 150ms ease;
 	}
 
-	.preview-iframe {
+	.btn-topbar-close:hover {
+		background: #ef4444;
+		color: #ffffff;
+		border-color: #dc2626;
+	}
+
+	.full-split-body {
+		flex: 1;
+		display: flex;
+		overflow: hidden;
+	}
+
+	@media (max-width: 900px) {
+		.full-split-body {
+			flex-direction: column;
+			overflow-y: auto;
+		}
+	}
+
+	.full-preview-pane {
+		flex: 1.6;
+		background: #0f172a;
+		border-right: 1px solid #cbd5e1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+	}
+
+	.full-preview-iframe {
 		width: 100%;
 		height: 100%;
 		border: none;
 		background: #ffffff;
 	}
 
-	/* External Link Card Inspector */
-	.external-link-card {
-		padding: 32px 24px;
-		text-align: center;
-		max-width: 440px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.external-icon {
-		width: 64px;
-		height: 64px;
-		border-radius: 16px;
-		background: #e0e7ff;
-		color: #4f46e5;
+	.full-external-wrap {
+		width: 100%;
+		height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 16px;
+		background: #f8fafc;
 	}
 
-	.external-domain {
-		font-family: var(--font-macro);
-		font-size: 1.2rem;
-		font-weight: 800;
-		color: var(--text-primary);
-		margin-bottom: 6px;
-	}
-
-	.external-sub {
-		font-size: 13px;
-		color: var(--text-muted);
-		margin-bottom: 16px;
-		line-height: 1.4;
-	}
-
-	.external-url-box {
-		font-family: var(--font-mono);
-		font-size: 11.5px;
-		color: #475569;
-		background: #ffffff;
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
-		padding: 10px 14px;
-		width: 100%;
-		word-break: break-all;
-		margin-bottom: 18px;
-	}
-
-	.btn-visit-external {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		width: 100%;
-		padding: 12px 20px;
-		background: #4f46e5;
-		color: white;
-		border-radius: 10px;
-		font-family: var(--font-macro);
-		font-size: 13.5px;
-		font-weight: 700;
-		text-decoration: none;
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-		transition: transform 150ms ease, background 150ms ease;
-	}
-
-	.btn-visit-external:hover {
-		background: #4338ca;
-		transform: translateY(-1px);
-	}
-
-	/* RIGHT PANE: ASSESSMENT & FEEDBACK */
-	.assessment-pane {
+	.full-assessment-pane {
 		flex: 1;
 		background: #ffffff;
 		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
 	}
 
 	.assessment-pane-inner {
-		padding: 20px 24px 28px;
+		padding: 24px;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -1980,5 +1918,78 @@
 
 	.btn-submit-revisi:hover {
 		background: #be123c;
+	}
+
+	/* External Link Card Inspector */
+	.external-link-card {
+		padding: 32px 24px;
+		text-align: center;
+		max-width: 440px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.external-icon {
+		width: 64px;
+		height: 64px;
+		border-radius: 16px;
+		background: #e0e7ff;
+		color: #4f46e5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+
+	.external-domain {
+		font-family: var(--font-macro);
+		font-size: 1.2rem;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin-bottom: 6px;
+	}
+
+	.external-sub {
+		font-size: 13px;
+		color: var(--text-muted);
+		margin-bottom: 16px;
+		line-height: 1.4;
+	}
+
+	.external-url-box {
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		color: #475569;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 8px;
+		padding: 10px 14px;
+		width: 100%;
+		word-break: break-all;
+		margin-bottom: 18px;
+	}
+
+	.btn-visit-external {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 12px 20px;
+		background: #4f46e5;
+		color: white;
+		border-radius: 10px;
+		font-family: var(--font-macro);
+		font-size: 13.5px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+		transition: transform 150ms ease, background 150ms ease;
+	}
+
+	.btn-visit-external:hover {
+		background: #4338ca;
+		transform: translateY(-1px);
 	}
 </style>
