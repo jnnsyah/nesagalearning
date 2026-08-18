@@ -1,22 +1,19 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	let isReadCompleted = $state(false);
+	let isReadCompleted = $state(data.isCompleted);
+	let isSubmitting = $state(false);
 	let fontSize = $state<'sm' | 'base' | 'lg'>('base');
 	let isFocusMode = $state(false);
 	let scrollProgress = $state(0);
 
-	function toggleReadStatus() {
-		isReadCompleted = !isReadCompleted;
-		if (isReadCompleted) {
-			toast.success('Materi ditandai selesai dibaca (+10 XP)');
-		} else {
-			toast.info('Status selesai dibaca dibatalkan.');
-		}
-	}
+	$effect(() => {
+		isReadCompleted = data.isCompleted;
+	});
 
 	function setFontSize(size: 'sm' | 'base' | 'lg') {
 		fontSize = size;
@@ -186,25 +183,46 @@
 				</button>
 			</div>
 
-			<!-- Read Completion Toggle Button -->
-			<button
-				type="button"
-				onclick={toggleReadStatus}
-				class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
+			<!-- Read Completion Toggle Form Button -->
+			<form
+				method="POST"
+				action="?/toggleCompletion"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ result, update }) => {
+						isSubmitting = false;
+						if (result.type === 'success' && result.data) {
+							const actionData = result.data as { isCompleted?: boolean; message?: string };
+							isReadCompleted = !!actionData.isCompleted;
+							if (isReadCompleted) {
+								toast.success(actionData.message || 'Materi ditandai selesai dibaca.');
+							} else {
+								toast.info(actionData.message || 'Status selesai dibaca dibatalkan.');
+							}
+						}
+						await update({ reset: false });
+					};
+				}}
 			>
-				{#if isReadCompleted}
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-					<span>Selesai Dibaca</span>
-				{:else}
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="12" cy="12" r="10" />
-						<polyline points="12 6 12 12 16 14" />
-					</svg>
-					<span>Tandai Selesai</span>
-				{/if}
-			</button>
+				<button
+					type="submit"
+					disabled={isSubmitting}
+					class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
+				>
+					{#if isReadCompleted}
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="20 6 9 17 4 12" />
+						</svg>
+						<span>Selesai Dibaca</span>
+					{:else}
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<circle cx="12" cy="12" r="10" />
+							<polyline points="12 6 12 12 16 14" />
+						</svg>
+						<span>Tandai Selesai</span>
+					{/if}
+				</button>
+			</form>
 		</div>
 	</div>
 

@@ -1,15 +1,40 @@
-import { error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { error, redirect, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { materi, subPhase, phase, curriculumTrack } from '$lib/server/db/schema/curriculum';
+import { materi, subPhase, phase, curriculumTrack, materiCompletion } from '$lib/server/db/schema/curriculum';
 import { pertemuan } from '$lib/server/db/schema/session';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
+
+let isTableInitialized = false;
+
+async function ensureMateriCompletionTable() {
+	if (isTableInitialized) return;
+	try {
+		await db.execute(sql`
+			CREATE TABLE IF NOT EXISTS materi_completion (
+				id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+				materi_id bigint NOT NULL REFERENCES materi(id) ON DELETE CASCADE,
+				user_id bigint NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+				completed_at timestamp with time zone NOT NULL DEFAULT now(),
+				CONSTRAINT materi_completion_user_materi_unique UNIQUE (user_id, materi_id)
+			);
+			CREATE INDEX IF NOT EXISTS idx_materi_completion_user ON materi_completion(user_id);
+			CREATE INDEX IF NOT EXISTS idx_materi_completion_materi ON materi_completion(materi_id);
+		`);
+		isTableInitialized = true;
+	} catch (e) {
+		console.error('Failed to initialize materi_completion table:', e);
+	}
+}
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
 		throw redirect(303, '/login');
 	}
 
+	await ensureMateriCompletionTable();
+
+	const userId = Number(locals.user.id);
 	const materiId = Number(params.id);
 	if (isNaN(materiId)) {
 		throw error(400, 'ID Materi tidak valid.');
@@ -39,7 +64,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(404, 'Materi pembelajaran tidak ditemukan.');
 	}
 
-	// 2. Fetch associated session slide material if any
+	// 2. Check if logged-in student has completed reading this materi
+	const [completionRecord] = await db
+		.select({
+			id: materiCompletion.id,
+			completedAt: materiCompletion.completedAt
+		})
+		.from(materiCompletion)
+		.where(and(eq(materiCompletion.userId, userId), eq(materiCompletion.materiId, materiId)));
+
+	// 3. Fetch associated session slide material if any
 	const [sessionSlide] = await db
 		.select({
 			pertemuanId: pertemuan.id,
@@ -47,10 +81,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			materialUrl: pertemuan.materialUrl
 		})
 		.from(pertemuan)
-		.where(and(eq(pertemuan.subPhaseId, materiDetail.subPhaseId)))
+		.where(eq(pertemuan.subPhaseId, materiDetail.subPhaseId))
 		.limit(1);
 
-	// 3. Fetch all materi in the same subPhase for navigation
+	// 4. Fetch all materi in the same subPhase for navigation
 	const siblings = await db
 		.select({
 			id: materi.id,
@@ -68,8 +102,48 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	return {
 		user: locals.user,
 		materi: materiDetail,
+		isCompleted: !!completionRecord,
+		completedAt: completionRecord?.completedAt || null,
 		sessionSlide,
 		prevMateri,
 		nextMateri
 	};
+};
+
+export const actions: Actions = {
+	toggleCompletion: async ({ params, locals }) => {
+		if (!locals.user) {
+			throw redirect(303, '/login');
+		}
+
+		await ensureMateriCompletionTable();
+
+		const userId = Number(locals.user.id);
+		const materiId = Number(params.id);
+		if (isNaN(materiId)) {
+			return fail(400, { message: 'ID Materi tidak valid.' });
+		}
+
+		const [existing] = await db
+			.select({ id: materiCompletion.id })
+			.from(materiCompletion)
+			.where(and(eq(materiCompletion.userId, userId), eq(materiCompletion.materiId, materiId)));
+
+		if (existing) {
+			// Delete completion record (Mark as Unread)
+			await db
+				.delete(materiCompletion)
+				.where(and(eq(materiCompletion.userId, userId), eq(materiCompletion.materiId, materiId)));
+
+			return { success: true, isCompleted: false, message: 'Status selesai dibaca dibatalkan.' };
+		} else {
+			// Insert completion record (Mark as Read - NO POINTS awarded to prevent point farming)
+			await db.insert(materiCompletion).values({
+				userId,
+				materiId
+			});
+
+			return { success: true, isCompleted: true, message: 'Materi ditandai selesai dibaca.' };
+		}
+	}
 };

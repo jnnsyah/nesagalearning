@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { curriculumTrack, phase, subPhase, materi } from '$lib/server/db/schema/curriculum';
+import { curriculumTrack, phase, subPhase, materi, materiCompletion } from '$lib/server/db/schema/curriculum';
 import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
 import { eq, and, asc } from 'drizzle-orm';
 
@@ -45,7 +45,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 		};
 	}
 
-	// 3. Fetch phases for the active track
+	// 3. Fetch completed materi IDs for current student
+	const completedRecords = await db
+		.select({ materiId: materiCompletion.materiId })
+		.from(materiCompletion)
+		.where(eq(materiCompletion.userId, userId));
+	const completedSet = new Set(completedRecords.map((c) => c.materiId));
+
+	// 4. Fetch phases for the active track
 	const phaseRecords = await db
 		.select({
 			id: phase.id,
@@ -69,7 +76,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		};
 	}
 
-	// 4. Fetch subPhases for these phases
+	// 5. Fetch subPhases for these phases
 	const subPhaseRecords = await db
 		.select({
 			id: subPhase.id,
@@ -83,8 +90,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const subPhaseIds = subPhaseRecords.map((sp) => sp.id);
 
-	// 5. Fetch materi items for these subPhases
-	const materiRecords = subPhaseIds.length > 0
+	// 6. Fetch materi items for these subPhases
+	const rawMateriRecords = subPhaseIds.length > 0
 		? await db
 				.select({
 					id: materi.id,
@@ -95,6 +102,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 				.from(materi)
 				.orderBy(asc(materi.sortOrder))
 		: [];
+
+	const materiRecords = rawMateriRecords.map((m) => ({
+		...m,
+		isCompleted: completedSet.has(m.id)
+	}));
 
 	// Group materi by subPhaseId
 	const materiMap = new Map<number, typeof materiRecords>();

@@ -149,8 +149,11 @@
 											<div class="materi-row">
 												<div class="flex items-center gap-3 min-w-0 flex-1">
 													<div class="materi-index-dot">{mIdx + 1}</div>
-													<div class="min-w-0 flex-1">
+													<div class="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
 														<h5 class="materi-row-title truncate">{m.title}</h5>
+														{#if m.isCompleted}
+															<span class="materi-completed-badge">SELESAI DIBACA</span>
+														{/if}
 													</div>
 												</div>
 
@@ -345,6 +348,17 @@
 		font-weight: 800;
 		color: var(--text-primary);
 		margin: 0;
+	}
+
+	.materi-completed-badge {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		font-weight: 800;
+		color: #15803d;
+		background: #dcfce7;
+		border: 1px solid #86efac;
+		padding: 1px 6px;
+		border-radius: 4px;
 	}
 
 	.btn-read-materi {

@@ -11,6 +11,7 @@ import {
 	index
 } from 'drizzle-orm/pg-core';
 import { tingkat } from './academic';
+import { user } from './auth';
 
 export const curriculumTrack = pgTable(
 	'curriculum_track',
@@ -114,6 +115,25 @@ export const quizQuestion = pgTable(
 	(table) => [
 		unique('quiz_question_sort_unique').on(table.quizId, table.sortOrder),
 		index('idx_quiz_question_quiz').on(table.quizId)
+	]
+);
+
+export const materiCompletion = pgTable(
+	'materi_completion',
+	{
+		id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+		materiId: bigint('materi_id', { mode: 'number' })
+			.notNull()
+			.references(() => materi.id, { onDelete: 'cascade' }),
+		userId: bigint('user_id', { mode: 'number' })
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		unique('materi_completion_user_materi_unique').on(table.userId, table.materiId),
+		index('idx_materi_completion_user').on(table.userId),
+		index('idx_materi_completion_materi').on(table.materiId)
 	]
 );
 
