@@ -188,14 +188,8 @@
 			];
 		}
 
-		// Default: Siswa (5 Sweet Spot Menus for mobile bottom nav)
+		// Default: Siswa (5 Sweet Spot Menus: Materi, Tugas, Beranda [Center Home], Presensi, Profil)
 		return [
-			{
-				href: '/siswa',
-				label: 'Beranda',
-				exact: true,
-				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`
-			},
 			{
 				href: '/siswa/materi',
 				label: 'Materi',
@@ -207,6 +201,13 @@
 				label: 'Tugas',
 				exact: false,
 				icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`
+			},
+			{
+				href: '/siswa',
+				label: 'Beranda',
+				exact: true,
+				isCenter: true,
+				icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
 			},
 			{
 				href: '/siswa/riwayat-presensi',
@@ -387,9 +388,14 @@
 	     MOBILE BOTTOM NAVIGATION BAR
 	     ══════════════════════════════════════════════════════════ -->
 	<nav class="app-bottom-nav hide-desktop" aria-label="Navigasi Bawah Seluler">
-		{#each navItems().slice(0, 4) as item}
+		{#each navItems() as item}
 			{@const active = isItemActive(item)}
-			<a href={item.href} class="bottom-nav-item" class:bottom-nav-item--active={active} aria-current={active ? 'page' : undefined}>
+			<a
+				href={item.href}
+				class="bottom-nav-item {item.isCenter ? 'bottom-nav-item--center' : ''}"
+				class:bottom-nav-item--active={active}
+				aria-current={active ? 'page' : undefined}
+			>
 				<span class="bottom-nav-icon">{@html item.icon}</span>
 				<span class="bottom-nav-label">{item.label}</span>
 			</a>
@@ -860,6 +866,35 @@
 	.bottom-nav-item--active .bottom-nav-icon {
 		color: var(--primary);
 		transform: scale(1.1);
+	}
+
+	.bottom-nav-item--center {
+		position: relative;
+		top: -12px;
+	}
+
+	.bottom-nav-item--center .bottom-nav-icon {
+		width: 46px;
+		height: 46px;
+		border-radius: 50%;
+		background: #4f46e5;
+		color: #ffffff !important;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+		border: 3px solid #ffffff;
+		transition: transform 150ms ease, background 150ms ease;
+	}
+
+	.bottom-nav-item--center.bottom-nav-item--active .bottom-nav-icon {
+		background: #4338ca;
+		transform: scale(1.08);
+	}
+
+	.bottom-nav-item--center .bottom-nav-label {
+		font-weight: 800;
+		color: #4f46e5;
 	}
 
 	.bottom-nav-icon {

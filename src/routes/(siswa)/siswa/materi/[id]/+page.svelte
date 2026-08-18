@@ -871,7 +871,7 @@
 	/* Mobile Floating Action Pill & Bottom Sheet */
 	.mobile-toc-fab {
 		position: fixed;
-		bottom: 74px;
+		bottom: 84px;
 		right: 16px;
 		background: #4f46e5;
 		color: #ffffff;

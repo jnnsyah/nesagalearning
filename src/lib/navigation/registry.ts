@@ -9,9 +9,9 @@ export interface NavItem {
 
 export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	siswa: [
-		{ label: 'Beranda', href: '/siswa', icon: 'dashboard' },
 		{ label: 'Materi', href: '/siswa/materi', icon: 'book' },
 		{ label: 'Tugas', href: '/siswa/tugas', icon: 'task' },
+		{ label: 'Beranda', href: '/siswa', icon: 'dashboard' },
 		{ label: 'Presensi', href: '/siswa/riwayat-presensi', icon: 'history' },
 		{ label: 'Profil', href: '/siswa/profile', icon: 'user' }
 	],
