@@ -1304,6 +1304,13 @@
 		padding: 24px 20px 40px;
 	}
 
+	@media (max-width: 640px) {
+		.profile-page {
+			padding: 16px 12px 80px;
+			gap: 14px;
+		}
+	}
+
 	/* ── Hero Banner ── */
 	.profile-hero {
 		background: #ffffff;
@@ -1576,6 +1583,28 @@
 		transition: all 150ms ease;
 		white-space: nowrap;
 		border-radius: var(--radius-sm, 6px) var(--radius-sm, 6px) 0 0;
+		min-height: 44px;
+	}
+
+	@media (max-width: 640px) {
+		.profile-tabs-header {
+			gap: 4px;
+			padding-bottom: 2px;
+			-webkit-overflow-scrolling: touch;
+		}
+		.tab-btn {
+			padding: 8px 12px;
+			font-size: 12px;
+			gap: 6px;
+			flex-shrink: 0;
+		}
+		.tab-btn span {
+			display: inline-block;
+		}
+		.tab-btn svg {
+			width: 16px;
+			height: 16px;
+		}
 	}
 
 	.tab-btn:hover {
@@ -1883,6 +1912,7 @@
 	.card-form {
 		max-width: 680px;
 		margin: 0 auto;
+		width: 100%;
 	}
 
 	.form-stack {
@@ -1896,6 +1926,30 @@
 		display: flex;
 		justify-content: flex-end;
 		margin-top: 8px;
+	}
+
+	@media (max-width: 640px) {
+		.card {
+			padding: 16px 14px;
+		}
+		.card-header {
+			flex-wrap: wrap;
+			gap: 8px;
+			padding-bottom: 12px;
+		}
+		.card-title {
+			font-size: 1rem;
+		}
+		.card-form {
+			max-width: 100%;
+		}
+		.form-actions {
+			justify-content: stretch;
+		}
+		.form-actions .btn {
+			width: 100%;
+			justify-content: center;
+		}
 	}
 
 	.btn {
