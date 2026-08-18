@@ -246,6 +246,15 @@
 										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 										<span>Belum Ada Sesi Pertemuan</span>
 									</button>
+								{:else if cCard.classState === 'archived'}
+									<button
+										type="button"
+										class="btn-open-class btn-open-class--archived"
+										onclick={() => navigateToDetail(cCard.id)}
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+										<span>Lihat Arsip Rekap Presensi</span>
+									</button>
 								{:else}
 									<button
 										type="button"
@@ -280,6 +289,12 @@
 					<div class="hero-title-group">
 						<h1 class="hero-title">Rekap Presensi — {data.recapData.selectedKelas.name}</h1>
 						<span class="badge badge-primary">{data.recapData.selectedKelas.tingkatName}</span>
+						{#if !data.recapData.selectedTahunAjaran?.isActive}
+							<span class="badge badge-archived inline-flex items-center gap-1">
+								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+								<span>ARSIP DATA REKAP</span>
+							</span>
+						{/if}
 					</div>
 					<p class="hero-subtitle">
 						Ringkasan keikutsertaan presensi siswa. Klik tombol "Detail Presensi" pada siswa untuk melihat timeline pertemuan.
@@ -862,6 +877,15 @@
 		color: #94a3b8 !important;
 		border: 1px solid #e2e8f0 !important;
 		cursor: not-allowed !important;
+	}
+
+	.btn-open-class--archived {
+		background: #64748b !important;
+		color: #ffffff !important;
+	}
+
+	.btn-open-class--archived:hover {
+		background: #475569 !important;
 	}
 
 	.btn-export-excel {
