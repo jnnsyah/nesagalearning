@@ -206,7 +206,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     TAB NAVIGATION BAR
 	     ══════════════════════════════════════════════════════════ -->
-	<div class="tabs-header-bar mb-6">
+	<div class="tabs-header-bar mb-8">
 		<button
 			type="button"
 			class="tab-btn"
@@ -232,7 +232,7 @@
 	     TAB 1: CURRICULUM PROGRESS BREAKDOWN
 	     ══════════════════════════════════════════════════════════ -->
 	{#if activeTab === 'curriculum'}
-		<section aria-label="Rincian Fase Kurikulum Siswa">
+		<section aria-label="Rincian Fase Kurikulum Siswa" class="pt-2">
 			{#if !data.studentProgress || data.studentProgress.phases.length === 0}
 				<div class="empty-card py-16 text-center bg-white rounded-xl border border-slate-200">
 					<p class="text-sm text-slate-500 font-mono">Belum ada modul / fase kurikulum yang ditautkan ke kelas ini.</p>
@@ -326,7 +326,7 @@
 	     TAB 2: ATTENDANCE SESSION HISTORY DATA TABLE WITH FILTERS & PAGINATION
 	     ══════════════════════════════════════════════════════════ -->
 	{:else}
-		<section aria-label="Riwayat Presensi Sesi Pertemuan">
+		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-2">
 			<!-- Filter Controls Grid Card -->
 			<div class="page-filter-card mb-6 space-y-4">
 				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->

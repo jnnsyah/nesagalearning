@@ -247,8 +247,9 @@
 							<th class="text-center">Hadir / Sesi</th>
 							<th class="text-center">Izin / Sakit</th>
 							<th class="text-center">Alpha</th>
-							<th class="text-right w-48">% Kehadiran</th>
-							<th class="text-right w-52">% Progress Kurikulum</th>
+							<th class="text-right w-36">% Kehadiran</th>
+							<th class="text-right w-44">% Progress Kurikulum</th>
+							<th class="text-center w-28">Aksi</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -293,7 +294,7 @@
 								<td class="text-center text-slate-400 font-mono text-sm">
 									{student.totalAlpha}
 								</td>
-								<!-- Kehadiran Progress Bar + Link to Attendance Tab on Student Detail Page -->
+								<!-- Kehadiran Progress Bar -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										<span class="font-bold text-slate-800">{student.attendanceRate}%</span>
@@ -306,16 +307,9 @@
 												style="width: {student.attendanceRate}%;"
 											></div>
 										</div>
-										<a
-											href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}&tab=attendance"
-											class="btn-cell-icon"
-											title="Lihat Detail Riwayat Presensi Siswa"
-										>
-											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-										</a>
 									</div>
 								</td>
-								<!-- Kurikulum Composite Progress Bar + Link to Curriculum Tab on Student Detail Page -->
+								<!-- Kurikulum Composite Progress Bar -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										{#if student.hasAnyStarted}
@@ -329,14 +323,18 @@
 										{:else}
 											<span class="text-xs text-slate-400 font-normal">Belum Dimulai</span>
 										{/if}
-										<a
-											href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}&tab=curriculum"
-											class="btn-cell-icon btn-cell-icon-indigo"
-											title="Lihat Detail Progress Kurikulum"
-										>
-											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-										</a>
 									</div>
+								</td>
+								<!-- Single Action Column -->
+								<td class="text-center">
+									<a
+										href="/mentor/siswa/{student.userId}?kelasInstanceId={student.kelasId}"
+										class="btn-detail-action"
+										title="Lihat Detail Rapor Siswa"
+									>
+										<span>Detail</span>
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+									</a>
 								</td>
 							</tr>
 						{/each}
@@ -620,34 +618,22 @@
 	.fill-red { background: #ef4444; }
 	.fill-indigo { background: #6366f1; }
 
-	.btn-cell-icon {
+	.btn-detail-action {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		width: 26px;
-		height: 26px;
-		background: #f1f5f9;
-		color: #475569;
-		border: 1px solid #cbd5e1;
-		border-radius: 6px;
-		cursor: pointer;
-		text-decoration: none;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.btn-cell-icon:hover {
-		background: #e2e8f0;
-		color: #0f172a;
-	}
-
-	.btn-cell-icon-indigo {
+		gap: 4px;
+		padding: 5px 12px;
 		background: #e0e7ff;
 		color: #4338ca;
-		border-color: #c7d2fe;
+		border: 1px solid #c7d2fe;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 0.15s ease;
 	}
 
-	.btn-cell-icon-indigo:hover {
+	.btn-detail-action:hover {
 		background: #c7d2fe;
 		color: #312e81;
 	}
