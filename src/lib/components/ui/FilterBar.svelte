@@ -35,15 +35,15 @@
 	}
 
 	.filter-search-col {
-		grid-column: 1 / -1;
+		grid-column: span 4;
 	}
 
 	@media (max-width: 1024px) {
 		.filter-grid {
-			grid-template-columns: repeat(3, 1fr);
+			grid-template-columns: repeat(6, 1fr);
 		}
 		.filter-search-col {
-			grid-column: 1 / -1;
+			grid-column: span 3;
 		}
 	}
 

@@ -376,16 +376,17 @@
 		<!-- Filter Bar -->
 		<FilterBar>
 			{#snippet search()}
-				<div class="flex items-center gap-3 w-full flex-wrap sm:flex-nowrap">
-					<div class="flex-1 min-w-[220px]">
-						<TextInput
-							name="search"
-							placeholder="Cari siswa real-time (Nama / Username)…"
-							bind:value={searchVal}
-							clearable
-						/>
-					</div>
-					<div class="w-full sm:w-44 flex-shrink-0">
+				<TextInput
+					name="search"
+					placeholder="Cari siswa real-time (Nama / Username)…"
+					bind:value={searchVal}
+					clearable
+				/>
+			{/snippet}
+
+			{#snippet filters()}
+				<div class="col-span-2 sm:col-span-2 flex items-center gap-2">
+					<div class="flex-1">
 						<CustomSelect
 							name="riskLevel"
 							options={riskOptions}
@@ -398,10 +399,11 @@
 						<button
 							type="button"
 							onclick={resetFilters}
-							class="btn-drawer-secondary flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-bold flex-shrink-0"
+							class="btn-drawer-secondary flex items-center gap-1.5 py-2.5 px-3 text-xs font-bold flex-shrink-0"
+							title="Reset Filter"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-							<span>Reset Filter</span>
+							<span>Reset</span>
 						</button>
 					{/if}
 				</div>
