@@ -179,6 +179,31 @@
 		selectedTaskSize = 'all';
 	}
 
+	function isIframeEmbeddable(url: string | null | undefined): boolean {
+		if (!url) return false;
+		const lower = url.toLowerCase();
+		if (
+			lower.includes('github.com') ||
+			lower.includes('drive.google.com') ||
+			lower.includes('figma.com') ||
+			lower.includes('replit.com') ||
+			lower.includes('canva.com')
+		) {
+			return false;
+		}
+		return url.startsWith('http://') || url.startsWith('https://');
+	}
+
+	function getDomainFromUrl(url: string | null | undefined): string {
+		if (!url) return 'Link Proyek Eksternal';
+		try {
+			const u = new URL(url);
+			return u.hostname.replace('www.', '');
+		} catch {
+			return 'Link Proyek Eksternal';
+		}
+	}
+
 	function formatIndoDate(dateVal: Date | string | null | undefined): string {
 		if (!dateVal) return '-';
 		const d = new Date(dateVal);
@@ -593,56 +618,14 @@
 									</td>
 									<td style="text-align: right;">
 										<div class="action-buttons-cell">
-											{#if sub.status === 'approved'}
-												<span class="status-pill-approved">
-													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-														<polyline points="20 6 9 17 4 12" />
-													</svg>
-													<span>Disetujui</span>
-												</span>
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'revisi')}
-													class="btn-action btn-revisi"
-													title="Minta Revisi Ulang"
-												>
-													Revisi
-												</button>
-											{:else if sub.status === 'revisi'}
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'approved')}
-													class="btn-action btn-approve"
-													title="Setujui & Beri Poin"
-												>
-													Setujui
-												</button>
-												<span class="status-pill-revisi">
-													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-														<circle cx="12" cy="12" r="10" />
-														<line x1="12" y1="8" x2="12" y2="12" />
-														<line x1="12" y1="16" x2="12.01" y2="16" />
-													</svg>
-													<span>Revisi</span>
-												</span>
-											{:else}
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'approved')}
-													class="btn-action btn-approve"
-													title="Setujui & Beri Poin"
-												>
-													Setujui
-												</button>
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'revisi')}
-													class="btn-action btn-revisi"
-													title="Minta Revisi"
-												>
-													Revisi
-												</button>
-											{/if}
+											<button
+												type="button"
+												onclick={() => openReviewModal(sub, sub.status === 'approved' ? 'approved' : 'approved')}
+												class="btn-detail-split"
+												title="Buka Split Pane Preview & Penilaian"
+											>
+												<span>Periksa Task &rsaquo;</span>
+											</button>
 										</div>
 									</td>
 								</tr>
@@ -665,78 +648,210 @@
 	{/if}
 </div>
 
-<!-- Modal Dialog Review -->
+<!-- SPLIT PANE TASK REVIEW DRAWER / MODAL -->
 {#if activeReviewTarget}
 	<div class="form-scrim" role="dialog" aria-modal="true">
-		<div class="review-modal">
-			<div class="modal-header">
-				<div>
-					<h3 class="modal-title">
-						{reviewStatus === 'approved' ? 'Setujui Tugas' : 'Minta Revisi Tugas'}
-					</h3>
-					<p class="modal-sub">
-						{activeReviewTarget.studentName} — {activeReviewTarget.taskTitle}
-					</p>
+		<div class="split-pane-modal">
+			<!-- Modal Top Bar Header -->
+			<div class="split-modal-header">
+				<div class="flex items-center gap-3">
+					<div class="modal-icon-wrap">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+							<polyline points="14 2 14 8 20 8" />
+						</svg>
+					</div>
+					<div>
+						<h3 class="modal-title">Peninjauan & Assessment Submisi</h3>
+						<p class="modal-sub">
+							{activeReviewTarget.studentName} (@{activeReviewTarget.studentUsername}) · {activeReviewTarget.kelasName}
+						</p>
+					</div>
 				</div>
 				<button type="button" onclick={closeReviewModal} class="modal-close-btn" aria-label="Tutup">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<line x1="18" y1="6" x2="6" y2="18" />
 						<line x1="6" y1="6" x2="18" y2="18" />
 					</svg>
 				</button>
 			</div>
 
-			<form
-				method="POST"
-				action="?/review"
-				use:enhance={() => {
-					isSubmitting = true;
-					return async ({ update }) => {
-						isSubmitting = false;
-						await update();
-					};
-				}}
-				class="modal-body"
-			>
-				<input type="hidden" name="submissionId" value={activeReviewTarget.id} />
-				<input type="hidden" name="status" value={reviewStatus} />
+			<!-- Split Body (Left Pane 60% + Right Pane 40%) -->
+			<div class="split-body">
+				<!-- LEFT PANE: LIVE PREVIEW IFRAME / LINK INSPECTOR -->
+				<div class="preview-pane">
+					<div class="preview-pane-header">
+						<div class="flex items-center gap-2">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<line x1="2" y1="12" x2="22" y2="12" />
+								<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+							</svg>
+							<span class="preview-pane-title">Preview Submisi Link</span>
+						</div>
+						<a
+							href={activeReviewTarget.link}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="btn-open-newtab"
+						>
+							<span>Buka di Tab Baru</span>
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+								<polyline points="15 3 21 3 21 9" />
+								<line x1="10" y1="14" x2="21" y2="3" />
+							</svg>
+						</a>
+					</div>
 
-				<div class="info-preview-box">
-					<div><strong>Pertemuan:</strong> {activeReviewTarget.pertemuanTitle} ({formatIndoDate(activeReviewTarget.sessionDate)})</div>
-					{#if activeReviewTarget.phaseTitle && activeReviewTarget.subPhaseTitle}
-						<div><strong>Kurikulum:</strong> {activeReviewTarget.phaseTitle} &rsaquo; {activeReviewTarget.subPhaseTitle}</div>
-					{/if}
-					<div><strong>Link Submisi:</strong> <a href={activeReviewTarget.link} target="_blank" rel="noopener noreferrer" class="preview-link">{activeReviewTarget.link}</a></div>
-					<div><strong>Ukuran Task:</strong> {activeReviewTarget.taskSize.toUpperCase()} ({activeReviewTarget.taskSize === 'kecil' ? '+50 Poin' : activeReviewTarget.taskSize === 'besar' ? '+200 Poin' : '+100 Poin'})</div>
+					<div class="preview-frame-wrap">
+						{#if isIframeEmbeddable(activeReviewTarget.link)}
+							<iframe
+								src={activeReviewTarget.link}
+								title="Preview Submisi Task"
+								class="preview-iframe"
+								sandbox="allow-scripts allow-same-origin allow-forms"
+							></iframe>
+						{:else}
+							<!-- Embedded Link Card Inspector for GitHub / Drive / Figma / Canva / external sites -->
+							<div class="external-link-card">
+								<div class="external-icon">
+									<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+										<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+									</svg>
+								</div>
+								<h4 class="external-domain">{getDomainFromUrl(activeReviewTarget.link)}</h4>
+								<p class="external-sub">Tautan eksternal proyek siswa. Klik tombol di bawah untuk memeriksa kode/hasil pekerjaan siswa.</p>
+								<div class="external-url-box">{activeReviewTarget.link}</div>
+								<a
+									href={activeReviewTarget.link}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="btn-visit-external"
+								>
+									<span>Buka Proyek Siswa &rsaquo;</span>
+								</a>
+							</div>
+						{/if}
+					</div>
 				</div>
 
-				<div class="mt-4">
-					<TextArea
-						id="feedback"
-						name="feedback"
-						label={reviewStatus === 'approved' ? 'Catatan Umpan Balik (Opsional)' : 'Catatan Instruksi Revisi'}
-						placeholder={reviewStatus === 'approved' ? 'Contoh: Pekerjaan sangat rapi & konfigurasi tepat!' : 'Contoh: Mohon perbaiki bagian router bgp dan upload ulang link...'}
-						bind:value={reviewFeedback}
-						rows={4}
-						required={reviewStatus === 'revisi'}
-					/>
-				</div>
+				<!-- RIGHT PANE: FORM ASSESSMENT & FEEDBACK -->
+				<div class="assessment-pane">
+					<div class="assessment-pane-inner">
+						<!-- Summary Card -->
+						<div class="info-summary-card">
+							<div class="info-summary-row">
+								<span class="info-label">Judul Task:</span>
+								<strong class="info-val">{activeReviewTarget.taskTitle}</strong>
+							</div>
+							<div class="info-summary-row">
+								<span class="info-label">Pertemuan:</span>
+								<span class="info-val">{activeReviewTarget.pertemuanTitle}</span>
+							</div>
+							{#if activeReviewTarget.phaseTitle}
+								<div class="info-summary-row">
+									<span class="info-label">Track:</span>
+									<span class="info-val">{activeReviewTarget.phaseTitle} &rsaquo; {activeReviewTarget.subPhaseTitle}</span>
+								</div>
+							{/if}
+							<div class="info-summary-row">
+								<span class="info-label">Bobot Poin:</span>
+								<span class="size-reward-badge">
+									{activeReviewTarget.taskSize.toUpperCase()} (+{activeReviewTarget.taskSize === 'kecil' ? '50' : activeReviewTarget.taskSize === 'besar' ? '200' : '100'} Poin)
+								</span>
+							</div>
+							<div class="info-summary-row">
+								<span class="info-label">Waktu Submisi:</span>
+								<span class="info-val">{formatIndoDate(activeReviewTarget.submittedAt)}</span>
+							</div>
+						</div>
 
-				<div class="modal-footer mt-6">
-					<button type="button" onclick={closeReviewModal} class="btn-ghost">
-						Batal
-					</button>
-					{#if reviewStatus === 'approved'}
-						<button type="submit" disabled={isSubmitting} class="btn-create" style="background:#16a34a;">
-							{isSubmitting ? 'Menyimpan...' : 'Setujui & Tambah Poin'}
-						</button>
-					{:else}
-						<button type="submit" disabled={isSubmitting} class="btn-create" style="background:#e11d48;">
-							{isSubmitting ? 'Menyimpan...' : 'Kirim Catatan Revisi'}
-						</button>
-					{/if}
+						<!-- Form Penilaian -->
+						<form
+							method="POST"
+							action="?/review"
+							use:enhance={() => {
+								isSubmitting = true;
+								return async ({ update }) => {
+									isSubmitting = false;
+									await update();
+								};
+							}}
+							class="assessment-form"
+						>
+							<input type="hidden" name="submissionId" value={activeReviewTarget.id} />
+							<input type="hidden" name="status" value={reviewStatus} />
+
+							<!-- Action Type Switcher (Setujui vs Minta Revisi) -->
+							<div class="status-action-tabs">
+								<button
+									type="button"
+									class="tab-action-btn tab-approve"
+									class:tab-action-btn--active={reviewStatus === 'approved'}
+									onclick={() => (reviewStatus = 'approved')}
+								>
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+									<span>Setujui &amp; Beri Poin</span>
+								</button>
+								<button
+									type="button"
+									class="tab-action-btn tab-revisi"
+									class:tab-action-btn--active={reviewStatus === 'revisi'}
+									onclick={() => (reviewStatus = 'revisi')}
+								>
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<circle cx="12" cy="12" r="10" />
+										<line x1="12" y1="8" x2="12" y2="12" />
+										<line x1="12" y1="16" x2="12.01" y2="16" />
+									</svg>
+									<span>Minta Revisi</span>
+								</button>
+							</div>
+
+							<!-- Feedback Input -->
+							<div class="mt-4">
+								<TextArea
+									id="feedback"
+									name="feedback"
+									label={reviewStatus === 'approved' ? 'Catatan Umpan Balik / Catatan Mentor (Opsional)' : 'Catatan Instruksi Revisi (Wajib)'}
+									placeholder={reviewStatus === 'approved' ? 'Contoh: Konfigurasi BGP tepat, penataan kabel & struktur dokumen sangat baik.' : 'Contoh: Mohon lengkapi screencast pengujian ping IP router dan upload ulang link...'}
+									bind:value={reviewFeedback}
+									rows={5}
+									required={reviewStatus === 'revisi'}
+								/>
+							</div>
+
+							<!-- Action Buttons -->
+							<div class="modal-footer mt-6">
+								<button type="button" onclick={closeReviewModal} class="btn-ghost">
+									Batal
+								</button>
+								{#if reviewStatus === 'approved'}
+									<button type="submit" disabled={isSubmitting} class="btn-submit-approve">
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<polyline points="20 6 9 17 4 12" />
+										</svg>
+										<span>{isSubmitting ? 'Menyimpan...' : 'Setujui Submisi (+Poin)'}</span>
+									</button>
+								{:else}
+									<button type="submit" disabled={isSubmitting} class="btn-submit-revisi">
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<circle cx="12" cy="12" r="10" />
+											<line x1="12" y1="8" x2="12" y2="12" />
+											<line x1="12" y1="16" x2="12.01" y2="16" />
+										</svg>
+										<span>{isSubmitting ? 'Menyimpan...' : 'Kirim Instruksi Revisi'}</span>
+									</button>
+								{/if}
+							</div>
+						</form>
+					</div>
 				</div>
-			</form>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -1291,66 +1406,24 @@
 		border: 1px solid #fecdd3;
 	}
 
-	.status-pill-approved {
+	.btn-detail-split {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		padding: 5px 10px;
-		background: #dcfce7;
-		color: #15803d;
-		border: 1px solid #bbf7d0;
+		padding: 6px 12px;
+		background: #4f46e5;
+		color: white;
+		border: none;
 		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 700;
-	}
-
-	.status-pill-revisi {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 5px 10px;
-		background: #ffe4e6;
-		color: #be123c;
-		border: 1px solid #fecdd3;
-		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 700;
-	}
-
-	.action-buttons-cell {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 8px;
-	}
-
-	.btn-action {
 		font-family: var(--font-macro);
 		font-size: 12px;
 		font-weight: 700;
-		padding: 6px 12px;
-		border-radius: 6px;
-		border: none;
 		cursor: pointer;
-		transition: all 150ms ease;
+		transition: background 150ms ease;
 	}
 
-	.btn-approve {
-		background: #16a34a;
-		color: white;
-	}
-
-	.btn-approve:hover {
-		background: #15803d;
-	}
-
-	.btn-revisi {
-		background: #e11d48;
-		color: white;
-	}
-
-	.btn-revisi:hover {
-		background: #be123c;
+	.btn-detail-split:hover {
+		background: #4338ca;
 	}
 
 	.feedback-row td {
@@ -1404,64 +1477,82 @@
 		max-width: 420px;
 	}
 
-	/* Form Scrim & Modal Review */
+	/* Form Scrim & SPLIT PANE MODAL */
 	.form-scrim {
 		position: fixed;
 		inset: 0;
 		z-index: 999;
-		background: rgba(15, 23, 42, 0.55);
-		backdrop-filter: blur(4px);
+		background: rgba(15, 23, 42, 0.65);
+		backdrop-filter: blur(5px);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 16px;
+		padding: 24px;
 	}
 
-	.review-modal {
+	.split-pane-modal {
 		background: #ffffff;
 		border-radius: 16px;
 		width: 100%;
-		max-width: 520px;
-		box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
+		max-width: 1180px;
+		height: 88vh;
+		max-height: 840px;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+		display: flex;
+		flex-direction: column;
 		overflow: hidden;
 		animation: modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	@keyframes modalPop {
-		from { opacity: 0; transform: scale(0.95) translateY(10px); }
+		from { opacity: 0; transform: scale(0.96) translateY(12px); }
 		to { opacity: 1; transform: scale(1) translateY(0); }
 	}
 
-	.modal-header {
-		padding: 20px 24px 16px;
+	.split-modal-header {
+		padding: 16px 24px;
 		border-bottom: 1px solid var(--border-hard);
+		background: #ffffff;
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: space-between;
+		flex-shrink: 0;
+	}
+
+	.modal-icon-wrap {
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		background: #e0e7ff;
+		color: #4f46e5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
 	}
 
 	.modal-title {
 		font-family: var(--font-macro);
-		font-size: 1.15rem;
+		font-size: 1.1rem;
 		font-weight: 800;
 		color: var(--text-primary);
+		line-height: 1.2;
 	}
 
 	.modal-sub {
 		font-size: 12.5px;
 		color: var(--text-muted);
-		margin-top: 2px;
+		margin-top: 1px;
 	}
 
 	.modal-close-btn {
 		border: none;
 		background: none;
 		color: var(--text-muted);
-		font-size: 16px;
 		cursor: pointer;
-		padding: 4px;
-		border-radius: 6px;
-		transition: background 150ms ease;
+		padding: 6px;
+		border-radius: 8px;
+		transition: all 150ms ease;
 	}
 
 	.modal-close-btn:hover {
@@ -1469,32 +1560,303 @@
 		color: var(--text-primary);
 	}
 
-	.modal-body {
-		padding: 20px 24px 24px;
+	/* Split Body Layout (Left 60% + Right 40%) */
+	.split-body {
+		display: flex;
+		flex: 1;
+		overflow: hidden;
 	}
 
-	.info-preview-box {
+	@media (max-width: 900px) {
+		.split-body {
+			flex-direction: column;
+			overflow-y: auto;
+		}
+		.split-pane-modal {
+			height: 95vh;
+			max-height: none;
+		}
+	}
+
+	/* LEFT PANE: PREVIEW IFRAME */
+	.preview-pane {
+		flex: 1.4;
+		border-right: 1px solid var(--border-hard);
+		display: flex;
+		flex-direction: column;
+		background: #f8fafc;
+	}
+
+	@media (max-width: 900px) {
+		.preview-pane {
+			border-right: none;
+			border-bottom: 1px solid var(--border-hard);
+			min-height: 360px;
+		}
+	}
+
+	.preview-pane-header {
+		padding: 12px 18px;
+		background: #ffffff;
+		border-bottom: 1px solid var(--border-hard);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-shrink: 0;
+	}
+
+	.preview-pane-title {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.btn-open-newtab {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #4f46e5;
+		background: #e0e7ff;
+		padding: 5px 10px;
+		border-radius: 6px;
+		text-decoration: none;
+		transition: background 150ms ease;
+	}
+
+	.btn-open-newtab:hover {
+		background: #c7d2fe;
+	}
+
+	.preview-frame-wrap {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+		background: #ffffff;
+	}
+
+	/* External Link Card Inspector */
+	.external-link-card {
+		padding: 32px 24px;
+		text-align: center;
+		max-width: 440px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.external-icon {
+		width: 64px;
+		height: 64px;
+		border-radius: 16px;
+		background: #e0e7ff;
+		color: #4f46e5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+
+	.external-domain {
+		font-family: var(--font-macro);
+		font-size: 1.2rem;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin-bottom: 6px;
+	}
+
+	.external-sub {
+		font-size: 13px;
+		color: var(--text-muted);
+		margin-bottom: 16px;
+		line-height: 1.4;
+	}
+
+	.external-url-box {
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		color: #475569;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 8px;
+		padding: 10px 14px;
+		width: 100%;
+		word-break: break-all;
+		margin-bottom: 18px;
+	}
+
+	.btn-visit-external {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 12px 20px;
+		background: #4f46e5;
+		color: white;
+		border-radius: 10px;
+		font-family: var(--font-macro);
+		font-size: 13.5px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+		transition: transform 150ms ease, background 150ms ease;
+	}
+
+	.btn-visit-external:hover {
+		background: #4338ca;
+		transform: translateY(-1px);
+	}
+
+	/* RIGHT PANE: ASSESSMENT & FEEDBACK */
+	.assessment-pane {
+		flex: 1;
+		background: #ffffff;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.assessment-pane-inner {
+		padding: 20px 24px 28px;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.info-summary-card {
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 12px 14px;
-		font-size: 12.5px;
-		color: var(--text-secondary);
+		padding: 14px 16px;
+		margin-bottom: 20px;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 8px;
 	}
 
-	.preview-link {
-		color: var(--primary);
-		font-family: var(--font-mono);
-		word-break: break-all;
-	}
-
-	.modal-footer {
+	.info-summary-row {
 		display: flex;
 		align-items: center;
-		justify-content: flex-end;
-		gap: 12px;
+		justify-content: space-between;
+		font-size: 12.5px;
+		gap: 10px;
+	}
+
+	.info-label {
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.info-val {
+		color: var(--text-primary);
+		font-weight: 700;
+		text-align: right;
+	}
+
+	.size-reward-badge {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 800;
+		color: #047857;
+		background: #d1fae5;
+		padding: 3px 8px;
+		border-radius: 6px;
+	}
+
+	/* Status Action Switcher Tabs */
+	.status-action-tabs {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+		margin-bottom: 12px;
+	}
+
+	.tab-action-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 10px 12px;
+		border-radius: 8px;
+		border: 1.5px solid var(--border-hard);
+		background: #ffffff;
+		color: var(--text-secondary);
+		font-family: var(--font-macro);
+		font-size: 12.5px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.tab-action-btn--active.tab-approve {
+		background: #dcfce7;
+		color: #15803d;
+		border-color: #86efac;
+		box-shadow: 0 2px 6px rgba(22, 163, 74, 0.15);
+	}
+
+	.tab-action-btn--active.tab-revisi {
+		background: #ffe4e6;
+		color: #be123c;
+		border-color: #fda4af;
+		box-shadow: 0 2px 6px rgba(225, 29, 72, 0.15);
+	}
+
+	.btn-submit-approve {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: #16a34a;
+		color: white;
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 150ms ease;
+		box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+	}
+
+	.btn-submit-approve:hover {
+		background: #15803d;
+	}
+
+	.btn-submit-revisi {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: #e11d48;
+		color: white;
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 150ms ease;
+		box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+	}
+
+	.btn-submit-revisi:hover {
+		background: #be123c;
 	}
 </style>
