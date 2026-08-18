@@ -74,9 +74,19 @@
 					Lacak seluruh catatan kehadiran, keaktifan QR scanner, dan performa streak sesi kelas komunitas Anda.
 				</p>
 			</div>
-			{#if data.membership}
-				<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
-			{/if}
+			<div class="flex items-center gap-2.5 flex-wrap">
+				{#if data.membership}
+					<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
+				{/if}
+				<a href="/siswa/presensi" class="btn-scan-qr">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="3" width="7" height="7" />
+						<rect x="14" y="3" width="7" height="7" />
+						<rect x="3" y="14" width="7" height="7" />
+					</svg>
+					<span>Scan QR Presensi</span>
+				</a>
+			</div>
 		</div>
 	</div>
 
@@ -286,6 +296,25 @@
 		background: #e0e7ff;
 		padding: 4px 10px;
 		border-radius: 6px;
+	}
+
+	.btn-scan-qr {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 12px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background 150ms ease;
+	}
+
+	.btn-scan-qr:hover {
+		background: #4338ca;
 	}
 
 	.stats-grid {

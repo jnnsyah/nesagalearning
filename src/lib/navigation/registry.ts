@@ -9,13 +9,11 @@ export interface NavItem {
 
 export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	siswa: [
-		{ label: 'Dashboard', href: '/siswa', icon: 'dashboard' },
-		{ label: 'Materi Pembelajaran', href: '/siswa/materi', icon: 'book' },
-		{ label: 'Presensi QR', href: '/siswa/presensi', icon: 'calendar' },
-		{ label: 'Riwayat Presensi', href: '/siswa/riwayat-presensi', icon: 'history' },
-		{ label: 'Tugas Saya', href: '/siswa/tugas', icon: 'task' },
-		{ label: 'Badge & Leaderboard', href: '/siswa/badges', icon: 'trophy' },
-		{ label: 'Profil Saya', href: '/siswa/profile', icon: 'user' }
+		{ label: 'Beranda', href: '/siswa', icon: 'dashboard' },
+		{ label: 'Materi', href: '/siswa/materi', icon: 'book' },
+		{ label: 'Tugas', href: '/siswa/tugas', icon: 'task' },
+		{ label: 'Presensi', href: '/siswa/riwayat-presensi', icon: 'history' },
+		{ label: 'Profil', href: '/siswa/profile', icon: 'user' }
 	],
 	mentor: [
 		{ label: 'Dashboard', href: '/mentor', icon: 'dashboard' },
