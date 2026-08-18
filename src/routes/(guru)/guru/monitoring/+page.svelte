@@ -101,7 +101,7 @@
 </script>
 
 <svelte:head>
-	<title>Class Health Monitoring & Intervensi Advisor | NLC</title>
+	<title>Class Health Monitoring & Intervensi Guru Advisor | NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -173,26 +173,38 @@
 							<div class="class-card-metrics">
 								<div class="metric-pill">
 									<span class="metric-label">% Kehadiran</span>
-									<span class="metric-value">{card.avgAttendanceRate}%</span>
+									<span class="metric-value">
+										{card.totalStudents === 0 ? '-' : `${card.avgAttendanceRate}%`}
+									</span>
 								</div>
 								<div class="metric-pill">
 									<span class="metric-label">% Tugas Selesai</span>
-									<span class="metric-value">{card.avgTaskCompletionRate}%</span>
+									<span class="metric-value">
+										{card.totalStudents === 0 ? '-' : `${card.avgTaskCompletionRate}%`}
+									</span>
 								</div>
 								<div class="metric-pill">
 									<span class="metric-label">Streak Rata-rata</span>
-									<span class="metric-value">{card.avgStreak} Hari</span>
+									<span class="metric-value">
+										{card.totalStudents === 0 ? '-' : `${card.avgStreak} Hari`}
+									</span>
 								</div>
 							</div>
 
 							<div class="class-card-footer">
-								{#if card.alertStudentsCount > 0}
-									<span class="alert-count-pill">
-										🚨 {card.alertStudentsCount} Siswa Butuh Intervensi
+								{#if card.totalStudents === 0}
+									<span class="neutral-count-pill">
+										Belum Ada Siswa
+									</span>
+								{:else if card.alertStudentsCount > 0}
+									<span class="alert-count-pill inline-flex items-center gap-1">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+										<span>{card.alertStudentsCount} Siswa Butuh Intervensi</span>
 									</span>
 								{:else}
-									<span class="healthy-count-pill">
-										✅ Semua Siswa Sehat
+									<span class="healthy-count-pill inline-flex items-center gap-1">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+										<span>Semua Siswa Sehat</span>
 									</span>
 								{/if}
 
@@ -272,9 +284,13 @@
 					</svg>
 				</div>
 				<div class="stat-info">
-					<span class="stat-value">{data.summary.avgAttendanceRate}%</span>
+					<span class="stat-value">
+						{data.summary.totalStudents === 0 ? '-' : `${data.summary.avgAttendanceRate}%`}
+					</span>
 					<span class="stat-label">Kehadiran Rata-rata</span>
-					<span class="stat-subtext">Dari {data.summary.totalStudents} siswa aktif</span>
+					<span class="stat-subtext">
+						{data.summary.totalStudents === 0 ? 'Belum Ada Siswa Terdaftar' : `Dari ${data.summary.totalStudents} siswa aktif`}
+					</span>
 				</div>
 			</div>
 
@@ -285,9 +301,13 @@
 					</svg>
 				</div>
 				<div class="stat-info">
-					<span class="stat-value">{data.summary.avgTaskCompletionRate}%</span>
+					<span class="stat-value">
+						{data.summary.totalStudents === 0 ? '-' : `${data.summary.avgTaskCompletionRate}%`}
+					</span>
 					<span class="stat-label">Tugas Selesai</span>
-					<span class="stat-subtext">Average Streak: {data.summary.avgStreak} Hari</span>
+					<span class="stat-subtext">
+						{data.summary.totalStudents === 0 ? 'Average Streak: -' : `Average Streak: ${data.summary.avgStreak} Hari`}
+					</span>
 				</div>
 			</div>
 
@@ -466,7 +486,9 @@
 									<td>
 										<div class="flex flex-col gap-1 min-w-[130px]">
 											<div class="flex items-center justify-between gap-2">
-												<span class="font-bold text-xs text-slate-800">{s.attendanceRate}%</span>
+												<span class="font-bold text-xs text-slate-800">
+													{s.totalSessions === 0 ? '-' : `${s.attendanceRate}%`}
+												</span>
 												<span class="type-mono text-xs text-slate-500">{s.attendedCount}/{s.totalSessions} Sesi</span>
 											</div>
 											<div class="mini-progress-track">
@@ -475,7 +497,7 @@
 													class:fill-green={s.attendanceRate >= 75}
 													class:fill-amber={s.attendanceRate >= 60 && s.attendanceRate < 75}
 													class:fill-red={s.attendanceRate < 60}
-													style="width: {s.attendanceRate}%;"
+													style="width: {s.totalSessions === 0 ? 0 : s.attendanceRate}%;"
 												></div>
 											</div>
 										</div>
@@ -484,13 +506,15 @@
 									<td>
 										<div class="flex flex-col gap-1 min-w-[130px]">
 											<div class="flex items-center justify-between gap-2">
-												<span class="font-bold text-xs text-slate-800">{s.taskCompletionRate}%</span>
+												<span class="font-bold text-xs text-slate-800">
+													{s.totalTasks === 0 ? '-' : `${s.taskCompletionRate}%`}
+												</span>
 												<span class="type-mono text-xs text-slate-500">{s.approvedTasksCount}/{s.totalTasks} Tugas</span>
 											</div>
 											<div class="mini-progress-track">
 												<div
 													class="mini-progress-fill fill-blue"
-													style="width: {s.taskCompletionRate}%;"
+													style="width: {s.totalTasks === 0 ? 0 : s.taskCompletionRate}%;"
 												></div>
 											</div>
 										</div>
@@ -498,8 +522,9 @@
 
 									<td>
 										<div class="flex items-center gap-1.5">
-											<span class="streak-badge">
-												⚡ {s.currentStreak} Hari
+											<span class="streak-badge inline-flex items-center gap-1">
+												<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+												<span>{s.currentStreak} Hari</span>
 											</span>
 											<span class="type-mono text-xs text-slate-400">(Max {s.maxStreak})</span>
 										</div>
@@ -807,6 +832,16 @@
 		color: #15803d;
 		background: #dcfce7;
 		border: 1px solid #bbf7d0;
+		padding: 3px 8px;
+		border-radius: 9999px;
+	}
+
+	.neutral-count-pill {
+		font-size: 11px;
+		font-weight: 700;
+		color: #64748b;
+		background: #f1f5f9;
+		border: 1px solid #cbd5e1;
 		padding: 3px 8px;
 		border-radius: 9999px;
 	}
