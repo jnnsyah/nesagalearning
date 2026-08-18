@@ -20,116 +20,148 @@
 </svelte:head>
 
 <div class="page-container">
-	<!-- Welcome banner -->
+	<!-- Welcome Banner Card -->
 	<section class="welcome-banner">
 		<div class="welcome-banner__bg"></div>
 		<div class="welcome-banner__inner">
-			<div class="flex items-center gap-3 mb-3">
+			<div class="flex items-center gap-3.5 mb-3.5 flex-wrap sm:flex-nowrap">
 				<div class="avatar-xl">{data.user?.fullName?.charAt(0) ?? 'S'}</div>
-				<div>
-					<div class="flex items-center gap-2 mb-1">
+				<div class="min-w-0 flex-1">
+					<div class="flex items-center gap-2 mb-1 flex-wrap">
 						<span class="badge badge-hadir">{role.toUpperCase()}</span>
-						<span class="type-mono text-muted">{kelasName} · {tahunAjaranName}</span>
+						<span class="type-mono text-muted text-xs">{kelasName} &middot; {tahunAjaranName}</span>
 					</div>
 					<h1 class="welcome-name">Halo, {firstName}!</h1>
-					<p class="type-mono text-muted">@{data.user?.username} · {uid}</p>
+					<p class="type-mono text-muted text-xs">@{data.user?.username} &middot; {uid}</p>
 				</div>
 			</div>
-			<div class="flex items-center justify-between flex-wrap gap-3">
+
+			<div class="flex items-center justify-between flex-wrap gap-3 mt-4 pt-3 border-t border-indigo-100">
 				<div class="welcome-quote">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-					<span>Terus belajar, terus berkembang bersama NLC!</span>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+					</svg>
+					<span>Terus belajar dan berkembang bersama Nesaga Learning Community</span>
 				</div>
 				<a
 					href="/siswa/presensi"
-					class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5"
+					class="btn-scan-qr w-full sm:w-auto"
 				>
-					<span>📱 Scan Presensi QR</span>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="3" width="7" height="7" />
+						<rect x="14" y="3" width="7" height="7" />
+						<rect x="3" y="14" width="7" height="7" />
+						<rect x="14" y="14" width="7" height="7" />
+					</svg>
+					<span>Scan QR Presensi</span>
 				</a>
 			</div>
 		</div>
 	</section>
 
-	<!-- Stats grid -->
-	<section class="stats-grid mt-6">
+	<!-- Key Metrics Stats Grid -->
+	<section class="stats-grid mt-5">
 		<div class="stat-card stat-card--indigo">
 			<div class="stat-card__icon-wrap" style="background: #e0e7ff;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+				</svg>
 			</div>
 			<div class="stat-card__body">
 				<div class="stat-card__label">Total Poin</div>
 				<div class="stat-card__value">{totalPoints}</div>
-				<div class="stat-card__meta">{tahunAjaranName} · {kelasName}</div>
+				<div class="stat-card__meta truncate">{tahunAjaranName} &middot; {kelasName}</div>
 			</div>
 		</div>
 
 		<div class="stat-card stat-card--amber">
 			<div class="stat-card__icon-wrap" style="background: #fef3c7;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+					<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+				</svg>
 			</div>
 			<div class="stat-card__body">
 				<div class="stat-card__label">Streak Pertemuan</div>
 				<div class="stat-card__value">{currentStreak}</div>
-				<div class="stat-card__meta">Pertemuan Berturut-turut</div>
+				<div class="stat-card__meta">Berturut-turut</div>
 			</div>
 		</div>
 
-		<div class="stat-card stat-card--green">
+		<div class="stat-card stat-card--green stat-card--full-mobile">
 			<div class="stat-card__icon-wrap" style="background: #dcfce7;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
 			</div>
 			<div class="stat-card__body">
-				<div class="stat-card__label">Kehadiran Ter-record</div>
+				<div class="stat-card__label">Kehadiran Presensi</div>
 				<div class="stat-card__value">{attendanceCount}</div>
 				<div class="stat-card__meta">Total Sesi Diikuti</div>
 			</div>
 		</div>
 	</section>
 
-	<!-- Two-col grid for tasks + progress -->
-	<div class="two-col-grid mt-6">
-		<!-- Tugas pending -->
+	<!-- Two-Col Grid for Tasks + Curriculum Progress -->
+	<div class="two-col-grid mt-5">
+		<!-- Tugas Pending Panel -->
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-					<span>Tugas Pending</span>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+					</svg>
+					<span>Tugas Perlu Dikerjakan</span>
 				</div>
 				<span class="badge {pendingTasksList.length > 0 ? 'badge-pending' : 'badge-hadir'}">{pendingTasksList.length} Tugas</span>
 			</div>
+
 			{#if pendingTasksList.length === 0}
 				<div class="empty-state">
 					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+							<polyline points="22 4 12 14.01 9 11.01" />
+						</svg>
 					</div>
-					<p class="empty-title">Semua Beres!</p>
-					<p class="empty-sub">Tidak ada tugas pending. Semua sudah dikerjakan atau belum diberikan.</p>
+					<p class="empty-title">Semua Tugas Beres!</p>
+					<p class="empty-sub">Tidak ada tugas pending. Semua tugas telah diselesaikan dengan baik.</p>
 				</div>
 			{:else}
-				<div class="task-list p-3 space-y-2">
+				<div class="task-list p-3 space-y-2.5">
 					{#each pendingTasksList as t}
-						<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
-							<div>
-								<span class="text-xs font-bold text-indigo-600 block">{t.pertemuanTitle}</span>
-								<h4 class="text-sm font-semibold text-slate-800 mt-0.5">{t.taskTitle}</h4>
-								<p class="text-xs text-slate-500 mt-1 line-clamp-1">{t.taskDescription || 'Tidak ada deskripsi'}</p>
+						<div class="task-item-card p-3.5 bg-slate-50 rounded-lg border border-slate-200 flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+							<div class="min-w-0 flex-1">
+								<span class="text-xs font-bold text-indigo-600 block mb-0.5">{t.pertemuanTitle}</span>
+								<h4 class="text-sm font-extrabold text-slate-800 leading-snug">{t.taskTitle}</h4>
+								<p class="text-xs text-slate-500 mt-1 line-clamp-2">{t.taskDescription || 'Tidak ada deskripsi tugas'}</p>
 							</div>
-							<a href="/siswa/tugas" class="btn-ghost-sm text-xs font-bold shrink-0">Kerjakan →</a>
+							<a href="/siswa/tugas" class="btn-kerjakan-sm w-full sm:w-auto text-center shrink-0">
+								<span>Kerjakan</span>
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<polyline points="9 18 15 12 9 6" />
+								</svg>
+							</a>
 						</div>
 					{/each}
 				</div>
 			{/if}
 		</section>
 
-		<!-- Progress Fase Kurikulum Aktif -->
+		<!-- Progress Track Pembelajaran (Kelas Aktif) -->
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-					<span>Progress Track Pembelajaran (Kelas Aktif)</span>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<polyline points="12 6 12 12 16 14" />
+					</svg>
+					<span>Progress Track Pembelajaran</span>
 				</div>
-				<span class="type-mono text-muted" style="font-size: 11px;">{kelasName}</span>
+				<span class="type-mono text-muted text-xs">{kelasName}</span>
 			</div>
+
 			<div class="phase-list">
 				{#if phaseProgressList.length === 0}
 					<div class="p-6 text-center text-slate-500 text-xs font-medium">
@@ -165,15 +197,18 @@
 		</section>
 	</div>
 
-	<!-- Riwayat Tingkat Terdahulu (Read-only) -->
+	<!-- Riwayat Tingkat Terdahulu (Read-Only) -->
 	{#if historicalList.length > 0}
-		<section class="panel mt-6">
+		<section class="panel mt-5">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
-					<span>Riwayat Tingkat & Kenaikan Kelas (Read-Only)</span>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+						<path d="M12 8v4l3 3" />
+						<circle cx="12" cy="12" r="9" />
+					</svg>
+					<span>Riwayat Tingkat &amp; Kenaikan Kelas</span>
 				</div>
-				<span class="badge badge-hadir">{historicalList.length} Kelas Lulus/Pernah Diikuti</span>
+				<span class="badge badge-hadir">{historicalList.length} Kelas Pernah Diikuti</span>
 			</div>
 			<div class="p-4 space-y-4">
 				{#each historicalList as history}
@@ -182,23 +217,23 @@
 							<div>
 								<div class="flex items-center gap-2">
 									<span class="badge badge-hadir text-uppercase">{history.status}</span>
-									<span class="text-xs font-bold text-slate-500">{history.tahunAjaranName} · {history.tingkatName}</span>
+									<span class="text-xs font-bold text-slate-500">{history.tahunAjaranName} &middot; {history.tingkatName}</span>
 								</div>
 								<h3 class="text-base font-extrabold text-slate-800 mt-1">{history.kelasName} — {history.trackTitle}</h3>
 							</div>
 							<div class="text-right">
-								<span class="text-xs text-slate-500 font-medium block">Poin Diraih di Kelas Ini</span>
+								<span class="text-xs text-slate-500 font-medium block">Poin Diraih</span>
 								<span class="text-sm font-black text-indigo-600">+{history.totalPointsEarned} Poin</span>
 							</div>
 						</div>
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200 text-xs">
 							<div>
-								<span class="text-slate-500 block font-medium">Ringkasan Presensi Sesi:</span>
-								<span class="font-bold text-slate-700">{history.attendanceSummary.hadir} Hadir, {history.attendanceSummary.excused} Excused (Total {history.attendanceSummary.total} Sesi)</span>
+								<span class="text-slate-500 block font-medium">Ringkasan Presensi:</span>
+								<span class="font-bold text-slate-700">{history.attendanceSummary.hadir} Hadir, {history.attendanceSummary.excused} Excused ({history.attendanceSummary.total} Sesi)</span>
 							</div>
 							<div>
-								<span class="text-slate-500 block font-medium">Progress Fase Selesai:</span>
-								<span class="font-bold text-slate-700">{history.phaseProgress.filter(p => p.progressPercentage === 100).length} dari {history.phaseProgress.length} Fase (100% Selesai)</span>
+								<span class="text-slate-500 block font-medium">Progress Fase:</span>
+								<span class="font-bold text-slate-700">{history.phaseProgress.filter((p: any) => p.progressPercentage === 100).length} dari {history.phaseProgress.length} Fase Selesai</span>
 							</div>
 						</div>
 					</div>
@@ -210,16 +245,10 @@
 
 <style>
 	.page-container {
-		padding: 24px 28px 48px;
+		padding: 24px 28px 60px;
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
-	}
-
-	@media (max-width: 768px) {
-		.page-container {
-			padding: 20px 16px 48px;
-		}
 	}
 
 	/* Welcome banner */
@@ -241,28 +270,28 @@
 	.welcome-banner__inner {
 		position: relative;
 		z-index: 1;
-		padding: 28px 28px 24px;
+		padding: 24px;
 	}
 
 	.avatar-xl {
-		width: 68px;
-		height: 68px;
+		width: 60px;
+		height: 60px;
 		border-radius: 50%;
 		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 		color: white;
 		font-family: var(--font-macro);
-		font-size: 1.75rem;
+		font-size: 1.6rem;
 		font-weight: 800;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+		box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
 		flex-shrink: 0;
 	}
 
 	.welcome-name {
 		font-family: var(--font-macro);
-		font-size: clamp(1.35rem, 4vw, 1.85rem);
+		font-size: clamp(1.3rem, 3.5vw, 1.8rem);
 		font-weight: 800;
 		color: var(--text-primary);
 		line-height: 1.1;
@@ -273,14 +302,35 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 600;
 		color: #0d9488;
 		background: #ccfbf1;
 		border: 1px solid #99f6e4;
-		border-radius: 10px;
-		padding: 8px 14px;
-		width: fit-content;
+		border-radius: 8px;
+		padding: 6px 12px;
+	}
+
+	.btn-scan-qr {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 8px 16px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: var(--shadow-sm);
+		transition: all 150ms ease;
+		min-height: 38px;
+	}
+
+	.btn-scan-qr:hover {
+		background: #4338ca;
 	}
 
 	/* Stats grid */
@@ -290,32 +340,26 @@
 		gap: 16px;
 	}
 
-	@media (max-width: 640px) {
-		.stats-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
 	.stat-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 20px;
+		padding: 18px;
 		display: flex;
-		align-items: flex-start;
-		gap: 16px;
+		align-items: center;
+		gap: 14px;
 		box-shadow: var(--shadow-sm);
 		transition: transform 200ms ease, box-shadow 200ms ease;
 	}
 
 	.stat-card:hover {
-		transform: translateY(-3px);
+		transform: translateY(-2px);
 		box-shadow: var(--shadow-md);
 	}
 
 	.stat-card__icon-wrap {
-		width: 48px;
-		height: 48px;
+		width: 44px;
+		height: 44px;
 		border-radius: var(--radius-md);
 		display: flex;
 		align-items: center;
@@ -329,15 +373,15 @@
 	}
 
 	.stat-card__label {
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 700;
 		color: var(--text-secondary);
-		margin-bottom: 6px;
+		margin-bottom: 4px;
 	}
 
 	.stat-card__value {
 		font-family: var(--font-macro);
-		font-size: 2.2rem;
+		font-size: 1.9rem;
 		font-weight: 800;
 		color: var(--text-primary);
 		line-height: 1;
@@ -346,10 +390,10 @@
 
 	.stat-card__meta {
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: 10.5px;
 		font-weight: 500;
 		color: var(--text-muted);
-		margin-top: 6px;
+		margin-top: 4px;
 	}
 
 	/* Two-col grid */
@@ -359,10 +403,25 @@
 		gap: 20px;
 	}
 
-	@media (max-width: 768px) {
-		.two-col-grid {
-			grid-template-columns: 1fr;
-		}
+	.btn-kerjakan-sm {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 6px 12px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background 150ms ease;
+		min-height: 32px;
+	}
+
+	.btn-kerjakan-sm:hover {
+		background: #4338ca;
 	}
 
 	/* Empty state */
@@ -371,30 +430,30 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding: 36px 24px;
+		padding: 32px 20px;
 	}
 
 	.empty-icon-wrap {
-		width: 60px;
-		height: 60px;
+		width: 52px;
+		height: 52px;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 14px;
+		margin-bottom: 12px;
 	}
 
 	.empty-title {
 		font-family: var(--font-macro);
-		font-size: 15px;
+		font-size: 14px;
 		font-weight: 800;
 		color: var(--text-primary);
 	}
 
 	.empty-sub {
-		font-size: 13px;
+		font-size: 12px;
 		color: var(--text-secondary);
-		margin-top: 6px;
+		margin-top: 4px;
 		line-height: 1.5;
 		max-width: 280px;
 	}
@@ -411,7 +470,7 @@
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 14px 16px;
+		padding: 12px 14px;
 		transition: background 200ms ease, border-color 200ms ease;
 	}
 
@@ -436,7 +495,7 @@
 	}
 
 	.phase-name {
-		font-size: 13px;
+		font-size: 12.5px;
 		font-weight: 700;
 		color: var(--text-primary);
 		margin-top: 2px;
@@ -458,9 +517,63 @@
 
 	.phase-item__foot {
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: 10.5px;
 		font-weight: 500;
 		color: var(--text-muted);
 		margin-top: 6px;
+	}
+
+	/* Mobile Responsiveness Enhancements (< 640px & < 768px) */
+	@media (max-width: 768px) {
+		.two-col-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.page-container {
+			padding: 16px 12px 80px;
+		}
+
+		.welcome-banner__inner {
+			padding: 16px;
+		}
+
+		.avatar-xl {
+			width: 48px;
+			height: 48px;
+			font-size: 1.3rem;
+		}
+
+		.welcome-quote {
+			width: 100%;
+		}
+
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+		}
+
+		.stat-card {
+			padding: 14px 12px;
+			gap: 10px;
+		}
+
+		.stat-card--full-mobile {
+			grid-column: span 2;
+		}
+
+		.stat-card__icon-wrap {
+			width: 38px;
+			height: 38px;
+		}
+
+		.stat-card__value {
+			font-size: 1.6rem;
+		}
+
+		.stat-card__label {
+			font-size: 11px;
+		}
 	}
 </style>
