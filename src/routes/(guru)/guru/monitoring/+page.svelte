@@ -77,101 +77,101 @@
 	<title>Class Health Monitoring & Intervensi Guru Advisor | NLC</title>
 </svelte:head>
 
-<div class="health-monitoring-page">
+<div class="page-container">
 	<!-- ══════════════════════════════════════════════════════════
-	     1. HEADER / HERO TITLE BANNER (Standard Management Style)
+	     1. HEADER / HERO TITLE BANNER (Standard /admin Style)
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-header">
-		<div class="title-group">
-			<div class="flex items-center gap-3">
-				<h1 class="page-title">Class Health Monitoring & Intervensi Advisor</h1>
-				<span class="status-badge" style="background: {data.summary.healthColor}18; color: {data.summary.healthColor}; border: 1px solid {data.summary.healthColor}40;">
-					<span class="dot-indicator" style="background: {data.summary.healthColor};"></span>
-					{data.summary.healthStatus}
-				</span>
+	<header class="page-hero">
+		<div class="hero-content-row">
+			<div>
+				<div class="hero-title-group">
+					<h1 class="hero-title">Class Health Monitoring & Intervensi Advisor</h1>
+					{#if data.summary.healthStatus === 'KRITIS'}
+						<span class="badge badge-warning">KRITIS</span>
+					{:else if data.summary.healthStatus === 'WASPADA'}
+						<span class="badge badge-amber">WASPADA</span>
+					{:else}
+						<span class="badge badge-success">SEHAT</span>
+					{/if}
+				</div>
+				<p class="hero-subtitle">
+					Pantau tingkat kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan perhatian khusus secara real-time.
+				</p>
 			</div>
-			<p class="page-subtitle">
-				Pantau tingkat kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan perhatian khusus secara real-time.
-			</p>
 		</div>
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     2. KEY METRICS GRID (4 Stat Cards, 2x2 Mobile)
+	     2. KEY METRICS GRID (.stats-grid)
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="stats-grid">
+	<section class="stats-grid" aria-label="Statistik Kesehatan Kelas">
 		<!-- Card 1: Indeks Kesehatan Kelas -->
 		<div class="stat-card">
-			<div class="stat-header">
-				<span class="stat-title">Status Kesehatan Kelas</span>
-				<div class="stat-icon-wrap" style="background: {data.summary.healthColor}15; color: {data.summary.healthColor}">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-				</div>
+			<div class="stat-icon-box icon-kelas">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+				</svg>
 			</div>
-			<div class="stat-body">
-				<div class="flex items-center gap-2 mt-1">
-					<span class="stat-badge" style="background: {data.summary.healthColor}20; color: {data.summary.healthColor}; border-color: {data.summary.healthColor}40;">
-						<span class="dot-indicator" style="background: {data.summary.healthColor};"></span>
-						{data.summary.healthStatus}
-					</span>
-				</div>
-				<span class="stat-meta">{data.summary.kelasName} • {data.summary.tahunAjaranName}</span>
+			<div class="stat-info">
+				<span class="stat-value">{data.summary.healthStatus}</span>
+				<span class="stat-label">Status Kesehatan Kelas</span>
+				<span class="stat-subtext">{data.summary.kelasName} • {data.summary.tahunAjaranName}</span>
 			</div>
 		</div>
 
 		<!-- Card 2: Kehadiran Rata-rata -->
 		<div class="stat-card">
-			<div class="stat-header">
-				<span class="stat-title">% Rata-Rata Kehadiran</span>
-				<div class="stat-icon-wrap" style="background: #e0f2fe; color: #0284c7">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-				</div>
+			<div class="stat-icon-box icon-siswa">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+				</svg>
 			</div>
-			<div class="stat-body">
+			<div class="stat-info">
 				<span class="stat-value">{data.summary.avgAttendanceRate}%</span>
-				<span class="stat-meta">Dari {data.summary.totalStudents} siswa aktif</span>
+				<span class="stat-label">Kehadiran Rata-rata</span>
+				<span class="stat-subtext">Dari {data.summary.totalStudents} siswa aktif</span>
 			</div>
 		</div>
 
 		<!-- Card 3: Penyelesaian Tugas -->
 		<div class="stat-card">
-			<div class="stat-header">
-				<span class="stat-title">% Penyelesaian Tugas</span>
-				<div class="stat-icon-wrap" style="background: #f0fdf4; color: #16a34a">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-				</div>
+			<div class="stat-icon-box icon-active">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+				</svg>
 			</div>
-			<div class="stat-body">
+			<div class="stat-info">
 				<span class="stat-value">{data.summary.avgTaskCompletionRate}%</span>
-				<span class="stat-meta">Average Streak: {data.summary.avgStreak} Hari</span>
+				<span class="stat-label">Tugas Selesai</span>
+				<span class="stat-subtext">Average Streak: {data.summary.avgStreak} Hari</span>
 			</div>
 		</div>
 
 		<!-- Card 4: Siswa Perlu Perhatian -->
 		<div class="stat-card">
-			<div class="stat-header">
-				<span class="stat-title">Butuh Intervensi Guru</span>
-				<div class="stat-icon-wrap" style="background: #fef2f2; color: #dc2626">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-				</div>
+			<div class="stat-icon-box icon-alert">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+				</svg>
 			</div>
-			<div class="stat-body">
+			<div class="stat-info">
 				<span class="stat-value text-red-600">{data.alertStudentsCount} Siswa</span>
-				<span class="stat-meta">Kehadiran &lt; 75% atau streak putus</span>
+				<span class="stat-label">Butuh Intervensi</span>
+				<span class="stat-subtext">Kehadiran &lt; 75% / Streak putus</span>
 			</div>
 		</div>
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     3. VISUAL ATTENDANCE DISTRIBUTION CHART (PURE CSS BAR)
+	     3. VISUAL ATTENDANCE DISTRIBUTION CHART (.card-table)
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="distribution-card">
-		<div class="distribution-header">
+	<section class="card-table">
+		<div class="card-header-flex">
 			<div>
-				<h3 class="distribution-title">Distribusi Kehadiran Siswa Kelas</h3>
-				<p class="distribution-desc">Klasifikasi tingkat partisipasi siswa berdasarkan persentase kehadiran sesi</p>
+				<h3 class="card-title">Distribusi Kehadiran Siswa Kelas</h3>
+				<p class="card-subtitle">Klasifikasi tingkat partisipasi siswa berdasarkan persentase kehadiran sesi</p>
 			</div>
-			<span class="total-badge">{data.summary.totalStudents} Siswa Terdaftar</span>
+			<span class="count-pill count-pill-sky">{data.summary.totalStudents} Siswa Terdaftar</span>
 		</div>
 
 		<!-- Pure CSS Multi-Segment Progress Bar -->
@@ -279,64 +279,67 @@
 	</FilterBar>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     5. STUDENT HEALTH ROSTER TABLE WITH PAGINATION
+	     5. STUDENT HEALTH ROSTER TABLE WITH PAGINATION (.card-table)
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="table-container">
-		<div class="table-header-row">
-			<h2 class="table-title">Daftar Kesehatan Siswa & Intervensi Advisor</h2>
-			<span class="table-count">Menampilkan {data.rosterData.items.length} dari {data.rosterData.total} Siswa</span>
+	<section class="card-table">
+		<div class="card-header-flex">
+			<div>
+				<h3 class="card-title">Daftar Kesehatan Siswa & Intervensi Advisor</h3>
+				<p class="card-subtitle">Menampilkan {data.rosterData.items.length} dari {data.rosterData.total} Siswa Terdaftar</p>
+			</div>
+			<span class="count-pill count-pill-sky">{data.rosterData.total} Siswa Total</span>
 		</div>
 
-		<div class="table-wrapper">
-			<table>
+		<div class="table-responsive">
+			<table class="data-table">
 				<thead>
 					<tr>
-						<th>NAMA SISWA</th>
-						<th>TINGKAT KEHADIRAN</th>
-						<th>PENYELESAIAN TUGAS</th>
-						<th>STREAK HARI</th>
-						<th>STATUS RISIKO</th>
-						<th>CATATAN INTERVENSI</th>
-						<th class="text-right">AKSI ADVISOR</th>
+						<th>Pengguna Siswa</th>
+						<th>Tingkat Kehadiran</th>
+						<th>Penyelesaian Tugas</th>
+						<th>Streak Hari</th>
+						<th>Status Risiko</th>
+						<th>Catatan Intervensi</th>
+						<th class="text-right">Aksi Advisor</th>
 					</tr>
 				</thead>
 				<tbody>
 					{#if data.rosterData.items.length === 0}
 						<tr>
-							<td colspan="7" class="empty-cell">
-								<div class="empty-state">
-									<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-									<p class="empty-title">Tidak ada siswa yang sesuai kriteria filter</p>
-									<p class="empty-desc">Coba ubah kata kunci pencarian atau pilih filter tingkat risiko lain.</p>
+							<td colspan="7" class="empty-table-cell">
+								<div class="empty-state-box">
+									<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+									<p class="font-bold text-slate-800 text-sm mt-2">Tidak ada siswa yang sesuai kriteria filter</p>
+									<p class="text-xs text-slate-500 mt-1">Coba ubah kata kunci pencarian atau pilih filter tingkat risiko lain.</p>
 								</div>
 							</td>
 						</tr>
 					{:else}
 						{#each data.rosterData.items as s}
-							<tr class:tr-alert={s.riskLevel !== 'SEHAT'}>
+							<tr class="table-row hover:bg-slate-50 transition" class:tr-alert={s.riskLevel !== 'SEHAT'}>
 								<!-- Nama Siswa -->
 								<td>
-									<div class="student-profile-cell">
-										<div class="avatar">
+									<div class="flex items-center gap-3">
+										<div class="avatar-sm">
 											{#if s.avatarUrl}
-												<img src={s.avatarUrl} alt={s.fullName} />
+												<img src={s.avatarUrl} alt={s.fullName} class="avatar-img" />
 											{:else}
-												<span>{s.fullName.charAt(0).toUpperCase()}</span>
+												{s.fullName.charAt(0).toUpperCase()}
 											{/if}
 										</div>
 										<div>
-											<span class="font-bold text-slate-800 text-xs block">{s.fullName}</span>
-											<span class="text-[11px] text-slate-500 font-mono">@{s.username}</span>
+											<span class="font-bold text-slate-800 text-sm block">{s.fullName}</span>
+											<span class="type-mono text-muted text-xs">@{s.username}</span>
 										</div>
 									</div>
 								</td>
 
 								<!-- Tingkat Kehadiran -->
 								<td>
-									<div class="flex flex-col gap-1">
+									<div class="flex flex-col gap-1 min-w-[130px]">
 										<div class="flex items-center justify-between gap-2">
 											<span class="font-bold text-xs text-slate-800">{s.attendanceRate}%</span>
-											<span class="text-[11px] text-slate-500 font-semibold">{s.attendedCount}/{s.totalSessions} Sesi</span>
+											<span class="type-mono text-xs text-slate-500">{s.attendedCount}/{s.totalSessions} Sesi</span>
 										</div>
 										<div class="mini-progress-track">
 											<div
@@ -352,10 +355,10 @@
 
 								<!-- Penyelesaian Tugas -->
 								<td>
-									<div class="flex flex-col gap-1">
+									<div class="flex flex-col gap-1 min-w-[130px]">
 										<div class="flex items-center justify-between gap-2">
 											<span class="font-bold text-xs text-slate-800">{s.taskCompletionRate}%</span>
-											<span class="text-[11px] text-slate-500 font-semibold">{s.approvedTasksCount}/{s.totalTasks} Tugas</span>
+											<span class="type-mono text-xs text-slate-500">{s.approvedTasksCount}/{s.totalTasks} Tugas</span>
 										</div>
 										<div class="mini-progress-track">
 											<div
@@ -372,27 +375,18 @@
 										<span class="streak-badge">
 											⚡ {s.currentStreak} Hari
 										</span>
-										<span class="text-[11px] text-slate-400 font-mono">(Max {s.maxStreak})</span>
+										<span class="type-mono text-xs text-slate-400">(Max {s.maxStreak})</span>
 									</div>
 								</td>
 
 								<!-- Status Risiko -->
 								<td>
 									{#if s.riskLevel === 'KRITIS'}
-										<span class="risk-pill risk-pill--kritis">
-											<span class="dot-indicator bg-red-600"></span>
-											KRITIS
-										</span>
+										<span class="badge badge-warning">KRITIS</span>
 									{:else if s.riskLevel === 'WASPADA'}
-										<span class="risk-pill risk-pill--waspada">
-											<span class="dot-indicator bg-amber-600"></span>
-											WASPADA
-										</span>
+										<span class="badge badge-amber">WASPADA</span>
 									{:else}
-										<span class="risk-pill risk-pill--sehat">
-											<span class="dot-indicator bg-green-600"></span>
-											SEHAT
-										</span>
+										<span class="badge badge-success">SEHAT</span>
 									{/if}
 								</td>
 
@@ -484,56 +478,49 @@
 </div>
 
 <style>
-	.health-monitoring-page {
+	.page-container {
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: 24px;
 		width: 100%;
 	}
 
-	/* Standard Page Header */
-	.page-header {
+	/* Page Hero Section */
+	.page-hero {
+		background: var(--bg-card, #ffffff);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		padding: 24px;
+		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+	}
+
+	.hero-content-row {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
 	}
 
-	.title-group {
+	.hero-title-group {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		align-items: center;
+		gap: 12px;
 	}
 
-	.page-title {
-		font-size: 22px;
+	.hero-title {
+		font-family: var(--font-macro);
+		font-size: 1.5rem;
 		font-weight: 800;
-		color: #0f172a;
+		color: var(--text-primary, #0f172a);
 		letter-spacing: -0.02em;
 		margin: 0;
 	}
 
-	.page-subtitle {
+	.hero-subtitle {
 		font-size: 13px;
-		color: #64748b;
-		margin: 0;
-	}
-
-	.status-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 12px;
-		font-weight: 800;
-		padding: 3px 10px;
-		border-radius: 9999px;
-	}
-
-	.dot-indicator {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		display: inline-block;
+		color: var(--text-muted, #64748b);
+		margin-top: 4px;
+		margin-bottom: 0;
 	}
 
 	/* Stats Grid */
@@ -541,6 +528,12 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
+	}
+
+	@media (max-width: 1024px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
 	@media (max-width: 640px) {
@@ -551,102 +544,106 @@
 
 	.stat-card {
 		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 12px;
-		padding: 16px;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-	}
-
-	.stat-header {
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-md, 10px);
+		padding: 16px 18px;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 14px;
+		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
 	}
 
-	.stat-title {
-		font-size: 12px;
-		font-weight: 700;
-		color: #64748b;
-	}
-
-	.stat-icon-wrap {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
+	.stat-icon-box {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-shrink: 0;
 	}
 
-	.stat-body {
-		margin-top: 12px;
+	.icon-kelas { background: #e0e7ff; color: #4f46e5; }
+	.icon-active { background: #dcfce7; color: #166534; }
+	.icon-siswa { background: #e0f2fe; color: #0369a1; }
+	.icon-alert { background: #fef2f2; color: #dc2626; }
+
+	.stat-info {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
 	}
 
 	.stat-value {
-		font-size: 22px;
+		font-family: var(--font-macro);
+		font-size: 1.25rem;
 		font-weight: 800;
-		color: #0f172a;
-		letter-spacing: -0.03em;
-		display: block;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.2;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.stat-meta {
+	.stat-label {
+		font-size: 12px;
+		color: var(--text-muted, #64748b);
+		font-weight: 600;
+		margin-top: 2px;
+	}
+
+	.stat-subtext {
+		font-family: var(--font-mono);
 		font-size: 11px;
-		color: #64748b;
-		margin-top: 4px;
-		display: block;
+		color: var(--text-muted, #94a3b8);
+		margin-top: 2px;
 	}
 
-	.stat-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 13px;
-		font-weight: 800;
-		padding: 4px 10px;
-		border-radius: 9999px;
-		border: 1px solid;
-	}
-
-	/* Distribution Card */
-	.distribution-card {
+	/* Card & Data Table */
+	.card-table {
 		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 20px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		padding: 24px;
+		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
 	}
 
-	.distribution-header {
+	.card-header-flex {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 16px;
 	}
 
-	.distribution-title {
-		font-size: 15px;
+	.card-title {
+		font-family: var(--font-macro);
+		font-size: 1.1rem;
 		font-weight: 800;
-		color: #0f172a;
+		color: var(--text-primary, #0f172a);
 		margin: 0;
 	}
 
-	.distribution-desc {
-		font-size: 12px;
-		color: #64748b;
-		margin-top: 2px;
+	.card-subtitle {
+		font-size: 12.5px;
+		color: var(--text-muted, #64748b);
+		margin-top: 4px;
+		margin-bottom: 0;
 	}
 
-	.total-badge {
-		font-size: 11px;
-		font-weight: 800;
-		background: #f1f5f9;
-		color: #334155;
-		padding: 4px 10px;
+	.count-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 3px 9px;
 		border-radius: 9999px;
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		font-weight: 700;
+	}
+
+	.count-pill-sky {
+		background: #e0f2fe;
+		color: #0369a1;
+		border: 1px solid #bae6fd;
 	}
 
 	/* Pure CSS Bar Chart */
@@ -721,61 +718,35 @@
 	}
 
 	/* Table Section */
-	.table-container {
-		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 20px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-	}
-
-	.table-header-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 16px;
-	}
-
-	.table-title {
-		font-size: 15px;
-		font-weight: 800;
-		color: #0f172a;
-		margin: 0;
-	}
-
-	.table-count {
-		font-size: 11px;
-		font-weight: 700;
-		color: #64748b;
-	}
-
-	.table-wrapper {
+	.table-responsive {
 		width: 100%;
 		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
-	table {
+	.data-table {
 		width: 100%;
 		border-collapse: collapse;
 		min-width: 780px;
 	}
 
-	th {
+	.data-table th {
 		background: #f8fafc;
-		font-size: 10px;
-		font-weight: 800;
-		color: #64748b;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-muted, #64748b);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		padding: 10px 14px;
-		border-bottom: 1px solid #e2e8f0;
+		padding: 12px 14px;
+		border-bottom: 1px solid var(--border-hard, #e2e8f0);
 		text-align: left;
 	}
 
-	td {
-		padding: 12px 14px;
-		border-bottom: 1px solid #f1f5f9;
-		font-size: 12px;
+	.data-table td {
+		padding: 14px;
+		border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+		font-size: 13px;
 		vertical-align: middle;
 	}
 
@@ -783,22 +754,13 @@
 		background: #fffdfa;
 	}
 
-	.tr-alert:hover {
-		background: #fff8f0;
-	}
-
-	.student-profile-cell {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.avatar {
-		width: 34px;
-		height: 34px;
+	.avatar-sm {
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
 		background: #e0e7ff;
-		color: #4f46e5;
+		color: #4338ca;
+		font-family: var(--font-macro);
 		font-weight: 800;
 		font-size: 13px;
 		display: flex;
@@ -808,10 +770,18 @@
 		flex-shrink: 0;
 	}
 
-	.avatar img {
+	.avatar-img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+
+	.type-mono {
+		font-family: var(--font-mono);
+	}
+
+	.text-muted {
+		color: var(--text-muted, #64748b);
 	}
 
 	/* Mini Progress Bar inside Table */
@@ -842,20 +812,21 @@
 		border-radius: 9999px;
 	}
 
-	.risk-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 10px;
-		font-weight: 800;
-		padding: 3px 8px;
+	/* Standard Badges */
+	.badge {
+		padding: 3px 9px;
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
 		border-radius: 9999px;
-		text-transform: uppercase;
 	}
 
-	.risk-pill--kritis { background: #fee2e2; color: #dc2626; }
-	.risk-pill--waspada { background: #fef3c7; color: #b45309; }
-	.risk-pill--sehat { background: #dcfce7; color: #15803d; }
+	.badge-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+	.badge-amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+	.badge-live { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+	.badge-hadir { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+	.badge-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+	.badge-warning { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
 
 	.alert-tag {
 		font-size: 10px;
@@ -872,46 +843,34 @@
 		align-items: center;
 		gap: 6px;
 		padding: 6px 12px;
-		background: #f1f5f9;
-		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: 8px;
+		font-family: var(--font-macro);
 		font-size: 12px;
 		font-weight: 700;
-		color: #334155;
+		color: var(--text-secondary, #334155);
 		text-decoration: none;
 		transition: all 150ms ease;
 	}
 
 	.btn-action-profile:hover {
-		background: #4f46e5;
+		background: var(--primary, #4f46e5);
 		color: #ffffff;
-		border-color: #4f46e5;
+		border-color: var(--primary, #4f46e5);
 	}
 
-	.empty-cell {
+	.empty-table-cell {
 		text-align: center;
 		padding: 40px 16px;
 	}
 
-	.empty-state {
+	.empty-state-box {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 8px;
 		color: #94a3b8;
-	}
-
-	.empty-title {
-		font-size: 14px;
-		font-weight: 700;
-		color: #334155;
-		margin: 0;
-	}
-
-	.empty-desc {
-		font-size: 12px;
-		color: #64748b;
-		margin: 0;
 	}
 
 	/* Pagination Footer Styling */
@@ -921,12 +880,12 @@
 		justify-content: space-between;
 		padding-top: 16px;
 		margin-top: 12px;
-		border-top: 1px solid #e2e8f0;
+		border-top: 1px solid var(--border-subtle, #e2e8f0);
 	}
 
 	.pagination-info {
 		font-size: 12px;
-		color: #64748b;
+		color: var(--text-muted, #64748b);
 	}
 
 	.pagination-buttons {
@@ -938,11 +897,12 @@
 	.page-nav-btn {
 		padding: 6px 12px;
 		border-radius: 6px;
-		border: 1px solid #cbd5e1;
+		border: 1px solid var(--border-hard, #cbd5e1);
 		background: #ffffff;
+		font-family: var(--font-macro);
 		font-size: 12px;
 		font-weight: 700;
-		color: #334155;
+		color: var(--text-secondary, #334155);
 		transition: all 150ms ease;
 	}
 
@@ -966,11 +926,12 @@
 		width: 32px;
 		height: 32px;
 		border-radius: 6px;
-		border: 1px solid #cbd5e1;
+		border: 1px solid var(--border-hard, #cbd5e1);
 		background: #ffffff;
+		font-family: var(--font-macro);
 		font-size: 12px;
 		font-weight: 700;
-		color: #334155;
+		color: var(--text-secondary, #334155);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -983,9 +944,9 @@
 	}
 
 	.page-num--active {
-		background: #4f46e5;
+		background: var(--primary, #4f46e5);
 		color: #ffffff;
-		border-color: #4f46e5;
+		border-color: var(--primary, #4f46e5);
 	}
 
 	.page-num-dots {
