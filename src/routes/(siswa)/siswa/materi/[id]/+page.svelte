@@ -19,7 +19,7 @@
 
 	let tocList = $state<TocItem[]>([]);
 	let activeTocId = $state<string>('');
-	let isTocOpenMobile = $state<boolean>(false);
+	let isTocOpen = $state<boolean>(true);
 
 	$effect(() => {
 		isReadCompleted = data.isCompleted;
@@ -320,63 +320,86 @@
 		</div>
 	{/if}
 
-	<!-- Main Reader Layout with ToC Sidebar -->
-	<div class="reader-layout-grid {tocList.length > 0 ? 'has-toc' : ''}">
-		<!-- Main Article Reading Card -->
-		<main class="reading-article-card size-{fontSize}">
-			{#if data.materi.content}
-				<div class="prose-reading">
-					{@html data.materi.content}
-				</div>
-			{:else}
-				<div class="empty-reading-state">
-					<div class="empty-icon-wrap mb-3">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-							<polyline points="14 2 14 8 20 8" />
+	<!-- Dedicated Table of Contents (ToC) Section Card Outside Article Container -->
+	{#if tocList.length > 0}
+		<div class="toc-section-card mb-6">
+			<div class="toc-header">
+				<div class="flex items-center gap-2.5">
+					<div class="toc-icon-badge">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<line x1="8" y1="6" x2="21" y2="6" />
+							<line x1="8" y1="12" x2="21" y2="12" />
+							<line x1="8" y1="18" x2="21" y2="18" />
+							<line x1="3" y1="6" x2="3.01" y2="6" />
+							<line x1="3" y1="12" x2="3.01" y2="12" />
+							<line x1="3" y1="18" x2="3.01" y2="18" />
 						</svg>
 					</div>
-					<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
-					<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
-				</div>
-			{/if}
-		</main>
-
-		{#if tocList.length > 0}
-			<!-- ToC Sidebar Box -->
-			<aside class="toc-sidebar-wrap">
-				<div class="toc-card">
-					<div class="toc-header">
-						<div class="flex items-center gap-2">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<line x1="8" y1="6" x2="21" y2="6" />
-								<line x1="8" y1="12" x2="21" y2="12" />
-								<line x1="8" y1="18" x2="21" y2="18" />
-								<line x1="3" y1="6" x2="3.01" y2="6" />
-								<line x1="3" y1="12" x2="3.01" y2="12" />
-								<line x1="3" y1="18" x2="3.01" y2="18" />
-							</svg>
-							<span class="toc-title">Daftar Isi Materi</span>
-						</div>
-						<span class="toc-count-badge">{tocList.length} Topik</span>
+					<div>
+						<h3 class="toc-section-title">Daftar Isi &amp; Topik Pembelajaran</h3>
+						<p class="toc-section-sub">Lompat langsung ke sub-bab materi yang ingin dipelajari</p>
 					</div>
-
-					<nav class="toc-list">
-						{#each tocList as item}
-							<button
-								type="button"
-								onclick={() => scrollToHeading(item.id)}
-								class="toc-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
-							>
-								<span class="toc-bullet"></span>
-								<span class="toc-text truncate">{item.text}</span>
-							</button>
-						{/each}
-					</nav>
 				</div>
-			</aside>
+
+				<div class="flex items-center gap-2">
+					<span class="toc-count-pill">{tocList.length} Topik</span>
+					<button
+						type="button"
+						onclick={() => isTocOpen = !isTocOpen}
+						class="btn-toggle-toc"
+					>
+						<span>{isTocOpen ? 'Sembunyikan' : 'Tampilkan'}</span>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							class="transform transition-transform {isTocOpen ? 'rotate-180' : ''}"
+						>
+							<polyline points="6 9 12 15 18 9" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			{#if isTocOpen}
+				<nav class="toc-grid-list mt-4 pt-4 border-t border-slate-200">
+					{#each tocList as item}
+						<button
+							type="button"
+							onclick={() => scrollToHeading(item.id)}
+							class="toc-grid-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
+						>
+							<span class="toc-bullet"></span>
+							<span class="toc-text truncate">{item.text}</span>
+						</button>
+					{/each}
+				</nav>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Main Article Reading Card (Main Container Width Preserved) -->
+	<main class="reading-article-card size-{fontSize}">
+		{#if data.materi.content}
+			<div class="prose-reading">
+				{@html data.materi.content}
+			</div>
+		{:else}
+			<div class="empty-reading-state">
+				<div class="empty-icon-wrap mb-3">
+					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+					</svg>
+				</div>
+				<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
+				<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
+			</div>
 		{/if}
-	</div>
+	</main>
 
 	<!-- Footer Lesson Navigation -->
 	<nav class="lesson-nav-footer mt-8">
@@ -441,13 +464,13 @@
 
 	.viewer-container {
 		padding: 24px 28px 48px;
-		max-width: 1100px;
+		max-width: 880px;
 		margin: 0 auto;
 		transition: max-width 200ms ease;
 	}
 
 	.viewer-container.focus-mode {
-		max-width: 1200px;
+		max-width: 980px;
 		padding-top: 32px;
 	}
 
@@ -669,18 +692,133 @@
 		background: #4338ca;
 	}
 
-	/* Layout Grid with ToC Sidebar */
-	.reader-layout-grid {
-		display: block;
+	/* ══════════════════════════════════════════
+	   DEDICATED TOC SECTION CARD (Outside Reading Article)
+	══════════════════════════════════════════ */
+	.toc-section-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		padding: 16px 20px;
+		box-shadow: var(--shadow-sm);
 	}
 
-	.reader-layout-grid.has-toc {
+	.toc-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.toc-icon-badge {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		background: #e0e7ff;
+		color: #4f46e5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.toc-section-title {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin: 0;
+	}
+
+	.toc-section-sub {
+		font-size: 11.5px;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.toc-count-pill {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+
+	.btn-toggle-toc {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		cursor: pointer;
+	}
+
+	.btn-toggle-toc:hover {
+		border-color: var(--primary-border);
+		color: var(--primary);
+	}
+
+	.toc-grid-list {
 		display: grid;
-		grid-template-columns: 1fr 260px;
-		gap: 24px;
-		align-items: start;
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		gap: 6px;
 	}
 
+	.toc-grid-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 10px;
+		border: 1px solid var(--border-soft);
+		background: #f8fafc;
+		text-align: left;
+		font-size: 12px;
+		color: var(--text-secondary);
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 150ms ease;
+		width: 100%;
+	}
+
+	.toc-grid-item.level-1 { font-weight: 800; color: var(--text-primary); }
+	.toc-grid-item.level-2 { padding-left: 14px; }
+	.toc-grid-item.level-3 { padding-left: 22px; font-size: 11.5px; color: var(--text-muted); }
+
+	.toc-bullet {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: #cbd5e1;
+		flex-shrink: 0;
+	}
+
+	.toc-grid-item:hover {
+		background: #ffffff;
+		border-color: #a5b4fc;
+		color: #4f46e5;
+	}
+
+	.toc-item-active {
+		background: #e0e7ff !important;
+		border-color: #a5b4fc !important;
+		color: #4338ca !important;
+		font-weight: 800 !important;
+	}
+
+	.toc-item-active .toc-bullet {
+		background: #4f46e5 !important;
+	}
+
+	/* Main Reading Article Card */
 	.reading-article-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
@@ -689,6 +827,7 @@
 		box-shadow: var(--shadow-sm);
 		line-height: 1.8;
 		letter-spacing: -0.01em;
+		width: 100%;
 	}
 
 	.reading-article-card.size-sm { font-size: 14.5px; }
@@ -728,98 +867,6 @@
 		padding: 1px 5px;
 		color: #4338ca;
 		font-weight: 600;
-	}
-
-	/* ══════════════════════════════════════════
-	   TABLE OF CONTENTS SIDEBAR (ToC)
-	══════════════════════════════════════════ */
-	.toc-sidebar-wrap {
-		position: sticky;
-		top: 24px;
-	}
-
-	.toc-card {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 16px;
-		box-shadow: var(--shadow-sm);
-	}
-
-	.toc-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding-bottom: 10px;
-		border-bottom: 1px solid var(--border-soft);
-	}
-
-	.toc-title {
-		font-family: var(--font-macro);
-		font-size: 12.5px;
-		font-weight: 800;
-		color: var(--text-primary);
-	}
-
-	.toc-count-badge {
-		font-family: var(--font-mono);
-		font-size: 9.5px;
-		font-weight: 700;
-		color: var(--text-muted);
-		background: var(--bg-inset);
-		padding: 1px 6px;
-		border-radius: 4px;
-	}
-
-	.toc-list {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		max-height: 420px;
-		overflow-y: auto;
-	}
-
-	.toc-item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 5px 8px;
-		border: none;
-		background: transparent;
-		text-align: left;
-		font-size: 12px;
-		color: var(--text-secondary);
-		border-radius: 4px;
-		cursor: pointer;
-		transition: all 150ms ease;
-		width: 100%;
-	}
-
-	.toc-item.level-1 { font-weight: 700; color: var(--text-primary); }
-	.toc-item.level-2 { padding-left: 16px; }
-	.toc-item.level-3 { padding-left: 26px; font-size: 11.5px; color: var(--text-muted); }
-
-	.toc-bullet {
-		width: 4px;
-		height: 4px;
-		border-radius: 50%;
-		background: #cbd5e1;
-		flex-shrink: 0;
-	}
-
-	.toc-item:hover {
-		background: #f1f5f9;
-		color: #4f46e5;
-	}
-
-	.toc-item-active {
-		background: #e0e7ff !important;
-		color: #4338ca !important;
-		font-weight: 700 !important;
-	}
-
-	.toc-item-active .toc-bullet {
-		background: #4f46e5 !important;
 	}
 
 	/* PRO CODE BLOCK BOX */
@@ -999,23 +1046,15 @@
 		font-weight: 800;
 	}
 
-	@media (max-width: 1024px) {
-		.reader-layout-grid.has-toc {
-			grid-template-columns: 1fr;
-		}
-		.toc-sidebar-wrap {
-			position: relative;
-			top: 0;
-			margin-bottom: 20px;
-		}
-	}
-
 	@media (max-width: 640px) {
 		.viewer-container {
 			padding: 16px;
 		}
 		.reading-article-card {
 			padding: 20px;
+		}
+		.toc-grid-list {
+			grid-template-columns: 1fr;
 		}
 		.lesson-nav-footer {
 			flex-direction: column;
