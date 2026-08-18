@@ -762,12 +762,15 @@
 								<span class="kelas-tag">{m.kelasName}</span>
 							</td>
 							<td>
-								<div class="flex flex-col gap-0.5 text-xs">
-									<div class="flex items-center gap-1.5 font-semibold text-slate-800 flex-wrap">
+								<div class="flex flex-col gap-1 text-xs">
+									<div class="flex items-center gap-1.5 font-semibold text-slate-800">
 										<span>{formatIndoDate(m.sessionDate)}</span>
 										{#if m.isWeekend}
 											<span class="weekend-tag">WEEKEND</span>
 										{/if}
+									</div>
+									<span class="text-slate-500 font-mono">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</span>
+									<div class="mt-0.5">
 										{#if status === 'live'}
 											<span class="status-pill-live">LIVE HARI INI</span>
 										{:else if status === 'upcoming'}
@@ -776,7 +779,6 @@
 											<span class="status-pill-completed">SELESAI</span>
 										{/if}
 									</div>
-									<span class="text-slate-500">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</span>
 								</div>
 							</td>
 							<td>
