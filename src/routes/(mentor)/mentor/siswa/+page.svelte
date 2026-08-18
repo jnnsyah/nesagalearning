@@ -332,9 +332,9 @@
 											></div>
 										</div>
 										<a
-											href="/guru/presensi?kelasInstanceId={student.kelasId}&from=dashboard"
+											href="/guru/siswa/{student.userId}"
 											class="btn-cell-icon"
-											title="Lihat Detail Rekap Presensi"
+											title="Lihat Detail Profil & Presensi Siswa"
 										>
 											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 										</a>
