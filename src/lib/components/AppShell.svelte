@@ -832,15 +832,17 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
+		height: 58px;
+		box-sizing: content-box;
 		z-index: 999;
-		background: rgba(255, 255, 255, 0.98);
+		background: rgba(255, 255, 255, 0.96);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
 		border-top: 1px solid var(--border-hard);
 		display: grid;
 		grid-template-columns: repeat(5, 1fr);
-		align-items: flex-end;
-		padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px));
+		align-items: center;
+		padding: 0 0 env(safe-area-inset-bottom, 0px);
 		box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
 	}
 
@@ -849,14 +851,14 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 3px;
-		padding: 6px 2px;
+		height: 100%;
+		gap: 2px;
 		color: var(--text-muted);
 		text-decoration: none;
 		font-size: 10px;
 		font-weight: 600;
 		transition: color 150ms ease;
-		border-radius: 8px;
+		position: relative;
 	}
 
 	.bottom-nav-item:hover,
@@ -866,19 +868,22 @@
 
 	.bottom-nav-item--active .bottom-nav-icon {
 		color: var(--primary);
-		transform: scale(1.1);
 	}
 
 	.bottom-nav-item--center {
-		position: relative;
-		top: -12px;
+		justify-content: flex-end;
+		padding-bottom: 6px;
 	}
 
 	.bottom-nav-item--center .bottom-nav-icon {
-		width: 46px;
-		height: 46px;
+		position: absolute;
+		top: -18px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 48px;
+		height: 48px;
 		border-radius: 50%;
-		background: #4f46e5;
+		background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
 		color: #ffffff !important;
 		display: flex;
 		align-items: center;
@@ -889,13 +894,14 @@
 	}
 
 	.bottom-nav-item--center.bottom-nav-item--active .bottom-nav-icon {
-		background: #4338ca;
-		transform: scale(1.08);
+		background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+		transform: translateX(-50%) scale(1.06);
 	}
 
 	.bottom-nav-item--center .bottom-nav-label {
 		font-weight: 800;
 		color: #4f46e5;
+		font-size: 9.5px;
 	}
 
 	.bottom-nav-icon {
@@ -909,6 +915,8 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 72px;
+		max-width: 68px;
+		font-size: 10px;
+		line-height: 1;
 	}
 </style>
