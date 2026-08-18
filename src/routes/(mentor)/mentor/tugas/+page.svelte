@@ -233,7 +233,7 @@ let rosterSortOptions = [
 
 	// Level 1 Pagination
 	let currentPage = $state(1);
-	const itemsPerPage = 8; // 8 cards per page (2x4 grid)
+	let itemsPerPage = $state(10); // Default 10 cards per page (selectable: 5, 10, 25, 50)
 
 	let totalPages = $derived(Math.ceil(sortedMeetingSummaries.length / itemsPerPage) || 1);
 
@@ -248,6 +248,7 @@ let rosterSortOptions = [
 		selectedActivityFilter;
 		selectedSortLevel1;
 		searchQuery;
+		itemsPerPage;
 		untrack(() => {
 			currentPage = 1;
 		});
@@ -573,8 +574,24 @@ let rosterSortOptions = [
 			<!-- Pagination Control Bar -->
 			{#if sortedMeetingSummaries.length > 0}
 				<div class="pagination-bar">
-					<div class="pagination-info">
-						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedMeetingSummaries.length)}</strong> dari <strong>{sortedMeetingSummaries.length}</strong> Sesi Pertemuan
+					<div class="flex items-center gap-4 flex-wrap">
+						<div class="pagination-info">
+							Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedMeetingSummaries.length)}</strong> dari <strong>{sortedMeetingSummaries.length}</strong> Sesi Pertemuan
+						</div>
+
+						<div class="page-size-selector">
+							<span class="text-xs text-slate-500 font-medium">Tampilkan:</span>
+							<select
+								bind:value={itemsPerPage}
+								class="page-size-select"
+								aria-label="Jumlah data per halaman"
+							>
+								<option value={5}>5 data</option>
+								<option value={10}>10 data</option>
+								<option value={25}>25 data</option>
+								<option value={50}>50 data</option>
+							</select>
+						</div>
 					</div>
 
 					{#if totalPages > 1}
@@ -1248,6 +1265,31 @@ let rosterSortOptions = [
 
 	.pagination-info strong {
 		color: #0f172a;
+	}
+
+	.page-size-selector {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.page-size-select {
+		padding: 4px 8px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 700;
+		color: #0f172a;
+		cursor: pointer;
+		outline: none;
+		transition: border-color 150ms ease;
+	}
+
+	.page-size-select:focus,
+	.page-size-select:hover {
+		border-color: #4f46e5;
 	}
 
 	.pagination-actions {

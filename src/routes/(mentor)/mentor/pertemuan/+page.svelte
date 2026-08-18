@@ -9,6 +9,7 @@
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import { toast } from '$lib/stores/toast';
+	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -327,6 +328,31 @@
 			})
 	);
 
+	// Pagination State
+	let currentPage = $state(1);
+	let itemsPerPage = $state(10); // Selectable page size: 5, 10, 25, 50
+
+	let totalPages = $derived(Math.ceil(filteredMeetings.length / itemsPerPage) || 1);
+
+	let paginatedMeetings = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		return filteredMeetings.slice(start, start + itemsPerPage);
+	});
+
+	$effect(() => {
+		selectedKelas;
+		selectedActivity;
+		selectedTimeFilter;
+		sortBy;
+		searchQuery;
+		startDate;
+		endDate;
+		itemsPerPage;
+		untrack(() => {
+			currentPage = 1;
+		});
+	});
+
 	function getActivityBadgeStyle(type: string): { bg: string; text: string; border: string; label: string } {
 		switch (type) {
 			case 'teori':
@@ -555,10 +581,10 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each filteredMeetings as m, idx (m.id)}
+					{#each paginatedMeetings as m, idx (m.id)}
 						{@const badge = getActivityBadgeStyle(m.activityType)}
 						<tr>
-							<td class="font-mono text-xs text-slate-400">{idx + 1}</td>
+							<td class="font-mono text-xs text-slate-400">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
 							<td>
 								<div class="flex flex-col gap-0.5">
 									<a href={`/mentor/pertemuan/${m.id}`} class="font-bold text-slate-900 hover:text-indigo-600">
@@ -639,6 +665,64 @@
 				</tbody>
 			</table>
 		</div>
+
+		<!-- Pagination Control Bar -->
+		{#if filteredMeetings.length > 0}
+			<div class="pagination-bar" style="margin-top: 16px;">
+				<div class="flex items-center gap-4 flex-wrap">
+					<div class="pagination-info">
+						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredMeetings.length)}</strong> dari <strong>{filteredMeetings.length}</strong> Pertemuan
+					</div>
+
+					<div class="page-size-selector">
+						<span class="text-xs text-slate-500 font-medium">Tampilkan:</span>
+						<select
+							bind:value={itemsPerPage}
+							class="page-size-select"
+							aria-label="Jumlah data per halaman"
+						>
+							<option value={5}>5 data</option>
+							<option value={10}>10 data</option>
+							<option value={25}>25 data</option>
+							<option value={50}>50 data</option>
+						</select>
+					</div>
+				</div>
+
+				{#if totalPages > 1}
+					<div class="pagination-actions">
+						<button
+							type="button"
+							class="btn-pagination-nav"
+							disabled={currentPage === 1}
+							onclick={() => currentPage--}
+						>
+							‹ Prev
+						</button>
+
+						{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
+							<button
+								type="button"
+								class="btn-pagination-num"
+								class:btn-pagination-num--active={currentPage === pageNum}
+								onclick={() => (currentPage = pageNum)}
+							>
+								{pageNum}
+							</button>
+						{/each}
+
+						<button
+							type="button"
+							class="btn-pagination-nav"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage++}
+						>
+							Next ›
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1843,9 +1927,9 @@
 	}
 
 	.remove-file-btn:hover {
-		background: #ef4444;
-		color: #ffffff;
-		border-color: #ef4444;
+		background: #fee2e2;
+		color: #b91c1c;
+		border-color: #fca5a5;
 	}
 
 	.task-form-panel {
@@ -1862,6 +1946,116 @@
 		display: flex;
 		align-items: center;
 		gap: 14px;
+	}
+
+	/* Pagination Bar */
+	.pagination-bar {
+		padding: 12px 20px;
+		background: #ffffff;
+		border: 1px solid var(--border-subtle, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+	}
+
+	.pagination-info {
+		font-size: 13px;
+		color: #64748b;
+	}
+
+	.pagination-info strong {
+		color: #0f172a;
+	}
+
+	.page-size-selector {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.page-size-select {
+		padding: 4px 8px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 700;
+		color: #0f172a;
+		cursor: pointer;
+		outline: none;
+		transition: border-color 150ms ease;
+	}
+
+	.page-size-select:focus,
+	.page-size-select:hover {
+		border-color: #4f46e5;
+	}
+
+	.pagination-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-pagination-nav {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 12px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-nav:hover:not(:disabled) {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+	}
+
+	.btn-pagination-nav:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.btn-pagination-num {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 700;
+		color: #475569;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-pagination-num:hover {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+	}
+
+	.btn-pagination-num--active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		border-color: #4f46e5 !important;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 	}
 </style>
 
