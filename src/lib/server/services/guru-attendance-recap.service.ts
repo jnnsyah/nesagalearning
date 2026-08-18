@@ -74,6 +74,8 @@ export interface GuruAttendanceRecapData {
 		totalSessionsCount: number;
 		totalStudentsCount: number;
 		overallAttendanceRate: number;
+		excusedRate: number;
+		alphaRate: number;
 		totalHadir: number;
 		totalExcused: number;
 		totalAlpha: number;
@@ -155,6 +157,8 @@ export const GuruAttendanceRecapService = {
 					totalSessionsCount: 0,
 					totalStudentsCount: 0,
 					overallAttendanceRate: 0,
+					excusedRate: 0,
+					alphaRate: 0,
 					totalHadir: 0,
 					totalExcused: 0,
 					totalAlpha: 0,
@@ -365,6 +369,12 @@ export const GuruAttendanceRecapService = {
 		const overallAttendanceRate = totalPossibleSlotsCount > 0
 			? Math.round((totalHadir / totalPossibleSlotsCount) * 100)
 			: 0;
+		const excusedRate = totalPossibleSlotsCount > 0
+			? Math.round((totalExcused / totalPossibleSlotsCount) * 100)
+			: 0;
+		const alphaRate = totalPossibleSlotsCount > 0
+			? Math.round((totalAlpha / totalPossibleSlotsCount) * 100)
+			: 0;
 
 		const sessions: SessionHeaderItem[] = sessionsList.map((s) => ({
 			id: s.id,
@@ -401,6 +411,8 @@ export const GuruAttendanceRecapService = {
 				totalSessionsCount,
 				totalStudentsCount,
 				overallAttendanceRate,
+				excusedRate,
+				alphaRate,
 				totalHadir,
 				totalExcused,
 				totalAlpha,
