@@ -330,7 +330,14 @@
 
 	// Pagination State
 	let currentPage = $state(1);
-	let itemsPerPage = $state(10); // Selectable page size: 5, 10, 25, 50
+	let itemsPerPage = $state<number>(10); // Selectable page size: 5, 10, 25, 50
+
+	let pageSizeOptions = [
+		{ value: 5, label: '5 Data' },
+		{ value: 10, label: '10 Data' },
+		{ value: 25, label: '25 Data' },
+		{ value: 50, label: '50 Data' }
+	];
 
 	let totalPages = $derived(Math.ceil(filteredMeetings.length / itemsPerPage) || 1);
 
@@ -674,18 +681,13 @@
 						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredMeetings.length)}</strong> dari <strong>{filteredMeetings.length}</strong> Pertemuan
 					</div>
 
-					<div class="page-size-selector">
-						<span class="text-xs text-slate-500 font-medium">Tampilkan:</span>
-						<select
+					<div class="page-size-selector w-32">
+						<CustomSelect
+							id="page-size-select-pertemuan"
 							bind:value={itemsPerPage}
-							class="page-size-select"
-							aria-label="Jumlah data per halaman"
-						>
-							<option value={5}>5 data</option>
-							<option value={10}>10 data</option>
-							<option value={25}>25 data</option>
-							<option value={50}>50 data</option>
-						</select>
+							options={pageSizeOptions}
+							searchable={false}
+						/>
 					</div>
 				</div>
 
