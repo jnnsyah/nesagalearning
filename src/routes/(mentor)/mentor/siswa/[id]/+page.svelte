@@ -232,7 +232,7 @@
 	     TAB 1: CURRICULUM PROGRESS BREAKDOWN
 	     ══════════════════════════════════════════════════════════ -->
 	{#if activeTab === 'curriculum'}
-		<section aria-label="Rincian Fase Kurikulum Siswa" class="pt-2">
+		<section aria-label="Rincian Fase Kurikulum Siswa" class="pt-3">
 			{#if !data.studentProgress || data.studentProgress.phases.length === 0}
 				<div class="empty-card py-16 text-center bg-white rounded-xl border border-slate-200">
 					<p class="text-sm text-slate-500 font-mono">Belum ada modul / fase kurikulum yang ditautkan ke kelas ini.</p>
@@ -326,7 +326,7 @@
 	     TAB 2: ATTENDANCE SESSION HISTORY DATA TABLE WITH FILTERS & PAGINATION
 	     ══════════════════════════════════════════════════════════ -->
 	{:else}
-		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-2">
+		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-3">
 			<!-- Filter Controls Grid Card -->
 			<div class="page-filter-card mb-6 space-y-4">
 				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->
@@ -685,6 +685,7 @@
 		align-items: center;
 		gap: 12px;
 		border-bottom: 2px solid #e2e8f0;
+		margin-bottom: 28px;
 	}
 
 	.tab-btn {
