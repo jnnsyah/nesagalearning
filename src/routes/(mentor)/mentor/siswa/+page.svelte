@@ -383,10 +383,17 @@
 					</div>
 
 					<div class="overall-progress-box">
-						<span class="progress-val-text">
-							{data.studentProgress ? `${data.studentProgress.student.overallProgress}%` : '0%'}
-						</span>
-						<span class="progress-lbl-text">Progres Komposit</span>
+						{#if data.studentProgress?.student.hasAnyStarted}
+							<span class="progress-val-text">
+								{data.studentProgress.student.overallProgress}%
+							</span>
+							<span class="progress-lbl-text">Progres Komposit</span>
+						{:else}
+							<span class="progress-val-text-empty">
+								Belum Dimulai
+							</span>
+							<span class="progress-lbl-text">Status Sesi Kelas</span>
+						{/if}
 					</div>
 				</div>
 
@@ -433,50 +440,65 @@
 									<span class="phase-badge-pill">{phaseItem.phaseCode}</span>
 									<h5 class="font-extrabold text-slate-900 text-sm">{phaseItem.title}</h5>
 								</div>
-								<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
+								{#if phaseItem.hasStartedSubPhases}
+									<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
+								{:else}
+									<span class="badge badge-subtle text-[11px]">BELUM BERJALAN</span>
+								{/if}
 							</div>
 
 							<!-- Phase Progress Bar -->
 							<div class="progress-track-bar mb-4">
 								<div
 									class="progress-fill-bar"
-									style="width: {phaseItem.completionRate}%;"
+									style="width: {phaseItem.hasStartedSubPhases ? phaseItem.completionRate : 0}%;"
 								></div>
 							</div>
 
 							<!-- SubPhases List with Generous Spacing -->
 							<div class="subphases-list-stack space-y-3">
 								{#each phaseItem.subPhases as subP}
-									<div class="subphase-card">
+									<div class="subphase-card" class:subphase-unstarted={!subP.isStarted}>
 										<div class="flex items-center justify-between gap-3 mb-2">
 											<h6 class="text-xs font-bold text-slate-900 truncate">{subP.title}</h6>
-											<span class="subphase-percent-tag">{subP.completionRate}%</span>
+											{#if subP.isStarted}
+												<span class="subphase-percent-tag">{subP.completionRate}%</span>
+											{:else}
+												<span class="badge badge-subtle text-[10px]">BELUM DIMULAI</span>
+											{/if}
 										</div>
 
 										<div class="flex items-center gap-2 flex-wrap">
-											<span class="meta-pill meta-pill-slate">
-												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
-												<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
-											</span>
-
-											{#if subP.totalTasksCount > 0}
-												<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
-													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-													<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
+											{#if !subP.isStarted}
+												<span class="meta-pill meta-pill-gray">
+													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+													<span>Belum ada sesi / tugas diselenggarakan</span>
 												</span>
-											{/if}
+											{:else}
+												<span class="meta-pill meta-pill-slate">
+													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
+													<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
+												</span>
 
-											{#if subP.hasQuiz}
-												{#if subP.quizPassed}
-													<span class="meta-pill meta-pill-emerald">
-														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-														<span>Quiz Lulus</span>
+												{#if subP.totalTasksCount > 0}
+													<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
+														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+														<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
 													</span>
-												{:else}
-													<span class="meta-pill meta-pill-gray">
-														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-														<span>Quiz Pending</span>
-													</span>
+												{/if}
+
+												{#if subP.hasQuiz}
+													{#if subP.quizPassed}
+														<span class="meta-pill meta-pill-emerald">
+															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+															<span>Quiz Lulus</span>
+														</span>
+													{:else}
+														<span class="meta-pill meta-pill-gray">
+															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+															<span>Quiz Pending</span>
+														</span>
+													{/if}
 												{/if}
 											{/if}
 										</div>
@@ -820,6 +842,15 @@
 		line-height: 1.1;
 	}
 
+	.progress-val-text-empty {
+		display: block;
+		font-size: 14px;
+		font-weight: 800;
+		font-family: var(--font-mono, monospace);
+		color: #64748b;
+		line-height: 1.1;
+	}
+
 	.progress-lbl-text {
 		display: block;
 		font-size: 9px;
@@ -908,6 +939,11 @@
 		border-radius: 10px;
 		padding: 12px 14px;
 		transition: background 0.15s ease;
+	}
+
+	.subphase-unstarted {
+		border-left-color: #cbd5e1 !important;
+		background: #fafafa !important;
 	}
 
 	.subphase-card:hover {

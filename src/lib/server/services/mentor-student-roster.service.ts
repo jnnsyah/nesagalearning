@@ -60,6 +60,7 @@ export interface StudentSubPhaseDetail {
 	approvedTasksCount: number;
 	hasQuiz: boolean;
 	quizPassed: boolean;
+	isStarted: boolean;
 	completionRate: number;
 }
 
@@ -68,6 +69,7 @@ export interface StudentPhaseDetail {
 	phaseCode: string;
 	title: string;
 	sortOrder: number;
+	hasStartedSubPhases: boolean;
 	completionRate: number;
 	subPhases: StudentSubPhaseDetail[];
 }
@@ -83,6 +85,7 @@ export interface StudentProgressDetail {
 		totalPoints: number;
 		attendanceRate: number;
 		overallProgress: number;
+		hasAnyStarted: boolean;
 	};
 	phases: StudentPhaseDetail[];
 }
@@ -372,7 +375,6 @@ export const MentorStudentRosterService = {
 		studentUserId: number,
 		kelasInstanceId: number
 	): Promise<StudentProgressDetail | null> {
-		// 1. Fetch student info & assigned class track
 		const [classRow] = await db
 			.select({
 				id: kelasInstance.id,
@@ -397,7 +399,6 @@ export const MentorStudentRosterService = {
 
 		if (!studentUser) return null;
 
-		// 2. Fetch phases & subphases for the track
 		const phasesRaw = await db
 			.select({
 				id: phase.id,
@@ -420,7 +421,8 @@ export const MentorStudentRosterService = {
 					kelasName: classRow.name,
 					totalPoints: 0,
 					attendanceRate: 0,
-					overallProgress: 0
+					overallProgress: 0,
+					hasAnyStarted: false
 				},
 				phases: []
 			};
@@ -439,7 +441,6 @@ export const MentorStudentRosterService = {
 
 		const subPhaseIds = subPhasesRaw.map((sp) => sp.id);
 
-		// 3. Parallel Fetching: Meetings, Attendance, Tasks, Submissions, Quizzes & Attempts
 		const [sessionsRaw, studentAttendanceRaw, tasksRaw, studentSubmissionsRaw, quizzesRaw, studentQuizAttemptsRaw, totalPointsRow] = await Promise.all([
 			subPhaseIds.length > 0
 				? db
@@ -527,7 +528,6 @@ export const MentorStudentRosterService = {
 				.map((qa) => qa.quizId)
 		);
 
-		// Session -> Tasks map
 		const sessionTasksMap = new Map<number, number[]>();
 		for (const t of tasksRaw) {
 			if (t.pertemuanId) {
@@ -537,7 +537,6 @@ export const MentorStudentRosterService = {
 			}
 		}
 
-		// SubPhase -> Sessions map
 		const subPhaseSessionsMap = new Map<number, number[]>();
 		for (const s of sessionsRaw) {
 			if (s.subPhaseId) {
@@ -547,7 +546,6 @@ export const MentorStudentRosterService = {
 			}
 		}
 
-		// SubPhase -> Quizzes map
 		const subPhaseQuizzesMap = new Map<number, number[]>();
 		for (const q of quizzesRaw) {
 			const list = subPhaseQuizzesMap.get(q.subPhaseId) || [];
@@ -555,12 +553,8 @@ export const MentorStudentRosterService = {
 			subPhaseQuizzesMap.set(q.subPhaseId, list);
 		}
 
-		// 4. Calculate SubPhase & Phase progress
-		let totalPhaseRatesSum = 0;
-
 		const phases: StudentPhaseDetail[] = phasesRaw.map((p) => {
 			const subPhasesForPhase = subPhasesRaw.filter((sp) => sp.phaseId === p.id);
-			let totalSubPhaseRateSum = 0;
 
 			const subPhases: StudentSubPhaseDetail[] = subPhasesForPhase.map((sp) => {
 				const sessIds = subPhaseSessionsMap.get(sp.id) || [];
@@ -582,13 +576,17 @@ export const MentorStudentRosterService = {
 				const hasQuiz = quizIds.length > 0;
 				const quizPassed = hasQuiz && quizIds.some((qId) => passedQuizzesSet.has(qId));
 
-				// Composite calculation for SubPhase
+				// Subphase is considered started only if sessions have been held, tasks assigned, or quiz published
+				const isStarted = totalSessionsCount > 0 || totalTasksCount > 0 || hasQuiz;
+
 				const attRate = totalSessionsCount > 0 ? (attendedSessionsCount / totalSessionsCount) * 100 : 0;
 				const tskRate = totalTasksCount > 0 ? (approvedTasksCount / totalTasksCount) * 100 : 0;
 				const qzRate = hasQuiz ? (quizPassed ? 100 : 0) : 0;
 
 				let completionRate = 0;
-				if (totalTasksCount > 0 && hasQuiz) {
+				if (!isStarted) {
+					completionRate = 0;
+				} else if (totalTasksCount > 0 && hasQuiz) {
 					completionRate = Math.round(attRate * 0.4 + tskRate * 0.3 + qzRate * 0.3);
 				} else if (totalTasksCount > 0) {
 					completionRate = Math.round(attRate * 0.5 + tskRate * 0.5);
@@ -597,8 +595,6 @@ export const MentorStudentRosterService = {
 				} else {
 					completionRate = Math.round(attRate);
 				}
-
-				totalSubPhaseRateSum += completionRate;
 
 				return {
 					id: sp.id,
@@ -610,28 +606,32 @@ export const MentorStudentRosterService = {
 					approvedTasksCount,
 					hasQuiz,
 					quizPassed,
+					isStarted,
 					completionRate
 				};
 			});
 
-			const phaseCompletionRate = subPhases.length > 0
-				? Math.round(totalSubPhaseRateSum / subPhases.length)
+			const startedSubPhases = subPhases.filter((sp) => sp.isStarted);
+			const hasStartedSubPhases = startedSubPhases.length > 0;
+			const phaseCompletionRate = hasStartedSubPhases
+				? Math.round(startedSubPhases.reduce((acc, sp) => acc + sp.completionRate, 0) / startedSubPhases.length)
 				: 0;
-
-			totalPhaseRatesSum += phaseCompletionRate;
 
 			return {
 				id: p.id,
 				phaseCode: `FASE ${p.sortOrder}`,
 				title: p.title,
 				sortOrder: p.sortOrder,
+				hasStartedSubPhases,
 				completionRate: phaseCompletionRate,
 				subPhases
 			};
 		});
 
-		const overallProgress = phases.length > 0
-			? Math.round(totalPhaseRatesSum / phases.length)
+		const startedPhases = phases.filter((p) => p.hasStartedSubPhases);
+		const hasAnyStarted = startedPhases.length > 0;
+		const overallProgress = hasAnyStarted
+			? Math.round(startedPhases.reduce((acc, p) => acc + p.completionRate, 0) / startedPhases.length)
 			: 0;
 
 		const totalPoints = totalPointsRow[0] ? Number(totalPointsRow[0].totalPoints) : 0;
@@ -646,7 +646,8 @@ export const MentorStudentRosterService = {
 				kelasName: classRow.name,
 				totalPoints,
 				attendanceRate: 0,
-				overallProgress
+				overallProgress,
+				hasAnyStarted
 			},
 			phases
 		};
