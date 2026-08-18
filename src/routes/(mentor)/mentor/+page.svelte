@@ -131,46 +131,35 @@
 					<p class="empty-sub">Semua tugas siswa dari seluruh sesi pertemuan telah selesai diperiksa.</p>
 				</div>
 			{:else}
-				<div class="queue-list space-y-3 p-4">
+				<div class="queue-list space-y-2.5 p-3.5">
 					{#each pendingMeetingSummaries as m}
-						<div class="meeting-task-card">
-							<div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
-								<span class="track-badge">
-									{m.phaseTitle || 'Track Pembelajaran'} &rsaquo; {m.subPhaseTitle || 'Sub-Phase'}
-								</span>
-								<span class="task-size-pill">
-									{m.taskSize.toUpperCase()} (+{m.taskSize === 'kecil' ? '50' : m.taskSize === 'besar' ? '200' : '100'} Poin)
-								</span>
-							</div>
+						<div class="meeting-task-item">
+							<div class="flex-1 min-w-0">
+								<div class="flex items-center gap-2 mb-1 flex-wrap">
+									<span class="track-badge-sm">
+										{m.subPhaseTitle || 'Sub-Phase'}
+									</span>
+									<span class="badge badge-kelas-sm">{m.kelasName}</span>
+								</div>
 
-							<h4 class="task-card-title">{m.pertemuanTitle}</h4>
-							<p class="task-card-sub">
-								Sesi: <strong>{formatIndoDate(m.sessionDate)}</strong> &bull; {m.kelasName} &bull; Task: <strong>{m.taskTitle}</strong>
-							</p>
-
-							<!-- Live Submission Stats Grid -->
-							<div class="submission-stats-row">
-								<div class="stat-pill stat-pending">
-									<span class="stat-num">{m.stats.pending}</span>
-									<span class="stat-txt">Pending</span>
-								</div>
-								<div class="stat-pill stat-revisi">
-									<span class="stat-num">{m.stats.revisi}</span>
-									<span class="stat-txt">Revisi</span>
-								</div>
-								<div class="stat-pill stat-approved">
-									<span class="stat-num">{m.stats.approved}</span>
-									<span class="stat-txt">Disetujui</span>
-								</div>
-								<div class="stat-pill stat-total">
-									<span class="stat-num">{m.stats.total}</span>
-									<span class="stat-txt">Total</span>
+								<h4 class="task-item-title truncate">{m.pertemuanTitle}</h4>
+								
+								<div class="task-item-meta flex items-center gap-3 mt-1">
+									<span class="truncate max-w-[200px]">Task: <strong class="text-slate-700">{m.taskTitle}</strong></span>
+									<div class="flex items-center gap-1.5 font-mono">
+										{#if m.stats.pending > 0}
+											<span class="pill-pending">{m.stats.pending} Pending</span>
+										{/if}
+										{#if m.stats.revisi > 0}
+											<span class="pill-revisi">{m.stats.revisi} Revisi</span>
+										{/if}
+									</div>
 								</div>
 							</div>
 
-							<div class="card-action-row pt-2">
-								<a href="/mentor/tugas" class="btn-grade-full">
-									<span>Buka Studio Penilaian ({m.stats.pending + m.stats.revisi} Menunggu) &rarr;</span>
+							<div class="flex-shrink-0 self-center">
+								<a href="/mentor/tugas" class="btn-grade-sm">
+									<span>Buka Studio ({m.stats.pending + m.stats.revisi}) &rarr;</span>
 								</a>
 							</div>
 						</div>
@@ -447,111 +436,62 @@
 		color: var(--text-primary);
 	}
 
-	.meeting-task-card {
+	.meeting-task-item {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 16px;
+		padding: 12px 14px;
 		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		box-shadow: var(--shadow-sm);
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 		transition: all 150ms ease;
 	}
 
-	.meeting-task-card:hover {
+	.meeting-task-item:hover {
 		border-color: #cbd5e1;
-		box-shadow: var(--shadow-md);
+		background: #f8fafc;
 	}
 
-	.track-badge {
+	.track-badge-sm {
 		font-family: var(--font-mono);
-		font-size: 10px;
+		font-size: 9.5px;
 		font-weight: 700;
 		color: #4338ca;
 		background: #e0e7ff;
-		padding: 2px 8px;
+		padding: 1.5px 6px;
 		border-radius: 4px;
 	}
 
-	.task-size-pill {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 800;
-		color: #047857;
-		background: #d1fae5;
-		padding: 2px 8px;
-		border-radius: 4px;
-	}
-
-	.task-card-title {
+	.task-item-title {
 		font-family: var(--font-macro);
-		font-size: 14px;
+		font-size: 13px;
 		font-weight: 800;
 		color: var(--text-primary);
 		margin: 0;
 	}
 
-	.task-card-sub {
-		font-size: 12px;
+	.task-item-meta {
+		font-size: 11.5px;
 		color: var(--text-secondary);
-		line-height: 1.4;
 	}
 
-	.submission-stats-row {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 8px;
-		margin-top: 4px;
-	}
-
-	.stat-pill {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 6px 4px;
-		border-radius: 6px;
-		text-align: center;
-	}
-
-	.stat-pending { background: #fef3c7; color: #d97706; }
-	.stat-revisi { background: #ffe4e6; color: #be123c; }
-	.stat-approved { background: #dcfce7; color: #15803d; }
-	.stat-total { background: #f1f5f9; color: #475569; }
-
-	.stat-num {
-		font-family: var(--font-macro);
-		font-size: 14px;
-		font-weight: 800;
-		line-height: 1;
-	}
-
-	.stat-txt {
+	.pill-pending {
+		background: #fef3c7;
+		color: #d97706;
 		font-size: 9.5px;
-		font-weight: 700;
-		text-transform: uppercase;
-		margin-top: 2px;
+		font-weight: 800;
+		padding: 1px 5px;
+		border-radius: 4px;
 	}
 
-	.btn-grade-full {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		width: 100%;
-		padding: 8px 14px;
-		background: #4f46e5;
-		color: #ffffff;
-		border-radius: 8px;
-		font-family: var(--font-macro);
-		font-size: 12px;
-		font-weight: 700;
-		text-decoration: none;
-		transition: background 150ms ease;
-	}
-
-	.btn-grade-full:hover {
-		background: #4338ca;
+	.pill-revisi {
+		background: #ffe4e6;
+		color: #be123c;
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 1px 5px;
+		border-radius: 4px;
 	}
 
 	.queue-item {
