@@ -763,14 +763,7 @@
 							</td>
 							<td>
 								<div class="flex flex-col gap-1 text-xs">
-									<div class="flex items-center gap-1.5 font-semibold text-slate-800">
-										<span>{formatIndoDate(m.sessionDate)}</span>
-										{#if m.isWeekend}
-											<span class="weekend-tag">WEEKEND</span>
-										{/if}
-									</div>
-									<span class="text-slate-500 font-mono">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</span>
-									<div class="mt-0.5">
+									<div>
 										{#if status === 'live'}
 											<span class="status-pill-live">LIVE HARI INI</span>
 										{:else if status === 'upcoming'}
@@ -779,6 +772,13 @@
 											<span class="status-pill-completed">SELESAI</span>
 										{/if}
 									</div>
+									<div class="flex items-center gap-1.5 font-semibold text-slate-800">
+										<span>{formatIndoDate(m.sessionDate)}</span>
+										{#if m.isWeekend}
+											<span class="weekend-tag">WEEKEND</span>
+										{/if}
+									</div>
+									<span class="text-slate-500 font-mono">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</span>
 								</div>
 							</td>
 							<td>
