@@ -455,7 +455,7 @@
 
 													<div class="subphase-completion-box">
 														<div class="flex items-center justify-between text-xs font-mono mb-1.5">
-															<span class="text-slate-600 font-semibold">Tingkat Ketercapaian Siswa</span>
+															<span class="text-slate-600 font-semibold">Ketercapaian Komposit</span>
 															<span class="font-bold text-slate-800">{sp.completionRate}%</span>
 														</div>
 														<div class="mini-progress-track">
@@ -467,8 +467,45 @@
 																style="width: {sp.completionRate}%;"
 															></div>
 														</div>
-														<div class="text-[11px] text-slate-500 font-mono mt-1 text-right">
-															Est. {sp.completedStudentsCount} dari {sp.totalActiveStudents} Siswa Selesai
+
+														<div class="breakdown-grid">
+															<div class="breakdown-item">
+																<div class="breakdown-label">
+																	<span>Kehadiran</span>
+																	<span class="breakdown-val">{sp.attendanceRate}%</span>
+																</div>
+																<div class="breakdown-bar-track">
+																	<div class="breakdown-bar-fill bg-blue" style="width: {sp.attendanceRate}%;"></div>
+																</div>
+															</div>
+
+															{#if sp.totalTasks > 0}
+																<div class="breakdown-item">
+																	<div class="breakdown-label">
+																		<span>Tugas ({sp.totalApprovedSubmissions} approved)</span>
+																		<span class="breakdown-val">{sp.taskCompletionRate}%</span>
+																	</div>
+																	<div class="breakdown-bar-track">
+																		<div class="breakdown-bar-fill bg-emerald" style="width: {sp.taskCompletionRate}%;"></div>
+																	</div>
+																</div>
+															{/if}
+
+															{#if sp.hasQuiz}
+																<div class="breakdown-item">
+																	<div class="breakdown-label">
+																		<span>Quiz Lulus ({sp.quizPassedCount}/{sp.totalActiveStudents})</span>
+																		<span class="breakdown-val">{sp.quizPassRate}%</span>
+																	</div>
+																	<div class="breakdown-bar-track">
+																		<div class="breakdown-bar-fill bg-violet" style="width: {sp.quizPassRate}%;"></div>
+																	</div>
+																</div>
+															{/if}
+														</div>
+
+														<div class="text-[11px] text-slate-500 font-mono mt-1.5 text-right">
+															Est. {sp.completedStudentsCount} dari {sp.totalActiveStudents} Siswa Tercapai
 														</div>
 													</div>
 												</div>
@@ -1002,6 +1039,53 @@
 			grid-template-columns: 1fr;
 		}
 	}
+
+	/* Breakdown Mini Bars */
+	.breakdown-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px dashed #e2e8f0;
+	}
+
+	.breakdown-item {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.breakdown-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 10px;
+		font-family: var(--font-mono, monospace);
+		color: #64748b;
+	}
+
+	.breakdown-val {
+		font-weight: 700;
+		color: #334155;
+	}
+
+	.breakdown-bar-track {
+		height: 4px;
+		background: #f1f5f9;
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.breakdown-bar-fill {
+		height: 100%;
+		border-radius: 2px;
+		transition: width 0.3s ease;
+	}
+
+	.breakdown-bar-fill.bg-blue { background: #3b82f6; }
+	.breakdown-bar-fill.bg-emerald { background: #10b981; }
+	.breakdown-bar-fill.bg-violet { background: #8b5cf6; }
 
 	@media (max-width: 640px) {
 		.page-container {

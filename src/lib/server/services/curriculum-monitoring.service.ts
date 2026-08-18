@@ -10,9 +10,12 @@ import {
 	tahunAjaran,
 	pertemuan,
 	attendance,
-	keanggotaan
+	keanggotaan,
+	task,
+	submission,
+	quizAttempt
 } from '$lib/server/db/schema';
-import { eq, and, inArray, desc, sql, count } from 'drizzle-orm';
+import { eq, and, inArray, desc, sql, count, gte } from 'drizzle-orm';
 
 export interface TahunAjaranOption {
 	id: number;
@@ -55,6 +58,13 @@ export interface SubPhaseProgressItem {
 	completedStudentsCount: number;
 	totalActiveStudents: number;
 	completionRate: number; // 0 - 100%
+	// Breakdown rates for transparency
+	attendanceRate: number;
+	taskCompletionRate: number;
+	quizPassRate: number;
+	totalTasks: number;
+	totalApprovedSubmissions: number;
+	quizPassedCount: number;
 	status: 'SELESAI' | 'BERJALAN' | 'BELUM_DIMULAI';
 }
 
@@ -100,6 +110,36 @@ export interface CurriculumDetailViewData {
 }
 
 export type CurriculumMonitoringData = CurriculumGridViewData | CurriculumDetailViewData;
+
+/**
+ * Calculate a composite completion rate for a SubPhase using all available signals.
+ * Weights are assigned dynamically based on what content exists:
+ *
+ *   - Has Tasks + Quiz:  40% Attendance + 30% Task + 30% Quiz
+ *   - Has Tasks only:    50% Attendance + 50% Task
+ *   - Has Quiz only:     50% Attendance + 50% Quiz
+ *   - Neither:           100% Attendance
+ */
+function calculateCompositeRate(params: {
+	attendanceRate: number;
+	taskCompletionRate: number;
+	quizPassRate: number;
+	hasTasks: boolean;
+	hasQuiz: boolean;
+}): number {
+	const { attendanceRate, taskCompletionRate, quizPassRate, hasTasks, hasQuiz } = params;
+
+	if (hasTasks && hasQuiz) {
+		return Math.round(attendanceRate * 0.4 + taskCompletionRate * 0.3 + quizPassRate * 0.3);
+	}
+	if (hasTasks) {
+		return Math.round(attendanceRate * 0.5 + taskCompletionRate * 0.5);
+	}
+	if (hasQuiz) {
+		return Math.round(attendanceRate * 0.5 + quizPassRate * 0.5);
+	}
+	return Math.round(attendanceRate);
+}
 
 export const CurriculumMonitoringService = {
 	/**
@@ -225,70 +265,58 @@ export const CurriculumMonitoringService = {
 			};
 		}
 
-		// Collect all class IDs running across all tracks
 		const allExecutingClassIds = Array.from(trackMap.values()).flatMap((t) => t.kelasIds);
 
-		// 2. Parallel Batch Fetching of counts across all tracks
-		const [phasesCountList, subPhasesCountList, materiCountList, quizCountList, activeStudentsList] = await Promise.all([
-			// Phases per Track
+		// 2. Parallel Batch Fetching: counts + students + sessions
+		const [
+			phasesCountList,
+			subPhasesCountList,
+			materiCountList,
+			quizCountList,
+			activeStudentsList,
+			allSessions
+		] = await Promise.all([
 			db
-				.select({
-					trackId: phase.curriculumTrackId,
-					total: count(phase.id)
-				})
+				.select({ trackId: phase.curriculumTrackId, total: count(phase.id) })
 				.from(phase)
 				.where(inArray(phase.curriculumTrackId, allTrackIds))
 				.groupBy(phase.curriculumTrackId),
 
-			// SubPhases per Track
 			db
-				.select({
-					trackId: phase.curriculumTrackId,
-					total: count(subPhase.id)
-				})
+				.select({ trackId: phase.curriculumTrackId, total: count(subPhase.id) })
 				.from(subPhase)
 				.innerJoin(phase, eq(subPhase.phaseId, phase.id))
 				.where(inArray(phase.curriculumTrackId, allTrackIds))
 				.groupBy(phase.curriculumTrackId),
 
-			// Materi per Track
 			db
-				.select({
-					trackId: phase.curriculumTrackId,
-					total: count(materi.id)
-				})
+				.select({ trackId: phase.curriculumTrackId, total: count(materi.id) })
 				.from(materi)
 				.innerJoin(subPhase, eq(materi.subPhaseId, subPhase.id))
 				.innerJoin(phase, eq(subPhase.phaseId, phase.id))
 				.where(inArray(phase.curriculumTrackId, allTrackIds))
 				.groupBy(phase.curriculumTrackId),
 
-			// Quiz per Track
 			db
-				.select({
-					trackId: phase.curriculumTrackId,
-					total: count(quiz.id)
-				})
+				.select({ trackId: phase.curriculumTrackId, total: count(quiz.id) })
 				.from(quiz)
 				.innerJoin(subPhase, eq(quiz.subPhaseId, subPhase.id))
 				.innerJoin(phase, eq(subPhase.phaseId, phase.id))
 				.where(inArray(phase.curriculumTrackId, allTrackIds))
 				.groupBy(phase.curriculumTrackId),
 
-			// Enrolled Students per Class
 			allExecutingClassIds.length > 0
 				? db
-						.select({
-							kelasInstanceId: keanggotaan.kelasInstanceId,
-							userId: keanggotaan.userId
-						})
+						.select({ kelasInstanceId: keanggotaan.kelasInstanceId, userId: keanggotaan.userId })
 						.from(keanggotaan)
-						.where(
-							and(
-								inArray(keanggotaan.kelasInstanceId, allExecutingClassIds),
-								eq(keanggotaan.status, 'aktif')
-							)
-						)
+						.where(and(inArray(keanggotaan.kelasInstanceId, allExecutingClassIds), eq(keanggotaan.status, 'aktif')))
+				: Promise.resolve([]),
+
+			allExecutingClassIds.length > 0
+				? db
+						.select({ id: pertemuan.id, kelasInstanceId: pertemuan.kelasInstanceId })
+						.from(pertemuan)
+						.where(inArray(pertemuan.kelasInstanceId, allExecutingClassIds))
 				: Promise.resolve([])
 		]);
 
@@ -304,6 +332,7 @@ export const CurriculumMonitoringService = {
 		const quizCountMap = new Map<number, number>();
 		for (const q of quizCountList) quizCountMap.set(q.trackId, Number(q.total));
 
+		// students per class
 		const classStudentsMap = new Map<number, number[]>();
 		for (const st of activeStudentsList) {
 			const list = classStudentsMap.get(st.kelasInstanceId) || [];
@@ -311,66 +340,116 @@ export const CurriculumMonitoringService = {
 			classStudentsMap.set(st.kelasInstanceId, list);
 		}
 
-		// 3. Batch Fetch Attendance Rates for all executing sessions
-		const sessionCounts = allExecutingClassIds.length > 0
+		// 3. Batch attendance, tasks, and submissions for all sessions
+		const allSessionIds = allSessions.map((s) => s.id);
+
+		const [attendanceRows, taskRows, submissionRows] = await Promise.all([
+			allSessionIds.length > 0
+				? db
+						.select({ pertemuanId: attendance.pertemuanId, total: count(attendance.id) })
+						.from(attendance)
+						.where(and(inArray(attendance.pertemuanId, allSessionIds), eq(attendance.status, 'hadir')))
+						.groupBy(attendance.pertemuanId)
+				: Promise.resolve([]),
+
+			allSessionIds.length > 0
+				? db
+						.select({ id: task.id, pertemuanId: task.pertemuanId })
+						.from(task)
+						.where(inArray(task.pertemuanId, allSessionIds))
+				: Promise.resolve([]),
+
+			// We'll fetch submissions separately after we have task IDs
+			Promise.resolve([])
+		]);
+
+		const allTaskIds = taskRows.map((t) => t.id);
+		const approvedSubmissions = allTaskIds.length > 0
 			? await db
-					.select({
-						kelasInstanceId: pertemuan.kelasInstanceId,
-						pertemuanId: pertemuan.id,
-						subPhaseId: pertemuan.subPhaseId
-					})
-					.from(pertemuan)
-					.where(inArray(pertemuan.kelasInstanceId, allExecutingClassIds))
+					.select({ taskId: submission.taskId, total: count(submission.id) })
+					.from(submission)
+					.where(and(inArray(submission.taskId, allTaskIds), eq(submission.status, 'approved')))
+					.groupBy(submission.taskId)
 			: [];
 
-		const sessionIds = sessionCounts.map((s) => s.pertemuanId);
-		const attendanceCounts = sessionIds.length > 0
-			? await db
-					.select({
-						pertemuanId: attendance.pertemuanId,
-						totalHadir: count(attendance.id)
-					})
-					.from(attendance)
-					.where(and(inArray(attendance.pertemuanId, sessionIds), eq(attendance.status, 'hadir')))
-					.groupBy(attendance.pertemuanId)
-			: [];
-
+		// Map: pertemuanId -> attendance count
 		const attendanceMap = new Map<number, number>();
-		for (const a of attendanceCounts) attendanceMap.set(a.pertemuanId, Number(a.totalHadir));
+		for (const a of attendanceRows) attendanceMap.set(a.pertemuanId, Number(a.total));
 
-		// Class Sessions attendance aggregation map: kelasId -> { totalAttended, totalPossible }
-		const classProgressMap = new Map<number, { totalAttended: number; totalSessions: number }>();
-		for (const s of sessionCounts) {
-			const attended = attendanceMap.get(s.pertemuanId) || 0;
-			const entry = classProgressMap.get(s.kelasInstanceId) || { totalAttended: 0, totalSessions: 0 };
-			entry.totalAttended += attended;
-			entry.totalSessions += 1;
-			classProgressMap.set(s.kelasInstanceId, entry);
+		// Map: pertemuanId -> task count, Map: pertemuanId -> approved submissions count
+		const tasksPerSessionMap = new Map<number, number>();
+		const taskIdToSession = new Map<number, number>();
+		for (const t of taskRows) {
+			tasksPerSessionMap.set(t.pertemuanId, (tasksPerSessionMap.get(t.pertemuanId) || 0) + 1);
+			taskIdToSession.set(t.id, t.pertemuanId);
 		}
 
-		// Build final Track Cards
+		const approvedPerSessionMap = new Map<number, number>();
+		for (const s of approvedSubmissions) {
+			const sessId = taskIdToSession.get(s.taskId);
+			if (sessId !== undefined) {
+				approvedPerSessionMap.set(sessId, (approvedPerSessionMap.get(sessId) || 0) + Number(s.total));
+			}
+		}
+
+		// sessions per kelasInstance
+		const sessionsPerClass = new Map<number, number[]>();
+		for (const s of allSessions) {
+			const list = sessionsPerClass.get(s.kelasInstanceId) || [];
+			list.push(s.id);
+			sessionsPerClass.set(s.kelasInstanceId, list);
+		}
+
+		// Build Track Cards
 		const trackCards: TrackSummaryCard[] = [];
 
 		for (const tr of trackMap.values()) {
 			const executingClassIds = tr.kelasIds;
-
-			// Total students in this track
 			let trackTotalStudents = 0;
-			let totalAttendedInTrack = 0;
-			let totalMaxPossibleInTrack = 0;
+
+			// Aggregate across all classes in this track
+			let totalAttended = 0;
+			let totalMaxAttendance = 0; // sessions × students
+			let totalTaskSlots = 0;     // tasks × students eligible
+			let totalApproved = 0;
 
 			for (const cId of executingClassIds) {
 				const sList = classStudentsMap.get(cId) || [];
-				trackTotalStudents += sList.length;
+				const studCount = sList.length;
+				trackTotalStudents += studCount;
 
-				const cProg = classProgressMap.get(cId) || { totalAttended: 0, totalSessions: 0 };
-				totalAttendedInTrack += cProg.totalAttended;
-				totalMaxPossibleInTrack += cProg.totalSessions * (sList.length || 1);
+				const sessList = sessionsPerClass.get(cId) || [];
+				for (const sessId of sessList) {
+					totalAttended += attendanceMap.get(sessId) || 0;
+					totalMaxAttendance += studCount;
+
+					const taskCount = tasksPerSessionMap.get(sessId) || 0;
+					totalTaskSlots += taskCount * studCount;
+					totalApproved += approvedPerSessionMap.get(sessId) || 0;
+				}
 			}
 
-			const avgCompletionRate = totalMaxPossibleInTrack > 0
-				? Math.min(100, Math.round((totalAttendedInTrack / totalMaxPossibleInTrack) * 100))
+			const attendanceRate = totalMaxAttendance > 0
+				? Math.min(100, (totalAttended / totalMaxAttendance) * 100)
 				: 0;
+			const taskRate = totalTaskSlots > 0
+				? Math.min(100, (totalApproved / totalTaskSlots) * 100)
+				: 0;
+
+			const hasTasks = totalTaskSlots > 0;
+			const hasQuizInTrack = (quizCountMap.get(tr.id) || 0) > 0;
+
+			// For Tier 1 cards, quiz pass rate is expensive to compute per-track,
+			// so we use attendance + task only (quiz detail is in Tier 2)
+			const avgCompletionRate = executingClassIds.length === 0
+				? 0
+				: calculateCompositeRate({
+						attendanceRate,
+						taskCompletionRate: taskRate,
+						quizPassRate: 0,
+						hasTasks,
+						hasQuiz: false // defer quiz to detail view
+					});
 
 			trackCards.push({
 				id: tr.id,
@@ -400,6 +479,11 @@ export const CurriculumMonitoringService = {
 
 	/**
 	 * Fetch Tier 2: Detailed Phase & SubPhase Hierarchy (Parallel Query Batching)
+	 *
+	 * Completion per SubPhase = weighted composite of:
+	 *   - Attendance Rate   (kehadiran siswa di sesi pertemuan)
+	 *   - Task Completion   (tugas approved / total tugas × siswa)
+	 *   - Quiz Pass Rate    (siswa lulus quiz ≥ passing score)
 	 */
 	async getTrackDetail(params: {
 		trackId: number;
@@ -414,7 +498,7 @@ export const CurriculumMonitoringService = {
 
 		const activeTaId = selectedTahunAjaran?.id || 1;
 
-		// 1. Parallel Fetching: Track Profile, Executing Classes, and Phases
+		// 1. Parallel: Track profile, executing classes, phases
 		const [[trackRow], runningClasses, trackPhases] = await Promise.all([
 			db
 				.select({
@@ -429,26 +513,13 @@ export const CurriculumMonitoringService = {
 				.where(eq(curriculumTrack.id, params.trackId)),
 
 			db
-				.select({
-					id: kelasInstance.id,
-					name: kelasInstance.name
-				})
+				.select({ id: kelasInstance.id, name: kelasInstance.name })
 				.from(kelasInstance)
-				.where(
-					and(
-						eq(kelasInstance.tahunAjaranId, activeTaId),
-						eq(kelasInstance.curriculumTrackId, params.trackId)
-					)
-				)
+				.where(and(eq(kelasInstance.tahunAjaranId, activeTaId), eq(kelasInstance.curriculumTrackId, params.trackId)))
 				.orderBy(kelasInstance.name),
 
 			db
-				.select({
-					id: phase.id,
-					title: phase.title,
-					description: phase.description,
-					sortOrder: phase.sortOrder
-				})
+				.select({ id: phase.id, title: phase.title, description: phase.description, sortOrder: phase.sortOrder })
 				.from(phase)
 				.where(eq(phase.curriculumTrackId, params.trackId))
 				.orderBy(phase.sortOrder)
@@ -458,66 +529,41 @@ export const CurriculumMonitoringService = {
 			throw new Error('Curriculum Track tidak ditemukan');
 		}
 
-		const kelasOptions: ClassInstanceOption[] = runningClasses.map((c) => ({
-			id: c.id,
-			name: c.name
-		}));
-
-		const selectedKelas = params.kelasInstanceId
-			? kelasOptions.find((k) => k.id === params.kelasInstanceId) || null
-			: null;
-
-		const targetClassIds = selectedKelas
-			? [selectedKelas.id]
-			: kelasOptions.map((c) => c.id);
-
+		const kelasOptions: ClassInstanceOption[] = runningClasses.map((c) => ({ id: c.id, name: c.name }));
+		const selectedKelas = params.kelasInstanceId ? kelasOptions.find((k) => k.id === params.kelasInstanceId) || null : null;
+		const targetClassIds = selectedKelas ? [selectedKelas.id] : kelasOptions.map((c) => c.id);
 		const phaseIds = trackPhases.map((p) => p.id);
 
-		if (phaseIds.length === 0) {
-			return {
-				viewMode: 'detail',
-				tahunAjaranOptions,
-				selectedTahunAjaran,
-				selectedTrack: trackRow,
-				kelasOptions,
-				selectedKelas,
-				summary: {
-					totalPhases: 0,
-					totalSubPhases: 0,
-					totalMateri: 0,
-					totalQuizzes: 0,
-					totalExecutingClasses: targetClassIds.length,
-					totalStudents: 0,
-					avgTrackCompletionRate: 0
-				},
-				phases: []
-			};
-		}
+		const emptyResult = (totalStudents = 0): CurriculumDetailViewData => ({
+			viewMode: 'detail',
+			tahunAjaranOptions,
+			selectedTahunAjaran,
+			selectedTrack: trackRow,
+			kelasOptions,
+			selectedKelas,
+			summary: {
+				totalPhases: trackPhases.length,
+				totalSubPhases: 0, totalMateri: 0, totalQuizzes: 0,
+				totalExecutingClasses: targetClassIds.length,
+				totalStudents,
+				avgTrackCompletionRate: 0
+			},
+			phases: []
+		});
 
-		// 2. Parallel Fetching: SubPhases and Enrolled Active Students
+		if (phaseIds.length === 0) return emptyResult();
+
+		// 2. Parallel: SubPhases + enrolled students
 		const [subPhasesList, activeStudents] = await Promise.all([
 			db
-				.select({
-					id: subPhase.id,
-					phaseId: subPhase.phaseId,
-					title: subPhase.title,
-					description: subPhase.description,
-					sortOrder: subPhase.sortOrder
-				})
+				.select({ id: subPhase.id, phaseId: subPhase.phaseId, title: subPhase.title, description: subPhase.description, sortOrder: subPhase.sortOrder })
 				.from(subPhase)
 				.where(inArray(subPhase.phaseId, phaseIds))
 				.orderBy(subPhase.phaseId, subPhase.sortOrder),
 
 			targetClassIds.length > 0
-				? db
-						.select({ userId: keanggotaan.userId })
-						.from(keanggotaan)
-						.where(
-							and(
-								inArray(keanggotaan.kelasInstanceId, targetClassIds),
-								eq(keanggotaan.status, 'aktif')
-							)
-						)
+				? db.select({ userId: keanggotaan.userId }).from(keanggotaan)
+						.where(and(inArray(keanggotaan.kelasInstanceId, targetClassIds), eq(keanggotaan.status, 'aktif')))
 				: Promise.resolve([])
 		]);
 
@@ -525,74 +571,36 @@ export const CurriculumMonitoringService = {
 		const studentIds = activeStudents.map((s) => s.userId);
 		const totalStudents = studentIds.length;
 
-		if (subPhaseIds.length === 0) {
-			return {
-				viewMode: 'detail',
-				tahunAjaranOptions,
-				selectedTahunAjaran,
-				selectedTrack: trackRow,
-				kelasOptions,
-				selectedKelas,
-				summary: {
-					totalPhases: trackPhases.length,
-					totalSubPhases: 0,
-					totalMateri: 0,
-					totalQuizzes: 0,
-					totalExecutingClasses: targetClassIds.length,
-					totalStudents,
-					avgTrackCompletionRate: 0
-				},
-				phases: []
-			};
-		}
+		if (subPhaseIds.length === 0) return emptyResult(totalStudents);
 
-		// 3. Parallel Fetching: Materi, Quizzes, Meetings, and Attendance
+		// 3. Parallel: Materi, Quizzes, Sessions, Quiz IDs
 		const [materiCounts, quizzesList, subPhaseSessions] = await Promise.all([
 			db
-				.select({
-					subPhaseId: materi.subPhaseId,
-					total: count(materi.id)
-				})
+				.select({ subPhaseId: materi.subPhaseId, total: count(materi.id) })
 				.from(materi)
 				.where(inArray(materi.subPhaseId, subPhaseIds))
 				.groupBy(materi.subPhaseId),
 
 			db
-				.select({
-					subPhaseId: quiz.subPhaseId,
-					title: quiz.title,
-					passingScore: quiz.passingScore
-				})
+				.select({ id: quiz.id, subPhaseId: quiz.subPhaseId, title: quiz.title, passingScore: quiz.passingScore })
 				.from(quiz)
 				.where(inArray(quiz.subPhaseId, subPhaseIds)),
 
 			targetClassIds.length > 0
 				? db
-						.select({
-							id: pertemuan.id,
-							subPhaseId: pertemuan.subPhaseId,
-							kelasInstanceId: pertemuan.kelasInstanceId
-						})
+						.select({ id: pertemuan.id, subPhaseId: pertemuan.subPhaseId, kelasInstanceId: pertemuan.kelasInstanceId })
 						.from(pertemuan)
-						.where(
-							and(
-								inArray(pertemuan.subPhaseId, subPhaseIds),
-								inArray(pertemuan.kelasInstanceId, targetClassIds)
-							)
-						)
+						.where(and(inArray(pertemuan.subPhaseId, subPhaseIds), inArray(pertemuan.kelasInstanceId, targetClassIds)))
 				: Promise.resolve([])
 		]);
 
 		const materiMap = new Map<number, number>();
-		for (const mc of materiCounts) {
-			materiMap.set(mc.subPhaseId, Number(mc.total));
-		}
+		for (const mc of materiCounts) materiMap.set(mc.subPhaseId, Number(mc.total));
 
-		const quizMap = new Map<number, { title: string; passingScore: number }>();
-		for (const q of quizzesList) {
-			quizMap.set(q.subPhaseId, { title: q.title, passingScore: q.passingScore });
-		}
+		const quizMap = new Map<number, { id: number; title: string; passingScore: number }>();
+		for (const q of quizzesList) quizMap.set(q.subPhaseId, { id: q.id, title: q.title, passingScore: q.passingScore });
 
+		// sessions grouped by subPhaseId
 		const sessionMap = new Map<number, number[]>();
 		for (const sess of subPhaseSessions) {
 			const list = sessionMap.get(sess.subPhaseId) || [];
@@ -601,29 +609,89 @@ export const CurriculumMonitoringService = {
 		}
 
 		const allSessionIds = subPhaseSessions.map((s) => s.id);
-		const attendanceCounts = (allSessionIds.length > 0 && studentIds.length > 0)
-			? await db
-					.select({
-						pertemuanId: attendance.pertemuanId,
-						attendedCount: count(attendance.id)
-					})
-					.from(attendance)
-					.where(
-						and(
+		const allQuizIds = quizzesList.map((q) => q.id);
+
+		// 4. Parallel: Attendance per session, Tasks per session, Quiz attempts
+		const [attendanceCounts, taskRows, quizAttemptRows] = await Promise.all([
+			(allSessionIds.length > 0 && studentIds.length > 0)
+				? db
+						.select({ pertemuanId: attendance.pertemuanId, attendedCount: count(attendance.id) })
+						.from(attendance)
+						.where(and(
 							inArray(attendance.pertemuanId, allSessionIds),
 							inArray(attendance.userId, studentIds),
 							eq(attendance.status, 'hadir')
-						)
-					)
-					.groupBy(attendance.pertemuanId)
-			: [];
+						))
+						.groupBy(attendance.pertemuanId)
+				: Promise.resolve([]),
 
+			allSessionIds.length > 0
+				? db
+						.select({ id: task.id, pertemuanId: task.pertemuanId })
+						.from(task)
+						.where(inArray(task.pertemuanId, allSessionIds))
+				: Promise.resolve([]),
+
+			(allQuizIds.length > 0 && studentIds.length > 0)
+				? db
+						.select({ quizId: quizAttempt.quizId, userId: quizAttempt.userId, score: quizAttempt.score })
+						.from(quizAttempt)
+						.where(and(
+							inArray(quizAttempt.quizId, allQuizIds),
+							inArray(quizAttempt.userId, studentIds)
+						))
+				: Promise.resolve([])
+		]);
+
+		// attendance per session
 		const attendanceSessionMap = new Map<number, number>();
-		for (const ac of attendanceCounts) {
-			attendanceSessionMap.set(ac.pertemuanId, Number(ac.attendedCount));
+		for (const ac of attendanceCounts) attendanceSessionMap.set(ac.pertemuanId, Number(ac.attendedCount));
+
+		// tasks per session + approved submissions
+		const taskIdToSession = new Map<number, number>();
+		const tasksPerSessionMap = new Map<number, number>();
+		for (const t of taskRows) {
+			taskIdToSession.set(t.id, t.pertemuanId);
+			tasksPerSessionMap.set(t.pertemuanId, (tasksPerSessionMap.get(t.pertemuanId) || 0) + 1);
 		}
 
-		// 4. Aggregate Hierarchy with Progress Metrics
+		const allTaskIds = taskRows.map((t) => t.id);
+		const approvedSubmissions = (allTaskIds.length > 0 && studentIds.length > 0)
+			? await db
+					.select({ taskId: submission.taskId, total: count(submission.id) })
+					.from(submission)
+					.where(and(
+						inArray(submission.taskId, allTaskIds),
+						inArray(submission.userId, studentIds),
+						eq(submission.status, 'approved')
+					))
+					.groupBy(submission.taskId)
+			: [];
+
+		// approved count per session
+		const approvedPerSessionMap = new Map<number, number>();
+		for (const s of approvedSubmissions) {
+			const sessId = taskIdToSession.get(s.taskId);
+			if (sessId !== undefined) {
+				approvedPerSessionMap.set(sessId, (approvedPerSessionMap.get(sessId) || 0) + Number(s.total));
+			}
+		}
+
+		// quiz pass tracking: per quizId, count distinct users who passed
+		// For each quiz, track best score per user
+		const quizBestScores = new Map<number, Map<number, number>>(); // quizId -> userId -> bestScore
+		for (const attempt of quizAttemptRows) {
+			if (!quizBestScores.has(attempt.quizId)) {
+				quizBestScores.set(attempt.quizId, new Map());
+			}
+			const userScores = quizBestScores.get(attempt.quizId)!;
+			const prev = userScores.get(attempt.userId) || 0;
+			if (attempt.score > prev) {
+				userScores.set(attempt.userId, attempt.score);
+			}
+		}
+
+		// 5. Build hierarchy with composite progress metrics
 		let totalSubPhasesCount = 0;
 		let totalMateriCount = 0;
 		let totalQuizzesCount = quizzesList.length;
@@ -632,12 +700,8 @@ export const CurriculumMonitoringService = {
 		const phaseGroupsMap = new Map<number, PhaseProgressGroup>();
 		for (const p of trackPhases) {
 			phaseGroupsMap.set(p.id, {
-				id: p.id,
-				title: p.title,
-				description: p.description,
-				sortOrder: p.sortOrder,
-				avgCompletionRate: 0,
-				subPhases: []
+				id: p.id, title: p.title, description: p.description,
+				sortOrder: p.sortOrder, avgCompletionRate: 0, subPhases: []
 			});
 		}
 
@@ -650,22 +714,55 @@ export const CurriculumMonitoringService = {
 			const linkedSessions = sessionMap.get(sp.id) || [];
 			const totalClassSessions = linkedSessions.length;
 
+			// ── Attendance Rate ──
 			let totalAttendedInSubPhase = 0;
 			for (const sessId of linkedSessions) {
 				totalAttendedInSubPhase += attendanceSessionMap.get(sessId) || 0;
 			}
+			const maxPossibleAttendance = totalClassSessions * totalStudents;
+			const attendanceRate = (totalStudents === 0 || totalClassSessions === 0)
+				? 0
+				: Math.min(100, (totalAttendedInSubPhase / maxPossibleAttendance) * 100);
 
-			const maxPossibleAttendances = totalClassSessions * (totalStudents || 1);
-			let completionRate = 0;
-
-			if (totalStudents === 0 || totalClassSessions === 0) {
-				completionRate = 0;
-			} else {
-				completionRate = Math.min(
-					100,
-					Math.round((totalAttendedInSubPhase / maxPossibleAttendances) * 100)
-				);
+			// ── Task Completion Rate ──
+			let totalTasksInSubPhase = 0;
+			let totalApprovedInSubPhase = 0;
+			for (const sessId of linkedSessions) {
+				const taskCount = tasksPerSessionMap.get(sessId) || 0;
+				totalTasksInSubPhase += taskCount;
+				totalApprovedInSubPhase += approvedPerSessionMap.get(sessId) || 0;
 			}
+			const totalTaskSlots = totalTasksInSubPhase * totalStudents;
+			const taskCompletionRate = totalTaskSlots > 0
+				? Math.min(100, (totalApprovedInSubPhase / totalTaskSlots) * 100)
+				: 0;
+			const hasTasks = totalTasksInSubPhase > 0;
+
+			// ── Quiz Pass Rate ──
+			let quizPassedCount = 0;
+			let quizPassRate = 0;
+			if (quizInfo && totalStudents > 0) {
+				const userScores = quizBestScores.get(quizInfo.id);
+				if (userScores) {
+					for (const [, bestScore] of userScores) {
+						if (bestScore >= quizInfo.passingScore) {
+							quizPassedCount++;
+						}
+					}
+				}
+				quizPassRate = Math.min(100, (quizPassedCount / totalStudents) * 100);
+			}
+
+			// ── Composite Completion Rate ──
+			const completionRate = (totalStudents === 0 || totalClassSessions === 0)
+				? 0
+				: calculateCompositeRate({
+						attendanceRate,
+						taskCompletionRate,
+						quizPassRate,
+						hasTasks,
+						hasQuiz: !!quizInfo
+					});
 
 			totalTrackCompletionSum += completionRate;
 
@@ -675,6 +772,10 @@ export const CurriculumMonitoringService = {
 			} else if (completionRate > 0 || totalClassSessions > 0) {
 				status = 'BERJALAN';
 			}
+
+			// completedStudentsCount: estimate students considered "done" with this subphase
+			// Use the composite rate against total students
+			const completedStudentsCount = Math.round((completionRate / 100) * totalStudents);
 
 			const subPhaseItem: SubPhaseProgressItem = {
 				id: sp.id,
@@ -686,9 +787,15 @@ export const CurriculumMonitoringService = {
 				quizTitle: quizInfo?.title || null,
 				passingScore: quizInfo?.passingScore || null,
 				totalClassSessions,
-				completedStudentsCount: Math.round(totalAttendedInSubPhase / (totalClassSessions || 1)),
+				completedStudentsCount,
 				totalActiveStudents: totalStudents,
 				completionRate,
+				attendanceRate: Math.round(attendanceRate),
+				taskCompletionRate: Math.round(taskCompletionRate),
+				quizPassRate: Math.round(quizPassRate),
+				totalTasks: totalTasksInSubPhase,
+				totalApprovedSubmissions: totalApprovedInSubPhase,
+				quizPassedCount,
 				status
 			};
 
