@@ -479,10 +479,20 @@
 
 <style>
 	.page-container {
+		padding: 24px 28px 48px;
+		max-width: 1280px;
+		margin: 0 auto;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		gap: 24px;
-		width: 100%;
+	}
+
+	@media (max-width: 640px) {
+		.page-container {
+			padding: 16px 16px 36px;
+			gap: 16px;
+		}
 	}
 
 	/* Page Hero Section */
