@@ -10,12 +10,18 @@ export const load: PageServerLoad = async ({ url }) => {
 	const tahunAjaranId = tahunAjaranIdParam ? Number(tahunAjaranIdParam) : undefined;
 	const kelasInstanceId = kelasInstanceIdParam ? Number(kelasInstanceIdParam) : undefined;
 
-	const recapData = await GuruAttendanceRecapService.getAttendanceRecapData({
-		tahunAjaranId,
-		kelasInstanceId,
-		searchQuery,
-		activeTab
-	});
-
-	return { recapData };
+	if (kelasInstanceId) {
+		// Tier 2: Detailed Rekap Presensi report for selected Class/Rombel
+		const recapData = await GuruAttendanceRecapService.getRecapDetail({
+			kelasInstanceId,
+			tahunAjaranId,
+			searchQuery,
+			activeTab
+		});
+		return { recapData };
+	} else {
+		// Tier 1: Grid Cards of all Rombels in the Academic Year
+		const recapData = await GuruAttendanceRecapService.getGridCards(tahunAjaranId);
+		return { recapData };
+	}
 };

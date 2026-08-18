@@ -1,12 +1,12 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { GuruAttendanceRecapData } from '$lib/server/services/guru-attendance-recap.service';
+import type { GuruAttendanceDetailViewData } from '$lib/server/services/guru-attendance-recap.service';
 
 /**
  * Export Rekap Presensi to Excel (.xlsx) file
  */
-export function exportAttendanceToExcel(data: GuruAttendanceRecapData) {
+export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	const taName = data.selectedTahunAjaran?.name || 'Semua_TA';
 	const kelasName = data.selectedKelas?.name || 'Semua_Kelas';
 	const dateStr = new Date().toLocaleDateString('id-ID');
@@ -131,7 +131,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceRecapData) {
 /**
  * Export Rekap Presensi to PDF (.pdf) file
  */
-export function exportAttendanceToPDF(data: GuruAttendanceRecapData) {
+export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 	const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
 	const taName = data.selectedTahunAjaran?.name || 'Semua TA';
