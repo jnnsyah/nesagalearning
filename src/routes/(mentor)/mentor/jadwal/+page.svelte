@@ -415,9 +415,9 @@
 					bind:value={selectedStatus}
 					options={[
 						{ value: 'all', label: 'Semua Status' },
-						{ value: 'live', label: '🟢 Live Hari Ini' },
-						{ value: 'upcoming', label: '🔵 Akan Datang' },
-						{ value: 'completed', label: '⚪ Selesai / Terlewat' }
+						{ value: 'live', label: 'Live Hari Ini' },
+						{ value: 'upcoming', label: 'Akan Datang' },
+						{ value: 'completed', label: 'Selesai / Terlewat' }
 					]}
 					searchable={false}
 				/>
@@ -559,11 +559,11 @@
 								<span class="badge badge-kelas">{m.kelasName}</span>
 								<span class="badge badge-activity">{m.activityType.toUpperCase()}</span>
 								{#if status === 'live'}
-									<span class="badge badge-live-pulsating">🟢 LIVE HARI INI</span>
+									<span class="badge badge-live-pulsating">LIVE HARI INI</span>
 								{:else if status === 'upcoming'}
-									<span class="badge badge-upcoming">🔵 AKAN DATANG</span>
+									<span class="badge badge-upcoming">AKAN DATANG</span>
 								{:else}
-									<span class="badge badge-completed">⚪ SELESAI</span>
+									<span class="badge badge-completed">SELESAI</span>
 								{/if}
 							</div>
 
@@ -664,11 +664,11 @@
 				<div>
 					<div class="flex items-center gap-2 mb-1">
 						{#if status === 'live'}
-							<span class="badge badge-live-pulsating">🟢 LIVE HARI INI</span>
+							<span class="badge badge-live-pulsating">LIVE HARI INI</span>
 						{:else if status === 'upcoming'}
-							<span class="badge badge-upcoming">🔵 AKAN DATANG</span>
+							<span class="badge badge-upcoming">AKAN DATANG</span>
 						{:else}
-							<span class="badge badge-completed">⚪ SELESAI</span>
+							<span class="badge badge-completed">SELESAI</span>
 						{/if}
 						<span class="badge badge-kelas">{m.kelasName}</span>
 					</div>
