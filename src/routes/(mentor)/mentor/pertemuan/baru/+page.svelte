@@ -135,39 +135,43 @@
 
 	<form method="POST" action="?/create" class="panel p-6 space-y-6">
 		<!-- Informational Section -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+		<div class="space-y-4">
+			<!-- Row 1: Pilih Kelas (Dedicated Row) -->
 			<div>
 				<CustomSelect
 					name="kelasInstanceId"
-					label="Pilih Kelas *"
+					label="Pilih Kelas Rombel *"
 					required
 					bind:value={formKelasInstanceId}
 					options={formKelasOptions}
-					placeholder="-- Pilih Kelas --"
+					placeholder="-- Pilih Kelas Rombel --"
 					error={form?.errors?.kelasInstanceId ? form.errors.kelasInstanceId[0] : ''}
 				/>
 			</div>
 
-			<div>
-				<CustomSelect
-					name="trackId"
-					label="Track Pembelajaran *"
-					bind:value={formTrackId}
-					options={formTrackOptions}
-					placeholder="-- Pilih Track --"
-				/>
-			</div>
+			<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div>
+					<CustomSelect
+						name="trackId"
+						label="Track Pembelajaran *"
+						bind:value={formTrackId}
+						options={formTrackOptions}
+						placeholder="-- Pilih Track Pembelajaran --"
+					/>
+				</div>
 
-			<div>
-				<CustomSelect
-					name="subPhaseId"
-					label="Kaitan Sub-Fase Track *"
-					required
-					bind:value={formSubPhaseId}
-					options={formSubPhaseOptions}
-					placeholder="-- Pilih Sub-Fase --"
-					error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
-				/>
+				<div>
+					<CustomSelect
+						name="subPhaseId"
+						label="Kaitan Sub-Fase Track Pembelajaran *"
+						required
+						bind:value={formSubPhaseId}
+						options={formSubPhaseOptions}
+						placeholder="-- Pilih Sub-Fase --"
+						error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
+					/>
+				</div>
 			</div>
 		</div>
 

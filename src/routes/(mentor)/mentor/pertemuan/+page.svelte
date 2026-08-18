@@ -851,27 +851,31 @@
 					<div class="drawer-section">
 						<h4 class="section-title">1. Informasi Kelas & Sesi</h4>
 
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<!-- Row 1: Pilih Kelas (Dedicated Row) -->
+						<div class="mb-4">
 							<CustomSelect
 								name="kelasInstanceId"
-								label="Pilih Kelas *"
+								label="Pilih Kelas Rombel *"
 								required
 								bind:value={formKelasInstanceId}
 								options={formKelasOptions}
-								placeholder="-- Pilih Kelas --"
+								placeholder="-- Pilih Kelas Rombel --"
 							/>
+						</div>
 
+						<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<CustomSelect
 								name="trackId"
 								label="Track Pembelajaran *"
 								bind:value={formTrackId}
 								options={formTrackOptions}
-								placeholder="-- Pilih Track --"
+								placeholder="-- Pilih Track Pembelajaran --"
 							/>
 
 							<CustomSelect
 								name="subPhaseId"
-								label="Sub-Fase Track *"
+								label="Sub-Fase Track Pembelajaran *"
 								required
 								bind:value={formSubPhaseId}
 								options={formSubPhaseOptions}
