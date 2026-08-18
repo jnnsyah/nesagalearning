@@ -20,41 +20,49 @@
 </svelte:head>
 
 <div class="page-container">
-	<!-- Welcome Banner Card -->
+	<!-- Welcome Banner Hero Card -->
 	<section class="welcome-banner">
 		<div class="welcome-banner__bg"></div>
 		<div class="welcome-banner__inner">
-			<div class="flex items-center gap-3.5 mb-3.5 flex-wrap sm:flex-nowrap">
-				<div class="avatar-xl">{data.user?.fullName?.charAt(0) ?? 'S'}</div>
-				<div class="min-w-0 flex-1">
-					<div class="flex items-center gap-2 mb-1 flex-wrap">
-						<span class="badge badge-hadir">{role.toUpperCase()}</span>
-						<span class="type-mono text-muted text-xs">{kelasName} &middot; {tahunAjaranName}</span>
+			<div class="hero-content-flex">
+				<div class="hero-user-info">
+					<div class="avatar-hero">
+						{#if data.user?.avatarUrl}
+							<img src={data.user.avatarUrl} alt={data.user.fullName} class="avatar-img" />
+						{:else}
+							{data.user?.fullName?.charAt(0) ?? 'S'}
+						{/if}
 					</div>
-					<h1 class="welcome-name">Halo, {firstName}!</h1>
-					<p class="type-mono text-muted text-xs">@{data.user?.username} &middot; {uid}</p>
+
+					<div class="user-details">
+						<div class="meta-pills-row">
+							<span class="badge-role">{role.toUpperCase()}</span>
+							<span class="badge-class">{kelasName}</span>
+							<span class="badge-ta">{tahunAjaranName}</span>
+						</div>
+						<h1 class="welcome-title">Halo, {firstName}!</h1>
+						<p class="user-sub">@{data.user?.username} &bull; {uid}</p>
+					</div>
+				</div>
+
+				<div class="hero-actions">
+					<a href="/siswa/presensi" class="btn-scan-hero">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<rect x="3" y="3" width="7" height="7" rx="1.5" />
+							<rect x="14" y="3" width="7" height="7" rx="1.5" />
+							<rect x="3" y="14" width="7" height="7" rx="1.5" />
+							<rect x="14" y="14" width="7" height="7" rx="1.5" />
+						</svg>
+						<span>Scan QR Presensi</span>
+					</a>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-between flex-wrap gap-3 mt-4 pt-3 border-t border-indigo-100">
-				<div class="welcome-quote">
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-					</svg>
-					<span>Terus belajar dan berkembang bersama Nesaga Learning Community</span>
-				</div>
-				<a
-					href="/siswa/presensi"
-					class="btn-scan-qr w-full sm:w-auto"
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="3" y="3" width="7" height="7" />
-						<rect x="14" y="3" width="7" height="7" />
-						<rect x="3" y="14" width="7" height="7" />
-						<rect x="14" y="14" width="7" height="7" />
-					</svg>
-					<span>Scan QR Presensi</span>
-				</a>
+			<div class="hero-quote-bar">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+				</svg>
+				<span>Terus belajar &amp; berkembang bersama Nesaga Learning Community</span>
 			</div>
 		</div>
 	</section>
@@ -87,7 +95,7 @@
 			</div>
 		</div>
 
-		<div class="stat-card stat-card--green stat-card--full-mobile">
+		<div class="stat-card stat-card--green">
 			<div class="stat-card__icon-wrap" style="background: #dcfce7;">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
 					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -251,86 +259,164 @@
 		width: 100%;
 	}
 
-	/* Welcome banner */
+	/* Welcome banner hero card */
 	.welcome-banner {
 		position: relative;
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-xl);
 		overflow: hidden;
-		box-shadow: var(--shadow-md);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.welcome-banner__bg {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(135deg, rgba(224, 231, 255, 0.6) 0%, rgba(204, 251, 241, 0.4) 100%);
+		background: linear-gradient(135deg, rgba(238, 242, 255, 0.8) 0%, rgba(240, 253, 250, 0.5) 100%);
 	}
 
 	.welcome-banner__inner {
 		position: relative;
 		z-index: 1;
 		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 	}
 
-	.avatar-xl {
-		width: 60px;
-		height: 60px;
+	.hero-content-flex {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 20px;
+	}
+
+	.hero-user-info {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		min-width: 0;
+	}
+
+	.avatar-hero {
+		width: 64px;
+		height: 64px;
 		border-radius: 50%;
 		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-		color: white;
+		color: #ffffff;
 		font-family: var(--font-macro);
-		font-size: 1.6rem;
+		font-size: 1.65rem;
 		font-weight: 800;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+		border: 3px solid #ffffff;
+		flex-shrink: 0;
+		overflow: hidden;
+	}
+
+	.avatar-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.user-details {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		min-width: 0;
+	}
+
+	.meta-pills-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.badge-role {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 800;
+		color: #15803d;
+		background: #dcfce7;
+		border: 1px solid #86efac;
+		padding: 2px 8px;
+		border-radius: 9999px;
+	}
+
+	.badge-class {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 2px 8px;
+		border-radius: 6px;
+	}
+
+	.badge-ta {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		color: var(--text-muted);
+	}
+
+	.welcome-title {
+		font-family: var(--font-macro);
+		font-size: clamp(1.35rem, 3.5vw, 1.85rem);
+		font-weight: 800;
+		color: var(--text-primary);
+		line-height: 1.15;
+		margin: 2px 0 0;
+	}
+
+	.user-sub {
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		color: var(--text-muted);
+	}
+
+	.hero-actions {
 		flex-shrink: 0;
 	}
 
-	.welcome-name {
+	.btn-scan-hero {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+		color: #ffffff;
+		border-radius: 10px;
 		font-family: var(--font-macro);
-		font-size: clamp(1.3rem, 3.5vw, 1.8rem);
-		font-weight: 800;
-		color: var(--text-primary);
-		line-height: 1.1;
-		letter-spacing: -0.02em;
+		font-size: 12.5px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+		transition: transform 150ms ease, box-shadow 150ms ease;
+		white-space: nowrap;
 	}
 
-	.welcome-quote {
+	.btn-scan-hero:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+	}
+
+	.hero-quote-bar {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		font-size: 12px;
 		font-weight: 600;
-		color: #0d9488;
-		background: #ccfbf1;
+		color: #0f766e;
+		background: rgba(204, 251, 241, 0.7);
 		border: 1px solid #99f6e4;
 		border-radius: 8px;
-		padding: 6px 12px;
-	}
-
-	.btn-scan-qr {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		padding: 8px 16px;
-		background: #4f46e5;
-		color: #ffffff;
-		border-radius: 8px;
-		font-family: var(--font-macro);
-		font-size: 12px;
-		font-weight: 700;
-		text-decoration: none;
-		box-shadow: var(--shadow-sm);
-		transition: all 150ms ease;
-		min-height: 38px;
-	}
-
-	.btn-scan-qr:hover {
-		background: #4338ca;
+		padding: 8px 14px;
+		width: fit-content;
 	}
 
 	/* Stats grid */
@@ -536,17 +622,41 @@
 		}
 
 		.welcome-banner__inner {
-			padding: 16px 14px;
+			padding: 16px;
+			gap: 14px;
 		}
 
-		.avatar-xl {
-			width: 48px;
-			height: 48px;
+		.hero-content-flex {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 14px;
+		}
+
+		.hero-user-info {
+			gap: 12px;
+		}
+
+		.avatar-hero {
+			width: 52px;
+			height: 52px;
+			font-size: 1.4rem;
+		}
+
+		.welcome-title {
 			font-size: 1.3rem;
 		}
 
-		.welcome-quote {
+		.btn-scan-hero {
 			width: 100%;
+			padding: 10px 14px;
+			font-size: 12px;
+			min-height: 42px;
+		}
+
+		.hero-quote-bar {
+			width: 100%;
+			font-size: 11px;
+			padding: 6px 10px;
 		}
 
 		.stats-grid {
