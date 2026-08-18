@@ -1,13 +1,57 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import { untrack } from 'svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
+	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
 
 	let isUploading = $state(false);
 	let uploadedUrl = $state('');
 	let uploadError = $state('');
 
 	let hasTask = $state(false);
+
+	let formKelasOptions = $derived(
+		(data.kelases || []).map((k) => ({
+			value: k.id,
+			label: k.name
+		}))
+	);
+
+	let selectedFormKelasTrackId = $derived.by(() => {
+		if (!formKelasInstanceId) return null;
+		const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
+		return found?.curriculumTrackId ?? null;
+	});
+
+	let filteredSubPhasesForForm = $derived.by(() => {
+		if (!selectedFormKelasTrackId) return data.subPhases || [];
+		const list = (data.subPhases || []).filter(
+			(sp) => Number(sp.curriculumTrackId) === Number(selectedFormKelasTrackId)
+		);
+		return list.length > 0 ? list : data.subPhases || [];
+	});
+
+	let formSubPhaseOptions = $derived(
+		filteredSubPhasesForForm.map((sp) => ({
+			value: sp.id,
+			label: sp.phaseTitle ? `${sp.phaseTitle} › ${sp.title}` : sp.title
+		}))
+	);
+
+	$effect(() => {
+		if (formKelasInstanceId && filteredSubPhasesForForm.length > 0) {
+			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
+			if (!isValid) {
+				untrack(() => {
+					formSubPhaseId = filteredSubPhasesForForm[0].id;
+				});
+			}
+		}
+	});
 
 	async function handleFileUpload(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -80,43 +124,27 @@
 		<!-- Informational Section -->
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div>
-				<label for="kelasInstanceId" class="field-label">
-					Pilih Kelas *
-				</label>
-				<select
-					id="kelasInstanceId"
+				<CustomSelect
 					name="kelasInstanceId"
+					label="Pilih Kelas *"
 					required
-					class="field-input"
-				>
-					<option value="">-- Pilih Kelas --</option>
-					{#each data.kelases as k}
-						<option value={k.id}>{k.name}</option>
-					{/each}
-				</select>
-				{#if form?.errors?.kelasInstanceId}
-					<p class="text-xs text-red mt-1">{form.errors.kelasInstanceId[0]}</p>
-				{/if}
+					bind:value={formKelasInstanceId}
+					options={formKelasOptions}
+					placeholder="-- Pilih Kelas --"
+					error={form?.errors?.kelasInstanceId ? form.errors.kelasInstanceId[0] : ''}
+				/>
 			</div>
 
 			<div>
-				<label for="subPhaseId" class="field-label">
-					Kaitan SubPhase Track Pembelajaran *
-				</label>
-				<select
-					id="subPhaseId"
+				<CustomSelect
 					name="subPhaseId"
+					label="Kaitan Sub-Fase Track Pembelajaran *"
 					required
-					class="field-input"
-				>
-					<option value="">-- Pilih SubPhase --</option>
-					{#each data.subPhases as sp}
-						<option value={sp.id}>{sp.title}</option>
-					{/each}
-				</select>
-				{#if form?.errors?.subPhaseId}
-					<p class="text-xs text-red mt-1">{form.errors.subPhaseId[0]}</p>
-				{/if}
+					bind:value={formSubPhaseId}
+					options={formSubPhaseOptions}
+					placeholder="-- Pilih Sub-Fase --"
+					error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
+				/>
 			</div>
 		</div>
 

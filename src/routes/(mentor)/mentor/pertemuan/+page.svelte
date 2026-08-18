@@ -255,6 +255,47 @@
 		}
 	}
 
+	// Dynamic Form Options for Drawer
+	let formKelasOptions = $derived(
+		(data.kelases || []).map((k) => ({
+			value: k.id,
+			label: k.name
+		}))
+	);
+
+	let selectedFormKelasTrackId = $derived.by(() => {
+		if (!formKelasInstanceId) return null;
+		const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
+		return found?.curriculumTrackId ?? null;
+	});
+
+	let filteredSubPhasesForForm = $derived.by(() => {
+		if (!selectedFormKelasTrackId) return data.subPhases || [];
+		const list = (data.subPhases || []).filter(
+			(sp) => Number(sp.curriculumTrackId) === Number(selectedFormKelasTrackId)
+		);
+		return list.length > 0 ? list : data.subPhases || [];
+	});
+
+	let formSubPhaseOptions = $derived(
+		filteredSubPhasesForForm.map((sp) => ({
+			value: sp.id,
+			label: sp.phaseTitle ? `${sp.phaseTitle} › ${sp.title}` : sp.title
+		}))
+	);
+
+	// Auto-select valid sub-phase when class selection changes
+	$effect(() => {
+		if (formKelasInstanceId && filteredSubPhasesForForm.length > 0) {
+			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
+			if (!isValid) {
+				untrack(() => {
+					formSubPhaseId = filteredSubPhasesForForm[0].id;
+				});
+			}
+		}
+	});
+
 	let totalCount = $derived(data.meetings.length);
 	let teoriCount = $derived(data.meetings.filter((m) => m.activityType === 'teori' || m.activityType === 'teori_praktik').length);
 	let praktikCount = $derived(data.meetings.filter((m) => m.activityType === 'praktik' || m.activityType === 'games').length);
@@ -799,7 +840,7 @@
 								label="Kelas Instance"
 								required
 								bind:value={formKelasInstanceId}
-								options={data.kelases.map((k) => ({ value: k.id, label: k.name }))}
+								options={formKelasOptions}
 								placeholder="-- Pilih Kelas --"
 							/>
 
@@ -808,7 +849,7 @@
 								label="Sub-Fase Track Pembelajaran"
 								required
 								bind:value={formSubPhaseId}
-								options={data.subPhases.map((sp) => ({ value: sp.id, label: sp.title }))}
+								options={formSubPhaseOptions}
 								placeholder="-- Pilih Sub-Fase --"
 							/>
 						</div>

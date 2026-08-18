@@ -2,9 +2,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { PertemuanService } from '$lib/server/services/pertemuan.service';
 import { createPertemuanSchema } from '$lib/validators/pertemuan';
+import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { kelasInstance } from '$lib/server/db/schema/academic';
-import { subPhase } from '$lib/server/db/schema/curriculum';
+import { subPhase, phase } from '$lib/server/db/schema/curriculum';
 
 import { OperationalMasterAdminService } from '$lib/server/services/operational-master-admin.service';
 
@@ -15,8 +16,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const [meetings, kelases, subPhases, masterData] = await Promise.all([
 		PertemuanService.getAllPertemuan(),
-		db.select({ id: kelasInstance.id, name: kelasInstance.name }).from(kelasInstance),
-		db.select({ id: subPhase.id, title: subPhase.title }).from(subPhase),
+		db.select({
+			id: kelasInstance.id,
+			name: kelasInstance.name,
+			curriculumTrackId: kelasInstance.curriculumTrackId
+		}).from(kelasInstance),
+		db.select({
+			id: subPhase.id,
+			title: subPhase.title,
+			phaseId: subPhase.phaseId,
+			phaseTitle: phase.title,
+			curriculumTrackId: phase.curriculumTrackId
+		})
+		.from(subPhase)
+		.innerJoin(phase, eq(subPhase.phaseId, phase.id)),
 		OperationalMasterAdminService.getOperationalMasterData()
 	]);
 
