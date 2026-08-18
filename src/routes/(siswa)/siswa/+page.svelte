@@ -536,7 +536,7 @@
 		}
 
 		.welcome-banner__inner {
-			padding: 16px;
+			padding: 16px 14px;
 		}
 
 		.avatar-xl {
@@ -550,30 +550,26 @@
 		}
 
 		.stats-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 10px;
+			grid-template-columns: 1fr;
+			gap: 12px;
 		}
 
 		.stat-card {
-			padding: 14px 12px;
-			gap: 10px;
-		}
-
-		.stat-card--full-mobile {
-			grid-column: span 2;
+			padding: 16px 14px;
+			gap: 14px;
 		}
 
 		.stat-card__icon-wrap {
-			width: 38px;
-			height: 38px;
+			width: 44px;
+			height: 44px;
 		}
 
 		.stat-card__value {
-			font-size: 1.6rem;
+			font-size: 1.8rem;
 		}
 
 		.stat-card__label {
-			font-size: 11px;
+			font-size: 12px;
 		}
 	}
 </style>

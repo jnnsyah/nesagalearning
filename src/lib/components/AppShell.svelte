@@ -338,21 +338,14 @@
 		<!-- Topbar Header (Mobile & Desktop) -->
 		<header class="app-topbar">
 			<div class="topbar-left">
-				<a href="/{role}" class="topbar-brand hide-desktop">
+				<a href="/{role}" class="topbar-brand">
 					<span class="brand-logo" style="font-size: 1.25rem;">NLC</span>
 					<span class="topbar-role-tag">{currentRoleMeta.label}</span>
 				</a>
-
-				<div class="topbar-badge-desktop hide-mobile">
-					<span class="badge" style="background: {currentRoleMeta.bg}; color: {currentRoleMeta.color};">
-						{currentRoleMeta.badge}
-					</span>
-					<span class="type-mono text-muted" style="font-size: 11px;">TA 2026/2027</span>
-				</div>
 			</div>
 
 			<div class="topbar-right">
-				<a href="/{role}/profile" class="user-pill hide-mobile" title="Lihat Profil Saya">
+				<a href="/{role}/profile" class="user-pill" title="Lihat Profil Saya">
 					<div class="user-pill-avatar">
 						{#if currentUser?.avatarUrl}
 							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
@@ -365,15 +358,15 @@
 				<button
 					type="button"
 					onclick={() => (showLogoutModal = true)}
-					class="btn-logout-topbar hide-desktop"
+					class="btn-logout-icon"
 					aria-label="Keluar dari akun"
+					title="Keluar dari Akun"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
 						<polyline points="16 17 21 12 16 7"/>
 						<line x1="21" y1="12" x2="9" y2="12"/>
 					</svg>
-					<span>Keluar</span>
 				</button>
 			</div>
 		</header>
@@ -819,6 +812,36 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.btn-logout-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		background: #ffffff;
+		border: 1px solid #fca5a5;
+		color: #e11d48;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 150ms ease;
+		flex-shrink: 0;
+	}
+
+	.btn-logout-icon:hover {
+		background: #ffe4e6;
+		border-color: #e11d48;
+	}
+
+	@media (max-width: 640px) {
+		.user-pill-name {
+			max-width: 84px;
+			font-size: 11.5px;
+		}
+		.topbar-role-tag {
+			display: none;
+		}
 	}
 
 	.app-content {
