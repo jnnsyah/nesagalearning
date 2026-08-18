@@ -236,14 +236,26 @@
 							</div>
 
 							<div class="class-card-footer">
-								<button
-									type="button"
-									class="btn-open-class"
-									onclick={() => navigateToDetail(cCard.id)}
-								>
-									<span>Lihat Rekap Presensi</span>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-								</button>
+								{#if cCard.totalSessionsCount === 0 || cCard.classState === 'upcoming'}
+									<button
+										type="button"
+										class="btn-open-class btn-open-class--disabled"
+										disabled
+										title="Rombel belum memiliki sesi pertemuan terselenggara"
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+										<span>Belum Ada Sesi Pertemuan</span>
+									</button>
+								{:else}
+									<button
+										type="button"
+										class="btn-open-class"
+										onclick={() => navigateToDetail(cCard.id)}
+									>
+										<span>Lihat Rekap Presensi</span>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+									</button>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -843,6 +855,13 @@
 
 	.btn-open-class:hover {
 		background: #4338ca;
+	}
+
+	.btn-open-class--disabled {
+		background: #f1f5f9 !important;
+		color: #94a3b8 !important;
+		border: 1px solid #e2e8f0 !important;
+		cursor: not-allowed !important;
 	}
 
 	.btn-export-excel {
