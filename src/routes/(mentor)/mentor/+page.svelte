@@ -1,6 +1,10 @@
 <script lang="ts">
 	let { data } = $props();
 
+	let pendingMeetingSummaries = $derived(
+		(data.meetingSummaries || []).filter((m) => (m.stats.pending + m.stats.revisi) > 0)
+	);
+
 	function formatTimeOnly(timeStr: string | null | undefined): string {
 		if (!timeStr) return '-';
 		const parts = String(timeStr).trim().split(':');
@@ -118,17 +122,17 @@
 				</span>
 			</div>
 
-			{#if data.meetingSummaries.length === 0}
+			{#if pendingMeetingSummaries.length === 0}
 				<div class="empty-state">
 					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 					</div>
-					<p class="empty-title">Belum Ada Sesi Ber-Tugas</p>
-					<p class="empty-sub">Belum ada sesi pertemuan yang memiliki penugasan task.</p>
+					<p class="empty-title">Tidak Ada Submisi Menunggu</p>
+					<p class="empty-sub">Semua tugas siswa dari seluruh sesi pertemuan telah selesai diperiksa.</p>
 				</div>
 			{:else}
 				<div class="queue-list space-y-3 p-4">
-					{#each data.meetingSummaries as m}
+					{#each pendingMeetingSummaries as m}
 						<div class="meeting-task-card">
 							<div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
 								<span class="track-badge">
