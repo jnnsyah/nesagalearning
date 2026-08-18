@@ -1148,14 +1148,45 @@
 
 	@media (max-width: 640px) {
 		.reader-outer-wrapper {
-			padding: 0 12px;
+			padding: 0 10px;
 		}
 		.reader-header-card {
-			padding: 16px;
+			padding: 16px 14px;
 		}
 		.reading-article-card {
-			padding: 20px 16px;
+			padding: 20px 14px;
 		}
+
+		/* Mobile Code Block Box Optimization */
+		.prose-reading :global(.tiptap-code-block-wrapper) {
+			margin: 1em -6px;
+			border-radius: 8px;
+		}
+		.prose-reading :global(.code-block-header) {
+			padding: 6px 10px;
+		}
+		.prose-reading :global(.mac-dots) {
+			gap: 4px;
+		}
+		.prose-reading :global(.mac-dot) {
+			width: 8px;
+			height: 8px;
+		}
+		.prose-reading :global(.code-block-lang__tag) {
+			font-size: 9px;
+			padding: 1px 6px;
+		}
+		.prose-reading :global(.code-copy-btn) {
+			padding: 3px 8px;
+			font-size: 10px;
+		}
+		.prose-reading :global(pre) {
+			padding: 12px 12px !important;
+			font-size: 12px !important;
+			line-height: 1.55 !important;
+			max-height: 360px;
+		}
+
 		.lesson-nav-footer {
 			flex-direction: column;
 		}
