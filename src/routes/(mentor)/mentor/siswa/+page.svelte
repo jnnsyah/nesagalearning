@@ -362,8 +362,8 @@
 >
 	{#if selectedStudent}
 		<div class="drawer-progress-container space-y-5">
-			<!-- Student Hero Header Banner -->
-			<div class="student-hero-banner">
+			<!-- Student Hero Header Card (Light Slate Theme) -->
+			<div class="student-hero-card">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-3.5">
 						<div class="avatar-hero-circle">
@@ -374,10 +374,10 @@
 							{/if}
 						</div>
 						<div>
-							<h4 class="font-extrabold text-white text-base leading-snug">{selectedStudent.fullName}</h4>
+							<h4 class="font-extrabold text-slate-900 text-base leading-snug">{selectedStudent.fullName}</h4>
 							<div class="flex items-center gap-2 mt-1">
-								<span class="text-xs text-indigo-200 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
-								<span class="badge-rombel-dark">{selectedStudent.kelasName}</span>
+								<span class="text-xs text-slate-500 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
+								<span class="rombel-pill">{selectedStudent.kelasName}</span>
 							</div>
 						</div>
 					</div>
@@ -392,15 +392,15 @@
 
 				<div class="banner-stats-grid mt-4">
 					<div class="banner-stat-box">
-						<span class="banner-stat-val text-amber-300">⭐ {selectedStudent.totalPoints}</span>
+						<span class="banner-stat-val text-amber-700">⭐ {selectedStudent.totalPoints}</span>
 						<span class="banner-stat-lbl">Total Poin</span>
 					</div>
 					<div class="banner-stat-box">
-						<span class="banner-stat-val text-emerald-300">{selectedStudent.attendanceRate}%</span>
+						<span class="banner-stat-val text-emerald-700">{selectedStudent.attendanceRate}%</span>
 						<span class="banner-stat-lbl">Kehadiran</span>
 					</div>
 					<div class="banner-stat-box">
-						<span class="banner-stat-val text-indigo-200">{selectedStudent.totalHadir}/{selectedStudent.totalSessionsCount}</span>
+						<span class="banner-stat-val text-indigo-700">{selectedStudent.totalHadir}/{selectedStudent.totalSessionsCount}</span>
 						<span class="banner-stat-lbl">Hadir Sesi</span>
 					</div>
 				</div>
@@ -775,44 +775,32 @@
 		background: #c7d2fe;
 	}
 
-	/* Drawer Premium Styles */
-	.student-hero-banner {
-		background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #3730a3 100%);
+	/* Drawer Student Hero Card Light */
+	.student-hero-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: 12px;
 		padding: 18px;
-		color: #ffffff;
-		box-shadow: 0 4px 12px rgba(49, 46, 129, 0.15);
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
 	.avatar-hero-circle {
 		width: 46px;
 		height: 46px;
 		border-radius: 50%;
-		background: #6366f1;
-		color: #ffffff;
+		background: #e0e7ff;
+		color: #4338ca;
 		font-weight: 800;
 		font-size: 18px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 2px solid rgba(255, 255, 255, 0.3);
 		flex-shrink: 0;
 	}
 
-	.badge-rombel-dark {
-		font-family: var(--font-mono, monospace);
-		font-size: 10px;
-		font-weight: 700;
-		background: rgba(255, 255, 255, 0.15);
-		color: #e0e7ff;
-		padding: 2px 7px;
-		border-radius: 4px;
-	}
-
 	.overall-progress-pill {
-		background: rgba(255, 255, 255, 0.12);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		backdrop-filter: blur(8px);
+		background: #e0e7ff;
+		border: 1px solid #c7d2fe;
 		border-radius: 10px;
 		padding: 8px 14px;
 		text-align: right;
@@ -822,10 +810,7 @@
 		display: block;
 		font-size: 20px;
 		font-weight: 900;
-		color: #6366f1;
-		background: linear-gradient(135deg, #818cf8, #c7d2fe);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
+		color: #4338ca;
 		line-height: 1.1;
 	}
 
@@ -833,7 +818,8 @@
 		display: block;
 		font-size: 9px;
 		font-family: var(--font-mono, monospace);
-		color: #c7d2fe;
+		color: #4f46e5;
+		font-weight: 700;
 		text-transform: uppercase;
 		margin-top: 2px;
 	}
@@ -845,8 +831,8 @@
 	}
 
 	.banner-stat-box {
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
 		border-radius: 8px;
 		padding: 8px 10px;
 		text-align: center;
@@ -862,7 +848,7 @@
 	.banner-stat-lbl {
 		display: block;
 		font-size: 10px;
-		color: #a5b4fc;
+		color: #64748b;
 		margin-top: 2px;
 	}
 
