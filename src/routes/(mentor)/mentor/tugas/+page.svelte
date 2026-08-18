@@ -13,36 +13,97 @@
 
 	// Master-Detail Navigation State
 	let selectedPertemuanId = $state<number | null>(null);
+	let selectedSubmissionId = $state<number | null>(null);
 
 	// Level 1 Filters State
 	let selectedKelasFilter = $state<string>('all');
 	let selectedTrackFilter = $state<string>('all');
 	let selectedActivityFilter = $state<string>('all');
 
-	// Level 2 Filters State
-	let searchQuery = $state('');
-	let selectedStatusFilter = $state<string>('all');
-	let selectedTaskSize = $state<string>('all');
+	// Level 2 Studio Filters (Pane 1 Roster Search & Filter)
+	let rosterSearchQuery = $state('');
+	let rosterStatusFilter = $state<'all' | 'pending' | 'approved' | 'revisi'>('all');
 
-	// Review drawer state
-	let activeReviewTarget = $state<SubmissionItem | null>(null);
+	// Level 1 Search Query
+	let searchQuery = $state('');
+
+	// Assessment form state
 	let reviewStatus = $state<'approved' | 'revisi'>('approved');
 	let reviewFeedback = $state('');
 	let isSubmitting = $state(false);
 
+	let activeMeetingSummary = $derived(
+		(data.meetingSummaries || []).find((m) => m.pertemuanId === selectedPertemuanId) || null
+	);
+
+	let meetingSubmissions = $derived(
+		selectedPertemuanId === null
+			? []
+			: (data.submissions || []).filter((sub) => sub.pertemuanId === selectedPertemuanId)
+	);
+
+	let filteredRosterSubmissions = $derived(
+		meetingSubmissions.filter((sub) => {
+			if (rosterStatusFilter !== 'all' && sub.status !== rosterStatusFilter) {
+				return false;
+			}
+			if (rosterSearchQuery.trim() !== '') {
+				const q = rosterSearchQuery.toLowerCase();
+				const nameMatch = sub.studentName?.toLowerCase().includes(q);
+				const usernameMatch = sub.studentUsername?.toLowerCase().includes(q);
+				return nameMatch || usernameMatch;
+			}
+			return true;
+		})
+	);
+
+	let activeSubmission = $derived.by(() => {
+		if (selectedSubmissionId !== null) {
+			const found = meetingSubmissions.find((s) => s.id === selectedSubmissionId);
+			if (found) return found;
+		}
+		return filteredRosterSubmissions[0] || meetingSubmissions[0] || null;
+	});
+
+	// Whenever activeSubmission changes, sync local form state
+	$effect(() => {
+		if (activeSubmission) {
+			if (activeSubmission.status === 'approved') {
+				reviewStatus = 'revisi';
+			} else {
+				reviewStatus = 'approved';
+			}
+			reviewFeedback = activeSubmission.feedback || '';
+		}
+	});
+
+	// Handle Form Action Toast & Auto-advance to Next Student
 	$effect(() => {
 		if (form?.success) {
 			toast.success(form.message || 'Penilaian berhasil disimpan');
-			activeReviewTarget = null;
-			reviewFeedback = '';
+			advanceToNextStudent();
 		} else if (form?.message) {
 			toast.error(form.message);
 		}
 	});
 
-	let activeMeetingSummary = $derived(
-		(data.meetingSummaries || []).find((m) => m.pertemuanId === selectedPertemuanId) || null
-	);
+	function advanceToNextStudent() {
+		if (!activeSubmission || filteredRosterSubmissions.length <= 1) return;
+		const currentIndex = filteredRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
+		if (currentIndex !== -1 && currentIndex < filteredRosterSubmissions.length - 1) {
+			const nextSub = filteredRosterSubmissions[currentIndex + 1];
+			selectedSubmissionId = nextSub.id;
+		}
+	}
+
+	function advanceToPrevStudent() {
+		if (!activeSubmission || filteredRosterSubmissions.length <= 1) return;
+		const currentIndex = filteredRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
+		if (currentIndex > 0) {
+			const prevSub = filteredRosterSubmissions[currentIndex - 1];
+			selectedSubmissionId = prevSub.id;
+		}
+	}
 
 	let kelasOptions = $derived([
 		{ value: 'all', label: 'Semua Kelas' },
@@ -109,41 +170,6 @@
 		searchQuery = '';
 	}
 
-	// Level 2: Submissions for the selected meeting
-	let selectedMeetingSubmissions = $derived(
-		(data.submissions || []).filter((sub) => {
-			if (selectedPertemuanId !== null && sub.pertemuanId !== selectedPertemuanId) {
-				return false;
-			}
-			if (selectedStatusFilter !== 'all' && sub.status !== selectedStatusFilter) {
-				return false;
-			}
-			if (selectedTaskSize !== 'all' && sub.taskSize !== selectedTaskSize) {
-				return false;
-			}
-			if (searchQuery.trim() !== '') {
-				const q = searchQuery.toLowerCase();
-				const nameMatch = sub.studentName?.toLowerCase().includes(q);
-				const usernameMatch = sub.studentUsername?.toLowerCase().includes(q);
-				const taskMatch = sub.taskTitle?.toLowerCase().includes(q);
-				return nameMatch || usernameMatch || taskMatch;
-			}
-			return true;
-		})
-	);
-
-	let isLevel2FilterActive = $derived(
-		selectedStatusFilter !== 'all' ||
-		selectedTaskSize !== 'all' ||
-		searchQuery.trim() !== ''
-	);
-
-	function resetLevel2Filters() {
-		selectedStatusFilter = 'all';
-		selectedTaskSize = 'all';
-		searchQuery = '';
-	}
-
 	let pendingCountTotal = $derived(
 		(data.submissions || []).filter((s) => s.status === 'pending').length
 	);
@@ -154,39 +180,30 @@
 		(data.submissions || []).filter((s) => s.status === 'revisi').length
 	);
 
-	function openReviewModal(sub: SubmissionItem, action: 'approved' | 'revisi') {
-		activeReviewTarget = sub;
-		if (sub.status === 'approved') {
-			reviewStatus = action === 'approved' ? 'revisi' : 'revisi';
-		} else {
-			reviewStatus = action;
-		}
-		reviewFeedback = sub.feedback || '';
-	}
-
-	function closeReviewModal() {
-		activeReviewTarget = null;
-		reviewFeedback = '';
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' && activeReviewTarget) {
-			closeReviewModal();
-		}
-	}
+	let activeMeetingApprovedCount = $derived(
+		meetingSubmissions.filter((s) => s.status === 'approved').length
+	);
 
 	function selectMeeting(pertemuanId: number) {
 		selectedPertemuanId = pertemuanId;
-		searchQuery = '';
-		selectedStatusFilter = 'all';
-		selectedTaskSize = 'all';
+		rosterSearchQuery = '';
+		rosterStatusFilter = 'all';
+		const subs = (data.submissions || []).filter((s) => s.pertemuanId === pertemuanId);
+		const firstPending = subs.find((s) => s.status === 'pending');
+		selectedSubmissionId = firstPending ? firstPending.id : (subs[0]?.id || null);
 	}
 
-	function backToMeetingGrid() {
+	function closeStudioView() {
 		selectedPertemuanId = null;
-		searchQuery = '';
-		selectedStatusFilter = 'all';
-		selectedTaskSize = 'all';
+		selectedSubmissionId = null;
+		rosterSearchQuery = '';
+		rosterStatusFilter = 'all';
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && selectedPertemuanId !== null) {
+			closeStudioView();
+		}
 	}
 
 	function isIframeEmbeddable(url: string | null | undefined): boolean {
@@ -234,9 +251,9 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="content-area">
-	{#if selectedPertemuanId === null}
-		<!-- LEVEL 1: MASTER GRID VIEW (PILIH PERTEMUAN) -->
+{#if selectedPertemuanId === null}
+	<!-- LEVEL 1: MASTER GRID VIEW (PILIH PERTEMUAN) -->
+	<div class="content-area">
 		<!-- Page Header Card -->
 		<div class="header-card">
 			<div class="page-header-row" style="margin-bottom: 0;">
@@ -250,7 +267,7 @@
 					</nav>
 					<h1 class="page-title">Daftar Pertemuan Ber-Tugas</h1>
 					<p class="page-sub">
-						Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa, memberikan umpan balik, dan menyetujui perolehan poin.
+						Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa dalam antarmuka <strong>Studio 3-Pane Review</strong>.
 					</p>
 				</div>
 			</div>
@@ -437,301 +454,57 @@
 								class="btn-create"
 								style="width: 100%; justify-content: center;"
 							>
-								<span>Periksa Submisi ({m.stats.total})</span>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<line x1="5" y1="12" x2="19" y2="12" />
-									<polyline points="12 5 19 12 12 19" />
-								</svg>
+								<span>Buka Studio Penilaian ({m.stats.total}) &rsaquo;</span>
 							</button>
 						</div>
 					</div>
 				{/each}
 			</div>
 		{/if}
+	</div>
 
-	{:else}
-		<!-- LEVEL 2: DETAIL SUBMISSION TABLE VIEW (DETAIL SUBMISI PERTEMUAN TERPILIH) -->
-		<div class="mb-4">
-			<button type="button" onclick={backToMeetingGrid} class="btn-ghost">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="19" y1="12" x2="5" y2="12" />
-					<polyline points="12 19 5 12 12 5" />
-				</svg>
-				<span>Kembali ke Daftar Pertemuan</span>
-			</button>
-		</div>
-
-		{#if activeMeetingSummary}
-			<!-- Meeting Header Card -->
-			<div class="header-card mb-6">
-				<div class="page-header-row" style="margin-bottom: 0;">
-					<div>
-						<nav class="breadcrumb" aria-label="Breadcrumb">
-							<a href="/mentor" class="bc-link">Dashboard</a>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-								<polyline points="9 18 15 12 9 6" />
-							</svg>
-							<button type="button" onclick={backToMeetingGrid} class="bc-link" style="border:none; background:none; padding:0; cursor:pointer;">
-								Penilaian Tugas
-							</button>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-								<polyline points="9 18 15 12 9 6" />
-							</svg>
-							<span class="bc-current">{activeMeetingSummary.pertemuanTitle}</span>
-						</nav>
-						<h1 class="page-title">{activeMeetingSummary.pertemuanTitle}</h1>
-						<p class="page-sub">
-							Task: <strong>{activeMeetingSummary.taskTitle}</strong> ({activeMeetingSummary.taskSize.toUpperCase()}) · Sesi: {formatIndoDate(activeMeetingSummary.sessionDate)} · {activeMeetingSummary.kelasName}
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Filter Card Level 2 (Detail Submisi Sesi) -->
-		<div class="page-filter-card mb-8">
-			<!-- Row 1: Search Bar & Conditional Reset -->
-			<div class="filter-row-top">
-				<div class="flex-1">
-					<TextInput
-						id="search-l2-input"
-						label="Cari Siswa / Username"
-						placeholder="Ketik nama siswa atau username..."
-						bind:value={searchQuery}
-					/>
-				</div>
-
-				{#if isLevel2FilterActive}
-					<div class="flex-shrink-0">
-						<button
-							type="button"
-							class="btn-reset-filters-active"
-							onclick={resetLevel2Filters}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-							<span>Reset Filter</span>
-						</button>
-					</div>
-				{/if}
-			</div>
-
-			<!-- Row 2: Status Submisi, Bobot Task -->
-			<div class="filter-row-bottom-2col">
-				<div>
-					<CustomSelect
-						id="status-filter-l2"
-						label="Status Submisi"
-						bind:value={selectedStatusFilter}
-						options={[
-							{ value: 'all', label: 'Semua Status' },
-							{ value: 'pending', label: 'Pending Review' },
-							{ value: 'approved', label: 'Disetujui' },
-							{ value: 'revisi', label: 'Perlu Revisi' }
-						]}
-					/>
-				</div>
-
-				<div>
-					<CustomSelect
-						id="task-size-filter-l2"
-						label="Bobot Task"
-						bind:value={selectedTaskSize}
-						options={[
-							{ value: 'all', label: 'Semua Bobot' },
-							{ value: 'kecil', label: 'Kecil (+50 Poin)' },
-							{ value: 'sedang', label: 'Sedang (+100 Poin)' },
-							{ value: 'besar', label: 'Besar (+200 Poin)' }
-						]}
-					/>
-				</div>
-			</div>
-		</div>
-
-		<!-- Data Table Submisi Siswa (Level 2 Detail) -->
-		{#if selectedMeetingSubmissions.length === 0}
-			<div class="empty-card">
-				<div class="empty-icon">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
+{:else}
+	<!-- LEVEL 2: DEDICATED FULL-VIEWPORT 3-PANE STUDIO WORKSPACE (TANPA TOPBAR / SIDEBAR NAV) -->
+	<div class="studio-workspace-scrim" role="region" aria-label="Studio Penilaian Task">
+		<!-- Studio Top Header Bar (54px) -->
+		<header class="studio-topbar">
+			<div class="studio-topbar-left">
+				<button type="button" onclick={closeStudioView} class="btn-studio-back" title="Kembali ke Daftar Pertemuan">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="19" y1="12" x2="5" y2="12" />
+						<polyline points="12 19 5 12 12 5" />
 					</svg>
-				</div>
-				<div class="empty-title">Tidak Ada Submission Ditemukan</div>
-				<div class="empty-sub">Belum ada tugas yang dikirimkan oleh siswa untuk pertemuan ini sesuai filter.</div>
-			</div>
-		{:else}
-			<div class="table-panel">
-				<div class="table-bar-header">
-					<span class="table-bar-title">Menampilkan {selectedMeetingSubmissions.length} Submisi Siswa</span>
-				</div>
+					<span>Keluar Studio (Esc)</span>
+				</button>
 
-				<div class="table-responsive">
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th style="width: 48px; text-align: center;">No.</th>
-								<th>Siswa &amp; Kelas</th>
-								<th>Tugas &amp; Track</th>
-								<th>Link Submisi</th>
-								<th>Waktu Kirim</th>
-								<th>Status</th>
-								<th style="text-align: right;">Aksi</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each selectedMeetingSubmissions as sub, idx (sub.id)}
-								<tr>
-									<td style="text-align: center; font-weight: 700; color: #64748b;">
-										{idx + 1}
-									</td>
-									<td>
-										<div class="student-block">
-											<span class="student-name">{sub.studentName}</span>
-											<span class="student-username">@{sub.studentUsername} · {sub.kelasName}</span>
-										</div>
-									</td>
-									<td>
-										<div class="task-block">
-											<span class="task-title">{sub.taskTitle}</span>
-											{#if sub.phaseTitle && sub.subPhaseTitle}
-												<span class="curriculum-path">
-													{sub.phaseTitle} &rsaquo; {sub.subPhaseTitle}
-												</span>
-											{/if}
-										</div>
-									</td>
-									<td>
-										<a
-											href={sub.link}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="link-url"
-											title={sub.link}
-										>
-											<span>Buka Link</span>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-												<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-												<polyline points="15 3 21 3 21 9" />
-												<line x1="10" y1="14" x2="21" y2="3" />
-											</svg>
-										</a>
-									</td>
-									<td>
-										<span class="time-text">{formatIndoDate(sub.submittedAt)}</span>
-									</td>
-									<td>
-										{#if sub.status === 'pending'}
-											<span class="badge badge-pending">PENDING</span>
-										{:else if sub.status === 'approved'}
-											<span class="badge badge-approved">DISETUJUI</span>
-										{:else}
-											<span class="badge badge-revisi">REVISI</span>
-										{/if}
-									</td>
-									<td style="text-align: right;">
-										<div class="action-buttons-cell">
-											<button
-												type="button"
-												onclick={() => openReviewModal(sub, sub.status === 'approved' ? 'revisi' : 'approved')}
-												class="btn-detail-split"
-												title="Buka Layar Penuh Split Pane Preview & Penilaian"
-											>
-												<span>Periksa Task &rsaquo;</span>
-											</button>
+				<div class="studio-topbar-divider"></div>
 
-											{#if sub.status === 'approved'}
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'revisi')}
-													class="btn-action btn-revisi"
-													title="Ubah Status ke Revisi"
-												>
-													Minta Revisi
-												</button>
-											{:else if sub.status === 'revisi'}
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'approved')}
-													class="btn-action btn-approve"
-													title="Setujui & Beri Poin"
-												>
-													Setujui
-												</button>
-											{:else}
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'approved')}
-													class="btn-action btn-approve"
-													title="Setujui & Beri Poin"
-												>
-													Setujui
-												</button>
-												<button
-													type="button"
-													onclick={() => openReviewModal(sub, 'revisi')}
-													class="btn-action btn-revisi"
-													title="Minta Revisi"
-												>
-													Revisi
-												</button>
-											{/if}
-										</div>
-									</td>
-								</tr>
-								{#if sub.feedback}
-									<tr class="feedback-row">
-										<td></td>
-										<td colspan="6">
-											<div class="feedback-box">
-												<strong>Catatan Mentor:</strong> {sub.feedback}
-											</div>
-										</td>
-									</tr>
-								{/if}
-							{/each}
-						</tbody>
-					</table>
+				<div class="studio-topbar-meta">
+					<h2 class="studio-topbar-title">{activeMeetingSummary?.pertemuanTitle || 'Penilaian Sesi'}</h2>
+					<span class="studio-topbar-sub">
+						{activeMeetingSummary?.kelasName} · Task: <strong>{activeMeetingSummary?.taskTitle}</strong>
+					</span>
 				</div>
 			</div>
-		{/if}
-	{/if}
-</div>
 
-<!-- FULL-SCREEN SPLIT PANE TASK REVIEW DRAWER VIEW -->
-{#if activeReviewTarget}
-	<div class="full-split-scrim" role="dialog" aria-modal="true">
-		<div class="full-split-view">
-			<!-- Topbar Header Bar (Covers standard navbar) -->
-			<div class="full-split-topbar">
-				<div class="topbar-left">
-					<button type="button" onclick={closeReviewModal} class="btn-topbar-back">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="19" y1="12" x2="5" y2="12" />
-							<polyline points="12 19 5 12 12 5" />
-						</svg>
-						<span>Tutup Penilaian (Esc)</span>
-					</button>
-					<div class="topbar-divider"></div>
-					<div class="topbar-student-info">
-						<span class="topbar-student-name">{activeReviewTarget.studentName}</span>
-						<span class="topbar-student-meta">@{activeReviewTarget.studentUsername} · {activeReviewTarget.kelasName}</span>
-					</div>
+			<div class="studio-topbar-center">
+				<div class="studio-progress-badge">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+						<polyline points="22 4 12 14.01 9 11.01" />
+					</svg>
+					<span>Progres Evaluasi: <strong>{activeMeetingApprovedCount} / {meetingSubmissions.length} Disetujui</strong></span>
 				</div>
+			</div>
 
-				<div class="topbar-right">
-					{#if activeReviewTarget.status === 'approved'}
-						<span class="topbar-status-badge badge-approved">✓ DISETUJUI</span>
-					{:else if activeReviewTarget.status === 'revisi'}
-						<span class="topbar-status-badge badge-revisi">! REVISI</span>
-					{:else}
-						<span class="topbar-status-badge badge-pending">PENDING REVIEW</span>
-					{/if}
-
+			<div class="studio-topbar-right">
+				{#if activeSubmission}
 					<a
-						href={activeReviewTarget.link}
+						href={activeSubmission.link}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="btn-topbar-link"
+						class="btn-studio-link"
+						title="Buka Proyek Siswa di Tab Baru"
 					>
 						<span>Buka Tab Baru</span>
 						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -740,86 +513,213 @@
 							<line x1="10" y1="14" x2="21" y2="3" />
 						</svg>
 					</a>
+				{/if}
 
-					<button type="button" onclick={closeReviewModal} class="btn-topbar-close" aria-label="Tutup">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<line x1="18" y1="6" x2="6" y2="18" />
-							<line x1="6" y1="6" x2="18" y2="18" />
-						</svg>
-					</button>
-				</div>
+				<button type="button" onclick={closeStudioView} class="btn-studio-close" aria-label="Tutup Studio">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="18" y1="6" x2="6" y2="18" />
+						<line x1="6" y1="6" x2="18" y2="18" />
+					</svg>
+				</button>
 			</div>
+		</header>
 
-			<!-- Full Split Body (Left 65% + Right 35%) -->
-			<div class="full-split-body">
-				<!-- LEFT PANE: LIVE PREVIEW IFRAME / LINK INSPECTOR -->
-				<div class="full-preview-pane">
-					{#if isIframeEmbeddable(activeReviewTarget.link)}
-						<iframe
-							src={activeReviewTarget.link}
-							title="Preview Submisi Task"
-							class="full-preview-iframe"
-							sandbox="allow-scripts allow-same-origin allow-forms"
-						></iframe>
-					{:else}
-						<!-- Embedded Link Card Inspector -->
-						<div class="full-external-wrap">
-							<div class="external-link-card">
-								<div class="external-icon">
-									<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-										<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-									</svg>
-								</div>
-								<h4 class="external-domain">{getDomainFromUrl(activeReviewTarget.link)}</h4>
-								<p class="external-sub">Tautan eksternal proyek siswa. Klik tombol di bawah untuk memeriksa kode / hasil pekerjaan di tab baru.</p>
-								<div class="external-url-box">{activeReviewTarget.link}</div>
-								<a
-									href={activeReviewTarget.link}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="btn-visit-external"
-								>
-									<span>Buka Proyek Siswa &rsaquo;</span>
-								</a>
-							</div>
+		<!-- 3-PANE CONTAINER (1/6 : 4/6 : 1/6 LEBAR LAYAR) -->
+		<div class="studio-panes-container">
+			<!-- PANE 1: DAFTAR SISWA SUBMISI (1/6 LEBAR, MIN-WIDTH 240px) -->
+			<aside class="pane-roster">
+				<!-- Roster Search & Filter Header -->
+				<div class="pane-roster-header">
+					<div class="roster-search-wrap mb-2">
+						<input
+							type="text"
+							placeholder="Cari nama / username..."
+							bind:value={rosterSearchQuery}
+							class="roster-search-input"
+						/>
+					</div>
+
+					<!-- Status Filter Pills -->
+					<div class="roster-filter-pills">
+						<button
+							type="button"
+							class="roster-pill"
+							class:roster-pill--active={rosterStatusFilter === 'all'}
+							onclick={() => (rosterStatusFilter = 'all')}
+						>
+							Semua ({meetingSubmissions.length})
+						</button>
+						<button
+							type="button"
+							class="roster-pill pill-pending"
+							class:roster-pill--active={rosterStatusFilter === 'pending'}
+							onclick={() => (rosterStatusFilter = 'pending')}
+						>
+							Pending
+						</button>
+						<button
+							type="button"
+							class="roster-pill pill-approved"
+							class:roster-pill--active={rosterStatusFilter === 'approved'}
+							onclick={() => (rosterStatusFilter = 'approved')}
+						>
+							Disetujui
+						</button>
+						<button
+							type="button"
+							class="roster-pill pill-revisi"
+							class:roster-pill--active={rosterStatusFilter === 'revisi'}
+							onclick={() => (rosterStatusFilter = 'revisi')}
+						>
+							Revisi
+						</button>
+					</div>
+				</div>
+
+				<!-- Student Submissions Roster List -->
+				<div class="pane-roster-list">
+					{#if filteredRosterSubmissions.length === 0}
+						<div class="roster-empty">
+							<p>Tidak ada siswa ditemukan.</p>
 						</div>
+					{:else}
+						{#each filteredRosterSubmissions as sub (sub.id)}
+							<button
+								type="button"
+								class="roster-item"
+								class:roster-item--active={activeSubmission?.id === sub.id}
+								onclick={() => (selectedSubmissionId = sub.id)}
+							>
+								<div class="roster-avatar">
+									{sub.studentName.substring(0, 2).toUpperCase()}
+								</div>
+
+								<div class="roster-info">
+									<div class="roster-name-row">
+										<span class="roster-student-name">{sub.studentName}</span>
+										{#if sub.status === 'approved'}
+											<span class="roster-badge badge-approved">✓</span>
+										{:else if sub.status === 'revisi'}
+											<span class="roster-badge badge-revisi">!</span>
+										{:else}
+											<span class="roster-badge badge-pending">•</span>
+										{/if}
+									</div>
+									<span class="roster-username">@{sub.studentUsername}</span>
+								</div>
+							</button>
+						{/each}
 					{/if}
 				</div>
+			</aside>
 
-				<!-- RIGHT PANE: ASSESSMENT & FEEDBACK FORM -->
-				<div class="full-assessment-pane">
-					<div class="assessment-pane-inner">
-						<!-- Summary Card -->
-						<div class="info-summary-card">
-							<div class="info-summary-row">
-								<span class="info-label">Judul Task:</span>
-								<strong class="info-val">{activeReviewTarget.taskTitle}</strong>
-							</div>
-							<div class="info-summary-row">
-								<span class="info-label">Pertemuan:</span>
-								<span class="info-val">{activeReviewTarget.pertemuanTitle}</span>
-							</div>
-							{#if activeReviewTarget.phaseTitle}
-								<div class="info-summary-row">
-									<span class="info-label">Track:</span>
-									<span class="info-val">{activeReviewTarget.phaseTitle} &rsaquo; {activeReviewTarget.subPhaseTitle}</span>
+			<!-- PANE 2: REVIEW WORKSPACE & LIVE PREVIEW (4/6 LEBAR) -->
+			<main class="pane-review">
+				{#if !activeSubmission}
+					<div class="pane-review-empty">
+						<p>Pilih siswa dari daftar roster di sebelah kiri untuk meninjau proyek/pekerjaan.</p>
+					</div>
+				{:else}
+					<!-- Top URL Header Bar -->
+					<div class="pane-review-url-bar">
+						<div class="flex items-center gap-2 overflow-hidden flex-1">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400 flex-shrink-0">
+								<circle cx="12" cy="12" r="10" />
+								<line x1="2" y1="12" x2="22" y2="12" />
+								<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+							</svg>
+							<span class="url-text" title={activeSubmission.link}>{activeSubmission.link}</span>
+						</div>
+
+						<a
+							href={activeSubmission.link}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="btn-open-tab-mini"
+						>
+							<span>Buka Tab Baru</span>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+								<polyline points="15 3 21 3 21 9" />
+								<line x1="10" y1="14" x2="21" y2="3" />
+							</svg>
+						</a>
+					</div>
+
+					<!-- Preview Frame Wrap -->
+					<div class="pane-review-frame-wrap">
+						{#if isIframeEmbeddable(activeSubmission.link)}
+							<iframe
+								src={activeSubmission.link}
+								title="Preview Pekerjaan Siswa"
+								class="pane-review-iframe"
+								sandbox="allow-scripts allow-same-origin allow-forms"
+							></iframe>
+						{:else}
+							<!-- External Inspector Card for GitHub / Drive / Figma / Canva / Replit -->
+							<div class="pane-review-external">
+								<div class="external-link-card">
+									<div class="external-icon">
+										<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+											<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+										</svg>
+									</div>
+									<h4 class="external-domain">{getDomainFromUrl(activeSubmission.link)}</h4>
+									<p class="external-sub">
+										Tautan eksternal proyek siswa (GitHub / Figma / Canva / Drive). Klik tombol di bawah untuk memeriksa kode / dokumen di tab baru.
+									</p>
+									<div class="external-url-box">{activeSubmission.link}</div>
+									<a
+										href={activeSubmission.link}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="btn-visit-external"
+									>
+										<span>Buka Proyek Siswa &rsaquo;</span>
+									</a>
 								</div>
-							{/if}
-							<div class="info-summary-row">
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</main>
+
+			<!-- PANE 3: ASSESSMENT & GRADING FORM (1/6 LEBAR, MIN-WIDTH 260px) -->
+			<aside class="pane-assessment">
+				{#if !activeSubmission}
+					<div class="pane-assessment-empty">
+						<p>Pilih siswa untuk melakukan penilaian.</p>
+					</div>
+				{:else}
+					<div class="pane-assessment-inner">
+						<!-- Student & Task Summary -->
+						<div class="assessment-summary-card">
+							<div class="summary-head">
+								<h3 class="summary-student-name">{activeSubmission.studentName}</h3>
+								<span class="summary-student-meta">@{activeSubmission.studentUsername} · {activeSubmission.kelasName}</span>
+							</div>
+
+							<div class="summary-divider"></div>
+
+							<div class="summary-row">
+								<span class="info-label">Judul Task:</span>
+								<strong class="info-val">{activeSubmission.taskTitle}</strong>
+							</div>
+							<div class="summary-row">
 								<span class="info-label">Bobot Poin:</span>
 								<span class="size-reward-badge">
-									{activeReviewTarget.taskSize.toUpperCase()} (+{activeReviewTarget.taskSize === 'kecil' ? '50' : activeReviewTarget.taskSize === 'besar' ? '200' : '100'} Poin)
+									{activeSubmission.taskSize.toUpperCase()} (+{activeSubmission.taskSize === 'kecil' ? '50' : activeSubmission.taskSize === 'besar' ? '200' : '100'} Poin)
 								</span>
 							</div>
-							<div class="info-summary-row">
-								<span class="info-label">Waktu Submisi:</span>
-								<span class="info-val">{formatIndoDate(activeReviewTarget.submittedAt)}</span>
+							<div class="summary-row">
+								<span class="info-label">Waktu Kirim:</span>
+								<span class="info-val">{formatIndoDate(activeSubmission.submittedAt)}</span>
 							</div>
 						</div>
 
 						<!-- Status Context Banner -->
-						{#if activeReviewTarget.status === 'approved'}
+						{#if activeSubmission.status === 'approved'}
 							<div class="status-context-banner banner-approved">
 								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -827,7 +727,7 @@
 								</svg>
 								<span>Tugas ini saat ini <strong>SUDAH DISETUJUI</strong> (+poin aktif).</span>
 							</div>
-						{:else if activeReviewTarget.status === 'revisi'}
+						{:else if activeSubmission.status === 'revisi'}
 							<div class="status-context-banner banner-revisi">
 								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 									<circle cx="12" cy="12" r="10" />
@@ -838,7 +738,7 @@
 							</div>
 						{/if}
 
-						<!-- Form Penilaian -->
+						<!-- Form Penilaian & Feedback -->
 						<form
 							method="POST"
 							action="?/review"
@@ -851,19 +751,19 @@
 							}}
 							class="assessment-form"
 						>
-							<input type="hidden" name="submissionId" value={activeReviewTarget.id} />
+							<input type="hidden" name="submissionId" value={activeSubmission.id} />
 							<input type="hidden" name="status" value={reviewStatus} />
 
 							<!-- Action Type Switcher -->
 							<div class="status-action-tabs">
-								{#if activeReviewTarget.status !== 'approved'}
+								{#if activeSubmission.status !== 'approved'}
 									<button
 										type="button"
 										class="tab-action-btn tab-approve"
 										class:tab-action-btn--active={reviewStatus === 'approved'}
 										onclick={() => (reviewStatus = 'approved')}
 									>
-										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 											<polyline points="20 6 9 17 4 12" />
 										</svg>
 										<span>Setujui &amp; Beri Poin</span>
@@ -876,55 +776,73 @@
 									class:tab-action-btn--active={reviewStatus === 'revisi'}
 									onclick={() => (reviewStatus = 'revisi')}
 								>
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 										<circle cx="12" cy="12" r="10" />
 										<line x1="12" y1="8" x2="12" y2="12" />
 										<line x1="12" y1="16" x2="12.01" y2="16" />
 									</svg>
-									<span>{activeReviewTarget.status === 'approved' ? 'Ubah ke Minta Revisi' : 'Minta Revisi'}</span>
+									<span>{activeSubmission.status === 'approved' ? 'Ubah ke Minta Revisi' : 'Minta Revisi'}</span>
 								</button>
 							</div>
 
 							<!-- Feedback Input -->
-							<div class="mt-4">
+							<div class="mt-3 mb-4">
 								<TextArea
-									id="feedback"
+									id="feedback-studio"
 									name="feedback"
 									label={reviewStatus === 'approved' ? 'Catatan Umpan Balik / Catatan Mentor (Opsional)' : 'Catatan Instruksi Revisi (Wajib)'}
 									placeholder={reviewStatus === 'approved' ? 'Contoh: Konfigurasi BGP tepat, penataan kabel & struktur dokumen sangat baik.' : 'Contoh: Mohon lengkapi screencast pengujian ping IP router dan upload ulang link...'}
 									bind:value={reviewFeedback}
-									rows={6}
+									rows={5}
 									required={reviewStatus === 'revisi'}
 								/>
 							</div>
 
-							<!-- Action Buttons -->
-							<div class="modal-footer mt-6">
-								<button type="button" onclick={closeReviewModal} class="btn-ghost">
-									Batal
-								</button>
+							<!-- Submit Action Button -->
+							<div class="mb-4">
 								{#if reviewStatus === 'approved'}
-									<button type="submit" disabled={isSubmitting} class="btn-submit-approve">
+									<button type="submit" disabled={isSubmitting} class="btn-submit-approve w-full justify-center">
 										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 											<polyline points="20 6 9 17 4 12" />
 										</svg>
-										<span>{isSubmitting ? 'Menyimpan...' : 'Setujui Submisi (+Poin)'}</span>
+										<span>{isSubmitting ? 'Menyimpan...' : 'Setujui & Siswa Lanjut ›'}</span>
 									</button>
 								{:else}
-									<button type="submit" disabled={isSubmitting} class="btn-submit-revisi">
+									<button type="submit" disabled={isSubmitting} class="btn-submit-revisi w-full justify-center">
 										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 											<circle cx="12" cy="12" r="10" />
 											<line x1="12" y1="8" x2="12" y2="12" />
 											<line x1="12" y1="16" x2="12.01" y2="16" />
 										</svg>
-										<span>{isSubmitting ? 'Menyimpan...' : 'Kirim Catatan Revisi'}</span>
+										<span>{isSubmitting ? 'Menyimpan...' : 'Kirim Catatan Revisi ›'}</span>
 									</button>
 								{/if}
 							</div>
 						</form>
+
+						<!-- Roster Navigation Shortcut Buttons -->
+						<div class="studio-nav-buttons">
+							<button
+								type="button"
+								onclick={advanceToPrevStudent}
+								class="btn-nav-prev"
+								disabled={filteredRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) <= 0}
+							>
+								‹ Siswa Sblm
+							</button>
+
+							<button
+								type="button"
+								onclick={advanceToNextStudent}
+								class="btn-nav-next"
+								disabled={filteredRosterSubmissions.findIndex(s => s.id === activeSubmission?.id) >= filteredRosterSubmissions.length - 1}
+							>
+								Siswa Lanjut ›
+							</button>
+						</div>
 					</div>
-				</div>
-			</div>
+				{/if}
+			</aside>
 		</div>
 	</div>
 {/if}
@@ -958,12 +876,6 @@
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 20px;
-	}
-
-	@media (max-width: 640px) {
-		.page-header-row {
-			flex-direction: column;
-		}
 	}
 
 	.breadcrumb {
@@ -1031,27 +943,6 @@
 	.btn-create:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 10px 24px -4px rgba(79, 70, 229, 0.45);
-	}
-
-	.btn-ghost {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		padding: 8px 14px;
-		font-size: 13px;
-		font-weight: 700;
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 150ms ease;
-	}
-
-	.btn-ghost:hover {
-		background: var(--primary-light);
-		color: var(--primary);
-		border-color: var(--primary-border);
 	}
 
 	/* Stats Row */
@@ -1133,15 +1024,8 @@
 		align-items: flex-start;
 	}
 
-	.filter-row-bottom-2col {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 16px;
-		align-items: flex-start;
-	}
-
 	@media (max-width: 768px) {
-		.filter-row-bottom, .filter-row-bottom-2col {
+		.filter-row-bottom {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -1328,225 +1212,6 @@
 		border: 1px solid var(--border-hard);
 	}
 
-	/* Table Panel View (Level 2) */
-	.table-panel {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-sm);
-		overflow: hidden;
-	}
-
-	.table-bar-header {
-		padding: 14px 20px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border-hard);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.table-bar-title {
-		font-family: var(--font-mono);
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-	}
-
-	.table-responsive {
-		width: 100%;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-	}
-
-	.data-table {
-		width: 100%;
-		min-width: 680px;
-		border-collapse: separate;
-		border-spacing: 0;
-	}
-
-	.data-table th {
-		background: #ffffff;
-		padding: 12px 16px;
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 700;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		border-bottom: 1.5px solid var(--border-hard);
-		white-space: nowrap;
-	}
-
-	.data-table td {
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--border-soft);
-		font-size: 13px;
-		vertical-align: middle;
-	}
-
-	.data-table tr:hover td {
-		background: #f8fafc;
-	}
-
-	.student-block {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.student-name {
-		font-weight: 700;
-		color: var(--text-primary);
-	}
-
-	.student-username {
-		font-family: var(--font-mono);
-		font-size: 11.5px;
-		color: var(--text-muted);
-	}
-
-	.task-block {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.task-title {
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.curriculum-path {
-		font-family: var(--font-mono);
-		font-size: 11px;
-		color: var(--text-muted);
-		margin-top: 2px;
-	}
-
-	.link-url {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		color: var(--primary);
-		font-family: var(--font-mono);
-		font-size: 12px;
-		font-weight: 600;
-		text-decoration: none;
-		padding: 4px 8px;
-		background: var(--primary-light);
-		border: 1px solid var(--primary-border);
-		border-radius: var(--radius-sm);
-		transition: background 150ms ease;
-	}
-
-	.link-url:hover {
-		background: #e0e7ff;
-	}
-
-	.time-text {
-		font-family: var(--font-mono);
-		font-size: 12px;
-		color: var(--text-secondary);
-	}
-
-	.badge {
-		display: inline-block;
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 800;
-		padding: 4px 8px;
-		border-radius: 6px;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-
-	.badge-pending {
-		background: #fef3c7;
-		color: #b45309;
-		border: 1px solid #fde68a;
-	}
-
-	.badge-approved {
-		background: #dcfce7;
-		color: #15803d;
-		border: 1px solid #bbf7d0;
-	}
-
-	.badge-revisi {
-		background: #ffe4e6;
-		color: #be123c;
-		border: 1px solid #fecdd3;
-	}
-
-	.btn-detail-split {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 6px 12px;
-		background: #4f46e5;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-family: var(--font-macro);
-		font-size: 12px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: background 150ms ease;
-	}
-
-	.btn-detail-split:hover {
-		background: #4338ca;
-	}
-
-	.action-buttons-cell {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 8px;
-	}
-
-	.btn-action {
-		font-family: var(--font-macro);
-		font-size: 12px;
-		font-weight: 700;
-		padding: 6px 12px;
-		border-radius: 6px;
-		border: none;
-		cursor: pointer;
-		transition: all 150ms ease;
-	}
-
-	.btn-approve {
-		background: #16a34a;
-		color: white;
-	}
-
-	.btn-approve:hover {
-		background: #15803d;
-	}
-
-	.btn-revisi {
-		background: #e11d48;
-		color: white;
-	}
-
-	.btn-revisi:hover {
-		background: #be123c;
-	}
-
-	.feedback-row td {
-		background: #fff1f2;
-		border-bottom: 1.5px solid #fecdd3;
-		padding: 10px 16px;
-	}
-
-	.feedback-box {
-		font-size: 12px;
-		color: #9f1239;
-		line-height: 1.4;
-	}
-
 	/* Empty State Card */
 	.empty-card {
 		background: #ffffff;
@@ -1586,131 +1251,134 @@
 		max-width: 420px;
 	}
 
-	/* FULL-SCREEN SPLIT PANE DRAWER VIEW */
-	.full-split-scrim {
+	/* STUDIO WORKSPACE LAYOUT (FULL-VIEWPORT 3-PANE) */
+	.studio-workspace-scrim {
 		position: fixed;
 		inset: 0;
 		z-index: 9999;
 		background: #0f172a;
 		display: flex;
 		flex-direction: column;
-	}
-
-	.full-split-view {
 		width: 100vw;
 		height: 100vh;
-		display: flex;
-		flex-direction: column;
-		background: #ffffff;
 		overflow: hidden;
 	}
 
-	.full-split-topbar {
-		height: 60px;
+	.studio-topbar {
+		height: 54px;
 		background: #0f172a;
+		border-bottom: 1px solid #334155;
 		color: #ffffff;
 		padding: 0 20px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		flex-shrink: 0;
-		border-bottom: 1px solid #334155;
 	}
 
-	.topbar-left {
+	.studio-topbar-left {
 		display: flex;
 		align-items: center;
 		gap: 16px;
 	}
 
-	.btn-topbar-back {
+	.btn-studio-back {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 8px 14px;
+		padding: 7px 12px;
 		background: #1e293b;
 		color: #cbd5e1;
 		border: 1px solid #334155;
 		border-radius: 8px;
 		font-family: var(--font-macro);
-		font-size: 12.5px;
+		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
 
-	.btn-topbar-back:hover {
+	.btn-studio-back:hover {
 		background: #334155;
 		color: #ffffff;
 	}
 
-	.topbar-divider {
+	.studio-topbar-divider {
 		width: 1px;
-		height: 24px;
+		height: 22px;
 		background: #334155;
 	}
 
-	.topbar-student-info {
+	.studio-topbar-meta {
 		display: flex;
 		flex-direction: column;
 	}
 
-	.topbar-student-name {
+	.studio-topbar-title {
 		font-family: var(--font-macro);
-		font-size: 14px;
+		font-size: 13.5px;
 		font-weight: 800;
 		color: #f8fafc;
+		line-height: 1.2;
 	}
 
-	.topbar-student-meta {
+	.studio-topbar-sub {
 		font-family: var(--font-mono);
 		font-size: 11px;
 		color: #94a3b8;
 	}
 
-	.topbar-right {
+	.studio-topbar-center {
+		display: flex;
+		align-items: center;
+	}
+
+	.studio-progress-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 14px;
+		background: #1e1b4b;
+		color: #c7d2fe;
+		border: 1px solid #3730a3;
+		border-radius: 20px;
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+	}
+
+	.studio-topbar-right {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
 
-	.topbar-status-badge {
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 800;
-		padding: 4px 10px;
-		border-radius: 6px;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-	}
-
-	.btn-topbar-link {
+	.btn-studio-link {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 7px 12px;
+		padding: 6px 12px;
 		background: #312e81;
 		color: #a5b4fc;
 		border: 1px solid #4338ca;
 		border-radius: 6px;
 		font-family: var(--font-mono);
-		font-size: 11.5px;
+		font-size: 11px;
 		font-weight: 700;
 		text-decoration: none;
 		transition: background 150ms ease;
 	}
 
-	.btn-topbar-link:hover {
+	.btn-studio-link:hover {
 		background: #3730a3;
 		color: #ffffff;
 	}
 
-	.btn-topbar-close {
+	.btn-studio-close {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 36px;
-		height: 36px;
+		width: 34px;
+		height: 34px;
 		background: #1e293b;
 		color: #94a3b8;
 		border: 1px solid #334155;
@@ -1719,43 +1387,263 @@
 		transition: all 150ms ease;
 	}
 
-	.btn-topbar-close:hover {
+	.btn-studio-close:hover {
 		background: #ef4444;
 		color: #ffffff;
 		border-color: #dc2626;
 	}
 
-	.full-split-body {
+	/* 3-PANE CONTAINER (1/6 : 4/6 : 1/6) */
+	.studio-panes-container {
 		flex: 1;
 		display: flex;
+		width: 100%;
+		height: calc(100vh - 54px);
 		overflow: hidden;
+		background: #0f172a;
 	}
 
-	@media (max-width: 900px) {
-		.full-split-body {
+	@media (max-width: 960px) {
+		.studio-panes-container {
 			flex-direction: column;
 			overflow-y: auto;
 		}
 	}
 
-	.full-preview-pane {
-		flex: 1.6;
-		background: #0f172a;
-		border-right: 1px solid #cbd5e1;
+	/* PANE 1: ROSTER SISWA (1/6 LEBAR, MIN-WIDTH 240px) */
+	.pane-roster {
+		flex: 1;
+		min-width: 240px;
+		max-width: 320px;
+		background: #ffffff;
+		border-right: 1px solid #e2e8f0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.pane-roster-header {
+		padding: 14px 14px 10px;
+		border-bottom: 1px solid #e2e8f0;
+		background: #f8fafc;
+	}
+
+	.roster-search-input {
+		width: 100%;
+		padding: 7px 12px;
+		font-size: 12px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		outline: none;
+		transition: border-color 150ms ease;
+	}
+
+	.roster-search-input:focus {
+		border-color: #4f46e5;
+	}
+
+	.roster-filter-pills {
+		display: flex;
+		gap: 4px;
+		overflow-x: auto;
+	}
+
+	.roster-pill {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		padding: 4px 8px;
+		border-radius: 6px;
+		border: 1px solid #e2e8f0;
+		background: #ffffff;
+		color: #64748b;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.roster-pill--active {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4338ca;
+	}
+
+	.pane-roster-list {
+		flex: 1;
+		overflow-y: auto;
+		padding: 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.roster-empty {
+		padding: 24px 12px;
+		text-align: center;
+		font-size: 12px;
+		color: #94a3b8;
+	}
+
+	.roster-item {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		border-radius: 8px;
+		border: 1px solid transparent;
+		background: #ffffff;
+		text-align: left;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.roster-item:hover {
+		background: #f1f5f9;
+	}
+
+	.roster-item--active {
+		background: #eff6ff !important;
+		border-color: #bfdbfe !important;
+		box-shadow: inset 3px 0 0 #3b82f6;
+	}
+
+	.roster-avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		background: #e0e7ff;
+		color: #4f46e5;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 800;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		position: relative;
+		flex-shrink: 0;
 	}
 
-	.full-preview-iframe {
+	.roster-info {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.roster-name-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 6px;
+	}
+
+	.roster-student-name {
+		font-size: 12.5px;
+		font-weight: 700;
+		color: #1e293b;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.roster-username {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		color: #64748b;
+	}
+
+	.roster-badge {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 800;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	/* PANE 2: REVIEW WORKSPACE & LIVE PREVIEW (4/6 LEBAR) */
+	.pane-review {
+		flex: 4;
+		background: #0f172a;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		border-right: 1px solid #cbd5e1;
+	}
+
+	.pane-review-empty {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 48px;
+		color: #94a3b8;
+		font-size: 14px;
+		text-align: center;
+	}
+
+	.pane-review-url-bar {
+		padding: 10px 16px;
+		background: #1e293b;
+		border-bottom: 1px solid #334155;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-shrink: 0;
+	}
+
+	.url-text {
+		font-family: var(--font-mono);
+		font-size: 11.5px;
+		color: #cbd5e1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.btn-open-tab-mini {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: #a5b4fc;
+		background: #312e81;
+		padding: 4px 10px;
+		border-radius: 5px;
+		text-decoration: none;
+		flex-shrink: 0;
+	}
+
+	.btn-open-tab-mini:hover {
+		background: #3730a3;
+		color: #ffffff;
+	}
+
+	.pane-review-frame-wrap {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #0f172a;
+	}
+
+	.pane-review-iframe {
 		width: 100%;
 		height: 100%;
 		border: none;
 		background: #ffffff;
 	}
 
-	.full-external-wrap {
+	.pane-review-external {
 		width: 100%;
 		height: 100%;
 		display: flex;
@@ -1764,67 +1652,93 @@
 		background: #f8fafc;
 	}
 
-	.full-assessment-pane {
+	/* PANE 3: ASSESSMENT & GRADING FORM (1/6 LEBAR, MIN-WIDTH 260px) */
+	.pane-assessment {
 		flex: 1;
+		min-width: 270px;
+		max-width: 340px;
 		background: #ffffff;
+		display: flex;
+		flex-direction: column;
 		overflow-y: auto;
 	}
 
-	.assessment-pane-inner {
-		padding: 24px;
+	.pane-assessment-empty {
+		padding: 32px;
+		text-align: center;
+		color: #94a3b8;
+		font-size: 13px;
+	}
+
+	.pane-assessment-inner {
+		padding: 16px;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
 	}
 
-	.info-summary-card {
+	.assessment-summary-card {
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 14px 16px;
-		margin-bottom: 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
+		padding: 12px;
+		margin-bottom: 12px;
 	}
 
-	.info-summary-row {
+	.summary-head {
+		margin-bottom: 8px;
+	}
+
+	.summary-student-name {
+		font-family: var(--font-macro);
+		font-size: 1.05rem;
+		font-weight: 800;
+		color: var(--text-primary);
+		line-height: 1.2;
+	}
+
+	.summary-student-meta {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.summary-divider {
+		height: 1px;
+		background: var(--border-hard);
+		margin: 8px 0;
+	}
+
+	.summary-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		font-size: 12.5px;
-		gap: 10px;
+		font-size: 12px;
+		margin-bottom: 4px;
 	}
 
-	.info-label {
-		color: var(--text-muted);
-		font-weight: 600;
-	}
-
-	.info-val {
-		color: var(--text-primary);
-		font-weight: 700;
-		text-align: right;
+	.summary-row:last-child {
+		margin-bottom: 0;
 	}
 
 	.size-reward-badge {
 		font-family: var(--font-mono);
-		font-size: 11px;
+		font-size: 10.5px;
 		font-weight: 800;
 		color: #047857;
 		background: #d1fae5;
-		padding: 3px 8px;
-		border-radius: 6px;
+		padding: 2px 6px;
+		border-radius: 5px;
 	}
 
 	.status-context-banner {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
+		gap: 6px;
+		padding: 8px 10px;
 		border-radius: 8px;
-		font-size: 12.5px;
-		margin-bottom: 14px;
+		font-size: 11.5px;
+		margin-bottom: 12px;
 	}
 
 	.banner-approved {
@@ -1839,26 +1753,25 @@
 		border: 1px solid #fecdd3;
 	}
 
-	/* Status Action Switcher Tabs */
 	.status-action-tabs {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: 10px;
-		margin-bottom: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-bottom: 10px;
 	}
 
 	.tab-action-btn {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		padding: 10px 12px;
+		padding: 8px 10px;
 		border-radius: 8px;
 		border: 1.5px solid var(--border-hard);
 		background: #ffffff;
 		color: var(--text-secondary);
 		font-family: var(--font-macro);
-		font-size: 12.5px;
+		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
@@ -1882,17 +1795,17 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 18px;
+		padding: 9px 14px;
 		background: #16a34a;
 		color: white;
 		border: none;
 		border-radius: var(--radius-md);
 		font-family: var(--font-macro);
-		font-size: 13px;
+		font-size: 12.5px;
 		font-weight: 700;
 		cursor: pointer;
 		transition: background 150ms ease;
-		box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+		box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
 	}
 
 	.btn-submit-approve:hover {
@@ -1903,71 +1816,103 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 18px;
+		padding: 9px 14px;
 		background: #e11d48;
 		color: white;
 		border: none;
 		border-radius: var(--radius-md);
 		font-family: var(--font-macro);
-		font-size: 13px;
+		font-size: 12.5px;
 		font-weight: 700;
 		cursor: pointer;
 		transition: background 150ms ease;
-		box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+		box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
 	}
 
 	.btn-submit-revisi:hover {
 		background: #be123c;
 	}
 
+	.studio-nav-buttons {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		margin-top: auto;
+		padding-top: 12px;
+		border-top: 1px solid var(--border-soft);
+	}
+
+	.btn-nav-prev, .btn-nav-next {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		padding: 7px 10px;
+		border-radius: 6px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-nav-prev:hover:not(:disabled), .btn-nav-next:hover:not(:disabled) {
+		background: var(--bg-inset);
+		color: var(--primary);
+	}
+
+	.btn-nav-prev:disabled, .btn-nav-next:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
 	/* External Link Card Inspector */
 	.external-link-card {
-		padding: 32px 24px;
+		padding: 28px 20px;
 		text-align: center;
-		max-width: 440px;
+		max-width: 420px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 	}
 
 	.external-icon {
-		width: 64px;
-		height: 64px;
-		border-radius: 16px;
+		width: 56px;
+		height: 56px;
+		border-radius: 14px;
 		background: #e0e7ff;
 		color: #4f46e5;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 16px;
+		margin-bottom: 14px;
 	}
 
 	.external-domain {
 		font-family: var(--font-macro);
-		font-size: 1.2rem;
+		font-size: 1.15rem;
 		font-weight: 800;
 		color: var(--text-primary);
-		margin-bottom: 6px;
+		margin-bottom: 4px;
 	}
 
 	.external-sub {
-		font-size: 13px;
+		font-size: 12.5px;
 		color: var(--text-muted);
-		margin-bottom: 16px;
+		margin-bottom: 14px;
 		line-height: 1.4;
 	}
 
 	.external-url-box {
 		font-family: var(--font-mono);
-		font-size: 11.5px;
+		font-size: 11px;
 		color: #475569;
 		background: #ffffff;
 		border: 1px solid #cbd5e1;
 		border-radius: 8px;
-		padding: 10px 14px;
+		padding: 8px 12px;
 		width: 100%;
 		word-break: break-all;
-		margin-bottom: 18px;
+		margin-bottom: 16px;
 	}
 
 	.btn-visit-external {
@@ -1976,12 +1921,12 @@
 		justify-content: center;
 		gap: 8px;
 		width: 100%;
-		padding: 12px 20px;
+		padding: 10px 18px;
 		background: #4f46e5;
 		color: white;
-		border-radius: 10px;
+		border-radius: 8px;
 		font-family: var(--font-macro);
-		font-size: 13.5px;
+		font-size: 13px;
 		font-weight: 700;
 		text-decoration: none;
 		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
