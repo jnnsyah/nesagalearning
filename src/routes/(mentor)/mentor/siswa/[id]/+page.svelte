@@ -409,7 +409,7 @@
 						<table class="data-table">
 							<thead>
 								<tr>
-									<th class="w-16 text-center">Sesi</th>
+									<th class="w-12 text-center">No</th>
 									<th>Judul & Topik Pertemuan</th>
 									<th class="text-center">Tanggal & Jam</th>
 									<th class="text-center w-36">Status Kehadiran</th>
@@ -418,10 +418,10 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each paginatedLogs as sessionLog}
+								{#each paginatedLogs as sessionLog, idx}
 									<tr class="hover:bg-slate-50 transition-colors">
-										<td class="text-center font-mono font-bold text-indigo-700">
-											#{sessionLog.sessionId}
+										<td class="text-center font-mono text-xs text-slate-400">
+											{(currentPage - 1) * pageSize + idx + 1}
 										</td>
 										<td>
 											<span class="font-extrabold text-slate-900 text-sm block">
