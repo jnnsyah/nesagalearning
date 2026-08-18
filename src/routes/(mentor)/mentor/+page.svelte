@@ -1,37 +1,72 @@
 <script lang="ts">
 	let { data } = $props();
+
+	function formatTimeOnly(timeStr: string | null | undefined): string {
+		if (!timeStr) return '-';
+		const parts = String(timeStr).trim().split(':');
+		if (parts.length >= 2) {
+			return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+		}
+		return String(timeStr);
+	}
+
+	function formatIndoDate(dateVal: Date | string | null | undefined): string {
+		if (!dateVal) return '-';
+		let d: Date;
+		if (dateVal instanceof Date) {
+			d = dateVal;
+		} else {
+			const str = String(dateVal).trim();
+			const dateOnly = str.includes('T') ? str.split('T')[0] : str;
+			if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+				const [y, m, day] = dateOnly.split('-').map(Number);
+				d = new Date(y, m - 1, day);
+			} else {
+				d = new Date(str);
+			}
+		}
+		if (isNaN(d.getTime())) return String(dateVal);
+		const bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+		return `${d.getDate()} ${bulanIndo[d.getMonth()]} ${d.getFullYear()}`;
+	}
 </script>
 
 <svelte:head>
-	<title>Dashboard Mentor — NLC</title>
+	<title>Dashboard Mentor — Portal NLC</title>
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page header row with navigation breadcrumb & action button -->
+	<!-- Page Header Banner -->
 	<div class="page-header-row">
 		<div>
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<span class="bc-current">Dashboard</span>
 			</nav>
 			<h1 class="page-title">Dashboard Mentor</h1>
-			<p class="page-sub">Selamat datang kembali, <strong>{data.user?.fullName}</strong>. Kelola pertemuan & pantau progress siswa.</p>
+			<p class="page-sub">Selamat datang kembali, <strong>{data.user?.fullName}</strong>. Ringkasan keaktifan &amp; antrean tugas siswa.</p>
 		</div>
-		<a href="/mentor/pertemuan/create" class="btn-create hide-mobile" style="text-decoration:none;">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-			<span>Buat Pertemuan</span>
-		</a>
+		<div class="flex items-center gap-3">
+			<a href="/mentor/jadwal" class="btn-secondary-head hide-mobile">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+				<span>Kalender Jadwal</span>
+			</a>
+			<a href="/mentor/pertemuan" class="btn-create hide-mobile" style="text-decoration:none;">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+				<span>Kelola Pertemuan</span>
+			</a>
+		</div>
 	</div>
 
-	<!-- Overview stats -->
+	<!-- Overview Stats Grid -->
 	<div class="stats-row">
 		<div class="stat-card-h">
 			<div class="stat-card-h__icon" style="background: #e0e7ff; color: #4f46e5;">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 			</div>
 			<div>
-				<div class="stat-card-h__label">Siswa Aktif</div>
-				<div class="stat-card-h__value">0</div>
-				<div class="stat-card-h__meta">Kelas KLS-01</div>
+				<div class="stat-card-h__label">Total Siswa Aktif</div>
+				<div class="stat-card-h__value">{data.stats.totalStudents}</div>
+				<div class="stat-card-h__meta">Terdaftar di Kelas</div>
 			</div>
 		</div>
 
@@ -40,42 +75,76 @@
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 			</div>
 			<div>
-				<div class="stat-card-h__label">Tugas Menunggu</div>
-				<div class="stat-card-h__value">0</div>
-				<div class="stat-card-h__meta">Pending Grading</div>
+				<div class="stat-card-h__label">Tugas Menunggu Periksa</div>
+				<div class="stat-card-h__value" style={data.stats.pendingSubmissions > 0 ? 'color: #d97706;' : ''}>
+					{data.stats.pendingSubmissions}
+				</div>
+				<div class="stat-card-h__meta">Submisi Pending</div>
 			</div>
 		</div>
 
 		<div class="stat-card-h">
-			<div class="stat-card-h__icon" style="background: #ccfbf1; color: #0d9488;">
+			<div class="stat-card-h__icon" style="background: #dcfce7; color: #16a34a;">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 			</div>
 			<div>
 				<div class="stat-card-h__label">Sesi Berikutnya</div>
-				<div class="stat-card-h__value" style="font-size: 1.1rem;">—</div>
-				<div class="stat-card-h__meta">Belum Dijadwalkan</div>
+				{#if data.stats.nextSession}
+					<div class="stat-card-h__value" style="font-size: 0.95rem; line-height: 1.3;" title={data.stats.nextSession.title}>
+						{data.stats.nextSession.title}
+					</div>
+					<div class="stat-card-h__meta">
+						{formatIndoDate(data.stats.nextSession.sessionDate)} ({formatTimeOnly(data.stats.nextSession.startTime)} WIB)
+					</div>
+				{:else}
+					<div class="stat-card-h__value" style="font-size: 1.1rem; color: #94a3b8;">Belum Ada</div>
+					<div class="stat-card-h__meta">Tidak ada jadwal mendatang</div>
+				{/if}
 			</div>
 		</div>
 	</div>
 
-	<!-- Two-column content -->
+	<!-- Two-column grid -->
 	<div class="two-col-grid">
 		<!-- Grading queue -->
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-					<span>Submission Menunggu</span>
+					<span>Antrean Tugas Menunggu Periksa</span>
 				</div>
-				<span class="badge badge-pending">0 Item</span>
+				<span class="badge {data.stats.pendingSubmissions > 0 ? 'badge-pending' : 'badge-completed'}">
+					{data.stats.pendingSubmissions} Submisi
+				</span>
 			</div>
-			<div class="empty-state">
-				<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+
+			{#if data.pendingSubmissionsQueue.length === 0}
+				<div class="empty-state">
+					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+					</div>
+					<p class="empty-title">Tidak Ada Submisi Pending</p>
+					<p class="empty-sub">Semua tugas siswa telah selesai diperiksa &amp; dinilai.</p>
 				</div>
-				<p class="empty-title">Tidak Ada Pending</p>
-				<p class="empty-sub">Semua tugas siswa sudah diperiksa.</p>
-			</div>
+			{:else}
+				<div class="queue-list space-y-3 p-4">
+					{#each data.pendingSubmissionsQueue as sub}
+						<div class="queue-item">
+							<div class="queue-info flex-1">
+								<div class="flex items-center gap-2 mb-1">
+									<span class="student-name">{sub.studentName}</span>
+									<span class="badge badge-pending-sm">PENDING</span>
+								</div>
+								<h4 class="task-title">{sub.taskTitle}</h4>
+								<div class="submitted-at">Terkirim: {formatIndoDate(sub.submittedAt)}</div>
+							</div>
+							<a href="/mentor/tugas" class="btn-grade-sm">
+								Studio Penilaian &rarr;
+							</a>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</section>
 
 		<!-- Recent sessions -->
@@ -83,58 +152,83 @@
 			<div class="section-header">
 				<div class="flex items-center gap-2">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-					<span>Pertemuan Terbaru</span>
+					<span>Sesi Pertemuan Terbaru</span>
 				</div>
+				<a href="/mentor/pertemuan" class="text-xs font-bold text-indigo hover:underline">
+					Lihat Semua &rarr;
+				</a>
 			</div>
-			<div class="empty-state">
-				<div class="empty-icon-wrap" style="background: #eff6ff; color: #2563eb;">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+
+			{#if data.recentMeetings.length === 0}
+				<div class="empty-state">
+					<div class="empty-icon-wrap" style="background: #eff6ff; color: #2563eb;">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+					</div>
+					<p class="empty-title">Belum Ada Pertemuan Terjadwal</p>
+					<p class="empty-sub">Jadwal sesi kelas komunitas akan tampil di sini.</p>
 				</div>
-				<p class="empty-title">Belum Ada Pertemuan</p>
-				<p class="empty-sub">Jadwal pertemuan komunitas akan muncul di sini.</p>
-			</div>
+			{:else}
+				<div class="queue-list space-y-3 p-4">
+					{#each data.recentMeetings as m}
+						<div class="queue-item">
+							<div class="queue-info flex-1">
+								<div class="flex items-center gap-2 mb-1">
+									<span class="badge badge-kelas-sm">{m.kelasName}</span>
+									<span class="badge badge-act-sm">{m.activityType.toUpperCase()}</span>
+								</div>
+								<h4 class="task-title">{m.title}</h4>
+								<div class="submitted-at">
+									{formatIndoDate(m.sessionDate)} &bull; {formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB
+								</div>
+							</div>
+							<a href="/mentor/pertemuan" class="btn-ghost-sm">
+								Presensi &rarr;
+							</a>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</section>
 	</div>
 
-	<!-- Quick actions strip -->
+	<!-- Quick Actions Strip -->
 	<div class="quick-actions">
-		<div class="quick-actions__header">Aksi Cepat</div>
+		<div class="quick-actions__header">Aksi Cepat Mentor</div>
 		<div class="quick-actions__grid">
-			<a href="/mentor/kurikulum" class="quick-action-card">
+			<a href="/mentor/jadwal" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #e0e7ff; color: #4f46e5;">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 				</div>
-				<div class="quick-action-card__label">Track Pembelajaran</div>
+				<div class="quick-action-card__label">Kalender Jadwal</div>
 			</a>
 			<a href="/mentor/pertemuan" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #ccfbf1; color: #0d9488;">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 				</div>
-				<div class="quick-action-card__label">Pertemuan</div>
+				<div class="quick-action-card__label">Sesi Pertemuan</div>
 			</a>
 			<a href="/mentor/siswa" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #fef3c7; color: #d97706;">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
 				</div>
-				<div class="quick-action-card__label">Data Siswa</div>
+				<div class="quick-action-card__label">Roster Siswa</div>
 			</a>
-			<a href="/mentor/grading" class="quick-action-card">
+			<a href="/mentor/tugas" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #fee2e2; color: #dc2626;">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 				</div>
-				<div class="quick-action-card__label">Grading</div>
+				<div class="quick-action-card__label">Studio Penilaian</div>
 			</a>
 		</div>
 	</div>
 </div>
 
 <style>
-	/* ── Content area identical to /mentor/kurikulum ── */
 	.content-area {
 		padding: 24px 28px 40px;
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: 24px;
 		max-width: 1300px;
 		margin: 0 auto;
 		width: 100%;
@@ -206,10 +300,33 @@
 		box-shadow: 0 10px 24px -4px rgba(79,70,229,0.45);
 	}
 
+	.btn-secondary-head {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--text-primary);
+		text-decoration: none;
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-secondary-head:hover {
+		background: var(--bg-inset);
+		border-color: #cbd5e1;
+		color: var(--primary);
+	}
+
 	.stats-row {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 16px;
+		gap: 20px;
 	}
 
 	@media (max-width: 640px) {
@@ -253,17 +370,17 @@
 
 	.stat-card-h__value {
 		font-family: var(--font-macro);
-		font-size: 2rem;
+		font-size: 1.8rem;
 		font-weight: 800;
 		color: var(--text-primary);
-		line-height: 1;
+		line-height: 1.1;
 		letter-spacing: -0.02em;
 	}
 
 	.stat-card-h__meta {
 		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 500;
+		font-size: 10.5px;
+		font-weight: 600;
 		color: var(--text-muted);
 		margin-top: 4px;
 	}
@@ -276,6 +393,153 @@
 
 	@media (max-width: 768px) {
 		.two-col-grid { grid-template-columns: 1fr; }
+	}
+
+	.panel {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.section-header {
+		padding: 16px 20px;
+		border-bottom: 1px solid var(--border-soft);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.queue-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 14px 16px;
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		transition: all 150ms ease;
+	}
+
+	.queue-item:hover {
+		border-color: #cbd5e1;
+		background: #f8fafc;
+	}
+
+	.student-name {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.task-title {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #1e293b;
+		margin-bottom: 2px;
+	}
+
+	.submitted-at {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.btn-grade-sm {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 12px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background 150ms ease;
+		flex-shrink: 0;
+	}
+
+	.btn-grade-sm:hover {
+		background: #4338ca;
+	}
+
+	.btn-ghost-sm {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 12px;
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		color: var(--text-secondary);
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 150ms ease;
+		flex-shrink: 0;
+	}
+
+	.btn-ghost-sm:hover {
+		background: var(--bg-inset);
+		color: var(--primary);
+	}
+
+	.badge-pending-sm {
+		background: #fef3c7;
+		color: #d97706;
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-kelas-sm {
+		background: #e0e7ff;
+		color: #4338ca;
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-act-sm {
+		background: #f1f5f9;
+		color: #334155;
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-pending {
+		background: #fef3c7;
+		color: #d97706;
+		border: 1px solid #fde68a;
+		padding: 3px 10px;
+		border-radius: 9999px;
+		font-size: 11px;
+		font-weight: 800;
+	}
+
+	.badge-completed {
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #bbf7d0;
+		padding: 3px 10px;
+		border-radius: 9999px;
+		font-size: 11px;
+		font-weight: 800;
 	}
 
 	.empty-state {
@@ -332,7 +596,7 @@
 	.quick-actions__grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 12px;
+		gap: 16px;
 	}
 
 	@media (max-width: 640px) {
@@ -344,7 +608,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
-		padding: 16px 12px;
+		padding: 18px 14px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
@@ -368,7 +632,7 @@
 	}
 
 	.quick-action-card__label {
-		font-size: 12px;
+		font-size: 12.5px;
 		font-weight: 700;
 		color: var(--text-primary);
 		text-align: center;
