@@ -1,12 +1,10 @@
-import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { GuruAttendanceDetailViewData } from '$lib/server/services/guru-attendance-recap.service';
 
 /**
- * Export Rekap Presensi to Excel (.xlsx) file
- * Single sheet format with rich inline styling, Indigo brand banners,
- * color-coded badges, and clear key-value metadata layout.
+ * Export Rekap Presensi to Excel (.xls) file with full HTML styling,
+ * preserved background colors, Indigo brand headers, and colored status badges.
  */
 export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	const taName = data.selectedTahunAjaran?.name || 'Semua TA';
@@ -17,133 +15,142 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		year: 'numeric'
 	});
 
-	// Create temporary HTML table element for rich styled Excel export
-	const container = document.createElement('div');
-	container.innerHTML = `
-		<table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11pt;">
-			<!-- Title Banner -->
-			<tr>
-				<td colspan="9" style="background-color: #3730a3; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; padding: 12px; border: 1px solid #3730a3;">
-					NESAGA LEARNING COMMUNITY (NLC)
-				</td>
-			</tr>
-			<tr>
-				<td colspan="9" style="background-color: #4f46e5; color: #ffffff; font-size: 12pt; font-weight: bold; text-align: center; padding: 8px; border: 1px solid #4f46e5;">
-					LAPORAN REKAPITULASI PRESENSI SISWA
-				</td>
-			</tr>
-			<tr><td colspan="9" style="height: 10px;"></td></tr>
-
-			<!-- Metadata Section Header -->
-			<tr>
-				<td colspan="9" style="background-color: #e0e7ff; color: #3730a3; font-size: 11pt; font-weight: bold; padding: 8px 12px; border: 1px solid #c7d2fe;">
-					INFORMASI KELAS & METRIK UTAMA PRESENSI
-				</td>
-			</tr>
-
-			<!-- Metadata Key-Value Rows -->
-			<tr>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Tahun Ajaran:</td>
-				<td colspan="2" style="background-color: #ffffff; color: #0f172a; font-weight: bold; padding: 6px 10px; border: 1px solid #cbd5e1;">${taName}</td>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Rombel Kelas:</td>
-				<td colspan="3" style="background-color: #ffffff; color: #0f172a; font-weight: bold; padding: 6px 10px; border: 1px solid #cbd5e1;">${kelasName}</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Total Pertemuan:</td>
-				<td colspan="2" style="background-color: #ffffff; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;">${data.summary.totalSessionsCount} Sesi</td>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Total Siswa Terdaftar:</td>
-				<td colspan="3" style="background-color: #ffffff; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;">${data.summary.totalStudentsCount} Siswa</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Kehadiran Overall:</td>
-				<td colspan="2" style="background-color: #dcfce7; color: #15803d; font-weight: bold; padding: 6px 10px; border: 1px solid #cbd5e1;">${data.summary.overallAttendanceRate}%</td>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Tingkat Izin / Sakit:</td>
-				<td colspan="3" style="background-color: #fef3c7; color: #b45309; font-weight: bold; padding: 6px 10px; border: 1px solid #cbd5e1;">${data.summary.excusedRate}%</td>
-			</tr>
-			<tr>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Tingkat Alpha:</td>
-				<td colspan="2" style="background-color: #fee2e2; color: #b91c1c; font-weight: bold; padding: 6px 10px; border: 1px solid #cbd5e1;">${data.summary.alphaRate}%</td>
-				<td colspan="2" style="background-color: #f8fafc; font-weight: bold; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Tanggal Cetak Laporan:</td>
-				<td colspan="3" style="background-color: #ffffff; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;">${dateStr}</td>
-			</tr>
-			<tr><td colspan="9" style="height: 12px;"></td></tr>
-
-			<!-- Table Headers -->
-			<thead>
-				<tr style="background-color: #3730a3; color: #ffffff; font-weight: bold; text-align: center;">
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 50px;">No</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; text-align: left; width: 220px;">Nama Siswa</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 140px;">NISN</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 130px;">Total Pertemuan</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 100px;">Total Hadir</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 100px;">Total Izin</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 100px;">Total Alpha</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 120px;">% Kehadiran</th>
-					<th style="background-color: #3730a3; color: #ffffff; font-size: 11pt; padding: 10px; border: 1px solid #312e81; width: 150px;">Status Risiko</th>
+	const htmlContent = `
+		<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+		<head>
+			<meta charset="utf-8">
+			<!--[if gte mso 9]>
+			<xml>
+				<x:ExcelWorkbook>
+					<x:ExcelWorksheets>
+						<x:ExcelWorksheet>
+							<x:Name>Rekap Presensi</x:Name>
+							<x:WorksheetOptions>
+								<x:DisplayGridlines/>
+							</x:WorksheetOptions>
+						</x:ExcelWorksheet>
+					</x:ExcelWorksheets>
+				</x:ExcelWorkbook>
+			</xml>
+			<![endif]-->
+			<style>
+				body { font-family: Arial, sans-serif; font-size: 11pt; }
+				table { border-collapse: collapse; width: 100%; }
+				td, th { padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: middle; }
+				.title-banner { background-color: #3730a3; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; height: 40px; }
+				.subtitle-banner { background-color: #4f46e5; color: #ffffff; font-size: 12pt; font-weight: bold; text-align: center; height: 30px; }
+				.section-header { background-color: #e0e7ff; color: #3730a3; font-size: 11pt; font-weight: bold; }
+				.label-cell { background-color: #f8fafc; font-weight: bold; color: #475569; }
+				.val-cell { background-color: #ffffff; color: #0f172a; font-weight: bold; }
+				.val-green { background-color: #dcfce7; color: #15803d; font-weight: bold; }
+				.val-amber { background-color: #fef3c7; color: #b45309; font-weight: bold; }
+				.val-red { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
+				.th-header { background-color: #3730a3; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #312e81; }
+				.td-center { text-align: center; }
+				.td-right { text-align: right; }
+				.badge-green { background-color: #dcfce7; color: #15803d; font-weight: bold; text-align: center; }
+				.badge-amber { background-color: #fef3c7; color: #b45309; font-weight: bold; text-align: center; }
+				.badge-red { background-color: #fee2e2; color: #b91c1c; font-weight: bold; text-align: center; }
+			</style>
+		</head>
+		<body>
+			<table>
+				<tr>
+					<td colspan="9" class="title-banner">NESAGA LEARNING COMMUNITY (NLC)</td>
 				</tr>
-			</thead>
-			<tbody>
-				${data.students
-					.map((st, idx) => {
-						const isEven = idx % 2 === 0;
-						const rowBg = isEven ? '#ffffff' : '#f8fafc';
-						let statusText = 'Baik';
-						let statusBg = '#dcfce7';
-						let statusFg = '#15803d';
+				<tr>
+					<td colspan="9" class="subtitle-banner">LAPORAN REKAPITULASI PRESENSI SISWA</td>
+				</tr>
+				<tr><td colspan="9" style="height: 10px; border: none;"></td></tr>
 
-						if (st.attendanceRate < 50) {
-							statusText = 'Perhatian Khusus';
-							statusBg = '#fee2e2';
-							statusFg = '#b91c1c';
-						} else if (st.attendanceRate < 80) {
-							statusText = 'Cukup';
-							statusBg = '#fef3c7';
-							statusFg = '#b45309';
-						}
+				<tr>
+					<td colspan="9" class="section-header">INFORMASI KELAS & METRIK UTAMA PRESENSI</td>
+				</tr>
+				<tr>
+					<td colspan="2" class="label-cell">Tahun Ajaran:</td>
+					<td colspan="2" class="val-cell">${taName}</td>
+					<td colspan="2" class="label-cell">Rombel Kelas:</td>
+					<td colspan="3" class="val-cell">${kelasName}</td>
+				</tr>
+				<tr>
+					<td colspan="2" class="label-cell">Total Pertemuan:</td>
+					<td colspan="2" class="val-cell">${data.summary.totalSessionsCount} Sesi</td>
+					<td colspan="2" class="label-cell">Total Siswa Terdaftar:</td>
+					<td colspan="3" class="val-cell">${data.summary.totalStudentsCount} Siswa</td>
+				</tr>
+				<tr>
+					<td colspan="2" class="label-cell">Kehadiran Overall:</td>
+					<td colspan="2" class="val-green">${data.summary.overallAttendanceRate}%</td>
+					<td colspan="2" class="label-cell">Tingkat Izin / Sakit:</td>
+					<td colspan="3" class="val-amber">${data.summary.excusedRate}%</td>
+				</tr>
+				<tr>
+					<td colspan="2" class="label-cell">Tingkat Alpha:</td>
+					<td colspan="2" class="val-red">${data.summary.alphaRate}%</td>
+					<td colspan="2" class="label-cell">Tanggal Cetak Laporan:</td>
+					<td colspan="3" class="val-cell">${dateStr}</td>
+				</tr>
+				<tr><td colspan="9" style="height: 12px; border: none;"></td></tr>
 
-						return `
-						<tr style="background-color: ${rowBg};">
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; color: #64748b;">${idx + 1}</td>
-							<td style="padding: 8px 10px; border: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">${st.fullName}</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; font-family: monospace; color: #475569;">${st.nisn || '-'}</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; color: #0f172a;">${data.summary.totalSessionsCount}</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #15803d;">${st.totalHadir}</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #b45309;">${st.totalExcused}</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; color: #94a3b8;">${st.totalAlpha}</td>
-							<td style="text-align: right; padding: 8px 10px; border: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">${st.attendanceRate}%</td>
-							<td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; background-color: ${statusBg}; color: ${statusFg}; font-weight: bold;">${statusText}</td>
-						</tr>
-					`;
-					})
-					.join('')}
-			</tbody>
-		</table>
+				<thead>
+					<tr>
+						<th class="th-header" style="width: 50px;">No</th>
+						<th class="th-header" style="width: 220px; text-align: left;">Nama Siswa</th>
+						<th class="th-header" style="width: 140px;">NISN</th>
+						<th class="th-header" style="width: 130px;">Total Pertemuan</th>
+						<th class="th-header" style="width: 100px;">Total Hadir</th>
+						<th class="th-header" style="width: 100px;">Total Izin</th>
+						<th class="th-header" style="width: 100px;">Total Alpha</th>
+						<th class="th-header" style="width: 120px;">% Kehadiran</th>
+						<th class="th-header" style="width: 150px;">Status Risiko</th>
+					</tr>
+				</thead>
+				<tbody>
+					${data.students
+						.map((st, idx) => {
+							const isEven = idx % 2 === 0;
+							const rowBg = isEven ? '#ffffff' : '#f8fafc';
+							let statusText = 'Baik';
+							let badgeClass = 'badge-green';
+
+							if (st.attendanceRate < 50) {
+								statusText = 'Perhatian Khusus';
+								badgeClass = 'badge-red';
+							} else if (st.attendanceRate < 80) {
+								statusText = 'Cukup';
+								badgeClass = 'badge-amber';
+							}
+
+							return `
+								<tr style="background-color: ${rowBg};">
+									<td class="td-center" style="color: #64748b;">${idx + 1}</td>
+									<td style="font-weight: bold; color: #0f172a;">${st.fullName}</td>
+									<td class="td-center" style="font-family: monospace; color: #475569;">${st.nisn || '-'}</td>
+									<td class="td-center">${data.summary.totalSessionsCount}</td>
+									<td class="td-center" style="font-weight: bold; color: #15803d;">${st.totalHadir}</td>
+									<td class="td-center" style="font-weight: bold; color: #b45309;">${st.totalExcused}</td>
+									<td class="td-center" style="color: #94a3b8;">${st.totalAlpha}</td>
+									<td class="td-right" style="font-weight: bold; color: #0f172a;">${st.attendanceRate}%</td>
+									<td class="${badgeClass}">${statusText}</td>
+								</tr>
+							`;
+						})
+						.join('')}
+				</tbody>
+			</table>
+		</body>
+		</html>
 	`;
 
-	const tableEl = container.querySelector('table');
-	if (!tableEl) return;
-
-	const wb = XLSX.utils.book_new();
-	const ws = XLSX.utils.table_to_sheet(tableEl, { raw: true });
-
-	// Set column widths
-	ws['!cols'] = [
-		{ wch: 6 },  // A: No
-		{ wch: 32 }, // B: Nama Siswa
-		{ wch: 18 }, // C: NISN
-		{ wch: 18 }, // D: Total Pertemuan
-		{ wch: 14 }, // E: Total Hadir
-		{ wch: 14 }, // F: Total Izin
-		{ wch: 14 }, // G: Total Alpha
-		{ wch: 16 }, // H: % Kehadiran
-		{ wch: 22 }  // I: Status Risiko
-	];
-
-	XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi');
-
-	// Trigger file download
-	const filename = `Rekap_Presensi_${kelasName.replace(/\s+/g, '_')}_TA${taName.replace(/\s+/g, '_')}.xlsx`;
-	XLSX.writeFile(wb, filename);
+	const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = `Rekap_Presensi_${kelasName.replace(/\s+/g, '_')}_TA${taName.replace(/\s+/g, '_')}.xls`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
 }
 
 /**
