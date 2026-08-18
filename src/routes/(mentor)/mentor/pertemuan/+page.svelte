@@ -338,6 +338,8 @@
 		const now = new Date();
 		const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 		return dateStr.startsWith(yearMonth);
+	}
+
 	let isFilterActive = $derived(
 		(selectedKelas !== null && selectedKelas !== 'all') ||
 		(selectedActivity !== null && selectedActivity !== 'all') ||
