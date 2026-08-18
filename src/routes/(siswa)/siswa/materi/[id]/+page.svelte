@@ -11,6 +11,16 @@
 	let isFocusMode = $state(false);
 	let scrollProgress = $state(0);
 
+	interface TocItem {
+		id: string;
+		text: string;
+		level: number;
+	}
+
+	let tocList = $state<TocItem[]>([]);
+	let activeTocId = $state<string>('');
+	let isTocOpenMobile = $state<boolean>(false);
+
 	$effect(() => {
 		isReadCompleted = data.isCompleted;
 	});
@@ -21,6 +31,14 @@
 
 	function toggleFocusMode() {
 		isFocusMode = !isFocusMode;
+	}
+
+	function scrollToHeading(id: string) {
+		const el = document.getElementById(id);
+		if (el) {
+			activeTocId = id;
+			el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
 	}
 
 	$effect(() => {
@@ -39,6 +57,7 @@
 		const article = document.querySelector('.prose-reading');
 		if (!article) return;
 
+		// 1. Transform code blocks into Pro Code Block Boxes
 		const pres = article.querySelectorAll('pre');
 		pres.forEach((pre) => {
 			if (pre.parentElement?.classList.contains('tiptap-code-block-wrapper')) return;
@@ -96,6 +115,45 @@
 			wrapper.appendChild(header);
 			wrapper.appendChild(pre);
 		});
+
+		// 2. Auto-detect Headings for Table of Contents (ToC)
+		const headings = article.querySelectorAll('h1, h2, h3');
+		const items: TocItem[] = [];
+
+		headings.forEach((heading, idx) => {
+			const text = heading.textContent?.trim() || '';
+			if (!text) return;
+
+			let id = heading.id;
+			if (!id) {
+				id = `heading-${idx}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+				heading.id = id;
+			}
+
+			const tagName = heading.tagName.toLowerCase();
+			const level = tagName === 'h1' ? 1 : tagName === 'h2' ? 2 : 3;
+
+			items.push({ id, text, level });
+		});
+
+		tocList = items;
+
+		// 3. Set up IntersectionObserver for active heading highlight
+		if (items.length > 0) {
+			const observer = new IntersectionObserver(
+				(entries) => {
+					entries.forEach((entry) => {
+						if (entry.isIntersecting) {
+							activeTocId = entry.target.id;
+						}
+					});
+				},
+				{ rootMargin: '-80px 0px -60% 0px', threshold: 0.1 }
+			);
+
+			headings.forEach((h) => observer.observe(h));
+			return () => observer.disconnect();
+		}
 	});
 </script>
 
@@ -262,25 +320,63 @@
 		</div>
 	{/if}
 
-	<!-- Main Article Reading Card -->
-	<main class="reading-article-card size-{fontSize}">
-		{#if data.materi.content}
-			<div class="prose-reading">
-				{@html data.materi.content}
-			</div>
-		{:else}
-			<div class="empty-reading-state">
-				<div class="empty-icon-wrap mb-3">
-					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-					</svg>
+	<!-- Main Reader Layout with ToC Sidebar -->
+	<div class="reader-layout-grid {tocList.length > 0 ? 'has-toc' : ''}">
+		<!-- Main Article Reading Card -->
+		<main class="reading-article-card size-{fontSize}">
+			{#if data.materi.content}
+				<div class="prose-reading">
+					{@html data.materi.content}
 				</div>
-				<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
-				<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
-			</div>
+			{:else}
+				<div class="empty-reading-state">
+					<div class="empty-icon-wrap mb-3">
+						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+							<polyline points="14 2 14 8 20 8" />
+						</svg>
+					</div>
+					<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
+					<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
+				</div>
+			{/if}
+		</main>
+
+		{#if tocList.length > 0}
+			<!-- ToC Sidebar Box -->
+			<aside class="toc-sidebar-wrap">
+				<div class="toc-card">
+					<div class="toc-header">
+						<div class="flex items-center gap-2">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<line x1="8" y1="6" x2="21" y2="6" />
+								<line x1="8" y1="12" x2="21" y2="12" />
+								<line x1="8" y1="18" x2="21" y2="18" />
+								<line x1="3" y1="6" x2="3.01" y2="6" />
+								<line x1="3" y1="12" x2="3.01" y2="12" />
+								<line x1="3" y1="18" x2="3.01" y2="18" />
+							</svg>
+							<span class="toc-title">Daftar Isi Materi</span>
+						</div>
+						<span class="toc-count-badge">{tocList.length} Topik</span>
+					</div>
+
+					<nav class="toc-list">
+						{#each tocList as item}
+							<button
+								type="button"
+								onclick={() => scrollToHeading(item.id)}
+								class="toc-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
+							>
+								<span class="toc-bullet"></span>
+								<span class="toc-text truncate">{item.text}</span>
+							</button>
+						{/each}
+					</nav>
+				</div>
+			</aside>
 		{/if}
-	</main>
+	</div>
 
 	<!-- Footer Lesson Navigation -->
 	<nav class="lesson-nav-footer mt-8">
@@ -313,7 +409,7 @@
 </div>
 
 <style>
-	/* Global Focus Mode body overrides to hide Topbar, Sidebar, Mobile Bottom Nav */
+	/* Global Focus Mode body overrides */
 	:global(body.focus-mode-active .app-topbar),
 	:global(body.focus-mode-active .app-sidebar),
 	:global(body.focus-mode-active .mobile-bottom-nav) {
@@ -345,13 +441,13 @@
 
 	.viewer-container {
 		padding: 24px 28px 48px;
-		max-width: 900px;
+		max-width: 1100px;
 		margin: 0 auto;
 		transition: max-width 200ms ease;
 	}
 
 	.viewer-container.focus-mode {
-		max-width: 1050px;
+		max-width: 1200px;
 		padding-top: 32px;
 	}
 
@@ -573,6 +669,18 @@
 		background: #4338ca;
 	}
 
+	/* Layout Grid with ToC Sidebar */
+	.reader-layout-grid {
+		display: block;
+	}
+
+	.reader-layout-grid.has-toc {
+		display: grid;
+		grid-template-columns: 1fr 260px;
+		gap: 24px;
+		align-items: start;
+	}
+
 	.reading-article-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
@@ -600,6 +708,7 @@
 		margin-top: 1.6em;
 		margin-bottom: 0.6em;
 		line-height: 1.3;
+		scroll-margin-top: 24px;
 	}
 
 	.prose-reading :global(h1) { font-size: 1.5em; border-bottom: 2px solid var(--border-soft); padding-bottom: 0.3em; }
@@ -622,8 +731,98 @@
 	}
 
 	/* ══════════════════════════════════════════
-	   PRO CODE BLOCK BOX (UI-UX-Pro-Max Builder Style)
+	   TABLE OF CONTENTS SIDEBAR (ToC)
 	══════════════════════════════════════════ */
+	.toc-sidebar-wrap {
+		position: sticky;
+		top: 24px;
+	}
+
+	.toc-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		padding: 16px;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.toc-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-bottom: 10px;
+		border-bottom: 1px solid var(--border-soft);
+	}
+
+	.toc-title {
+		font-family: var(--font-macro);
+		font-size: 12.5px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.toc-count-badge {
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		padding: 1px 6px;
+		border-radius: 4px;
+	}
+
+	.toc-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		max-height: 420px;
+		overflow-y: auto;
+	}
+
+	.toc-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 5px 8px;
+		border: none;
+		background: transparent;
+		text-align: left;
+		font-size: 12px;
+		color: var(--text-secondary);
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 150ms ease;
+		width: 100%;
+	}
+
+	.toc-item.level-1 { font-weight: 700; color: var(--text-primary); }
+	.toc-item.level-2 { padding-left: 16px; }
+	.toc-item.level-3 { padding-left: 26px; font-size: 11.5px; color: var(--text-muted); }
+
+	.toc-bullet {
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: #cbd5e1;
+		flex-shrink: 0;
+	}
+
+	.toc-item:hover {
+		background: #f1f5f9;
+		color: #4f46e5;
+	}
+
+	.toc-item-active {
+		background: #e0e7ff !important;
+		color: #4338ca !important;
+		font-weight: 700 !important;
+	}
+
+	.toc-item-active .toc-bullet {
+		background: #4f46e5 !important;
+	}
+
+	/* PRO CODE BLOCK BOX */
 	.prose-reading :global(.tiptap-code-block-wrapper) {
 		margin: 1.25em 0;
 		border-radius: var(--radius-md);
@@ -798,6 +997,17 @@
 		font-family: var(--font-macro);
 		font-size: 13px;
 		font-weight: 800;
+	}
+
+	@media (max-width: 1024px) {
+		.reader-layout-grid.has-toc {
+			grid-template-columns: 1fr;
+		}
+		.toc-sidebar-wrap {
+			position: relative;
+			top: 0;
+			margin-bottom: 20px;
+		}
 	}
 
 	@media (max-width: 640px) {
