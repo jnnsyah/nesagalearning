@@ -294,7 +294,7 @@
 		</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     TAB 2: ATTENDANCE SESSION HISTORY WITH FILTERS & PAGINATION
+	     TAB 2: ATTENDANCE SESSION HISTORY DATA TABLE WITH FILTERS & PAGINATION
 	     ══════════════════════════════════════════════════════════ -->
 	{:else}
 		<section aria-label="Riwayat Presensi Sesi Pertemuan">
@@ -379,63 +379,82 @@
 					<p class="text-sm text-slate-500 font-mono">Tidak ada sesi presensi yang sesuai dengan kriteria filter.</p>
 				</div>
 			{:else}
-				<div class="space-y-4 mb-8">
-					{#each paginatedLogs as sessionLog}
-						<div
-							class="session-log-page-card"
-							class:session-log-hadir={sessionLog.status === 'hadir'}
-							class:session-log-excused={sessionLog.status === 'excused'}
-							class:session-log-alpha={sessionLog.status === 'alpha'}
-						>
-							<div class="flex items-start justify-between gap-4">
-								<div class="space-y-1.5">
-									<div class="flex items-center gap-2 flex-wrap">
-										<span class="font-mono font-bold text-xs text-indigo-700 bg-white px-2.5 py-0.5 rounded border border-indigo-100 shadow-sm">
-											Sesi #{sessionLog.sessionId}
-										</span>
-										<span class="font-mono text-xs text-slate-600 font-medium inline-flex items-center gap-1.5">
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-											<span>{sessionLog.sessionDate}</span>
-											<span class="text-slate-300">•</span>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-											<span>{sessionLog.startTime}</span>
-										</span>
-									</div>
-									<h4 class="font-extrabold text-slate-900 text-base leading-snug">{sessionLog.sessionTitle}</h4>
-								</div>
-
-								<div class="flex-shrink-0">
-									{#if sessionLog.status === 'hadir'}
-										<span class="badge badge-success text-xs px-3 py-1 font-bold">HADIR</span>
-									{:else if sessionLog.status === 'excused'}
-										<span class="badge badge-warning text-xs px-3 py-1 font-bold">IZIN / SAKIT</span>
-									{:else}
-										<span class="badge badge-error text-xs px-3 py-1 font-bold">ALPHA</span>
-									{/if}
-								</div>
-							</div>
-
-							{#if sessionLog.status !== 'alpha'}
-								<div class="flex items-center gap-3 mt-3.5 pt-3 border-t border-slate-200/60 flex-wrap text-xs">
-									<span class="meta-pill meta-pill-slate">
-										{#if sessionLog.method === 'qr'}
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-											<span>Metode: QR Code</span>
-										{:else}
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-											<span>Metode: Presensi Manual</span>
-										{/if}
-									</span>
-
-									{#if sessionLog.manualReason}
-										<span class="text-slate-700 font-medium bg-amber-50 px-3 py-1 rounded-md border border-amber-200">
-											Catatan: "{sessionLog.manualReason}"
-										</span>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					{/each}
+				<div class="recap-card mb-6">
+					<div class="table-scroll-container">
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th class="w-16 text-center">Sesi</th>
+									<th>Judul & Topik Pertemuan</th>
+									<th class="text-center">Tanggal & Jam</th>
+									<th class="text-center w-36">Status Kehadiran</th>
+									<th class="text-center">Metode Presensi</th>
+									<th>Catatan / Alasan</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each paginatedLogs as sessionLog}
+									<tr class="hover:bg-slate-50 transition-colors">
+										<td class="text-center font-mono font-bold text-indigo-700">
+											#{sessionLog.sessionId}
+										</td>
+										<td>
+											<span class="font-extrabold text-slate-900 text-sm block">
+												{sessionLog.sessionTitle}
+											</span>
+											{#if sessionLog.activityType}
+												<span class="text-xs text-slate-400 font-mono block mt-0.5 uppercase">
+													{sessionLog.activityType}
+												</span>
+											{/if}
+										</td>
+										<td class="text-center font-mono text-xs text-slate-600">
+											<div class="inline-flex items-center justify-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+												<span>{sessionLog.sessionDate}</span>
+												<span class="text-slate-300">•</span>
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+												<span>{sessionLog.startTime}</span>
+											</div>
+										</td>
+										<td class="text-center">
+											{#if sessionLog.status === 'hadir'}
+												<span class="badge badge-success text-xs px-2.5 py-0.5 font-bold">HADIR</span>
+											{:else if sessionLog.status === 'excused'}
+												<span class="badge badge-warning text-xs px-2.5 py-0.5 font-bold">IZIN / SAKIT</span>
+											{:else}
+												<span class="badge badge-error text-xs px-2.5 py-0.5 font-bold">ALPHA</span>
+											{/if}
+										</td>
+										<td class="text-center font-mono text-xs">
+											{#if sessionLog.status === 'alpha'}
+												<span class="text-slate-300">-</span>
+											{:else if sessionLog.method === 'qr'}
+												<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-semibold">
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+													<span>QR Code</span>
+												</span>
+											{:else}
+												<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-semibold">
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+													<span>Manual</span>
+												</span>
+											{/if}
+										</td>
+										<td class="text-xs text-slate-600">
+											{#if sessionLog.manualReason}
+												<span class="italic bg-amber-50 text-amber-800 px-2.5 py-1 rounded border border-amber-200 inline-block">
+													"{sessionLog.manualReason}"
+												</span>
+											{:else}
+												<span class="text-slate-300">-</span>
+											{/if}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
 				</div>
 
 				<!-- Pagination Controls Footer -->
@@ -767,30 +786,43 @@
 		cursor: not-allowed;
 	}
 
-	/* Session Log Page Card */
-	.session-log-page-card {
-		border-radius: 14px;
-		padding: 18px 22px;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-		transition: all 0.15s ease;
+	/* Data Table */
+	.recap-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #cbd5e1);
+		border-radius: var(--radius-lg, 12px);
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		overflow: hidden;
 	}
 
-	.session-log-hadir {
-		background: #f0fdf4 !important;
-		border: 1px solid #bbf7d0 !important;
-		border-left: 5px solid #22c55e !important;
+	.table-scroll-container {
+		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
-	.session-log-excused {
-		background: #fffbeb !important;
-		border: 1px solid #fde68a !important;
-		border-left: 5px solid #f59e0b !important;
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		min-width: 680px;
+		font-size: 13px;
 	}
 
-	.session-log-alpha {
-		background: #fff1f2 !important;
-		border: 1px solid #fecdd3 !important;
-		border-left: 5px solid #f43f5e !important;
+	.data-table th {
+		background: #f8fafc;
+		color: #475569;
+		font-size: 11px;
+		font-weight: 700;
+		font-family: var(--font-mono, monospace);
+		text-transform: uppercase;
+		padding: 12px 14px;
+		border-bottom: 1px solid #e2e8f0;
+		text-align: left;
+	}
+
+	.data-table td {
+		padding: 12px 14px;
+		border-bottom: 1px solid #f1f5f9;
 	}
 
 	/* Meta Pills */
