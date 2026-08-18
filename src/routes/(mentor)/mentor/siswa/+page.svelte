@@ -352,7 +352,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     PREMIUM FORM DRAWER FOR INDIVIDUAL STUDENT CURRICULUM PROGRESS
+     SPACIOUS FORM DRAWER FOR INDIVIDUAL STUDENT CURRICULUM PROGRESS
      ══════════════════════════════════════════════════════════ -->
 <FormDrawer
 	bind:open={drawerOpen}
@@ -361,11 +361,11 @@
 	subtitle={selectedStudent ? `${selectedStudent.fullName} (${selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`})` : ''}
 >
 	{#if selectedStudent}
-		<div class="drawer-progress-container space-y-5">
-			<!-- Student Hero Header Card (Light Slate Theme) -->
+		<div class="drawer-progress-container space-y-6 py-2">
+			<!-- Student Hero Header Card (Spacious Light Theme) -->
 			<div class="student-hero-card">
 				<div class="flex items-center justify-between gap-4">
-					<div class="flex items-center gap-3.5">
+					<div class="flex items-center gap-4">
 						<div class="avatar-hero-circle">
 							{#if selectedStudent.avatarUrl}
 								<img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} class="w-full h-full object-cover rounded-full" />
@@ -375,14 +375,14 @@
 						</div>
 						<div>
 							<h4 class="font-extrabold text-slate-900 text-base leading-snug">{selectedStudent.fullName}</h4>
-							<div class="flex items-center gap-2 mt-1">
+							<div class="flex items-center gap-2 mt-1.5">
 								<span class="text-xs text-slate-500 font-mono">{selectedStudent.nisn ? `NISN: ${selectedStudent.nisn}` : `@${selectedStudent.username}`}</span>
 								<span class="rombel-pill">{selectedStudent.kelasName}</span>
 							</div>
 						</div>
 					</div>
 
-					<div class="overall-progress-pill">
+					<div class="overall-progress-box">
 						<span class="progress-val-text">
 							{data.studentProgress ? `${data.studentProgress.student.overallProgress}%` : '0%'}
 						</span>
@@ -390,7 +390,7 @@
 					</div>
 				</div>
 
-				<div class="banner-stats-grid mt-4">
+				<div class="banner-stats-grid mt-5 pt-4 border-t border-slate-100">
 					<div class="banner-stat-box">
 						<span class="banner-stat-val text-amber-700">⭐ {selectedStudent.totalPoints}</span>
 						<span class="banner-stat-lbl">Total Poin</span>
@@ -408,71 +408,77 @@
 
 			<!-- Curriculum Phase Cards Breakdown -->
 			{#if !data.studentProgress}
-				<div class="py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
-					<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+				<div class="py-14 text-center bg-slate-50 rounded-xl border border-slate-200">
+					<div class="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
 					<p class="text-xs text-slate-500 font-mono">Memuat rincian progres fase kurikulum siswa...</p>
 				</div>
 			{:else if data.studentProgress.phases.length === 0}
-				<div class="empty-card py-10 text-center bg-slate-50 rounded-xl border border-slate-200">
+				<div class="empty-card py-12 text-center bg-slate-50 rounded-xl border border-slate-200">
 					<p class="text-xs text-slate-500 font-mono">Belum ada modul/fase kurikulum yang ditautkan ke kelas ini.</p>
 				</div>
 			{:else}
-				<div class="phases-stack space-y-4">
-					<div class="flex items-center justify-between">
-						<h5 class="text-xs font-bold text-slate-700 font-mono uppercase tracking-wider">
+				<div class="phases-stack space-y-6">
+					<div class="flex items-center justify-between pb-1 border-b border-slate-200">
+						<h5 class="text-xs font-bold text-slate-600 font-mono uppercase tracking-wider">
 							Rincian Fase Kurikulum ({data.studentProgress.phases.length} Fase)
 						</h5>
-						<span class="text-[11px] text-slate-400 font-mono">Target Ketercapaian 100%</span>
+						<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
 					</div>
 
 					{#each data.studentProgress.phases as phaseItem}
 						<div class="phase-progress-card">
-							<div class="flex items-center justify-between gap-3 mb-2.5">
-								<div class="flex items-center gap-2">
+							<!-- Phase Header Row -->
+							<div class="flex items-center justify-between gap-3 mb-3">
+								<div class="flex items-center gap-2.5">
 									<span class="phase-badge-pill">{phaseItem.phaseCode}</span>
 									<h5 class="font-extrabold text-slate-900 text-sm">{phaseItem.title}</h5>
 								</div>
 								<span class="phase-percent-badge">{phaseItem.completionRate}%</span>
 							</div>
 
-							<div class="progress-track-bar mb-3.5">
+							<!-- Phase Progress Bar -->
+							<div class="progress-track-bar mb-4">
 								<div
 									class="progress-fill-bar"
 									style="width: {phaseItem.completionRate}%;"
 								></div>
 							</div>
 
-							<!-- SubPhases List -->
-							<div class="subphases-list-stack space-y-2">
+							<!-- SubPhases List with Generous Spacing -->
+							<div class="subphases-list-stack space-y-3">
 								{#each phaseItem.subPhases as subP}
-									<div class="subphase-item">
-										<div class="flex items-start justify-between gap-3">
-											<div class="flex-grow min-w-0">
-												<span class="text-xs font-bold text-slate-800 block truncate">{subP.title}</span>
-												<div class="flex items-center gap-3 mt-1 flex-wrap text-[11px] font-mono">
-													<span class="text-slate-500 flex items-center gap-1">
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-														Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}
-													</span>
-													{#if subP.totalTasksCount > 0}
-														<span class={subP.approvedTasksCount > 0 ? "text-emerald-700 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
-															<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-															Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved
-														</span>
-													{/if}
-												</div>
-											</div>
+									<div class="subphase-card">
+										<div class="flex items-center justify-between gap-3 mb-2">
+											<h6 class="text-xs font-bold text-slate-900 truncate">{subP.title}</h6>
+											<span class="subphase-percent-tag">{subP.completionRate}%</span>
+										</div>
 
-											<div class="flex items-center gap-1.5 flex-shrink-0">
-												{#if subP.hasQuiz}
-													{#if subP.quizPassed}
-														<span class="quiz-badge-passed">QUIZ LULUS</span>
-													{:else}
-														<span class="quiz-badge-pending">QUIZ PENDING</span>
-													{/if}
+										<div class="flex items-center gap-2 flex-wrap">
+											<span class="meta-pill meta-pill-slate">
+												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
+												<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
+											</span>
+
+											{#if subP.totalTasksCount > 0}
+												<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
+													<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+													<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
+												</span>
+											{/if}
+
+											{#if subP.hasQuiz}
+												{#if subP.quizPassed}
+													<span class="meta-pill meta-pill-emerald">
+														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+														<span>Quiz Lulus</span>
+													</span>
+												{:else}
+													<span class="meta-pill meta-pill-gray">
+														<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+														<span>Quiz Pending</span>
+													</span>
 												{/if}
-												<span class="subphase-percent-tag">{subP.completionRate}%</span>
-											</div>
+											{/if}
 										</div>
 									</div>
 								{/each}
@@ -779,14 +785,14 @@
 	.student-hero-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard, #cbd5e1);
-		border-radius: 12px;
-		padding: 18px;
+		border-radius: 14px;
+		padding: 20px;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
 	.avatar-hero-circle {
-		width: 46px;
-		height: 46px;
+		width: 48px;
+		height: 48px;
 		border-radius: 50%;
 		background: #e0e7ff;
 		color: #4338ca;
@@ -798,17 +804,17 @@
 		flex-shrink: 0;
 	}
 
-	.overall-progress-pill {
+	.overall-progress-box {
 		background: #e0e7ff;
 		border: 1px solid #c7d2fe;
 		border-radius: 10px;
-		padding: 8px 14px;
+		padding: 10px 16px;
 		text-align: right;
 	}
 
 	.progress-val-text {
 		display: block;
-		font-size: 20px;
+		font-size: 22px;
 		font-weight: 900;
 		color: #4338ca;
 		line-height: 1.1;
@@ -827,14 +833,14 @@
 	.banner-stats-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 8px;
+		gap: 10px;
 	}
 
 	.banner-stat-box {
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
 		border-radius: 8px;
-		padding: 8px 10px;
+		padding: 10px 12px;
 		text-align: center;
 	}
 
@@ -852,17 +858,18 @@
 		margin-top: 2px;
 	}
 
+	/* Phase Cards */
 	.phase-progress-card {
 		background: #ffffff;
 		border: 1px solid #e2e8f0;
-		border-radius: 12px;
-		padding: 16px;
+		border-radius: 14px;
+		padding: 18px 20px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 	}
 
 	.phase-badge-pill {
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 800;
 		background: #e0e7ff;
 		color: #3730a3;
@@ -873,7 +880,7 @@
 
 	.phase-percent-badge {
 		font-family: var(--font-mono, monospace);
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 800;
 		color: #3730a3;
 	}
@@ -893,33 +900,18 @@
 		transition: width 0.3s ease;
 	}
 
-	.subphase-item {
+	/* Subphase Card Item */
+	.subphase-card {
 		background: #f8fafc;
 		border: 1px solid #e2e8f0;
-		border-left: 3px solid #6366f1;
-		border-radius: 8px;
-		padding: 10px 12px;
+		border-left: 4px solid #6366f1;
+		border-radius: 10px;
+		padding: 12px 14px;
+		transition: background 0.15s ease;
 	}
 
-	.quiz-badge-passed {
-		font-family: var(--font-mono, monospace);
-		font-size: 9px;
-		font-weight: 800;
-		background: #dcfce7;
-		color: #15803d;
-		padding: 2px 6px;
-		border-radius: 4px;
-		border: 1px solid #86efac;
-	}
-
-	.quiz-badge-pending {
-		font-family: var(--font-mono, monospace);
-		font-size: 9px;
-		font-weight: 700;
+	.subphase-card:hover {
 		background: #f1f5f9;
-		color: #64748b;
-		padding: 2px 6px;
-		border-radius: 4px;
 	}
 
 	.subphase-percent-tag {
@@ -928,8 +920,38 @@
 		font-weight: 800;
 		background: #e0e7ff;
 		color: #4338ca;
-		padding: 2px 6px;
+		padding: 2px 7px;
 		border-radius: 4px;
+	}
+
+	/* Meta Pills */
+	.meta-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11px;
+		font-family: var(--font-mono, monospace);
+		font-weight: 600;
+		padding: 3px 8px;
+		border-radius: 6px;
+	}
+
+	.meta-pill-slate {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		color: #475569;
+	}
+
+	.meta-pill-emerald {
+		background: #dcfce7;
+		border: 1px solid #bbf7d0;
+		color: #15803d;
+	}
+
+	.meta-pill-gray {
+		background: #f1f5f9;
+		border: 1px solid #e2e8f0;
+		color: #94a3b8;
 	}
 
 	@media (max-width: 640px) {
