@@ -19,7 +19,7 @@
 
 	let tocList = $state<TocItem[]>([]);
 	let activeTocId = $state<string>('');
-	let isTocOpen = $state<boolean>(true);
+	let isTocCollapsed = $state<boolean>(false);
 
 	$effect(() => {
 		isReadCompleted = data.isCompleted;
@@ -166,269 +166,271 @@
 	<div class="reading-progress-bar" style="width: {scrollProgress}%;"></div>
 </div>
 
-<div class="viewer-container {isFocusMode ? 'focus-mode' : ''}">
-	<!-- Reader Toolbar & Header Card -->
-	<div class="reader-header-card">
-		<nav class="breadcrumb mb-3" aria-label="Breadcrumb">
-			<a href="/siswa" class="bc-link">Dashboard</a>
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<a href="/siswa/materi" class="bc-link">Katalog Materi</a>
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current truncate max-w-[200px]">{data.materi.title}</span>
-		</nav>
+<div class="reader-outer-wrapper">
+	<!-- Main Center/Left Reading Container (Fixed Reading Width Unchanged) -->
+	<div class="viewer-container {isFocusMode ? 'focus-mode' : ''}">
+		<!-- Reader Toolbar & Header Card -->
+		<div class="reader-header-card">
+			<nav class="breadcrumb mb-3" aria-label="Breadcrumb">
+				<a href="/siswa" class="bc-link">Dashboard</a>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
+				<a href="/siswa/materi" class="bc-link">Katalog Materi</a>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
+				<span class="bc-current truncate max-w-[200px]">{data.materi.title}</span>
+			</nav>
 
-		<div class="flex items-center gap-2 mb-3 flex-wrap">
-			<span class="track-badge">{data.materi.trackTitle}</span>
-			<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
-		</div>
+			<div class="flex items-center gap-2 mb-3 flex-wrap">
+				<span class="track-badge">{data.materi.trackTitle}</span>
+				<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
+			</div>
 
-		<h1 class="reader-title">{data.materi.title}</h1>
-		<p class="reader-subtitle">Modul pembelajaran interaktif kurikulum Nesaga Learning Center.</p>
+			<h1 class="reader-title">{data.materi.title}</h1>
+			<p class="reader-subtitle">Modul pembelajaran interaktif kurikulum Nesaga Learning Center.</p>
 
-		<!-- Reader Utility Controls Bar -->
-		<div class="reader-controls-bar mt-5 pt-4">
-			<div class="flex items-center gap-3 flex-wrap">
-				<!-- Font Size Adjuster -->
-				<div class="font-size-group">
-					<span class="ctrl-label">Ukuran Teks:</span>
+			<!-- Reader Utility Controls Bar -->
+			<div class="reader-controls-bar mt-5 pt-4">
+				<div class="flex items-center gap-3 flex-wrap">
+					<!-- Font Size Adjuster -->
+					<div class="font-size-group">
+						<span class="ctrl-label">Ukuran Teks:</span>
+						<button
+							type="button"
+							onclick={() => setFontSize('sm')}
+							class="size-btn {fontSize === 'sm' ? 'size-btn-active' : ''}"
+							title="Teks Kecil"
+						>
+							A-
+						</button>
+						<button
+							type="button"
+							onclick={() => setFontSize('base')}
+							class="size-btn {fontSize === 'base' ? 'size-btn-active' : ''}"
+							title="Teks Normal"
+						>
+							A
+						</button>
+						<button
+							type="button"
+							onclick={() => setFontSize('lg')}
+							class="size-btn {fontSize === 'lg' ? 'size-btn-active' : ''}"
+							title="Teks Besar"
+						>
+							A+
+						</button>
+					</div>
+
+					<!-- Focus Mode Toggle -->
 					<button
 						type="button"
-						onclick={() => setFontSize('sm')}
-						class="size-btn {fontSize === 'sm' ? 'size-btn-active' : ''}"
-						title="Teks Kecil"
+						onclick={toggleFocusMode}
+						class="ctrl-btn {isFocusMode ? 'ctrl-btn-active' : ''}"
 					>
-						A-
-					</button>
-					<button
-						type="button"
-						onclick={() => setFontSize('base')}
-						class="size-btn {fontSize === 'base' ? 'size-btn-active' : ''}"
-						title="Teks Normal"
-					>
-						A
-					</button>
-					<button
-						type="button"
-						onclick={() => setFontSize('lg')}
-						class="size-btn {fontSize === 'lg' ? 'size-btn-active' : ''}"
-						title="Teks Besar"
-					>
-						A+
+						{#if isFocusMode}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
+							</svg>
+							<span>Keluar Mode Fokus</span>
+						{:else}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+							</svg>
+							<span>Mode Fokus</span>
+						{/if}
 					</button>
 				</div>
 
-				<!-- Focus Mode Toggle -->
-				<button
-					type="button"
-					onclick={toggleFocusMode}
-					class="ctrl-btn {isFocusMode ? 'ctrl-btn-active' : ''}"
-				>
-					{#if isFocusMode}
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
-						</svg>
-						<span>Keluar Mode Fokus</span>
-					{:else}
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-						</svg>
-						<span>Mode Fokus</span>
-					{/if}
-				</button>
-			</div>
-
-			<!-- Read Completion Toggle Form Button -->
-			<form
-				method="POST"
-				action="?/toggleCompletion"
-				use:enhance={() => {
-					isSubmitting = true;
-					return async ({ result, update }) => {
-						isSubmitting = false;
-						if (result.type === 'success' && result.data) {
-							const actionData = result.data as { isCompleted?: boolean; message?: string };
-							isReadCompleted = !!actionData.isCompleted;
-							if (isReadCompleted) {
-								toast.success(actionData.message || 'Materi ditandai selesai dibaca.');
-							} else {
-								toast.info(actionData.message || 'Status selesai dibaca dibatalkan.');
+				<!-- Read Completion Toggle Form Button -->
+				<form
+					method="POST"
+					action="?/toggleCompletion"
+					use:enhance={() => {
+						isSubmitting = true;
+						return async ({ result, update }) => {
+							isSubmitting = false;
+							if (result.type === 'success' && result.data) {
+								const actionData = result.data as { isCompleted?: boolean; message?: string };
+								isReadCompleted = !!actionData.isCompleted;
+								if (isReadCompleted) {
+									toast.success(actionData.message || 'Materi ditandai selesai dibaca.');
+								} else {
+									toast.info(actionData.message || 'Status selesai dibaca dibatalkan.');
+								}
 							}
-						}
-						await update({ reset: false });
-					};
-				}}
-			>
-				<button
-					type="submit"
-					disabled={isSubmitting}
-					class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
+							await update({ reset: false });
+						};
+					}}
 				>
-					{#if isReadCompleted}
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-						<span>Selesai Dibaca</span>
-					{:else}
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<circle cx="12" cy="12" r="10" />
-							<polyline points="12 6 12 12 16 14" />
-						</svg>
-						<span>Tandai Selesai</span>
-					{/if}
-				</button>
-			</form>
+					<button
+						type="submit"
+						disabled={isSubmitting}
+						class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
+					>
+						{#if isReadCompleted}
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+							<span>Selesai Dibaca</span>
+						{:else}
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<polyline points="12 6 12 12 16 14" />
+							</svg>
+							<span>Tandai Selesai</span>
+						{/if}
+					</button>
+				</form>
+			</div>
 		</div>
-	</div>
 
-	<!-- Slide Presentasi Attachment Card -->
-	{#if data.sessionSlide?.materialUrl}
-		<div class="slide-card mb-6">
-			<div class="flex items-center justify-between gap-4 flex-wrap">
-				<div class="flex items-center gap-3.5">
-					<div class="slide-icon-wrap">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<!-- Slide Presentasi Attachment Card -->
+		{#if data.sessionSlide?.materialUrl}
+			<div class="slide-card mb-6">
+				<div class="flex items-center justify-between gap-4 flex-wrap">
+					<div class="flex items-center gap-3.5">
+						<div class="slide-icon-wrap">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+								<polyline points="14 2 14 8 20 8" />
+							</svg>
+						</div>
+						<div>
+							<h4 class="slide-card-title">Slide Presentasi PPT Pertemuan</h4>
+							<p class="slide-card-sub">
+								Materi presentasi untuk sesi <strong>{data.sessionSlide.pertemuanTitle}</strong>
+							</p>
+						</div>
+					</div>
+
+					<a
+						href={data.sessionSlide.materialUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn-download-slide"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+							<polyline points="7 10 12 15 17 10" />
+							<line x1="12" y1="15" x2="12" y2="3" />
+						</svg>
+						<span>Unduh Berkas PPT</span>
+					</a>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Main Article Reading Card -->
+		<main class="reading-article-card size-{fontSize}">
+			{#if data.materi.content}
+				<div class="prose-reading">
+					{@html data.materi.content}
+				</div>
+			{:else}
+				<div class="empty-reading-state">
+					<div class="empty-icon-wrap mb-3">
+						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 							<polyline points="14 2 14 8 20 8" />
 						</svg>
 					</div>
-					<div>
-						<h4 class="slide-card-title">Slide Presentasi PPT Pertemuan</h4>
-						<p class="slide-card-sub">
-							Materi presentasi untuk sesi <strong>{data.sessionSlide.pertemuanTitle}</strong>
-						</p>
-					</div>
+					<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
+					<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
 				</div>
-
-				<a
-					href={data.sessionSlide.materialUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="btn-download-slide"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-						<polyline points="7 10 12 15 17 10" />
-						<line x1="12" y1="15" x2="12" y2="3" />
-					</svg>
-					<span>Unduh Berkas PPT</span>
-				</a>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Dedicated Table of Contents (ToC) Section Card Outside Article Container -->
-	{#if tocList.length > 0}
-		<div class="toc-section-card mb-6">
-			<div class="toc-header">
-				<div class="flex items-center gap-2.5">
-					<div class="toc-icon-badge">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<line x1="8" y1="6" x2="21" y2="6" />
-							<line x1="8" y1="12" x2="21" y2="12" />
-							<line x1="8" y1="18" x2="21" y2="18" />
-							<line x1="3" y1="6" x2="3.01" y2="6" />
-							<line x1="3" y1="12" x2="3.01" y2="12" />
-							<line x1="3" y1="18" x2="3.01" y2="18" />
-						</svg>
-					</div>
-					<div>
-						<h3 class="toc-section-title">Daftar Isi &amp; Topik Pembelajaran</h3>
-						<p class="toc-section-sub">Lompat langsung ke sub-bab materi yang ingin dipelajari</p>
-					</div>
-				</div>
-
-				<div class="flex items-center gap-2">
-					<span class="toc-count-pill">{tocList.length} Topik</span>
-					<button
-						type="button"
-						onclick={() => isTocOpen = !isTocOpen}
-						class="btn-toggle-toc"
-					>
-						<span>{isTocOpen ? 'Sembunyikan' : 'Tampilkan'}</span>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							class="transform transition-transform {isTocOpen ? 'rotate-180' : ''}"
-						>
-							<polyline points="6 9 12 15 18 9" />
-						</svg>
-					</button>
-				</div>
-			</div>
-
-			{#if isTocOpen}
-				<nav class="toc-grid-list mt-4 pt-4 border-t border-slate-200">
-					{#each tocList as item}
-						<button
-							type="button"
-							onclick={() => scrollToHeading(item.id)}
-							class="toc-grid-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
-						>
-							<span class="toc-bullet"></span>
-							<span class="toc-text truncate">{item.text}</span>
-						</button>
-					{/each}
-				</nav>
 			{/if}
-		</div>
-	{/if}
+		</main>
 
-	<!-- Main Article Reading Card (Main Container Width Preserved) -->
-	<main class="reading-article-card size-{fontSize}">
-		{#if data.materi.content}
-			<div class="prose-reading">
-				{@html data.materi.content}
-			</div>
-		{:else}
-			<div class="empty-reading-state">
-				<div class="empty-icon-wrap mb-3">
-					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
+		<!-- Footer Lesson Navigation -->
+		<nav class="lesson-nav-footer mt-8">
+			{#if data.prevMateri}
+				<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-lesson-nav prev-lesson">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="15 18 9 12 15 6" />
 					</svg>
-				</div>
-				<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
-				<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
-			</div>
-		{/if}
-	</main>
+					<div class="text-left min-w-0">
+						<span class="lesson-nav-dir">Materi Sebelumnya</span>
+						<div class="lesson-nav-title truncate">{data.prevMateri.title}</div>
+					</div>
+				</a>
+			{:else}
+				<div></div>
+			{/if}
 
-	<!-- Footer Lesson Navigation -->
-	<nav class="lesson-nav-footer mt-8">
-		{#if data.prevMateri}
-			<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-lesson-nav prev-lesson">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+			{#if data.nextMateri}
+				<a href={`/siswa/materi/${data.nextMateri.id}`} class="btn-lesson-nav next-lesson">
+					<div class="text-right min-w-0">
+						<span class="lesson-nav-dir">Materi Selanjutnya</span>
+						<div class="lesson-nav-title truncate">{data.nextMateri.title}</div>
+					</div>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+				</a>
+			{/if}
+		</nav>
+	</div>
+
+	<!-- Dedicated Right ToC Side Container (Separate Container Outside Main Container) -->
+	{#if tocList.length > 0}
+		<aside class="toc-right-container {isTocCollapsed ? 'toc-right-collapsed' : ''}">
+			<!-- Collapse Toggle Button -->
+			<button
+				type="button"
+				onclick={() => (isTocCollapsed = !isTocCollapsed)}
+				class="toc-collapse-btn"
+				title={isTocCollapsed ? 'Tampilkan Daftar Isi' : 'Sembunyikan Daftar Isi'}
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					class="transform transition-transform {isTocCollapsed ? '' : 'rotate-180'}"
+				>
 					<polyline points="15 18 9 12 15 6" />
 				</svg>
-				<div class="text-left min-w-0">
-					<span class="lesson-nav-dir">Materi Sebelumnya</span>
-					<div class="lesson-nav-title truncate">{data.prevMateri.title}</div>
-				</div>
-			</a>
-		{:else}
-			<div></div>
-		{/if}
+				<span>{isTocCollapsed ? 'TOC' : 'Sembunyikan'}</span>
+			</button>
 
-		{#if data.nextMateri}
-			<a href={`/siswa/materi/${data.nextMateri.id}`} class="btn-lesson-nav next-lesson">
-				<div class="text-right min-w-0">
-					<span class="lesson-nav-dir">Materi Selanjutnya</span>
-					<div class="lesson-nav-title truncate">{data.nextMateri.title}</div>
+			{#if !isTocCollapsed}
+				<div class="toc-right-card">
+					<div class="toc-header mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<line x1="8" y1="6" x2="21" y2="6" />
+								<line x1="8" y1="12" x2="21" y2="12" />
+								<line x1="8" y1="18" x2="21" y2="18" />
+								<line x1="3" y1="6" x2="3.01" y2="6" />
+								<line x1="3" y1="12" x2="3.01" y2="12" />
+								<line x1="3" y1="18" x2="3.01" y2="18" />
+							</svg>
+							<h3 class="toc-title font-bold text-xs text-slate-800">Daftar Isi Materi</h3>
+						</div>
+						<span class="toc-pill font-mono text-[9.5px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+							{tocList.length} Topik
+						</span>
+					</div>
+
+					<nav class="toc-list space-y-1">
+						{#each tocList as item}
+							<button
+								type="button"
+								onclick={() => scrollToHeading(item.id)}
+								class="toc-item level-{item.level} {activeTocId === item.id ? 'toc-item-active' : ''}"
+							>
+								<span class="toc-bullet"></span>
+								<span class="toc-text truncate">{item.text}</span>
+							</button>
+						{/each}
+					</nav>
 				</div>
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-			</a>
-		{/if}
-	</nav>
+			{/if}
+		</aside>
+	{/if}
 </div>
 
 <style>
@@ -462,15 +464,28 @@
 		transition: width 100ms ease-out;
 	}
 
-	.viewer-container {
-		padding: 24px 28px 48px;
-		max-width: 880px;
+	/* Outer Wrapper for Side-by-side Positioning */
+	.reader-outer-wrapper {
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		max-width: 1180px;
 		margin: 0 auto;
+		position: relative;
+		padding: 0 16px;
+	}
+
+	.viewer-container {
+		padding: 24px 0 48px;
+		max-width: 860px;
+		width: 100%;
+		flex: 1;
+		min-width: 0;
 		transition: max-width 200ms ease;
 	}
 
 	.viewer-container.focus-mode {
-		max-width: 980px;
+		max-width: 960px;
 		padding-top: 32px;
 	}
 
@@ -693,123 +708,96 @@
 	}
 
 	/* ══════════════════════════════════════════
-	   DEDICATED TOC SECTION CARD (Outside Reading Article)
+	   DEDICATED RIGHT TOC SIDE CONTAINER
 	══════════════════════════════════════════ */
-	.toc-section-card {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 16px 20px;
-		box-shadow: var(--shadow-sm);
-	}
-
-	.toc-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.toc-icon-badge {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
-		background: #e0e7ff;
-		color: #4f46e5;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.toc-right-container {
+		position: sticky;
+		top: 24px;
+		width: 270px;
+		margin-left: 24px;
+		margin-top: 24px;
 		flex-shrink: 0;
+		transition: all 200ms ease;
 	}
 
-	.toc-section-title {
-		font-family: var(--font-macro);
-		font-size: 14px;
-		font-weight: 800;
-		color: var(--text-primary);
-		margin: 0;
+	.toc-right-collapsed {
+		width: auto;
 	}
 
-	.toc-section-sub {
-		font-size: 11.5px;
-		color: var(--text-muted);
-		margin: 0;
-	}
-
-	.toc-count-pill {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 700;
-		color: #4338ca;
-		background: #e0e7ff;
-		padding: 2px 8px;
-		border-radius: 4px;
-	}
-
-	.btn-toggle-toc {
+	.toc-collapse-btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
-		padding: 4px 10px;
-		border: 1px solid var(--border-hard);
+		gap: 6px;
+		padding: 5px 12px;
 		background: #ffffff;
+		border: 1px solid var(--border-hard);
 		border-radius: 6px;
 		font-family: var(--font-macro);
-		font-size: 11px;
+		font-size: 11.5px;
 		font-weight: 700;
 		color: var(--text-secondary);
 		cursor: pointer;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 10px;
+		transition: all 150ms ease;
 	}
 
-	.btn-toggle-toc:hover {
+	.toc-collapse-btn:hover {
 		border-color: var(--primary-border);
 		color: var(--primary);
 	}
 
-	.toc-grid-list {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		gap: 6px;
+	.toc-right-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		padding: 16px;
+		box-shadow: var(--shadow-sm);
+		max-height: 480px;
+		overflow-y: auto;
 	}
 
-	.toc-grid-item {
+	.toc-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.toc-item {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 10px;
-		border: 1px solid var(--border-soft);
-		background: #f8fafc;
+		padding: 5px 8px;
+		border: none;
+		background: transparent;
 		text-align: left;
 		font-size: 12px;
 		color: var(--text-secondary);
-		border-radius: 6px;
+		border-radius: 4px;
 		cursor: pointer;
 		transition: all 150ms ease;
 		width: 100%;
 	}
 
-	.toc-grid-item.level-1 { font-weight: 800; color: var(--text-primary); }
-	.toc-grid-item.level-2 { padding-left: 14px; }
-	.toc-grid-item.level-3 { padding-left: 22px; font-size: 11.5px; color: var(--text-muted); }
+	.toc-item.level-1 { font-weight: 800; color: var(--text-primary); }
+	.toc-item.level-2 { padding-left: 14px; }
+	.toc-item.level-3 { padding-left: 22px; font-size: 11.5px; color: var(--text-muted); }
 
 	.toc-bullet {
-		width: 5px;
-		height: 5px;
+		width: 4px;
+		height: 4px;
 		border-radius: 50%;
 		background: #cbd5e1;
 		flex-shrink: 0;
 	}
 
-	.toc-grid-item:hover {
-		background: #ffffff;
-		border-color: #a5b4fc;
+	.toc-item:hover {
+		background: #f1f5f9;
 		color: #4f46e5;
 	}
 
 	.toc-item-active {
 		background: #e0e7ff !important;
-		border-color: #a5b4fc !important;
 		color: #4338ca !important;
 		font-weight: 800 !important;
 	}
@@ -1046,15 +1034,31 @@
 		font-weight: 800;
 	}
 
+	@media (max-width: 1150px) {
+		.reader-outer-wrapper {
+			flex-direction: column;
+			align-items: center;
+		}
+		.toc-right-container {
+			position: relative;
+			top: 0;
+			width: 100%;
+			max-width: 860px;
+			margin-left: 0;
+			margin-bottom: 20px;
+			margin-top: 0;
+		}
+		.toc-right-collapsed {
+			width: 100%;
+		}
+	}
+
 	@media (max-width: 640px) {
-		.viewer-container {
-			padding: 16px;
+		.reader-outer-wrapper {
+			padding: 0 12px;
 		}
 		.reading-article-card {
 			padding: 20px;
-		}
-		.toc-grid-list {
-			grid-template-columns: 1fr;
 		}
 		.lesson-nav-footer {
 			flex-direction: column;
