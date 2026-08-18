@@ -14,16 +14,20 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const kelasIdParam = url.searchParams.get('kelasId');
 	const searchParam = url.searchParams.get('search') || '';
 	const riskLevelParam = url.searchParams.get('risk') || 'semua';
+	const pageParam = url.searchParams.get('page');
 
 	const parsedKelasId = kelasIdParam ? Number(kelasIdParam) : undefined;
+	const page = pageParam ? Math.max(1, Number(pageParam)) : 1;
 
 	const { classOptions, selectedKelas, summary, alertStudentsCount } =
 		await ClassHealthService.getClassHealthSummary(parsedKelasId);
 
-	const roster = await ClassHealthService.getStudentHealthRoster({
+	const rosterData = await ClassHealthService.getStudentHealthRoster({
 		kelasId: summary.kelasId,
 		search: searchParam,
-		riskLevel: riskLevelParam
+		riskLevel: riskLevelParam,
+		page,
+		limit: 15
 	});
 
 	return {
@@ -32,11 +36,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		selectedKelas,
 		summary,
 		alertStudentsCount,
-		roster,
+		rosterData,
 		filters: {
 			kelasId: summary.kelasId,
 			search: searchParam,
-			riskLevel: riskLevelParam
+			riskLevel: riskLevelParam,
+			page
 		}
 	};
 };

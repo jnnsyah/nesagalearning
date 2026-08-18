@@ -45,6 +45,7 @@
 		if (selectedKelasId) params.set('kelasId', selectedKelasId);
 		if (searchVal.trim()) params.set('search', searchVal.trim());
 		if (selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
+		params.set('page', '1');
 
 		const queryString = params.toString();
 		const targetUrl = queryString ? `?${queryString}` : '/guru/monitoring';
@@ -59,6 +60,17 @@
 		}
 		goto('/guru/monitoring', { keepFocus: true, noScroll: true, replaceState: true });
 	}
+
+	function goToPage(pageNum: number) {
+		const params = new URLSearchParams();
+		if (selectedKelasId) params.set('kelasId', selectedKelasId);
+		if (searchVal.trim()) params.set('search', searchVal.trim());
+		if (selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
+		params.set('page', String(pageNum));
+
+		const queryString = params.toString();
+		goto(`?${queryString}`, { keepFocus: true, noScroll: true, replaceState: true });
+	}
 </script>
 
 <svelte:head>
@@ -67,21 +79,20 @@
 
 <div class="health-monitoring-page">
 	<!-- ══════════════════════════════════════════════════════════
-	     1. HERO TITLE BANNER
+	     1. HEADER / HERO TITLE BANNER (Standard Management Style)
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="hero-banner">
-		<div class="hero-content">
-			<div class="hero-icon">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-				</svg>
+	<header class="page-header">
+		<div class="title-group">
+			<div class="flex items-center gap-3">
+				<h1 class="page-title">Class Health Monitoring & Intervensi Advisor</h1>
+				<span class="status-badge" style="background: {data.summary.healthColor}18; color: {data.summary.healthColor}; border: 1px solid {data.summary.healthColor}40;">
+					<span class="dot-indicator" style="background: {data.summary.healthColor};"></span>
+					{data.summary.healthStatus}
+				</span>
 			</div>
-			<div>
-				<h1 class="hero-title">Class Health Monitoring & Intervensi Advisor</h1>
-				<p class="hero-subtitle">
-					Pantau tingkat kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan perhatian khusus secara real-time.
-				</p>
-			</div>
+			<p class="page-subtitle">
+				Pantau tingkat kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan perhatian khusus secara real-time.
+			</p>
 		</div>
 	</header>
 
@@ -268,12 +279,12 @@
 	</FilterBar>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     5. STUDENT HEALTH ROSTER TABLE
+	     5. STUDENT HEALTH ROSTER TABLE WITH PAGINATION
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="table-container">
 		<div class="table-header-row">
 			<h2 class="table-title">Daftar Kesehatan Siswa & Intervensi Advisor</h2>
-			<span class="table-count">{data.roster.length} Siswa Ditampilkan</span>
+			<span class="table-count">Menampilkan {data.rosterData.items.length} dari {data.rosterData.total} Siswa</span>
 		</div>
 
 		<div class="table-wrapper">
@@ -290,7 +301,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#if data.roster.length === 0}
+					{#if data.rosterData.items.length === 0}
 						<tr>
 							<td colspan="7" class="empty-cell">
 								<div class="empty-state">
@@ -301,7 +312,7 @@
 							</td>
 						</tr>
 					{:else}
-						{#each data.roster as s}
+						{#each data.rosterData.items as s}
 							<tr class:tr-alert={s.riskLevel !== 'SEHAT'}>
 								<!-- Nama Siswa -->
 								<td>
@@ -417,6 +428,58 @@
 				</tbody>
 			</table>
 		</div>
+
+		<!-- Pagination Footer -->
+		{#if data.rosterData.totalPages > 1}
+			<div class="pagination-footer">
+				<div class="pagination-info">
+					Halaman <span class="font-bold text-slate-900">{data.rosterData.page}</span> dari <span class="font-bold text-slate-900">{data.rosterData.totalPages}</span>
+				</div>
+				<div class="pagination-buttons">
+					{#if data.rosterData.page > 1}
+						<button
+							type="button"
+							onclick={() => goToPage(data.rosterData.page - 1)}
+							class="page-nav-btn cursor-pointer"
+						>
+							&larr; Sebelumnya
+						</button>
+					{:else}
+						<span class="page-nav-btn page-nav-btn--disabled">&larr; Sebelumnya</span>
+					{/if}
+
+					<div class="page-numbers">
+						{#each Array.from({ length: data.rosterData.totalPages }, (_, i) => i + 1) as pNum}
+							{#if pNum === data.rosterData.page}
+								<span class="page-num page-num--active">{pNum}</span>
+							{:else if Math.abs(pNum - data.rosterData.page) <= 2 || pNum === 1 || pNum === data.rosterData.totalPages}
+								<button
+									type="button"
+									onclick={() => goToPage(pNum)}
+									class="page-num cursor-pointer"
+								>
+									{pNum}
+								</button>
+							{:else if Math.abs(pNum - data.rosterData.page) === 3}
+								<span class="page-num-dots">...</span>
+							{/if}
+						{/each}
+					</div>
+
+					{#if data.rosterData.page < data.rosterData.totalPages}
+						<button
+							type="button"
+							onclick={() => goToPage(data.rosterData.page + 1)}
+							class="page-nav-btn cursor-pointer"
+						>
+							Selanjutnya &rarr;
+						</button>
+					{:else}
+						<span class="page-nav-btn page-nav-btn--disabled">Selanjutnya &rarr;</span>
+					{/if}
+				</div>
+			</div>
+		{/if}
 	</section>
 </div>
 
@@ -428,45 +491,49 @@
 		width: 100%;
 	}
 
-	/* Hero Banner */
-	.hero-banner {
-		background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-		border-radius: 16px;
-		padding: 24px 28px;
-		color: #ffffff;
-		box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
-	}
-
-	.hero-content {
+	/* Standard Page Header */
+	.page-header {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
+		justify-content: space-between;
 		gap: 16px;
 	}
 
-	.hero-icon {
-		width: 48px;
-		height: 48px;
-		background: rgba(255, 255, 255, 0.15);
-		backdrop-filter: blur(10px);
-		border-radius: 12px;
+	.title-group {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #ffffff;
-		flex-shrink: 0;
+		flex-direction: column;
+		gap: 4px;
 	}
 
-	.hero-title {
-		font-size: 20px;
+	.page-title {
+		font-size: 22px;
 		font-weight: 800;
+		color: #0f172a;
 		letter-spacing: -0.02em;
 		margin: 0;
 	}
 
-	.hero-subtitle {
+	.page-subtitle {
 		font-size: 13px;
-		color: rgba(255, 255, 255, 0.85);
-		margin-top: 4px;
+		color: #64748b;
+		margin: 0;
+	}
+
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		font-weight: 800;
+		padding: 3px 10px;
+		border-radius: 9999px;
+	}
+
+	.dot-indicator {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		display: inline-block;
 	}
 
 	/* Stats Grid */
@@ -542,13 +609,6 @@
 		padding: 4px 10px;
 		border-radius: 9999px;
 		border: 1px solid;
-	}
-
-	.dot-indicator {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		display: inline-block;
 	}
 
 	/* Distribution Card */
@@ -852,5 +912,85 @@
 		font-size: 12px;
 		color: #64748b;
 		margin: 0;
+	}
+
+	/* Pagination Footer Styling */
+	.pagination-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-top: 16px;
+		margin-top: 12px;
+		border-top: 1px solid #e2e8f0;
+	}
+
+	.pagination-info {
+		font-size: 12px;
+		color: #64748b;
+	}
+
+	.pagination-buttons {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.page-nav-btn {
+		padding: 6px 12px;
+		border-radius: 6px;
+		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		transition: all 150ms ease;
+	}
+
+	.page-nav-btn:hover:not(.page-nav-btn--disabled) {
+		background: #f1f5f9;
+		color: #0f172a;
+	}
+
+	.page-nav-btn--disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.page-numbers {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.page-num {
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		font-size: 12px;
+		font-weight: 700;
+		color: #334155;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 150ms ease;
+	}
+
+	.page-num:hover:not(.page-num--active) {
+		background: #f1f5f9;
+		color: #0f172a;
+	}
+
+	.page-num--active {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4f46e5;
+	}
+
+	.page-num-dots {
+		font-size: 12px;
+		color: #94a3b8;
+		padding: 0 4px;
 	}
 </style>

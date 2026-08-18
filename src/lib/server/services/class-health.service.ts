@@ -57,6 +57,14 @@ export interface StudentHealthMetrics {
 	alertReasons: string[];
 }
 
+export interface PaginatedStudentHealthRoster {
+	items: StudentHealthMetrics[];
+	total: number;
+	page: number;
+	limit: number;
+	totalPages: number;
+}
+
 export const ClassHealthService = {
 	/**
 	 * Fetch available class options for filtering
@@ -299,17 +307,25 @@ export const ClassHealthService = {
 	},
 
 	/**
-	 * Get full student health roster with risk levels, alert reasons, and filtering
+	 * Get full student health roster with risk levels, alert reasons, and pagination
 	 */
 	async getStudentHealthRoster(params: {
 		kelasId?: number;
 		search?: string;
 		riskLevel?: string;
-	}): Promise<StudentHealthMetrics[]> {
+		page?: number;
+		limit?: number;
+	}): Promise<PaginatedStudentHealthRoster> {
 		const classOptions = await this.getClassOptions();
 		const activeKelasId = params.kelasId || classOptions.find((c) => c.isActive)?.id || classOptions[0]?.id;
 
-		if (!activeKelasId) return [];
+		const page = Math.max(1, params.page || 1);
+		const limit = Math.min(100, Math.max(1, params.limit || 15));
+		const offset = (page - 1) * limit;
+
+		if (!activeKelasId) {
+			return { items: [], total: 0, page, limit, totalPages: 1 };
+		}
 
 		// 1. Get active students in class
 		const membershipConditions = [
@@ -336,7 +352,9 @@ export const ClassHealthService = {
 			.innerJoin(kelasInstance, eq(keanggotaan.kelasInstanceId, kelasInstance.id))
 			.where(and(...membershipConditions));
 
-		if (students.length === 0) return [];
+		if (students.length === 0) {
+			return { items: [], total: 0, page, limit, totalPages: 1 };
+		}
 		const studentIds = students.map((s) => s.studentId);
 
 		// 2. Class session count & task count
@@ -487,6 +505,16 @@ export const ClassHealthService = {
 			return a.attendanceRate - b.attendanceRate;
 		});
 
-		return roster;
+		const total = roster.length;
+		const totalPages = Math.ceil(total / limit) || 1;
+		const items = roster.slice(offset, offset + limit);
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			totalPages
+		};
 	}
 };
