@@ -531,120 +531,118 @@
 	     VIEW MODE 2: TIMELINE LIST VIEW
 	     ══════════════════════════════════════════════════════════ -->
 	{#if viewMode === 'timeline'}
-		<div class="recap-card mb-8">
-			{#if paginatedMeetings.length === 0}
-				<div class="empty-card">
-					<div class="empty-icon">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="3" y="4" width="18" height="18" rx="2" />
-							<line x1="16" y1="2" x2="16" y2="6" />
-							<line x1="8" y1="2" x2="8" y2="6" />
-							<line x1="3" y1="10" x2="21" y2="10" />
-						</svg>
-					</div>
-					<h3 class="empty-title">Tidak ada jadwal pertemuan ditemukan</h3>
-					<p class="empty-sub">Coba sesuaikan kata kunci pencarian atau kriteria filter di atas.</p>
+		{#if filteredMeetings.length === 0}
+			<div class="empty-card mb-8">
+				<div class="empty-icon">
+					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="4" width="18" height="18" rx="2" />
+						<line x1="16" y1="2" x2="16" y2="6" />
+						<line x1="8" y1="2" x2="8" y2="6" />
+						<line x1="3" y1="10" x2="21" y2="10" />
+					</svg>
 				</div>
-			{:else}
-				<div class="timeline-list space-y-3 p-4">
-					{#each paginatedMeetings as m}
-						{@const status = getMeetingStatus(m)}
-						<div class="timeline-item timeline-item--{status}">
-							<div class="timeline-date-box">
-								<div class="date-month">{formatIndoDate(m.sessionDate)}</div>
-								<div class="date-time">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</div>
-							</div>
-
-							<div class="timeline-content flex-1">
-								<div class="flex items-center gap-2 mb-1">
-									<span class="badge badge-kelas">{m.kelasName}</span>
-									<span class="badge badge-activity">{m.activityType.toUpperCase()}</span>
-									{#if status === 'live'}
-										<span class="badge badge-live-pulsating">🟢 LIVE HARI INI</span>
-									{:else if status === 'upcoming'}
-										<span class="badge badge-upcoming">🔵 AKAN DATANG</span>
-									{:else}
-										<span class="badge badge-completed">⚪ SELESAI</span>
-									{/if}
-								</div>
-
-								<h3 class="timeline-title">{m.title}</h3>
-								<p class="timeline-meta">
-									Lokasi: <strong>{m.location || 'Online / Ruang Kelas'}</strong> &bull; Sub-Fase: {m.subPhaseTitle || '-'}
-								</p>
-							</div>
-
-							<div class="timeline-actions">
-								<button
-									type="button"
-									class="btn-ghost-sm"
-									onclick={() => openMeetingDetail(m)}
-								>
-									Lihat Rincian
-								</button>
-								<a
-									href="/mentor/pertemuan"
-									class="btn-primary-sm"
-								>
-									Presensi &amp; Materi &rarr;
-								</a>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				<!-- Pagination Bar -->
-				<div class="pagination-bar">
-					<div class="pagination-info">
-						Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> - <strong>{Math.min(currentPage * itemsPerPage, filteredMeetings.length)}</strong> dari <strong>{filteredMeetings.length}</strong> jadwal
-					</div>
-
-					<div class="pagination-controls">
-						<div class="items-per-page-selector">
-							<span class="selector-label">Tampilkan:</span>
-							<CustomSelect
-								options={pageSizeOptions}
-								bind:value={itemsPerPage}
-								direction="up"
-								searchable={false}
-							/>
+				<h3 class="empty-title">Tidak ada jadwal pertemuan ditemukan</h3>
+				<p class="empty-sub">Coba sesuaikan kata kunci pencarian atau kriteria filter di atas.</p>
+			</div>
+		{:else}
+			<div class="timeline-list space-y-4 mb-8">
+				{#each paginatedMeetings as m}
+					{@const status = getMeetingStatus(m)}
+					<div class="timeline-card timeline-card--{status}">
+						<div class="timeline-date-box">
+							<div class="date-month">{formatIndoDate(m.sessionDate)}</div>
+							<div class="date-time">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</div>
 						</div>
 
-						{#if totalPages > 1}
-							<div class="pagination-actions">
-								<button
-									type="button"
-									class="btn-pagination-nav"
-									disabled={currentPage === 1}
-									onclick={() => currentPage--}
-								>
-									&lsaquo; Prev
-								</button>
-
-								{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
-									<button
-										type="button"
-										class="btn-pagination-num {currentPage === pageNum ? 'active' : ''}"
-										onclick={() => currentPage = pageNum}
-									>
-										{pageNum}
-									</button>
-								{/each}
-
-								<button
-									type="button"
-									class="btn-pagination-nav"
-									disabled={currentPage === totalPages}
-									onclick={() => currentPage++}
-								>
-									Next &rsaquo;
-								</button>
+						<div class="timeline-content flex-1">
+							<div class="flex items-center gap-2 mb-1">
+								<span class="badge badge-kelas">{m.kelasName}</span>
+								<span class="badge badge-activity">{m.activityType.toUpperCase()}</span>
+								{#if status === 'live'}
+									<span class="badge badge-live-pulsating">🟢 LIVE HARI INI</span>
+								{:else if status === 'upcoming'}
+									<span class="badge badge-upcoming">🔵 AKAN DATANG</span>
+								{:else}
+									<span class="badge badge-completed">⚪ SELESAI</span>
+								{/if}
 							</div>
-						{/if}
+
+							<h3 class="timeline-title">{m.title}</h3>
+							<p class="timeline-meta">
+								Lokasi: <strong>{m.location || 'Online / Ruang Kelas'}</strong> &bull; Sub-Fase: {m.subPhaseTitle || '-'}
+							</p>
+						</div>
+
+						<div class="timeline-actions">
+							<button
+								type="button"
+								class="btn-ghost-sm"
+								onclick={() => openMeetingDetail(m)}
+							>
+								Lihat Rincian
+							</button>
+							<a
+								href="/mentor/pertemuan"
+								class="btn-primary-sm"
+							>
+								Presensi &amp; Materi &rarr;
+							</a>
+						</div>
 					</div>
+				{/each}
+			</div>
+
+			<!-- Pagination Bar Standalone -->
+			<div class="pagination-bar mb-8">
+				<div class="pagination-info">
+					Menampilkan <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> - <strong>{Math.min(currentPage * itemsPerPage, filteredMeetings.length)}</strong> dari <strong>{filteredMeetings.length}</strong> jadwal
 				</div>
-			{/if}
-		</div>
+
+				<div class="pagination-controls">
+					<div class="items-per-page-selector">
+						<span class="selector-label">Tampilkan:</span>
+						<CustomSelect
+							options={pageSizeOptions}
+							bind:value={itemsPerPage}
+							direction="up"
+							searchable={false}
+						/>
+					</div>
+
+					{#if totalPages > 1}
+						<div class="pagination-actions">
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								&lsaquo; Prev
+							</button>
+
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
+								<button
+									type="button"
+									class="btn-pagination-num {currentPage === pageNum ? 'active' : ''}"
+									onclick={() => currentPage = pageNum}
+								>
+									{pageNum}
+								</button>
+							{/each}
+
+							<button
+								type="button"
+								class="btn-pagination-nav"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next &rsaquo;
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1094,42 +1092,36 @@
 		text-overflow: ellipsis;
 	}
 
-	/* Timeline View */
-	.recap-card {
-		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 16px;
-		overflow: visible;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-	}
-
-	.timeline-item {
+	/* Standalone Timeline Cards */
+	.timeline-card {
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		padding: 16px;
+		gap: 20px;
+		padding: 20px 24px;
 		border: 1px solid #e2e8f0;
-		border-radius: 12px;
+		border-radius: 14px;
 		background: #ffffff;
-		transition: all 150ms ease;
-	}
-
-	.timeline-item:hover {
-		border-color: #cbd5e1;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		transition: all 180ms ease;
 	}
 
-	.timeline-item--live {
-		border-left: 4px solid #16a34a;
+	.timeline-card:hover {
+		border-color: #cbd5e1;
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+	}
+
+	.timeline-card--live {
+		border-left: 5px solid #16a34a;
 		background: #f0fdf4;
 	}
 
-	.timeline-item--upcoming {
-		border-left: 4px solid #4f46e5;
+	.timeline-card--upcoming {
+		border-left: 5px solid #4f46e5;
 	}
 
-	.timeline-item--completed {
-		border-left: 4px solid #94a3b8;
+	.timeline-card--completed {
+		border-left: 5px solid #94a3b8;
 		opacity: 0.85;
 	}
 
@@ -1268,16 +1260,17 @@
 		text-decoration: none;
 	}
 
-	/* Pagination Bar */
+	/* Pagination Bar Standalone Card */
 	.pagination-bar {
-		padding: 12px 20px;
+		padding: 16px 24px;
 		background: #ffffff;
-		border-top: 1px solid #e2e8f0;
-		border-radius: 0 0 16px 16px;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 14px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 		position: relative;
 		z-index: 20;
 	}
