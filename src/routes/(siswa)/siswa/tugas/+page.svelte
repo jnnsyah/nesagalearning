@@ -853,27 +853,67 @@
 
 	/* Mobile Responsiveness Enhancements */
 	@media (max-width: 640px) {
+		.content-area {
+			padding: 16px 12px 80px;
+		}
+
 		.header-card {
 			padding: 16px;
+			margin-bottom: 16px;
+		}
+
+		.filter-panel {
+			padding: 8px 10px;
+			margin-bottom: 16px;
+		}
+
+		.tabs-row {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+			padding-bottom: 2px;
+		}
+
+		.tabs-row::-webkit-scrollbar {
+			display: none;
+		}
+
+		.tab-btn {
+			flex-shrink: 0;
+			white-space: nowrap;
+			padding: 6px 12px;
+			font-size: 11.5px;
 		}
 
 		.task-card__body {
-			padding: 16px;
-			gap: 12px;
+			padding: 14px;
+			gap: 10px;
+		}
+
+		.card-top-row {
+			flex-wrap: wrap;
+			gap: 6px;
+		}
+
+		.task-title {
+			font-size: 1rem;
 		}
 
 		.task-card__footer {
-			padding: 12px 16px;
+			padding: 10px 14px;
 		}
 
 		.form-scrim {
-			padding: 12px;
+			padding: 0;
+			align-items: flex-end;
 		}
 
 		.submit-modal {
-			max-height: 90vh;
+			max-height: 85vh;
 			overflow-y: auto;
-			border-radius: var(--radius-lg);
+			border-radius: 16px 16px 0 0;
+			max-width: 100%;
 		}
 
 		.modal-header,
@@ -900,6 +940,8 @@
 
 		.link-url {
 			max-width: 100%;
+			word-break: break-all;
+			white-space: normal;
 		}
 	}
 </style>
