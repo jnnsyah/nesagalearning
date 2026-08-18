@@ -156,7 +156,11 @@
 
 	function openReviewModal(sub: SubmissionItem, action: 'approved' | 'revisi') {
 		activeReviewTarget = sub;
-		reviewStatus = action;
+		if (sub.status === 'approved') {
+			reviewStatus = action === 'approved' ? 'revisi' : 'revisi';
+		} else {
+			reviewStatus = action;
+		}
 		reviewFeedback = sub.feedback || '';
 	}
 
@@ -620,12 +624,49 @@
 										<div class="action-buttons-cell">
 											<button
 												type="button"
-												onclick={() => openReviewModal(sub, sub.status === 'approved' ? 'approved' : 'approved')}
+												onclick={() => openReviewModal(sub, sub.status === 'approved' ? 'revisi' : 'approved')}
 												class="btn-detail-split"
 												title="Buka Split Pane Preview & Penilaian"
 											>
 												<span>Periksa Task &rsaquo;</span>
 											</button>
+
+											{#if sub.status === 'approved'}
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'revisi')}
+													class="btn-action btn-revisi"
+													title="Ubah Status ke Revisi"
+												>
+													Minta Revisi
+												</button>
+											{:else if sub.status === 'revisi'}
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'approved')}
+													class="btn-action btn-approve"
+													title="Setujui & Beri Poin"
+												>
+													Setujui
+												</button>
+											{:else}
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'approved')}
+													class="btn-action btn-approve"
+													title="Setujui & Beri Poin"
+												>
+													Setujui
+												</button>
+												<button
+													type="button"
+													onclick={() => openReviewModal(sub, 'revisi')}
+													class="btn-action btn-revisi"
+													title="Minta Revisi"
+												>
+													Revisi
+												</button>
+											{/if}
 										</div>
 									</td>
 								</tr>
@@ -768,6 +809,26 @@
 							</div>
 						</div>
 
+						<!-- Status Context Banner -->
+						{#if activeReviewTarget.status === 'approved'}
+							<div class="status-context-banner banner-approved">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+									<polyline points="22 4 12 14.01 9 11.01" />
+								</svg>
+								<span>Tugas ini saat ini <strong>SUDAH DISETUJUI</strong> (+poin aktif).</span>
+							</div>
+						{:else if activeReviewTarget.status === 'revisi'}
+							<div class="status-context-banner banner-revisi">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<circle cx="12" cy="12" r="10" />
+									<line x1="12" y1="8" x2="12" y2="12" />
+									<line x1="12" y1="16" x2="12.01" y2="16" />
+								</svg>
+								<span>Tugas ini saat ini <strong>PERLU REVISI</strong>.</span>
+							</div>
+						{/if}
+
 						<!-- Form Penilaian -->
 						<form
 							method="POST"
@@ -784,19 +845,22 @@
 							<input type="hidden" name="submissionId" value={activeReviewTarget.id} />
 							<input type="hidden" name="status" value={reviewStatus} />
 
-							<!-- Action Type Switcher (Setujui vs Minta Revisi) -->
+							<!-- Action Type Switcher -->
 							<div class="status-action-tabs">
-								<button
-									type="button"
-									class="tab-action-btn tab-approve"
-									class:tab-action-btn--active={reviewStatus === 'approved'}
-									onclick={() => (reviewStatus = 'approved')}
-								>
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
-									<span>Setujui &amp; Beri Poin</span>
-								</button>
+								{#if activeReviewTarget.status !== 'approved'}
+									<button
+										type="button"
+										class="tab-action-btn tab-approve"
+										class:tab-action-btn--active={reviewStatus === 'approved'}
+										onclick={() => (reviewStatus = 'approved')}
+									>
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<polyline points="20 6 9 17 4 12" />
+										</svg>
+										<span>Setujui &amp; Beri Poin</span>
+									</button>
+								{/if}
+
 								<button
 									type="button"
 									class="tab-action-btn tab-revisi"
@@ -808,7 +872,7 @@
 										<line x1="12" y1="8" x2="12" y2="12" />
 										<line x1="12" y1="16" x2="12.01" y2="16" />
 									</svg>
-									<span>Minta Revisi</span>
+									<span>{activeReviewTarget.status === 'approved' ? 'Ubah ke Minta Revisi' : 'Minta Revisi'}</span>
 								</button>
 							</div>
 
@@ -844,7 +908,7 @@
 											<line x1="12" y1="8" x2="12" y2="12" />
 											<line x1="12" y1="16" x2="12.01" y2="16" />
 										</svg>
-										<span>{isSubmitting ? 'Menyimpan...' : 'Kirim Instruksi Revisi'}</span>
+										<span>{isSubmitting ? 'Menyimpan...' : 'Kirim Catatan Revisi'}</span>
 									</button>
 								{/if}
 							</div>
@@ -1426,6 +1490,42 @@
 		background: #4338ca;
 	}
 
+	.action-buttons-cell {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+	}
+
+	.btn-action {
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		padding: 6px 12px;
+		border-radius: 6px;
+		border: none;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-approve {
+		background: #16a34a;
+		color: white;
+	}
+
+	.btn-approve:hover {
+		background: #15803d;
+	}
+
+	.btn-revisi {
+		background: #e11d48;
+		color: white;
+	}
+
+	.btn-revisi:hover {
+		background: #be123c;
+	}
+
 	.feedback-row td {
 		background: #fff1f2;
 		border-bottom: 1.5px solid #fecdd3;
@@ -1744,7 +1844,7 @@
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
 		padding: 14px 16px;
-		margin-bottom: 20px;
+		margin-bottom: 16px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -1779,10 +1879,32 @@
 		border-radius: 6px;
 	}
 
+	.status-context-banner {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-radius: 8px;
+		font-size: 12.5px;
+		margin-bottom: 14px;
+	}
+
+	.banner-approved {
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #bbf7d0;
+	}
+
+	.banner-revisi {
+		background: #ffe4e6;
+		color: #be123c;
+		border: 1px solid #fecdd3;
+	}
+
 	/* Status Action Switcher Tabs */
 	.status-action-tabs {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 		gap: 10px;
 		margin-bottom: 12px;
 	}
