@@ -6,6 +6,7 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
+	let formTrackId = $state<number | string | null>(data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '');
 	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
 
 	let isUploading = $state(false);
@@ -21,16 +22,28 @@
 		}))
 	);
 
-	let selectedFormKelasTrackId = $derived.by(() => {
-		if (!formKelasInstanceId) return null;
-		const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
-		return found?.curriculumTrackId ?? null;
+	let formTrackOptions = $derived(
+		(data.tracks || []).map((t) => ({
+			value: t.id,
+			label: t.title
+		}))
+	);
+
+	$effect(() => {
+		if (formKelasInstanceId) {
+			const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
+			if (found?.curriculumTrackId) {
+				untrack(() => {
+					formTrackId = found.curriculumTrackId;
+				});
+			}
+		}
 	});
 
 	let filteredSubPhasesForForm = $derived.by(() => {
-		if (!selectedFormKelasTrackId) return data.subPhases || [];
+		if (!formTrackId) return data.subPhases || [];
 		const list = (data.subPhases || []).filter(
-			(sp) => Number(sp.curriculumTrackId) === Number(selectedFormKelasTrackId)
+			(sp) => Number(sp.curriculumTrackId) === Number(formTrackId)
 		);
 		return list.length > 0 ? list : data.subPhases || [];
 	});
@@ -43,7 +56,7 @@
 	);
 
 	$effect(() => {
-		if (formKelasInstanceId && filteredSubPhasesForForm.length > 0) {
+		if (formTrackId && filteredSubPhasesForForm.length > 0) {
 			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
 			if (!isValid) {
 				untrack(() => {
@@ -122,7 +135,7 @@
 
 	<form method="POST" action="?/create" class="panel p-6 space-y-6">
 		<!-- Informational Section -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div>
 				<CustomSelect
 					name="kelasInstanceId"
@@ -137,8 +150,18 @@
 
 			<div>
 				<CustomSelect
+					name="trackId"
+					label="Track Pembelajaran *"
+					bind:value={formTrackId}
+					options={formTrackOptions}
+					placeholder="-- Pilih Track --"
+				/>
+			</div>
+
+			<div>
+				<CustomSelect
 					name="subPhaseId"
-					label="Kaitan Sub-Fase Track Pembelajaran *"
+					label="Kaitan Sub-Fase Track *"
 					required
 					bind:value={formSubPhaseId}
 					options={formSubPhaseOptions}

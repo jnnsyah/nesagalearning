@@ -35,6 +35,7 @@
 
 	// Form field bindings
 	let formKelasInstanceId = $state<number | string | null>('');
+	let formTrackId = $state<number | string | null>('');
 	let formSubPhaseId = $state<number | string | null>('');
 	let formTitle = $state('');
 	let formActivityType = $state<string | number | null>('teori');
@@ -117,6 +118,7 @@
 		isFormSubmitted = false;
 		uploadedFileName = '';
 		formKelasInstanceId = data.kelases[0]?.id ?? '';
+		formTrackId = data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
 		formSubPhaseId = data.subPhases[0]?.id ?? '';
 		formTitle = '';
 		formActivityType = 'teori';
@@ -139,6 +141,8 @@
 		isFormSubmitted = false;
 		uploadedFileName = getFileNameFromUrl(meeting.materialUrl ?? '');
 		formKelasInstanceId = meeting.kelasInstanceId;
+		const foundSub = (data.subPhases || []).find((sp) => sp.id === meeting.subPhaseId);
+		formTrackId = foundSub?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
 		formSubPhaseId = meeting.subPhaseId;
 		formTitle = meeting.title;
 		formActivityType = meeting.activityType;
@@ -263,16 +267,29 @@
 		}))
 	);
 
-	let selectedFormKelasTrackId = $derived.by(() => {
-		if (!formKelasInstanceId) return null;
-		const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
-		return found?.curriculumTrackId ?? null;
+	let formTrackOptions = $derived(
+		(data.tracks || []).map((t) => ({
+			value: t.id,
+			label: t.title
+		}))
+	);
+
+	// Sync trackId when class changes
+	$effect(() => {
+		if (formKelasInstanceId) {
+			const found = (data.kelases || []).find((k) => String(k.id) === String(formKelasInstanceId));
+			if (found?.curriculumTrackId) {
+				untrack(() => {
+					formTrackId = found.curriculumTrackId;
+				});
+			}
+		}
 	});
 
 	let filteredSubPhasesForForm = $derived.by(() => {
-		if (!selectedFormKelasTrackId) return data.subPhases || [];
+		if (!formTrackId) return data.subPhases || [];
 		const list = (data.subPhases || []).filter(
-			(sp) => Number(sp.curriculumTrackId) === Number(selectedFormKelasTrackId)
+			(sp) => Number(sp.curriculumTrackId) === Number(formTrackId)
 		);
 		return list.length > 0 ? list : data.subPhases || [];
 	});
@@ -284,9 +301,9 @@
 		}))
 	);
 
-	// Auto-select valid sub-phase when class selection changes
+	// Auto-select valid sub-phase when track changes
 	$effect(() => {
-		if (formKelasInstanceId && filteredSubPhasesForForm.length > 0) {
+		if (formTrackId && filteredSubPhasesForForm.length > 0) {
 			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
 			if (!isValid) {
 				untrack(() => {
@@ -834,10 +851,10 @@
 					<div class="drawer-section">
 						<h4 class="section-title">1. Informasi Kelas & Sesi</h4>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<CustomSelect
 								name="kelasInstanceId"
-								label="Kelas Instance"
+								label="Pilih Kelas *"
 								required
 								bind:value={formKelasInstanceId}
 								options={formKelasOptions}
@@ -845,8 +862,16 @@
 							/>
 
 							<CustomSelect
+								name="trackId"
+								label="Track Pembelajaran *"
+								bind:value={formTrackId}
+								options={formTrackOptions}
+								placeholder="-- Pilih Track --"
+							/>
+
+							<CustomSelect
 								name="subPhaseId"
-								label="Sub-Fase Track Pembelajaran"
+								label="Sub-Fase Track *"
 								required
 								bind:value={formSubPhaseId}
 								options={formSubPhaseOptions}
