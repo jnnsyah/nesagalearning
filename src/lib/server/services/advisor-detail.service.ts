@@ -14,6 +14,7 @@ import {
 	advisorNote
 } from '$lib/server/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import { evaluateStudentHealth } from './class-health.service';
 
 export interface AdvisorStudentDetail {
 	student: {
@@ -176,24 +177,14 @@ export const AdvisorDetailService = {
 		const maxStreak = streak?.maxStreak ?? 0;
 		const totalPoints = Number(pointSum?.total ?? 0);
 
-		// 5. Derive Risk Level & Alert Reasons
-		const alertReasons: string[] = [];
-		if (totalSessions >= 3 && attendanceRate < 75) {
-			alertReasons.push(`Kehadiran di bawah 75% (${attendanceRate}%)`);
-		}
-		if (totalTasks >= 2 && taskCompletionRate < 50) {
-			alertReasons.push(`Penyelesaian tugas di bawah 50% (${taskCompletionRate}%)`);
-		}
-		if (totalSessions >= 3 && currentStreak === 0) {
-			alertReasons.push('Streak harian terputus');
-		}
-
-		let riskLevel: 'SEHAT' | 'WASPADA' | 'KRITIS' = 'SEHAT';
-		if (attendanceRate < 60 || (alertReasons.length >= 2 && attendanceRate < 70)) {
-			riskLevel = 'KRITIS';
-		} else if (attendanceRate < 75 || alertReasons.length > 0) {
-			riskLevel = 'WASPADA';
-		}
+		// 5. Derive Composite Health & Risk Level
+		const { riskLevel, alertReasons } = evaluateStudentHealth({
+			totalSessions,
+			attendanceRate,
+			totalTasks,
+			taskCompletionRate,
+			currentStreak
+		});
 
 		// 6. Advisor Notes History
 		const notesData = await db

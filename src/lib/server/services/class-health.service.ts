@@ -94,6 +94,65 @@ export interface PaginatedStudentHealthRoster {
 	totalPages: number;
 }
 
+export function evaluateStudentHealth(params: {
+	totalSessions: number;
+	attendanceRate: number;
+	totalTasks: number;
+	taskCompletionRate: number;
+	currentStreak: number;
+}): {
+	compositeScore: number;
+	riskLevel: 'SEHAT' | 'WASPADA' | 'KRITIS';
+	alertReasons: string[];
+} {
+	const { totalSessions, attendanceRate, totalTasks, taskCompletionRate, currentStreak } = params;
+
+	let compositeScore = 100;
+	if (totalSessions === 0 && totalTasks === 0) {
+		compositeScore = 100;
+	} else if (totalSessions === 0) {
+		compositeScore = taskCompletionRate;
+	} else if (totalTasks === 0) {
+		compositeScore = attendanceRate;
+	} else {
+		compositeScore = Math.round(attendanceRate * 0.5 + taskCompletionRate * 0.5);
+	}
+
+	const alertReasons: string[] = [];
+
+	if (taskCompletionRate >= 80 && attendanceRate < 60 && totalSessions >= 3) {
+		alertReasons.push(`Presensi rendah (${attendanceRate}%), namun penyelesaian tugas sangat baik (${taskCompletionRate}%)`);
+	} else if (attendanceRate < 75 && totalSessions >= 3) {
+		alertReasons.push(`Kehadiran ${attendanceRate}% (< 75%)`);
+	}
+
+	if (attendanceRate >= 80 && taskCompletionRate < 40 && totalTasks >= 2) {
+		alertReasons.push(`Presensi baik (${attendanceRate}%), namun penyelesaian tugas masih rendah (${taskCompletionRate}%)`);
+	} else if (taskCompletionRate < 50 && totalTasks >= 2) {
+		alertReasons.push(`Penyelesaian tugas ${taskCompletionRate}% (< 50%)`);
+	}
+
+	if (currentStreak === 0 && totalSessions >= 3) {
+		alertReasons.push('Streak harian terputus');
+	}
+
+	let riskLevel: 'SEHAT' | 'WASPADA' | 'KRITIS' = 'SEHAT';
+
+	if (taskCompletionRate >= 80 && attendanceRate < 60) {
+		riskLevel = 'WASPADA';
+	} else if (compositeScore < 55 || (attendanceRate < 50 && taskCompletionRate < 50)) {
+		riskLevel = 'KRITIS';
+	} else if (compositeScore < 75 || alertReasons.length > 0) {
+		riskLevel = 'WASPADA';
+	}
+
+	return {
+		compositeScore,
+		riskLevel,
+		alertReasons
+	};
+}
+
 export const ClassHealthService = {
 	/**
 	 * Fetch available class options for filtering
@@ -381,14 +440,22 @@ export const ClassHealthService = {
 			const streakInfo = studentStreakMap.get(s.studentId) || { current: 0, max: 0 };
 			totalStreakSum += streakInfo.current;
 
-			// Tiers
-			if (attRate >= 90) excellentCount++;
-			else if (attRate >= 75) goodCount++;
-			else if (attRate >= 60) warningCount++;
+			const { compositeScore, riskLevel } = evaluateStudentHealth({
+				totalSessions: totalClassSessions,
+				attendanceRate: attRate,
+				totalTasks: totalClassTasks,
+				taskCompletionRate: taskRate,
+				currentStreak: streakInfo.current
+			});
+
+			// Tiers based on composite score
+			if (compositeScore >= 90) excellentCount++;
+			else if (compositeScore >= 75) goodCount++;
+			else if (compositeScore >= 60) warningCount++;
 			else criticalCount++;
 
 			// Alert condition
-			if (attRate < 75 || taskRate < 50 || (streakInfo.current === 0 && totalClassSessions >= 3)) {
+			if (riskLevel !== 'SEHAT') {
 				alertStudentsCount++;
 			}
 		}
@@ -584,23 +651,13 @@ export const ClassHealthService = {
 			const streakInfo = studentStreakMap.get(s.studentId) || { current: 0, max: 0 };
 			const totalPoints = studentPointsMap.get(s.studentId) || 0;
 
-			const alertReasons: string[] = [];
-			if (attendanceRate < 75) {
-				alertReasons.push(`Kehadiran ${attendanceRate}% (< 75%)`);
-			}
-			if (taskCompletionRate < 50 && totalTasks > 0) {
-				alertReasons.push(`Tugas selesai ${taskCompletionRate}% (< 50%)`);
-			}
-			if (streakInfo.current === 0 && totalSessions >= 3) {
-				alertReasons.push('Streak terputus / Absen berulang');
-			}
-
-			let riskLevel: 'SEHAT' | 'WASPADA' | 'KRITIS' = 'SEHAT';
-			if (attendanceRate < 60 || alertReasons.length >= 2) {
-				riskLevel = 'KRITIS';
-			} else if (attendanceRate < 75 || alertReasons.length >= 1) {
-				riskLevel = 'WASPADA';
-			}
+			const { riskLevel, alertReasons } = evaluateStudentHealth({
+				totalSessions,
+				attendanceRate,
+				totalTasks,
+				taskCompletionRate,
+				currentStreak: streakInfo.current
+			});
 
 			// Filter by riskLevel if specified
 			if (params.riskLevel && params.riskLevel !== 'semua') {
