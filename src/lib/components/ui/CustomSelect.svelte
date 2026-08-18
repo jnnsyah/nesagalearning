@@ -205,18 +205,19 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 2px;
 		width: 100%;
 	}
 
 	.field-label {
 		font-family: var(--font-macro);
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 700;
 		color: var(--text-primary);
 		display: flex;
 		align-items: center;
 		gap: 4px;
+		line-height: 1.2;
 	}
 
 	.req-star {
