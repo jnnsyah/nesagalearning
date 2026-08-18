@@ -29,10 +29,10 @@
 	);
 
 	const riskOptions = [
-		{ value: 'semua', label: 'Semua Tingkat Risiko' },
-		{ value: 'KRITIS', label: 'Perhatian Kritis (< 60%)' },
-		{ value: 'WASPADA', label: 'Risiko Waspada (60% - 74%)' },
-		{ value: 'SEHAT', label: 'Kondisi Sehat (≥ 75%)' }
+		{ value: 'semua', label: 'Semua Risiko' },
+		{ value: 'KRITIS', label: 'KRITIS (< 60%)' },
+		{ value: 'WASPADA', label: 'WASPADA (60-74%)' },
+		{ value: 'SEHAT', label: 'SEHAT (≥ 75%)' }
 	];
 
 	// Debounced Live Search
@@ -385,12 +385,13 @@
 							clearable
 						/>
 					</div>
-					<div class="w-full sm:w-60 flex-shrink-0">
+					<div class="w-full sm:w-44 flex-shrink-0">
 						<CustomSelect
 							name="riskLevel"
 							options={riskOptions}
 							bind:value={selectedRiskLevel}
 							onchange={applyFilters}
+							searchable={false}
 						/>
 					</div>
 					{#if searchVal || selectedRiskLevel !== 'semua'}
