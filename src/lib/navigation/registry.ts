@@ -28,6 +28,7 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	],
 	guru: [
 		{ label: 'Dashboard Overview', href: '/guru', icon: 'dashboard' },
+		{ label: 'Health Monitoring', href: '/guru/monitoring', icon: 'activity' },
 		{ label: 'Pantau Kurikulum', href: '/guru/kurikulum', icon: 'book' },
 		{ label: 'Rekap Presensi', href: '/guru/presensi', icon: 'calendar' },
 		{ label: 'Laporan Siswa', href: '/guru/siswa', icon: 'users' },
