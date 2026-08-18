@@ -5,13 +5,38 @@
 	let { data }: { data: PageData } = $props();
 
 	let isReadCompleted = $state(false);
+	let fontSize = $state<'sm' | 'base' | 'lg'>('base');
+	let isFocusMode = $state(false);
+	let scrollProgress = $state(0);
 
 	function toggleReadStatus() {
 		isReadCompleted = !isReadCompleted;
 		if (isReadCompleted) {
-			toast.success('Materi telah ditandai selesai dibaca.');
+			toast.success('Materi ditandai selesai dibaca (+10 XP)');
 		} else {
 			toast.info('Status selesai dibaca dibatalkan.');
+		}
+	}
+
+	function setFontSize(size: 'sm' | 'base' | 'lg') {
+		fontSize = size;
+	}
+
+	function toggleFocusMode() {
+		isFocusMode = !isFocusMode;
+	}
+
+	function copyToClipboard(text: string) {
+		navigator.clipboard.writeText(text);
+		toast.success('Kode berhasil disalin!');
+	}
+
+	function handleScroll(e: Event) {
+		const target = e.target as HTMLElement;
+		if (!target) return;
+		const totalHeight = target.scrollHeight - target.clientHeight;
+		if (totalHeight > 0) {
+			scrollProgress = Math.min(100, Math.round((target.scrollTop / totalHeight) * 100));
 		}
 	}
 </script>
@@ -20,64 +45,116 @@
 	<title>{data.materi.title} — Materi Pembelajaran</title>
 </svelte:head>
 
-<div class="content-area">
-	<!-- Page Breadcrumb & Header -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
+<!-- Top Reading Progress Indicator -->
+<div class="reading-progress-bar-wrap">
+	<div class="reading-progress-bar" style="width: {scrollProgress}%;"></div>
+</div>
+
+<div class="viewer-container {isFocusMode ? 'focus-mode' : ''}">
+	<!-- Reader Toolbar & Header Card -->
+	<div class="reader-header-card">
+		<nav class="breadcrumb mb-3" aria-label="Breadcrumb">
 			<a href="/siswa" class="bc-link">Dashboard</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<polyline points="9 18 15 12 9 6" />
 			</svg>
-			<span class="bc-current">Materi Kurikulum</span>
+			<a href="/siswa/materi" class="bc-link">Katalog Materi</a>
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<polyline points="9 18 15 12 9 6" />
+			</svg>
+			<span class="bc-current truncate max-w-[200px]">{data.materi.title}</span>
 		</nav>
 
-		<div class="flex items-center gap-2 mb-2 flex-wrap">
-			<span class="track-tag">{data.materi.trackTitle}</span>
-			<span class="phase-tag">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
+		<div class="flex items-center gap-2 mb-3 flex-wrap">
+			<span class="track-badge">{data.materi.trackTitle}</span>
+			<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
 		</div>
 
-		<div class="flex items-start justify-between gap-4 flex-wrap">
-			<div>
-				<h1 class="page-title">{data.materi.title}</h1>
-				<p class="page-sub">Pendalaman materi modul pembelajaran kurikulum Nesaga Learning Center.</p>
+		<h1 class="reader-title">{data.materi.title}</h1>
+		<p class="reader-subtitle">Modul pembelajaran interaktif kurikulum Nesaga Learning Center.</p>
+
+		<!-- Reader Utility Controls Bar -->
+		<div class="reader-controls-bar mt-5 pt-4">
+			<div class="flex items-center gap-3 flex-wrap">
+				<!-- Font Size Adjuster -->
+				<div class="font-size-group">
+					<span class="ctrl-label">Ukuran Teks:</span>
+					<button
+						type="button"
+						onclick={() => setFontSize('sm')}
+						class="size-btn {fontSize === 'sm' ? 'size-btn-active' : ''}"
+						title="Teks Kecil"
+					>
+						A-
+					</button>
+					<button
+						type="button"
+						onclick={() => setFontSize('base')}
+						class="size-btn {fontSize === 'base' ? 'size-btn-active' : ''}"
+						title="Teks Normal"
+					>
+						A
+					</button>
+					<button
+						type="button"
+						onclick={() => setFontSize('lg')}
+						class="size-btn {fontSize === 'lg' ? 'size-btn-active' : ''}"
+						title="Teks Besar"
+					>
+						A+
+					</button>
+				</div>
+
+				<!-- Focus Mode Toggle -->
+				<button
+					type="button"
+					onclick={toggleFocusMode}
+					class="ctrl-btn {isFocusMode ? 'ctrl-btn-active' : ''}"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+					</svg>
+					<span>{isFocusMode ? 'Keluar Mode Fokus' : 'Mode Fokus'}</span>
+				</button>
 			</div>
 
+			<!-- Read Completion Toggle Button -->
 			<button
 				type="button"
 				onclick={toggleReadStatus}
-				class="btn-mark-read {isReadCompleted ? 'btn-completed' : ''}"
+				class="btn-mark-read {isReadCompleted ? 'btn-read-completed' : ''}"
 			>
 				{#if isReadCompleted}
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<polyline points="20 6 9 17 4 12" />
 					</svg>
 					<span>Selesai Dibaca</span>
 				{:else}
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="12" r="10" />
 						<polyline points="12 6 12 12 16 14" />
 					</svg>
-					<span>Tandai Selesai Dibaca</span>
+					<span>Tandai Selesai</span>
 				{/if}
 			</button>
 		</div>
 	</div>
 
-	<!-- Embedded Slide / Material Attachment Card -->
+	<!-- Slide Presentasi Attachment Card -->
 	{#if data.sessionSlide?.materialUrl}
-		<div class="slide-attachment-box mb-6">
-			<div class="flex items-center justify-between gap-3 flex-wrap">
-				<div class="flex items-center gap-3">
-					<div class="slide-icon">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<div class="slide-card mb-6">
+			<div class="flex items-center justify-between gap-4 flex-wrap">
+				<div class="flex items-center gap-3.5">
+					<div class="slide-icon-wrap">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 							<polyline points="14 2 14 8 20 8" />
 						</svg>
 					</div>
 					<div>
-						<h4 class="slide-title">Slide Presentasi PPT Pertemuan</h4>
-						<p class="slide-sub">
-							Lampiran berkas presentasi untuk sesi <strong>{data.sessionSlide.pertemuanTitle}</strong>
+						<h4 class="slide-card-title">Slide Presentasi PPT Pertemuan</h4>
+						<p class="slide-card-sub">
+							Materi presentasi untuk sesi <strong>{data.sessionSlide.pertemuanTitle}</strong>
 						</p>
 					</div>
 				</div>
@@ -88,40 +165,47 @@
 					rel="noopener noreferrer"
 					class="btn-download-slide"
 				>
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 						<polyline points="7 10 12 15 17 10" />
 						<line x1="12" y1="15" x2="12" y2="3" />
 					</svg>
-					<span>Unduh Slide PPT</span>
+					<span>Unduh Berkas PPT</span>
 				</a>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Rich Text Body Content -->
-	<article class="material-article">
+	<!-- Main Article Reading Card -->
+	<main class="reading-article-card size-{fontSize}">
 		{#if data.materi.content}
-			<div class="prose-content">
+			<div class="prose-reading">
 				{@html data.materi.content}
 			</div>
 		{:else}
-			<div class="empty-content">
-				<p>Isi materi pembelajaran sedang disusun oleh mentor/instruktur.</p>
+			<div class="empty-reading-state">
+				<div class="empty-icon-wrap mb-3">
+					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+					</svg>
+				</div>
+				<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
+				<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
 			</div>
 		{/if}
-	</article>
+	</main>
 
-	<!-- Footer Navigation prev & next -->
-	<div class="navigation-footer">
+	<!-- Footer Lesson Navigation -->
+	<nav class="lesson-nav-footer mt-8">
 		{#if data.prevMateri}
-			<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-nav-prev">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+			<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-lesson-nav prev-lesson">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<polyline points="15 18 9 12 15 6" />
 				</svg>
-				<div class="text-left">
-					<span class="nav-label">Materi Sebelumnya</span>
-					<div class="nav-title">{data.prevMateri.title}</div>
+				<div class="text-left min-w-0">
+					<span class="lesson-nav-dir">Materi Sebelumnya</span>
+					<div class="lesson-nav-title truncate">{data.prevMateri.title}</div>
 				</div>
 			</a>
 		{:else}
@@ -129,40 +213,61 @@
 		{/if}
 
 		{#if data.nextMateri}
-			<a href={`/siswa/materi/${data.nextMateri.id}`} class="btn-nav-next">
-				<div class="text-right">
-					<span class="nav-label">Materi Selanjutnya</span>
-					<div class="nav-title">{data.nextMateri.title}</div>
+			<a href={`/siswa/materi/${data.nextMateri.id}`} class="btn-lesson-nav next-lesson">
+				<div class="text-right min-w-0">
+					<span class="lesson-nav-dir">Materi Selanjutnya</span>
+					<div class="lesson-nav-title truncate">{data.nextMateri.title}</div>
 				</div>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
 			</a>
 		{/if}
-	</div>
+	</nav>
 </div>
 
 <style>
-	.content-area {
-		padding: 24px 28px 40px;
-		max-width: 1000px;
-		margin: 0 auto;
+	/* Reading Progress Bar at Top */
+	.reading-progress-bar-wrap {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
+		background: rgba(226, 232, 240, 0.6);
+		z-index: 100;
 	}
 
-	.header-card {
+	.reading-progress-bar {
+		height: 100%;
+		background: #4f46e5;
+		transition: width 100ms ease-out;
+	}
+
+	.viewer-container {
+		padding: 24px 28px 48px;
+		max-width: 900px;
+		margin: 0 auto;
+		transition: max-width 200ms ease;
+	}
+
+	.viewer-container.focus-mode {
+		max-width: 1050px;
+	}
+
+	.reader-header-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
 		padding: 24px;
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 24px;
+		margin-bottom: 20px;
 	}
 
 	.breadcrumb {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		margin-bottom: 12px;
 	}
 
 	.bc-link {
@@ -183,19 +288,19 @@
 		color: var(--primary);
 	}
 
-	.track-tag {
+	.track-badge {
 		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 700;
+		font-size: 9.5px;
+		font-weight: 800;
 		color: #4338ca;
 		background: #e0e7ff;
 		padding: 2px 8px;
 		border-radius: 4px;
 	}
 
-	.phase-tag {
+	.phase-badge {
 		font-family: var(--font-mono);
-		font-size: 10px;
+		font-size: 9.5px;
 		font-weight: 600;
 		color: var(--text-secondary);
 		background: var(--bg-inset);
@@ -203,7 +308,7 @@
 		border-radius: 4px;
 	}
 
-	.page-title {
+	.reader-title {
 		font-family: var(--font-macro);
 		font-size: clamp(1.4rem, 3vw, 1.8rem);
 		font-weight: 800;
@@ -212,26 +317,98 @@
 		margin-bottom: 4px;
 	}
 
-	.page-sub {
+	.reader-subtitle {
 		font-size: 13px;
 		color: var(--text-secondary);
+	}
+
+	.reader-controls-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		border-top: 1px solid var(--border-soft);
+		flex-wrap: wrap;
+	}
+
+	.font-size-group {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11.5px;
+	}
+
+	.ctrl-label {
+		font-weight: 700;
+		color: var(--text-muted);
+		margin-right: 4px;
+	}
+
+	.size-btn {
+		padding: 3px 8px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		border-radius: 4px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.size-btn:hover {
+		border-color: var(--primary-border);
+		color: var(--primary);
+	}
+
+	.size-btn-active {
+		background: #e0e7ff !important;
+		color: #4338ca !important;
+		border-color: #a5b4fc !important;
+	}
+
+	.ctrl-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 10px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.ctrl-btn:hover {
+		border-color: var(--primary-border);
+		color: var(--primary);
+	}
+
+	.ctrl-btn-active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		border-color: #4f46e5 !important;
 	}
 
 	.btn-mark-read {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
-		padding: 9px 16px;
+		gap: 6px;
+		padding: 6px 14px;
 		border: 1px solid var(--border-hard);
 		background: #ffffff;
 		color: var(--text-primary);
-		border-radius: 8px;
+		border-radius: 6px;
 		font-family: var(--font-macro);
-		font-size: 12.5px;
+		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
-		flex-shrink: 0;
 	}
 
 	.btn-mark-read:hover {
@@ -240,20 +417,20 @@
 		color: var(--primary);
 	}
 
-	.btn-completed {
+	.btn-read-completed {
 		background: #dcfce7 !important;
 		color: #15803d !important;
 		border-color: #86efac !important;
 	}
 
-	.slide-attachment-box {
+	.slide-card {
 		background: #f8fafc;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
 		padding: 16px 20px;
 	}
 
-	.slide-icon {
+	.slide-icon-wrap {
 		width: 42px;
 		height: 42px;
 		border-radius: 10px;
@@ -265,14 +442,14 @@
 		flex-shrink: 0;
 	}
 
-	.slide-title {
+	.slide-card-title {
 		font-family: var(--font-macro);
-		font-size: 14px;
+		font-size: 13.5px;
 		font-weight: 800;
 		color: var(--text-primary);
 	}
 
-	.slide-sub {
+	.slide-card-sub {
 		font-size: 12px;
 		color: var(--text-secondary);
 	}
@@ -280,13 +457,13 @@
 	.btn-download-slide {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
-		padding: 8px 14px;
+		gap: 6px;
+		padding: 7px 14px;
 		background: #4f46e5;
 		color: #ffffff;
-		border-radius: 8px;
+		border-radius: 6px;
 		font-family: var(--font-macro);
-		font-size: 12px;
+		font-size: 11.5px;
 		font-weight: 700;
 		text-decoration: none;
 		transition: background 150ms ease;
@@ -296,115 +473,172 @@
 		background: #4338ca;
 	}
 
-	.material-article {
+	.reading-article-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 28px;
+		padding: 32px 36px;
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 28px;
-		line-height: 1.7;
+		line-height: 1.8;
+		letter-spacing: -0.01em;
 	}
 
-	.prose-content {
-		font-size: 15px;
+	.reading-article-card.size-sm { font-size: 14.5px; }
+	.reading-article-card.size-base { font-size: 16px; }
+	.reading-article-card.size-lg { font-size: 18px; }
+
+	.prose-reading {
 		color: #334155;
 	}
 
-	.prose-content :global(h1),
-	.prose-content :global(h2),
-	.prose-content :global(h3) {
+	.prose-reading :global(h1),
+	.prose-reading :global(h2),
+	.prose-reading :global(h3) {
 		font-family: var(--font-macro);
 		font-weight: 800;
 		color: var(--text-primary);
-		margin-top: 1.5em;
-		margin-bottom: 0.5em;
+		margin-top: 1.6em;
+		margin-bottom: 0.6em;
+		line-height: 1.3;
 	}
 
-	.prose-content :global(p) {
-		margin-bottom: 1em;
+	.prose-reading :global(h1) { font-size: 1.5em; border-bottom: 2px solid var(--border-soft); padding-bottom: 0.3em; }
+	.prose-reading :global(h2) { font-size: 1.3em; }
+	.prose-reading :global(h3) { font-size: 1.15em; }
+
+	.prose-reading :global(p) {
+		margin-bottom: 1.2em;
 	}
 
-	.prose-content :global(code) {
+	.prose-reading :global(ul),
+	.prose-reading :global(ol) {
+		margin-bottom: 1.2em;
+		padding-left: 1.5em;
+	}
+
+	.prose-reading :global(li) {
+		margin-bottom: 0.4em;
+	}
+
+	.prose-reading :global(code) {
 		font-family: var(--font-mono);
-		font-size: 13.5px;
+		font-size: 0.88em;
 		background: #f1f5f9;
 		color: #0f172a;
 		padding: 2px 6px;
 		border-radius: 4px;
+		border: 1px solid #e2e8f0;
 	}
 
-	.prose-content :global(pre) {
+	.prose-reading :global(pre) {
 		background: #0f172a;
 		color: #f8fafc;
-		padding: 16px;
-		border-radius: 8px;
+		padding: 18px 20px;
+		border-radius: 10px;
 		overflow-x: auto;
-		margin-bottom: 1.2em;
+		margin-bottom: 1.4em;
+		font-family: var(--font-mono);
+		font-size: 0.88em;
+		line-height: 1.6;
+		box-shadow: var(--shadow-sm);
 	}
 
-	.empty-content {
+	.prose-reading :global(blockquote) {
+		border-left: 4px solid #4f46e5;
+		background: #f8fafc;
+		padding: 12px 18px;
+		border-radius: 0 8px 8px 0;
+		margin-bottom: 1.4em;
+		color: #475569;
+		font-style: italic;
+	}
+
+	.empty-reading-state {
 		text-align: center;
-		padding: 40px 20px;
-		color: var(--text-muted);
-		font-size: 14px;
+		padding: 48px 20px;
 	}
 
-	.navigation-footer {
+	.empty-icon-wrap {
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: #f1f5f9;
+		color: #64748b;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto;
+	}
+
+	.empty-title {
+		font-family: var(--font-macro);
+		font-size: 15px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.empty-sub {
+		font-size: 12.5px;
+		color: var(--text-muted);
+	}
+
+	.lesson-nav-footer {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
 	}
 
-	.btn-nav-prev,
-	.btn-nav-next {
+	.btn-lesson-nav {
 		display: inline-flex;
 		align-items: center;
-		gap: 10px;
-		padding: 12px 18px;
+		gap: 12px;
+		padding: 14px 18px;
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
 		text-decoration: none;
 		color: var(--text-primary);
+		box-shadow: var(--shadow-sm);
 		transition: all 150ms ease;
 		max-width: 48%;
+		flex: 1;
 	}
 
-	.btn-nav-prev:hover,
-	.btn-nav-next:hover {
+	.btn-lesson-nav:hover {
 		border-color: var(--primary-border);
 		background: var(--bg-inset);
+		transform: translateY(-1px);
 	}
 
-	.nav-label {
+	.lesson-nav-dir {
 		font-family: var(--font-mono);
-		font-size: 10.5px;
+		font-size: 10px;
+		font-weight: 700;
 		color: var(--text-muted);
 		display: block;
+
 	}
 
-	.nav-title {
+	.lesson-nav-title {
 		font-family: var(--font-macro);
 		font-size: 13px;
 		font-weight: 800;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	@media (max-width: 640px) {
-		.content-area {
+		.viewer-container {
 			padding: 16px;
 		}
-		.navigation-footer {
-			flex-direction: column;
-			align-items: stretch;
+		.reading-article-card {
+			padding: 20px;
 		}
-		.btn-nav-prev,
-		.btn-nav-next {
+		.lesson-nav-footer {
+			flex-direction: column;
+		}
+		.btn-lesson-nav {
 			max-width: 100%;
+			width: 100%;
 		}
 	}
 </style>
