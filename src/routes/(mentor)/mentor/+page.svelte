@@ -106,41 +106,69 @@
 
 	<!-- Two-column grid -->
 	<div class="two-col-grid">
-		<!-- Grading queue -->
+		<!-- Sesi Pertemuan ber-Tugas -->
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-					<span>Antrean Tugas Menunggu Periksa</span>
+					<span>Sesi Pertemuan Ber-Tugas &amp; Status Submisi</span>
 				</div>
 				<span class="badge {data.stats.pendingSubmissions > 0 ? 'badge-pending' : 'badge-completed'}">
-					{data.stats.pendingSubmissions} Submisi
+					{data.stats.pendingSubmissions} Submisi Menunggu
 				</span>
 			</div>
 
-			{#if data.pendingSubmissionsQueue.length === 0}
+			{#if data.meetingSummaries.length === 0}
 				<div class="empty-state">
 					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 					</div>
-					<p class="empty-title">Tidak Ada Submisi Pending</p>
-					<p class="empty-sub">Semua tugas siswa telah selesai diperiksa &amp; dinilai.</p>
+					<p class="empty-title">Belum Ada Sesi Ber-Tugas</p>
+					<p class="empty-sub">Belum ada sesi pertemuan yang memiliki penugasan task.</p>
 				</div>
 			{:else}
 				<div class="queue-list space-y-3 p-4">
-					{#each data.pendingSubmissionsQueue as sub}
-						<div class="queue-item">
-							<div class="queue-info flex-1">
-								<div class="flex items-center gap-2 mb-1">
-									<span class="student-name">{sub.studentName}</span>
-									<span class="badge badge-pending-sm">PENDING</span>
-								</div>
-								<h4 class="task-title">{sub.taskTitle}</h4>
-								<div class="submitted-at">Terkirim: {formatIndoDate(sub.submittedAt)}</div>
+					{#each data.meetingSummaries as m}
+						<div class="meeting-task-card">
+							<div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
+								<span class="track-badge">
+									{m.phaseTitle || 'Track Pembelajaran'} &rsaquo; {m.subPhaseTitle || 'Sub-Phase'}
+								</span>
+								<span class="task-size-pill">
+									{m.taskSize.toUpperCase()} (+{m.taskSize === 'kecil' ? '50' : m.taskSize === 'besar' ? '200' : '100'} Poin)
+								</span>
 							</div>
-							<a href="/mentor/tugas" class="btn-grade-sm">
-								Studio Penilaian &rarr;
-							</a>
+
+							<h4 class="task-card-title">{m.pertemuanTitle}</h4>
+							<p class="task-card-sub">
+								Sesi: <strong>{formatIndoDate(m.sessionDate)}</strong> &bull; {m.kelasName} &bull; Task: <strong>{m.taskTitle}</strong>
+							</p>
+
+							<!-- Live Submission Stats Grid -->
+							<div class="submission-stats-row">
+								<div class="stat-pill stat-pending">
+									<span class="stat-num">{m.stats.pending}</span>
+									<span class="stat-txt">Pending</span>
+								</div>
+								<div class="stat-pill stat-revisi">
+									<span class="stat-num">{m.stats.revisi}</span>
+									<span class="stat-txt">Revisi</span>
+								</div>
+								<div class="stat-pill stat-approved">
+									<span class="stat-num">{m.stats.approved}</span>
+									<span class="stat-txt">Disetujui</span>
+								</div>
+								<div class="stat-pill stat-total">
+									<span class="stat-num">{m.stats.total}</span>
+									<span class="stat-txt">Total</span>
+								</div>
+							</div>
+
+							<div class="card-action-row pt-2">
+								<a href="/mentor/tugas" class="btn-grade-full">
+									<span>Buka Studio Penilaian ({m.stats.pending + m.stats.revisi} Menunggu) &rarr;</span>
+								</a>
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -415,6 +443,113 @@
 		color: var(--text-primary);
 	}
 
+	.meeting-task-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		box-shadow: var(--shadow-sm);
+		transition: all 150ms ease;
+	}
+
+	.meeting-task-card:hover {
+		border-color: #cbd5e1;
+		box-shadow: var(--shadow-md);
+	}
+
+	.track-badge {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+
+	.task-size-pill {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 800;
+		color: #047857;
+		background: #d1fae5;
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+
+	.task-card-title {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin: 0;
+	}
+
+	.task-card-sub {
+		font-size: 12px;
+		color: var(--text-secondary);
+		line-height: 1.4;
+	}
+
+	.submission-stats-row {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.stat-pill {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 6px 4px;
+		border-radius: 6px;
+		text-align: center;
+	}
+
+	.stat-pending { background: #fef3c7; color: #d97706; }
+	.stat-revisi { background: #ffe4e6; color: #be123c; }
+	.stat-approved { background: #dcfce7; color: #15803d; }
+	.stat-total { background: #f1f5f9; color: #475569; }
+
+	.stat-num {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		line-height: 1;
+	}
+
+	.stat-txt {
+		font-size: 9.5px;
+		font-weight: 700;
+		text-transform: uppercase;
+		margin-top: 2px;
+	}
+
+	.btn-grade-full {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		width: 100%;
+		padding: 8px 14px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background 150ms ease;
+	}
+
+	.btn-grade-full:hover {
+		background: #4338ca;
+	}
+
 	.queue-item {
 		display: flex;
 		align-items: center;
@@ -498,6 +633,15 @@
 	.badge-pending-sm {
 		background: #fef3c7;
 		color: #d97706;
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-revisi-sm {
+		background: #ffe4e6;
+		color: #be123c;
 		font-size: 9.5px;
 		font-weight: 800;
 		padding: 2px 6px;

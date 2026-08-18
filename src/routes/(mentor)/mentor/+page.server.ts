@@ -2,10 +2,10 @@ import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { pertemuan } from '$lib/server/db/schema/session';
-import { task, submission } from '$lib/server/db/schema/task';
+import { submission } from '$lib/server/db/schema/task';
 import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
-import { user } from '$lib/server/db/schema/auth';
-import { eq, gte, desc, asc, count } from 'drizzle-orm';
+import { eq, gte, desc, asc, count, inArray } from 'drizzle-orm';
+import { SubmissionService } from '$lib/server/services/submission.service';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -19,17 +19,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 		pendingSubmissionsRes,
 		nextSessionRes,
 		recentMeetingsRes,
-		pendingSubmissionsListRes
+		meetingSummaries
 	] = await Promise.all([
 		// 1. Total Active Students
 		db.select({ count: count() })
 			.from(keanggotaan)
 			.where(eq(keanggotaan.status, 'aktif')),
 
-		// 2. Pending Submissions Count
+		// 2. Pending & Revisi Submissions Count
 		db.select({ count: count() })
 			.from(submission)
-			.where(eq(submission.status, 'pending')),
+			.where(inArray(submission.status, ['pending', 'revisi'])),
 
 		// 3. Next Upcoming / Live Session
 		db.select({
@@ -62,22 +62,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.orderBy(desc(pertemuan.sessionDate), desc(pertemuan.startTime))
 		.limit(5),
 
-		// 5. Pending Submissions Queue List (Latest 5)
-		db.select({
-			submissionId: submission.id,
-			taskId: task.id,
-			taskTitle: task.title,
-			studentName: user.fullName,
-			studentAvatar: user.avatarUrl,
-			submittedAt: submission.submittedAt,
-			status: submission.status
-		})
-		.from(submission)
-		.innerJoin(task, eq(submission.taskId, task.id))
-		.innerJoin(user, eq(submission.userId, user.id))
-		.where(eq(submission.status, 'pending'))
-		.orderBy(desc(submission.submittedAt))
-		.limit(5)
+		// 5. Meeting Sessions with Tasks and live submission stats
+		SubmissionService.getMeetingTasksSummary()
 	]);
 
 	return {
@@ -88,6 +74,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 			nextSession: nextSessionRes[0] || null
 		},
 		recentMeetings: recentMeetingsRes,
-		pendingSubmissionsQueue: pendingSubmissionsListRes
+		meetingSummaries
 	};
 };
