@@ -26,19 +26,80 @@
 		isFocusMode = !isFocusMode;
 	}
 
-	function copyToClipboard(text: string) {
-		navigator.clipboard.writeText(text);
-		toast.success('Kode berhasil disalin!');
-	}
-
-	function handleScroll(e: Event) {
-		const target = e.target as HTMLElement;
-		if (!target) return;
-		const totalHeight = target.scrollHeight - target.clientHeight;
-		if (totalHeight > 0) {
-			scrollProgress = Math.min(100, Math.round((target.scrollTop / totalHeight) * 100));
+	$effect(() => {
+		if (isFocusMode) {
+			document.body.classList.add('focus-mode-active');
+		} else {
+			document.body.classList.remove('focus-mode-active');
 		}
-	}
+		return () => {
+			document.body.classList.remove('focus-mode-active');
+		};
+	});
+
+	$effect(() => {
+		if (!data.materi.content) return;
+		const article = document.querySelector('.prose-reading');
+		if (!article) return;
+
+		const pres = article.querySelectorAll('pre');
+		pres.forEach((pre) => {
+			if (pre.parentElement?.classList.contains('tiptap-code-block-wrapper')) return;
+
+			const wrapper = document.createElement('div');
+			wrapper.className = 'tiptap-code-block-wrapper';
+
+			const codeEl = pre.querySelector('code');
+			let lang = 'code';
+			if (codeEl) {
+				const classList = Array.from(codeEl.classList);
+				const langClass = classList.find((c) => c.startsWith('language-'));
+				if (langClass) {
+					lang = langClass.replace('language-', '');
+				}
+			}
+
+			const header = document.createElement('div');
+			header.className = 'code-block-header';
+			header.innerHTML = `
+				<div class="mac-dots">
+					<span class="mac-dot mac-dot--red"></span>
+					<span class="mac-dot mac-dot--yellow"></span>
+					<span class="mac-dot mac-dot--green"></span>
+				</div>
+				<div class="code-block-lang">
+					<span class="code-block-lang__tag">${lang}</span>
+				</div>
+				<button type="button" class="code-copy-btn">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+					<span>Salin</span>
+				</button>
+			`;
+
+			const copyBtn = header.querySelector('.code-copy-btn');
+			if (copyBtn) {
+				copyBtn.addEventListener('click', () => {
+					const codeText = pre.textContent || '';
+					navigator.clipboard.writeText(codeText);
+					copyBtn.classList.add('code-copy-btn--copied');
+					const textSpan = copyBtn.querySelector('span');
+					if (textSpan) textSpan.textContent = 'Tersalin!';
+					toast.success('Kode berhasil disalin!');
+					setTimeout(() => {
+						copyBtn.classList.remove('code-copy-btn--copied');
+						if (textSpan) textSpan.textContent = 'Salin';
+					}, 2000);
+				});
+			}
+
+			pre.parentNode?.insertBefore(wrapper, pre);
+			wrapper.appendChild(header);
+			wrapper.appendChild(pre);
+		});
+	});
 </script>
 
 <svelte:head>
@@ -111,10 +172,17 @@
 					onclick={toggleFocusMode}
 					class="ctrl-btn {isFocusMode ? 'ctrl-btn-active' : ''}"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-					</svg>
-					<span>{isFocusMode ? 'Keluar Mode Fokus' : 'Mode Fokus'}</span>
+					{#if isFocusMode}
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
+						</svg>
+						<span>Keluar Mode Fokus</span>
+					{:else}
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+						</svg>
+						<span>Mode Fokus</span>
+					{/if}
 				</button>
 			</div>
 
@@ -227,7 +295,20 @@
 </div>
 
 <style>
-	/* Reading Progress Bar at Top */
+	/* Global Focus Mode body overrides to hide Topbar, Sidebar, Mobile Bottom Nav */
+	:global(body.focus-mode-active .app-topbar),
+	:global(body.focus-mode-active .app-sidebar),
+	:global(body.focus-mode-active .mobile-bottom-nav) {
+		display: none !important;
+	}
+
+	:global(body.focus-mode-active .app-main) {
+		padding-top: 0 !important;
+		padding-left: 0 !important;
+		padding-bottom: 0 !important;
+	}
+
+	/* Top Reading Progress Bar */
 	.reading-progress-bar-wrap {
 		position: fixed;
 		top: 0;
@@ -253,6 +334,7 @@
 
 	.viewer-container.focus-mode {
 		max-width: 1050px;
+		padding-top: 32px;
 	}
 
 	.reader-header-card {
@@ -510,47 +592,122 @@
 		margin-bottom: 1.2em;
 	}
 
-	.prose-reading :global(ul),
-	.prose-reading :global(ol) {
-		margin-bottom: 1.2em;
-		padding-left: 1.5em;
-	}
-
-	.prose-reading :global(li) {
-		margin-bottom: 0.4em;
-	}
-
 	.prose-reading :global(code) {
 		font-family: var(--font-mono);
 		font-size: 0.88em;
-		background: #f1f5f9;
-		color: #0f172a;
-		padding: 2px 6px;
+		background: #eef2ff;
+		border: 1px solid #c7d2fe;
+		border-radius: 5px;
+		padding: 1px 5px;
+		color: #4338ca;
+		font-weight: 600;
+	}
+
+	/* ══════════════════════════════════════════
+	   PRO CODE BLOCK BOX (UI-UX-Pro-Max Builder Style)
+	══════════════════════════════════════════ */
+	.prose-reading :global(.tiptap-code-block-wrapper) {
+		margin: 1.25em 0;
+		border-radius: var(--radius-md);
+		border: 1px solid #334155;
+		background: #0f172a;
+		overflow: hidden;
+		box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25), 0 2px 6px -1px rgba(15, 23, 42, 0.15);
+	}
+
+	.prose-reading :global(.code-block-header) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 14px;
+		background: #1e293b;
+		border-bottom: 1px solid #334155;
+		user-select: none;
+	}
+
+	.prose-reading :global(.mac-dots) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.prose-reading :global(.mac-dot) {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.prose-reading :global(.mac-dot--red)    { background: #ff5f56; border: 1px solid #e0443e; }
+	.prose-reading :global(.mac-dot--yellow) { background: #ffbd2e; border: 1px solid #dea123; }
+	.prose-reading :global(.mac-dot--green)  { background: #27c93f; border: 1px solid #1aab29; }
+
+	.prose-reading :global(.code-block-lang) {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		color: #94a3b8;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.prose-reading :global(.code-block-lang__tag) {
+		background: rgba(255, 255, 255, 0.06);
+		padding: 2px 8px;
 		border-radius: 4px;
-		border: 1px solid #e2e8f0;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.prose-reading :global(.code-copy-btn) {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		color: #94a3b8;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 140ms ease;
+		user-select: none;
+	}
+
+	.prose-reading :global(.code-copy-btn:hover) {
+		color: #f8fafc;
+		background: rgba(255, 255, 255, 0.12);
+		border-color: rgba(255, 255, 255, 0.2);
+		transform: translateY(-1px);
+	}
+
+	.prose-reading :global(.code-copy-btn--copied) {
+		color: #34d399 !important;
+		background: rgba(6, 78, 59, 0.8) !important;
+		border-color: rgba(52, 211, 153, 0.4) !important;
+		transform: none !important;
 	}
 
 	.prose-reading :global(pre) {
-		background: #0f172a;
-		color: #f8fafc;
-		padding: 18px 20px;
-		border-radius: 10px;
-		overflow-x: auto;
-		margin-bottom: 1.4em;
+		margin: 0 !important;
+		padding: 16px 18px !important;
+		background: #0f172a !important;
+		border: none !important;
+		border-radius: 0 !important;
 		font-family: var(--font-mono);
-		font-size: 0.88em;
-		line-height: 1.6;
-		box-shadow: var(--shadow-sm);
+		font-size: 13.5px;
+		line-height: 1.65;
+		color: #e2e8f0 !important;
+		overflow-x: auto;
 	}
 
-	.prose-reading :global(blockquote) {
-		border-left: 4px solid #4f46e5;
-		background: #f8fafc;
-		padding: 12px 18px;
-		border-radius: 0 8px 8px 0;
-		margin-bottom: 1.4em;
-		color: #475569;
-		font-style: italic;
+	.prose-reading :global(pre code) {
+		background: transparent !important;
+		border: none !important;
+		padding: 0 !important;
+		color: inherit !important;
+		font-size: inherit !important;
 	}
 
 	.empty-reading-state {
@@ -617,7 +774,6 @@
 		font-weight: 700;
 		color: var(--text-muted);
 		display: block;
-
 	}
 
 	.lesson-nav-title {
