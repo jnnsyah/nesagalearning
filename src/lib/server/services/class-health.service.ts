@@ -9,9 +9,31 @@ import { eq, and, sql, count, desc, inArray, ilike, or } from 'drizzle-orm';
 export interface ClassOption {
 	id: number;
 	name: string;
+	tahunAjaranId: number;
 	tahunAjaranName: string;
 	tingkatName: string;
 	isActive: boolean;
+}
+
+export interface AcademicYearOption {
+	id: number;
+	name: string;
+	isActive: boolean;
+}
+
+export interface ClassHealthCardItem {
+	kelasId: number;
+	kelasName: string;
+	tahunAjaranId: number;
+	tahunAjaranName: string;
+	tingkatName: string;
+	totalStudents: number;
+	avgAttendanceRate: number;
+	avgTaskCompletionRate: number;
+	avgStreak: number;
+	alertStudentsCount: number;
+	healthStatus: 'SEHAT' | 'WASPADA' | 'KRITIS';
+	healthColor: string;
 }
 
 export interface ClassHealthSummary {
@@ -74,6 +96,7 @@ export const ClassHealthService = {
 			.select({
 				id: kelasInstance.id,
 				name: kelasInstance.name,
+				tahunAjaranId: kelasInstance.tahunAjaranId,
 				tahunAjaranName: tahunAjaran.name,
 				tingkatName: tingkat.name,
 				isActive: kelasInstance.isActive
@@ -84,6 +107,83 @@ export const ClassHealthService = {
 			.orderBy(desc(tahunAjaran.isActive), desc(kelasInstance.createdAt));
 
 		return classes;
+	},
+
+	/**
+	 * Fetch available academic years
+	 */
+	async getAcademicYearOptions(): Promise<AcademicYearOption[]> {
+		const years = await db
+			.select({
+				id: tahunAjaran.id,
+				name: tahunAjaran.name,
+				isActive: tahunAjaran.isActive
+			})
+			.from(tahunAjaran)
+			.orderBy(desc(tahunAjaran.isActive), desc(tahunAjaran.name));
+
+		return years;
+	},
+
+	/**
+	 * Fetch class health cards for all classes in a specific academic year
+	 */
+	async getClassHealthCards(tahunAjaranId?: number): Promise<{
+		academicYears: AcademicYearOption[];
+		selectedTahunAjaran: AcademicYearOption | null;
+		classCards: ClassHealthCardItem[];
+	}> {
+		const academicYears = await this.getAcademicYearOptions();
+		const selectedTahunAjaran = tahunAjaranId
+			? academicYears.find((y) => y.id === tahunAjaranId) || null
+			: academicYears.find((y) => y.isActive) || academicYears[0] || null;
+
+		const activeTaId = selectedTahunAjaran?.id ?? null;
+
+		if (!activeTaId) {
+			return { academicYears, selectedTahunAjaran, classCards: [] };
+		}
+
+		// Get all classes for this academic year
+		const classes = await db
+			.select({
+				id: kelasInstance.id,
+				name: kelasInstance.name,
+				tahunAjaranId: kelasInstance.tahunAjaranId,
+				tahunAjaranName: tahunAjaran.name,
+				tingkatName: tingkat.name
+			})
+			.from(kelasInstance)
+			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
+			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
+			.where(eq(kelasInstance.tahunAjaranId, activeTaId))
+			.orderBy(tingkat.levelOrder, kelasInstance.name);
+
+		const classCards: ClassHealthCardItem[] = [];
+
+		for (const c of classes) {
+			const { summary, alertStudentsCount } = await this.getClassHealthSummary(c.id);
+			classCards.push({
+				kelasId: c.id,
+				kelasName: c.name,
+				tahunAjaranId: c.tahunAjaranId,
+				tahunAjaranName: c.tahunAjaranName,
+				tingkatName: c.tingkatName,
+				totalStudents: summary.totalStudents,
+				avgAttendanceRate: summary.avgAttendanceRate,
+				avgTaskCompletionRate: summary.avgTaskCompletionRate,
+				avgStreak: summary.avgStreak,
+				alertStudentsCount,
+				healthStatus: summary.healthStatus,
+				healthColor: summary.healthColor
+			});
+		}
+
+		return {
+			academicYears,
+			selectedTahunAjaran,
+			classCards
+		};
 	},
 
 	/**
