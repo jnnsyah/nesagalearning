@@ -179,12 +179,7 @@ export const GuruAttendanceRecapService = {
 					totalStudents: count(keanggotaan.userId)
 				})
 				.from(keanggotaan)
-				.where(
-					and(
-						inArray(keanggotaan.kelasInstanceId, classIds),
-						eq(keanggotaan.status, 'aktif')
-					)
-				)
+				.where(inArray(keanggotaan.kelasInstanceId, classIds))
 				.groupBy(keanggotaan.kelasInstanceId),
 
 			db
@@ -269,6 +264,7 @@ export const GuruAttendanceRecapService = {
 
 	/**
 	 * Fetch Tier 2: Detailed Rekap Presensi for a specific Class Instance
+	 * Guarantees 100% parity between Matrix table and Audit Logs.
 	 */
 	async getRecapDetail(params: {
 		kelasInstanceId: number;
@@ -282,7 +278,6 @@ export const GuruAttendanceRecapService = {
 			? tahunAjaranOptions.find((ta) => ta.id === params.tahunAjaranId) || null
 			: tahunAjaranOptions.find((ta) => ta.isActive) || tahunAjaranOptions[0] || null;
 
-		const activeTaId = selectedTahunAjaran?.id || 1;
 		const searchQuery = params.searchQuery?.trim() || '';
 		const activeTab = params.activeTab || 'matrix';
 
@@ -301,8 +296,8 @@ export const GuruAttendanceRecapService = {
 			throw new Error('Kelas Instance tidak ditemukan');
 		}
 
-		// 2. Parallel Fetching: Active Enrolled Students & Sessions for this Class
-		const [enrolledStudents, sessionsList] = await Promise.all([
+		// 2. Parallel Fetching: Enrolled Students & Sessions for this Class
+		const [enrolledStudentsRaw, sessionsList] = await Promise.all([
 			db
 				.select({
 					userId: user.id,
@@ -317,7 +312,6 @@ export const GuruAttendanceRecapService = {
 				.where(
 					and(
 						eq(keanggotaan.kelasInstanceId, params.kelasInstanceId),
-						eq(keanggotaan.status, 'aktif'),
 						searchQuery
 							? or(
 									like(user.fullName, `%${searchQuery}%`),
@@ -344,15 +338,11 @@ export const GuruAttendanceRecapService = {
 				.orderBy(asc(pertemuan.sessionDate), asc(pertemuan.startTime))
 		]);
 
-		const studentIds = enrolledStudents.map((s) => s.userId);
 		const sessionIds = sessionsList.map((s) => s.id);
 
-		const totalStudentsCount = enrolledStudents.length;
-		const totalSessionsCount = sessionsList.length;
-
-		// 3. Parallel Fetching: Attendance Records & Recent Logs
+		// 3. Parallel Fetching: ALL Attendance Records & Audit Logs for this Class's Sessions
 		const [attendanceRecords, recentLogsRaw] = await Promise.all([
-			sessionIds.length > 0 && studentIds.length > 0
+			sessionIds.length > 0
 				? db
 						.select({
 							id: attendance.id,
@@ -364,12 +354,7 @@ export const GuruAttendanceRecapService = {
 							recordedAt: attendance.recordedAt
 						})
 						.from(attendance)
-						.where(
-							and(
-								inArray(attendance.pertemuanId, sessionIds),
-								inArray(attendance.userId, studentIds)
-							)
-						)
+						.where(inArray(attendance.pertemuanId, sessionIds))
 				: Promise.resolve([]),
 
 			sessionIds.length > 0
@@ -408,6 +393,62 @@ export const GuruAttendanceRecapService = {
 				: Promise.resolve([])
 		]);
 
+		// Map existing student list by userId
+		const studentMap = new Map<number, {
+			userId: number;
+			username: string;
+			fullName: string;
+			kelasInstanceId: number;
+			kelasName: string;
+		}>();
+
+		for (const st of enrolledStudentsRaw) {
+			studentMap.set(st.userId, st);
+		}
+
+		// Ensure any user with attendance in this class's sessions is present in studentMap
+		const missingUserIds = new Set<number>();
+		for (const rec of attendanceRecords) {
+			if (!studentMap.has(rec.userId)) {
+				missingUserIds.add(rec.userId);
+			}
+		}
+
+		if (missingUserIds.size > 0) {
+			const extraUsers = await db
+				.select({
+					userId: user.id,
+					username: user.username,
+					fullName: user.fullName
+				})
+				.from(user)
+				.where(
+					and(
+						inArray(user.id, Array.from(missingUserIds)),
+						searchQuery
+							? or(
+									like(user.fullName, `%${searchQuery}%`),
+									like(user.username, `%${searchQuery}%`)
+								)
+							: undefined
+					)
+				);
+
+			for (const u of extraUsers) {
+				studentMap.set(u.userId, {
+					userId: u.userId,
+					username: u.username,
+					fullName: u.fullName,
+					kelasInstanceId: classRow.id,
+					kelasName: classRow.name
+				});
+			}
+		}
+
+		const enrolledStudents = Array.from(studentMap.values()).sort((a, b) =>
+			a.fullName.localeCompare(b.fullName)
+		);
+
 		// Map: key `${userId}_${pertemuanId}` -> Attendance Record
 		const recordMap = new Map<string, typeof attendanceRecords[0]>();
 		let totalHadir = 0;
@@ -416,19 +457,22 @@ export const GuruAttendanceRecapService = {
 		let manualCount = 0;
 
 		for (const rec of attendanceRecords) {
-			const key = `${rec.userId}_${rec.pertemuanId}`;
-			recordMap.set(key, rec);
+			// Only count if student is in filtered enrolledStudents
+			if (studentMap.has(rec.userId)) {
+				const key = `${rec.userId}_${rec.pertemuanId}`;
+				recordMap.set(key, rec);
 
-			if (rec.status === 'hadir') {
-				totalHadir++;
-			} else if (rec.status === 'excused') {
-				totalExcused++;
-			}
+				if (rec.status === 'hadir') {
+					totalHadir++;
+				} else if (rec.status === 'excused') {
+					totalExcused++;
+				}
 
-			if (rec.method === 'qr') {
-				qrCount++;
-			} else if (rec.method === 'manual') {
-				manualCount++;
+				if (rec.method === 'qr') {
+					qrCount++;
+				} else if (rec.method === 'manual') {
+					manualCount++;
+				}
 			}
 		}
 
@@ -485,6 +529,9 @@ export const GuruAttendanceRecapService = {
 				sessionsMap
 			};
 		});
+
+		const totalStudentsCount = enrolledStudents.length;
+		const totalSessionsCount = sessionsList.length;
 
 		const totalAlpha = Math.max(0, totalPossibleSlotsCount - totalHadir - totalExcused);
 		const overallAttendanceRate = totalPossibleSlotsCount > 0
