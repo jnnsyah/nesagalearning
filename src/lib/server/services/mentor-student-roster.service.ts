@@ -46,6 +46,8 @@ export interface StudentRosterItem {
 	totalAlpha: number;
 	totalSessionsCount: number;
 	attendanceRate: number; // 0 - 100%
+	overallProgress: number; // 0 - 100%
+	hasAnyStarted: boolean;
 	totalPoints: number;
 	riskStatus: 'normal' | 'warning' | 'critical';
 }
@@ -145,7 +147,7 @@ export const MentorStudentRosterService = {
 	},
 
 	/**
-	 * Fetch Student Roster data with 60% attendance threshold
+	 * Fetch Student Roster data with 60% attendance threshold & pre-computed curriculum progress
 	 */
 	async getRosterData(params: {
 		mentorUserId: number;
@@ -200,7 +202,7 @@ export const MentorStudentRosterService = {
 
 		const targetKelasId = selectedKelas.id;
 
-		const [enrolledStudentsRaw, sessionsList] = await Promise.all([
+		const [enrolledStudentsRaw, sessionsList, classRow] = await Promise.all([
 			db
 				.select({
 					userId: user.id,
@@ -233,16 +235,43 @@ export const MentorStudentRosterService = {
 			db
 				.select({
 					id: pertemuan.id,
+					subPhaseId: pertemuan.subPhaseId,
 					title: pertemuan.title
 				})
 				.from(pertemuan)
-				.where(eq(pertemuan.kelasInstanceId, targetKelasId))
+				.where(eq(pertemuan.kelasInstanceId, targetKelasId)),
+
+			db
+				.select({ curriculumTrackId: kelasInstance.curriculumTrackId })
+				.from(kelasInstance)
+				.where(eq(kelasInstance.id, targetKelasId))
 		]);
 
 		const studentUserIds = enrolledStudentsRaw.map((s) => s.userId);
 		const sessionIds = sessionsList.map((s) => s.id);
+		const trackId = classRow[0]?.curriculumTrackId;
 
-		const [attendanceRecords, pointsList] = await Promise.all([
+		// Fetch Phases & Subphases for the Track
+		const phasesRaw = trackId
+			? await db
+					.select({ id: phase.id, sortOrder: phase.sortOrder })
+					.from(phase)
+					.where(eq(phase.curriculumTrackId, trackId))
+					.orderBy(phase.sortOrder)
+			: [];
+
+		const phaseIds = phasesRaw.map((p) => p.id);
+		const subPhasesRaw = phaseIds.length > 0
+			? await db
+					.select({ id: subPhase.id, phaseId: subPhase.phaseId })
+					.from(subPhase)
+					.where(inArray(subPhase.phaseId, phaseIds))
+			: [];
+
+		const subPhaseIds = subPhasesRaw.map((sp) => sp.id);
+
+		// Parallel fetch attendance, points, tasks, submissions, quizzes
+		const [attendanceRecords, pointsList, tasksRaw, submissionsRaw, quizzesRaw, quizAttemptsRaw] = await Promise.all([
 			sessionIds.length > 0 && studentUserIds.length > 0
 				? db
 						.select({
@@ -268,6 +297,33 @@ export const MentorStudentRosterService = {
 						.from(pointLog)
 						.where(inArray(pointLog.userId, studentUserIds))
 						.groupBy(pointLog.userId)
+				: Promise.resolve([]),
+
+			subPhaseIds.length > 0
+				? db
+						.select({ id: task.id, pertemuanId: task.pertemuanId })
+						.from(task)
+				: Promise.resolve([]),
+
+			studentUserIds.length > 0
+				? db
+						.select({ userId: submission.userId, taskId: submission.taskId, status: submission.status })
+						.from(submission)
+						.where(and(inArray(submission.userId, studentUserIds), eq(submission.status, 'approved')))
+				: Promise.resolve([]),
+
+			subPhaseIds.length > 0
+				? db
+						.select({ id: quiz.id, subPhaseId: quiz.subPhaseId, passingScore: quiz.passingScore })
+						.from(quiz)
+						.where(inArray(quiz.subPhaseId, subPhaseIds))
+				: Promise.resolve([]),
+
+			studentUserIds.length > 0
+				? db
+						.select({ userId: quizAttempt.userId, quizId: quizAttempt.quizId, score: quizAttempt.score })
+						.from(quizAttempt)
+						.where(inArray(quizAttempt.userId, studentUserIds))
 				: Promise.resolve([])
 		]);
 
@@ -277,6 +333,35 @@ export const MentorStudentRosterService = {
 		const attendanceMap = new Map<string, string>();
 		for (const a of attendanceRecords) {
 			attendanceMap.set(`${a.userId}_${a.pertemuanId}`, a.status);
+		}
+
+		// Pre-compute overall curriculum progress per student
+		const quizPassingScoreMap = new Map<number, number>();
+		for (const q of quizzesRaw) quizPassingScoreMap.set(q.id, q.passingScore);
+
+		const sessionTasksMap = new Map<number, number[]>();
+		for (const t of tasksRaw) {
+			if (t.pertemuanId) {
+				const list = sessionTasksMap.get(t.pertemuanId) || [];
+				list.push(t.id);
+				sessionTasksMap.set(t.pertemuanId, list);
+			}
+		}
+
+		const subPhaseSessionsMap = new Map<number, number[]>();
+		for (const s of sessionsList) {
+			if (s.subPhaseId) {
+				const list = subPhaseSessionsMap.get(s.subPhaseId) || [];
+				list.push(s.id);
+				subPhaseSessionsMap.set(s.subPhaseId, list);
+			}
+		}
+
+		const subPhaseQuizzesMap = new Map<number, number[]>();
+		for (const q of quizzesRaw) {
+			const list = subPhaseQuizzesMap.get(q.subPhaseId) || [];
+			list.push(q.id);
+			subPhaseQuizzesMap.set(q.subPhaseId, list);
 		}
 
 		let totalAttendanceRateSum = 0;
@@ -306,7 +391,6 @@ export const MentorStudentRosterService = {
 			totalAttendanceRateSum += attendanceRate;
 			totalPointsSum += totalPoints;
 
-			// 60% minimum threshold: <40% critical, <60% warning
 			let riskStatus: 'normal' | 'warning' | 'critical' = 'normal';
 			if (attendanceRate < 40) {
 				riskStatus = 'critical';
@@ -315,6 +399,72 @@ export const MentorStudentRosterService = {
 				riskStatus = 'warning';
 				attentionNeededCount++;
 			}
+
+			// Pre-calculate Curriculum Progress for Student
+			const stApprovedTasks = new Set(
+				submissionsRaw.filter((sub) => sub.userId === st.userId).map((sub) => sub.taskId)
+			);
+			const stPassedQuizzes = new Set(
+				quizAttemptsRaw
+					.filter((qa) => qa.userId === st.userId && qa.score >= (quizPassingScoreMap.get(qa.quizId) || 60))
+					.map((qa) => qa.quizId)
+			);
+
+			let startedPhasesCount = 0;
+			let totalPhasesRateSum = 0;
+
+			for (const p of phasesRaw) {
+				const subPhasesForPhase = subPhasesRaw.filter((sp) => sp.phaseId === p.id);
+				let startedSubPhasesCount = 0;
+				let subPhaseRateSum = 0;
+
+				for (const sp of subPhasesForPhase) {
+					const sessIds = subPhaseSessionsMap.get(sp.id) || [];
+					const totSess = sessIds.length;
+					let attCount = 0;
+					let totTasks = 0;
+					let appTasks = 0;
+
+					for (const sId of sessIds) {
+						if (attendanceMap.get(`${st.userId}_${sId}`) === 'hadir') attCount++;
+						const tIds = sessionTasksMap.get(sId) || [];
+						totTasks += tIds.length;
+						for (const tId of tIds) {
+							if (stApprovedTasks.has(tId)) appTasks++;
+						}
+					}
+
+					const qIds = subPhaseQuizzesMap.get(sp.id) || [];
+					const hasQuiz = qIds.length > 0;
+					const qPassed = hasQuiz && qIds.some((qId) => stPassedQuizzes.has(qId));
+
+					const isStarted = totSess > 0 || totTasks > 0 || hasQuiz;
+					if (isStarted) {
+						startedSubPhasesCount++;
+						const aR = totSess > 0 ? (attCount / totSess) * 100 : 0;
+						const tR = totTasks > 0 ? (appTasks / totTasks) * 100 : 0;
+						const qR = hasQuiz ? (qPassed ? 100 : 0) : 0;
+
+						let cRate = 0;
+						if (totTasks > 0 && hasQuiz) cRate = Math.round(aR * 0.4 + tR * 0.3 + qR * 0.3);
+						else if (totTasks > 0) cRate = Math.round(aR * 0.5 + tR * 0.5);
+						else if (hasQuiz) cRate = Math.round(aR * 0.5 + qR * 0.5);
+						else cRate = Math.round(aR);
+
+						subPhaseRateSum += cRate;
+					}
+				}
+
+				if (startedSubPhasesCount > 0) {
+					startedPhasesCount++;
+					totalPhasesRateSum += Math.round(subPhaseRateSum / startedSubPhasesCount);
+				}
+			}
+
+			const hasAnyStarted = startedPhasesCount > 0;
+			const overallProgress = hasAnyStarted
+				? Math.round(totalPhasesRateSum / startedPhasesCount)
+				: 0;
 
 			return {
 				userId: st.userId,
@@ -330,6 +480,8 @@ export const MentorStudentRosterService = {
 				totalAlpha,
 				totalSessionsCount,
 				attendanceRate,
+				overallProgress,
+				hasAnyStarted,
 				totalPoints,
 				riskStatus
 			};
@@ -576,7 +728,6 @@ export const MentorStudentRosterService = {
 				const hasQuiz = quizIds.length > 0;
 				const quizPassed = hasQuiz && quizIds.some((qId) => passedQuizzesSet.has(qId));
 
-				// Subphase is considered started only if sessions have been held, tasks assigned, or quiz published
 				const isStarted = totalSessionsCount > 0 || totalTasksCount > 0 || hasQuiz;
 
 				const attRate = totalSessionsCount > 0 ? (attendedSessionsCount / totalSessionsCount) * 100 : 0;

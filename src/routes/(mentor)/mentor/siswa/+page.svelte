@@ -256,7 +256,7 @@
 	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     ROSTER DATA TABLE
+	     ROSTER DATA TABLE (WITH INLINE PROGRESS BARS & SVG ACTION ICONS)
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="recap-card" aria-label="Daftar Siswa Roster">
 		{#if data.rosterData.roster.length === 0}
@@ -278,10 +278,10 @@
 							<th>Nama Siswa & Rombel</th>
 							<th class="text-center">Total Poin</th>
 							<th class="text-center">Hadir / Sesi</th>
-							<th class="text-center">Izin/Sakit</th>
+							<th class="text-center">Izin / Sakit</th>
 							<th class="text-center">Alpha</th>
-							<th class="text-right">% Kehadiran</th>
-							<th class="text-center w-44">Progress Kurikulum</th>
+							<th class="text-right w-48">% Kehadiran</th>
+							<th class="text-right w-52">% Progress Kurikulum</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -318,6 +318,7 @@
 								<td class="text-center text-slate-400 font-mono text-sm">
 									{student.totalAlpha}
 								</td>
+								<!-- Kehadiran Progress Bar + Detail Icon -->
 								<td class="text-right font-mono">
 									<div class="flex items-center justify-end gap-2">
 										<span class="font-bold text-slate-800">{student.attendanceRate}%</span>
@@ -330,17 +331,38 @@
 												style="width: {student.attendanceRate}%;"
 											></div>
 										</div>
+										<a
+											href="/guru/presensi?kelasInstanceId={student.kelasId}&from=dashboard"
+											class="btn-cell-icon"
+											title="Lihat Detail Rekap Presensi"
+										>
+											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+										</a>
 									</div>
 								</td>
-								<td class="text-center">
-									<button
-										type="button"
-										class="btn-view-progress"
-										onclick={() => openStudentProgress(student)}
-									>
-										<span>Progress Kurikulum</span>
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-									</button>
+								<!-- Kurikulum Composite Progress Bar + SVG Action Icon -->
+								<td class="text-right font-mono">
+									<div class="flex items-center justify-end gap-2">
+										{#if student.hasAnyStarted}
+											<span class="font-bold text-indigo-700">{student.overallProgress}%</span>
+											<div class="rate-mini-track">
+												<div
+													class="rate-mini-fill fill-indigo"
+													style="width: {student.overallProgress}%;"
+												></div>
+											</div>
+										{:else}
+											<span class="text-xs text-slate-400 font-normal">Belum Dimulai</span>
+										{/if}
+										<button
+											type="button"
+											class="btn-cell-icon btn-cell-icon-indigo"
+											title="Lihat Detail Progress Kurikulum"
+											onclick={() => openStudentProgress(student)}
+										>
+											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+										</button>
+									</div>
 								</td>
 							</tr>
 						{/each}
@@ -783,24 +805,37 @@
 	.fill-green { background: #22c55e; }
 	.fill-amber { background: #f59e0b; }
 	.fill-red { background: #ef4444; }
+	.fill-indigo { background: #6366f1; }
 
-	.btn-view-progress {
+	.btn-cell-icon {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		padding: 6px 12px;
-		background: #e0e7ff;
-		color: #4338ca;
-		border: none;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
 		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 700;
 		cursor: pointer;
-		transition: background 0.15s ease;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
 	}
 
-	.btn-view-progress:hover {
+	.btn-cell-icon:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+	}
+
+	.btn-cell-icon-indigo {
+		background: #e0e7ff;
+		color: #4338ca;
+		border-color: #c7d2fe;
+	}
+
+	.btn-cell-icon-indigo:hover {
 		background: #c7d2fe;
+		color: #312e81;
 	}
 
 	/* Drawer Student Hero Card Light */
