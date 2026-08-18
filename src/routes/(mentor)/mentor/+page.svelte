@@ -104,7 +104,7 @@
 				<div class="quick-action-card__icon" style="background: #e0e7ff; color: #4f46e5;">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 				</div>
-				<div class="quick-action-card__label">Kurikulum</div>
+				<div class="quick-action-card__label">Track Pembelajaran</div>
 			</a>
 			<a href="/mentor/pertemuan" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #ccfbf1; color: #0d9488;">

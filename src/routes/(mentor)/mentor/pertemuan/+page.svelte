@@ -718,7 +718,7 @@
 
 							<CustomSelect
 								name="subPhaseId"
-								label="Sub-Fase Kurikulum"
+								label="Sub-Fase Track Pembelajaran"
 								required
 								bind:value={formSubPhaseId}
 								options={data.subPhases.map((sp) => ({ value: sp.id, label: sp.title }))}

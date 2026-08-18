@@ -86,7 +86,7 @@
 </script>
 
 <svelte:head>
-	<title>Roster Siswa Kelas & Progress Kurikulum — Mentor NLC</title>
+	<title>Roster Siswa Kelas & Progress Track Pembelajaran — Mentor NLC</title>
 </svelte:head>
 
 <ToastContainer />
@@ -99,7 +99,7 @@
 		<div class="hero-top-row">
 			<div>
 				<div class="hero-title-group">
-					<h1 class="hero-title">Roster Siswa & Progress Kurikulum</h1>
+					<h1 class="hero-title">Roster Siswa & Progress Track Pembelajaran</h1>
 					{#if data.rosterData.selectedKelas}
 						<span class="badge badge-primary">
 							{data.rosterData.selectedKelas.name}
@@ -107,7 +107,7 @@
 					{/if}
 				</div>
 				<p class="hero-subtitle">
-					Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase kurikulum siswa.
+					Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase track pembelajaran siswa.
 				</p>
 			</div>
 
@@ -248,7 +248,7 @@
 							<th class="text-center">Izin / Sakit</th>
 							<th class="text-center">Alpha</th>
 							<th class="text-right w-36">% Kehadiran</th>
-							<th class="text-right w-44">% Progress Kurikulum</th>
+							<th class="text-right w-44">% Progress Track Pembelajaran</th>
 							<th class="text-center w-28">Aksi</th>
 						</tr>
 					</thead>

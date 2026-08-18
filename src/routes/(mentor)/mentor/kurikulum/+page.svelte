@@ -107,7 +107,7 @@
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
 <svelte:head>
-	<title>Kurikulum — Portal Mentor NLC</title>
+	<title>Track Pembelajaran — Portal Mentor NLC</title>
 </svelte:head>
 
 <div class="content-area">
@@ -118,9 +118,9 @@
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-				<span class="bc-current">Kurikulum</span>
+				<span class="bc-current">Track Pembelajaran</span>
 			</nav>
-			<h1 class="page-title">Kurikulum & Track Pembelajaran</h1>
+			<h1 class="page-title">Track Pembelajaran</h1>
 		</div>
 		<button
 			id="btn-buat-track"
@@ -403,7 +403,7 @@
 
 			<div class="drawer__body">
 				<div class="drawer-section">
-					<div class="drawer-section__label">Judul Kurikulum</div>
+					<div class="drawer-section__label">Judul Track Pembelajaran</div>
 					<h3 class="drawer-section__title">{inspectedTrack.title}</h3>
 					<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
 						<span class="badge badge-live">{inspectedTrack.tingkatName}</span>
@@ -528,7 +528,7 @@
 						name="description"
 						label="Deskripsi Silabus"
 						bind:value={formDescription}
-						placeholder="Penjelasan singkat cakupan kurikulum dan kompetensi yang dipelajari…"
+						placeholder="Penjelasan singkat cakupan track pembelajaran dan kompetensi yang dipelajari…"
 						rows={4}
 						maxlength={300}
 					/>

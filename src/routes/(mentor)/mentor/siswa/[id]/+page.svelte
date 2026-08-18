@@ -166,7 +166,7 @@
 						<span class="hero-overall-val-empty">
 							Belum Dimulai
 						</span>
-						<span class="hero-overall-lbl">Status Kurikulum</span>
+						<span class="hero-overall-lbl">Status Track Pembelajaran</span>
 					{/if}
 				{/if}
 			</div>
@@ -195,7 +195,7 @@
 			</div>
 
 			<div class="hero-stat-card">
-				<span class="stat-lbl-mini">Progres Kurikulum</span>
+				<span class="stat-lbl-mini">Progres Track Pembelajaran</span>
 				<span class="stat-val-mini text-slate-800">
 					{studentInfo.hasAnyStarted ? `${studentInfo.overallProgress}%` : 'Belum Dimulai'}
 				</span>
@@ -214,7 +214,7 @@
 			onclick={() => switchTab('curriculum')}
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-			<span>Detail Progress Kurikulum & Modul</span>
+			<span>Detail Progress Track Pembelajaran & Modul</span>
 		</button>
 
 		<button
@@ -232,16 +232,16 @@
 	     TAB 1: CURRICULUM PROGRESS BREAKDOWN
 	     ══════════════════════════════════════════════════════════ -->
 	{#if activeTab === 'curriculum'}
-		<section aria-label="Rincian Fase Kurikulum Siswa" class="pt-3">
+		<section aria-label="Rincian Fase Track Pembelajaran Siswa" class="pt-3">
 			{#if !data.studentProgress || data.studentProgress.phases.length === 0}
 				<div class="empty-card py-16 text-center bg-white rounded-xl border border-slate-200">
-					<p class="text-sm text-slate-500 font-mono">Belum ada modul / fase kurikulum yang ditautkan ke kelas ini.</p>
+					<p class="text-sm text-slate-500 font-mono">Belum ada modul / fase track pembelajaran yang ditautkan ke kelas ini.</p>
 				</div>
 			{:else}
 				<div class="space-y-6">
 					<div class="flex items-center justify-between pb-2 border-b border-slate-200">
 						<h3 class="text-sm font-bold text-slate-700 font-mono uppercase tracking-wider">
-							Daftar Fase Kurikulum ({data.studentProgress.phases.length} Fase)
+							Daftar Fase Track Pembelajaran ({data.studentProgress.phases.length} Fase)
 						</h3>
 						<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
 					</div>

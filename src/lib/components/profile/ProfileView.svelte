@@ -284,7 +284,7 @@
 			badgeText: 'SUPERVISI GURU',
 			color: '#0d9488',
 			bg: '#ccfbf1',
-			description: 'Supervisor utama pemantau kurikulum, presensi, & progres siswa.'
+			description: 'Supervisor utama pemantau track pembelajaran, presensi, & progres siswa.'
 		},
 		admin: {
 			label: 'Administrator Sistem',
@@ -532,7 +532,7 @@
 				</div>
 				<div class="stat-info">
 					<span class="stat-value">{stats.activeTracksCount ?? 0} Track</span>
-					<span class="stat-label">Jalur Kurikulum</span>
+					<span class="stat-label">Track Pembelajaran</span>
 				</div>
 			</div>
 
@@ -766,7 +766,7 @@
 								</div>
 
 								<div class="detail-row">
-									<span class="detail-label">Jalur Kurikulum</span>
+									<span class="detail-label">Track Pembelajaran</span>
 									<span class="detail-value">{stats.trackName || '-'}</span>
 								</div>
 
@@ -828,7 +828,7 @@
 								</div>
 
 								<div class="detail-row">
-									<span class="detail-label">Jalur Kurikulum Pembelajaran</span>
+									<span class="detail-label">Track Pembelajaran</span>
 									<span class="detail-value">{stats.activeTracksCount ?? 0} Track</span>
 								</div>
 

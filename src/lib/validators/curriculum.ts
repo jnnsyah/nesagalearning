@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createCurriculumTrackSchema = z.object({
 	tingkatId: z.number({ message: 'Tingkat ID wajib dipilih' }),
-	title: z.string().min(3, 'Judul kurikulum minimal 3 karakter').max(150, 'Judul maksimal 150 karakter'),
+	title: z.string().min(3, 'Judul track pembelajaran minimal 3 karakter').max(150, 'Judul maksimal 150 karakter'),
 	description: z.string().optional()
 });
 

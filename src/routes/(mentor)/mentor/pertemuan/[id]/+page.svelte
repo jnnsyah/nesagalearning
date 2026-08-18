@@ -101,7 +101,7 @@
 			<h1 class="hero-title">{m.title}</h1>
 
 			<div class="flex items-center gap-2 mt-2 text-sm text-slate-600">
-				<span class="font-medium">Sub-Fase Kurikulum:</span>
+				<span class="font-medium">Sub-Fase Track Pembelajaran:</span>
 				<span class="subphase-pill">{m.subPhaseTitle}</span>
 			</div>
 		</div>
@@ -224,7 +224,7 @@
 							</div>
 
 							<div class="info-group">
-								<span class="info-label">Sub-Fase Kurikulum</span>
+								<span class="info-label">Sub-Fase Track Pembelajaran</span>
 								<span class="info-val">{m.subPhaseTitle}</span>
 							</div>
 

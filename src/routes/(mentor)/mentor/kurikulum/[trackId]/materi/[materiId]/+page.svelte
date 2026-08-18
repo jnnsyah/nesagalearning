@@ -305,7 +305,7 @@
 			<!-- Left: Breadcrumb + Title -->
 			<div class="topbar-left">
 				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/mentor/kurikulum" class="breadcrumb-link">Kurikulum</a>
+					<a href="/mentor/kurikulum" class="breadcrumb-link">Track Pembelajaran</a>
 					<svg class="breadcrumb-sep" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
 					<a href="/mentor/kurikulum/{data.trackId}" class="breadcrumb-link">{trackTitle || 'Track'}</a>
 					<svg class="breadcrumb-sep" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>

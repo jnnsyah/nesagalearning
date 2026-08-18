@@ -126,14 +126,14 @@
 			<div class="section-header">
 				<div class="flex items-center gap-2">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-					<span>Progress Kurikulum (Kelas Aktif)</span>
+					<span>Progress Track Pembelajaran (Kelas Aktif)</span>
 				</div>
 				<span class="type-mono text-muted" style="font-size: 11px;">{kelasName}</span>
 			</div>
 			<div class="phase-list">
 				{#if phaseProgressList.length === 0}
 					<div class="p-6 text-center text-slate-500 text-xs font-medium">
-						Belum ada data progress kurikulum untuk kelas ini.
+						Belum ada data progress track pembelajaran untuk kelas ini.
 					</div>
 				{:else}
 					{#each phaseProgressList as item, index}

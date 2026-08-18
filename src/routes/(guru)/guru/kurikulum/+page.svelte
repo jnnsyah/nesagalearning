@@ -102,7 +102,7 @@
 </script>
 
 <svelte:head>
-	<title>Pantau Kurikulum — Guru Pembimbing | NLC</title>
+	<title>Pantau Track Pembelajaran — Guru Pembimbing | NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -114,7 +114,7 @@
 			<div class="hero-top-row">
 				<div>
 					<div class="hero-title-group">
-						<h1 class="hero-title">Katalog & Pantau Kurikulum</h1>
+						<h1 class="hero-title">Katalog & Pantau Track Pembelajaran</h1>
 						{#if data.monitoringData.selectedTahunAjaran}
 							<span class="badge badge-primary">
 								TA {data.monitoringData.selectedTahunAjaran.name}
@@ -122,7 +122,7 @@
 						{/if}
 					</div>
 					<p class="hero-subtitle">
-						Pilih alur kurikulum di bawah ini untuk memantau progres ketercapaian modul, materi, dan quiz per tingkat kelas.
+						Pilih alur track pembelajaran di bawah ini untuk memantau progres ketercapaian modul, materi, dan quiz per tingkat kelas.
 					</p>
 				</div>
 
@@ -147,11 +147,11 @@
 				</div>
 				<h3 class="font-bold text-slate-800 text-base">Belum Ada Track Pembelajaran Dipublikasi</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-					Tidak ditemukan alur kurikulum aktif untuk Tahun Ajaran {data.monitoringData.selectedTahunAjaran?.name || ''}.
+					Tidak ditemukan alur track pembelajaran aktif untuk Tahun Ajaran {data.monitoringData.selectedTahunAjaran?.name || ''}.
 				</p>
 			</div>
 		{:else}
-			<section class="grid-cards-container" aria-label="Daftar Alur Kurikulum">
+			<section class="grid-cards-container" aria-label="Daftar Alur Track Pembelajaran">
 				<div class="cards-grid">
 					{#each data.monitoringData.trackCards as track}
 						<div
@@ -267,7 +267,7 @@
 				{:else}
 					<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						<span>Kembali ke Katalog Kurikulum (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
+						<span>Kembali ke Katalog Track Pembelajaran (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
 					</button>
 				{/if}
 			</div>
@@ -340,7 +340,7 @@
 				</div>
 				<div class="stat-info">
 					<span class="stat-value">{data.monitoringData.summary.avgTrackCompletionRate}%</span>
-					<span class="stat-label">Ketercapaian Kurikulum</span>
+					<span class="stat-label">Ketercapaian Track Pembelajaran</span>
 					<span class="stat-subtext">Rata-rata Penyelesaian Modul</span>
 				</div>
 			</div>
@@ -368,7 +368,7 @@
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
 					</div>
 					<p class="font-bold text-slate-800 text-sm">Belum Ada Phase pada Track Ini</p>
-					<p class="text-xs text-slate-500 mt-1">Mentor / Admin belum menambahkan modul pembelajaran untuk kurikulum ini.</p>
+					<p class="text-xs text-slate-500 mt-1">Mentor / Admin belum menambahkan modul pembelajaran untuk track ini.</p>
 				</div>
 			{:else}
 				<div class="phases-stack">

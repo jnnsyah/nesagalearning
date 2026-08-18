@@ -101,7 +101,7 @@
 
 			<div>
 				<label for="subPhaseId" class="field-label">
-					Kaitan SubPhase Kurikulum *
+					Kaitan SubPhase Track Pembelajaran *
 				</label>
 				<select
 					id="subPhaseId"

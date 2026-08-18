@@ -175,7 +175,7 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <svelte:head>
-	<title>{data.track.title} — Builder Kurikulum NLC</title>
+	<title>{data.track.title} — Builder Track Pembelajaran NLC</title>
 </svelte:head>
 
 <div class="content-area">
@@ -188,7 +188,7 @@
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-				<a href="/mentor/kurikulum" class="bc-link">Kurikulum</a>
+				<a href="/mentor/kurikulum" class="bc-link">Track Pembelajaran</a>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
 				<span class="bc-current">{data.track.title}</span>
 			</nav>
@@ -533,7 +533,7 @@
 		onclick={(e) => e.target === e.currentTarget && closeDrawer()}
 		role="dialog"
 		aria-modal="true"
-		aria-label="Form Kurikulum"
+		aria-label="Form Track Pembelajaran"
 	>
 		<aside class="form-drawer">
 			<!-- Mobile drag handle -->
@@ -616,7 +616,7 @@
 							name="description"
 							label="Deskripsi Silabus"
 							bind:value={formDescription}
-							placeholder="Penjelasan singkat cakupan kurikulum…"
+							placeholder="Penjelasan singkat cakupan track pembelajaran…"
 							rows={4}
 						/>
 						<ToggleSwitch
@@ -684,7 +684,7 @@
 		open={true}
 		title={
 			deleteTarget.type === 'phase'
-				? 'Hapus Fase Kurikulum?'
+				? 'Hapus Fase Track Pembelajaran?'
 				: deleteTarget.type === 'subPhase'
 				? 'Hapus Sub-Fase?'
 				: 'Hapus Materi Pembelajaran?'

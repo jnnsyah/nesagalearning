@@ -45,7 +45,7 @@
 					{/if}
 				</div>
 				<p class="hero-subtitle">
-					Ringkasan agregat presensi sesi, skor ketercapaian komposit kurikulum, dan jurnal pendampingan siswa.
+					Ringkasan agregat presensi sesi, skor ketercapaian komposit track pembelajaran, dan jurnal pendampingan siswa.
 				</p>
 			</div>
 
@@ -106,7 +106,7 @@
 			</div>
 			<div class="stat-info">
 				<span class="stat-value">{data.dashboardData.stats.overallCurriculumRate}%</span>
-				<span class="stat-label">Skor Komposit Kurikulum</span>
+				<span class="stat-label">Skor Komposit Track Pembelajaran</span>
 				<span class="stat-subtext">Hadir (40%) + Tugas (30%) + Quiz (30%)</span>
 			</div>
 		</div>
@@ -122,7 +122,7 @@
 				<div class="panel-header">
 					<div>
 						<h3 class="panel-title">Monitoring Rombel Kelas</h3>
-						<p class="panel-subtitle">Klik rombel untuk membuka rekap presensi atau matriks kurikulum.</p>
+						<p class="panel-subtitle">Klik rombel untuk membuka rekap presensi atau matriks track pembelajaran.</p>
 					</div>
 				</div>
 
@@ -159,7 +159,7 @@
 
 									<div class="dual-metric-item mt-2">
 										<div class="flex items-center justify-between text-xs mb-1">
-											<span class="text-slate-500 font-mono">Kurikulum Komposit</span>
+											<span class="text-slate-500 font-mono">Track Pembelajaran Komposit</span>
 											<span class="font-bold text-indigo-700">{cClass.curriculumRate}%</span>
 										</div>
 										<div class="mini-progress-track">
@@ -179,7 +179,7 @@
 										href="/guru/kurikulum?kelasInstanceId={cClass.id}&tahunAjaranId={data.dashboardData.selectedTahunAjaran?.id || ''}&from=dashboard"
 										class="btn-action-sm btn-action-outline flex-1 text-center"
 									>
-										<span>Matriks Kurikulum</span>
+										<span>Matriks Track Pembelajaran</span>
 									</a>
 								</div>
 							</div>
@@ -246,7 +246,7 @@
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 						</div>
 						<div>
-							<h4 class="font-bold text-slate-800 text-xs">Monitoring Kurikulum</h4>
+							<h4 class="font-bold text-slate-800 text-xs">Monitoring Track Pembelajaran</h4>
 							<p class="text-[11px] text-slate-500">Pantau progres komposit ketercapaian subfase</p>
 						</div>
 					</a>
