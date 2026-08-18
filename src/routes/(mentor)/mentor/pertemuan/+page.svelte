@@ -112,6 +112,12 @@
 		}
 	});
 
+	function findDefaultLab3Room(rooms: any[]): string {
+		if (!rooms || rooms.length === 0) return 'Lab 3';
+		const found = rooms.find((r) => /lab.*3/i.test(r.value) || /lab.*3/i.test(r.label));
+		return found ? String(found.value) : (rooms[0]?.value ? String(rooms[0].value) : 'Lab 3');
+	}
+
 	function openCreateForm() {
 		editingMeeting = null;
 		sessionUploadedFiles = [];
@@ -125,7 +131,7 @@
 		formSessionDate = new Date().toISOString().slice(0, 10);
 		formStartTime = '15:20';
 		formEndTime = '16:55';
-		formLocation = '';
+		formLocation = findDefaultLab3Room(data.roomsOptions);
 		formMaterialUrl = '';
 		formIsWeekend = false;
 		formHasTask = false;

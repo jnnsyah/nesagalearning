@@ -8,7 +8,14 @@
 	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
 	let formTrackId = $state<number | string | null>(data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '');
 	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
-	let formLocation = $state<string | number | null>(data.roomsOptions[0]?.value ?? '');
+
+	function findDefaultLab3Room(rooms: any[]): string {
+		if (!rooms || rooms.length === 0) return 'Lab 3';
+		const found = rooms.find((r) => /lab.*3/i.test(r.value) || /lab.*3/i.test(r.label));
+		return found ? String(found.value) : (rooms[0]?.value ? String(rooms[0].value) : 'Lab 3');
+	}
+
+	let formLocation = $state<string | number | null>(findDefaultLab3Room(data.roomsOptions));
 
 	let isUploading = $state(false);
 	let uploadedUrl = $state('');
