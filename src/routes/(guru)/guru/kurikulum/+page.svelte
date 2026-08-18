@@ -2,34 +2,35 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 
+	import { untrack } from 'svelte';
+
 	let { data } = $props();
 
-	// Local filter state for Tier 1
-	let selectedTaId = $state('');
-	let selectedKelasId = $state('');
-
-	$effect(() => {
-		selectedTaId = data.monitoringData.selectedTahunAjaran?.id
+	// Derived select values — no $effect, no circular writes
+	let selectedTaId = $derived(
+		data.monitoringData.selectedTahunAjaran?.id
 			? String(data.monitoringData.selectedTahunAjaran.id)
-			: '';
+			: ''
+	);
 
-		if (data.monitoringData.viewMode === 'detail') {
-			selectedKelasId = data.monitoringData.selectedKelas?.id
-				? String(data.monitoringData.selectedKelas.id)
-				: '';
-		}
-	});
+	let selectedKelasId = $derived(
+		data.monitoringData.viewMode === 'detail' && data.monitoringData.selectedKelas?.id
+			? String(data.monitoringData.selectedKelas.id)
+			: ''
+	);
 
-	// Collapsible phase state for Tier 2
+	// Collapsible phase state for Tier 2 — initialized once per data change,
+	// using untrack to avoid reading expandedPhases inside the effect (which would loop)
 	let expandedPhases = $state<Record<number, boolean>>({});
 
 	$effect(() => {
 		if (data.monitoringData.viewMode === 'detail') {
-			const nextState: Record<number, boolean> = { ...expandedPhases };
-			for (const p of data.monitoringData.phases) {
-				if (nextState[p.id] === undefined) {
-					nextState[p.id] = true;
-				}
+			const phases = data.monitoringData.phases;
+			// untrack the read of expandedPhases so writing it back doesn't re-trigger
+			const prev = untrack(() => expandedPhases);
+			const nextState: Record<number, boolean> = {};
+			for (const p of phases) {
+				nextState[p.id] = prev[p.id] !== undefined ? prev[p.id] : true;
 			}
 			expandedPhases = nextState;
 		}
