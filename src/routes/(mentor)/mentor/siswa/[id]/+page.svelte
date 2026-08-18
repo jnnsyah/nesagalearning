@@ -328,7 +328,7 @@
 	{:else}
 		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-3">
 			<!-- Filter Controls Grid Card -->
-			<div class="page-filter-card mb-8 space-y-4">
+			<div class="page-filter-card mb-8 space-y-6">
 				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->
 				<div class="flex items-end justify-between gap-4">
 					<div class="flex-1">

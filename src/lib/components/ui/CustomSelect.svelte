@@ -205,7 +205,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		gap: 6px;
 		width: 100%;
 	}
 
