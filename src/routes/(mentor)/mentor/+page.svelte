@@ -158,8 +158,8 @@
 							</div>
 
 							<div class="flex-shrink-0 self-center">
-								<a href="/mentor/tugas" class="btn-grade-sm">
-									<span>Buka Studio ({m.stats.pending + m.stats.revisi}) &rarr;</span>
+								<a href="/mentor/tugas?pertemuanId={m.pertemuanId}&from=dashboard" class="btn-grade-sm">
+									<span>Buka Studio ({m.stats.pending + m.stats.revisi}) &rsaquo;</span>
 								</a>
 							</div>
 						</div>
@@ -182,27 +182,23 @@
 
 			{#if data.recentMeetings.length === 0}
 				<div class="empty-state">
-					<div class="empty-icon-wrap" style="background: #eff6ff; color: #2563eb;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-					</div>
-					<p class="empty-title">Belum Ada Pertemuan Terjadwal</p>
-					<p class="empty-sub">Jadwal sesi kelas komunitas akan tampil di sini.</p>
+					<p class="empty-title">Belum Ada Sesi Pertemuan</p>
 				</div>
 			{:else}
-				<div class="queue-list space-y-3 p-4">
-					{#each data.recentMeetings as m}
+				<div class="queue-list space-y-2.5 p-3.5">
+					{#each data.recentMeetings as r}
 						<div class="queue-item">
 							<div class="queue-info flex-1">
-								<div class="flex items-center gap-2 mb-1">
-									<span class="badge badge-kelas-sm">{m.kelasName}</span>
-									<span class="badge badge-act-sm">{m.activityType.toUpperCase()}</span>
+								<div class="flex items-center gap-2 mb-0.5">
+									<span class="badge badge-kelas-sm">{r.kelasName}</span>
+									<span class="activity-type-label">{r.activityType.toUpperCase()}</span>
 								</div>
-								<h4 class="task-title">{m.title}</h4>
+								<h4 class="task-title text-sm">{r.title}</h4>
 								<div class="submitted-at">
-									{formatIndoDate(m.sessionDate)} &bull; {formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB
+									{formatIndoDate(r.sessionDate)} &bull; {formatTimeOnly(r.startTime)} - {formatTimeOnly(r.endTime)} WIB
 								</div>
 							</div>
-							<a href="/mentor/pertemuan" class="btn-ghost-sm">
+							<a href={`/mentor/pertemuan/${r.id}`} class="btn-ghost-sm">
 								Presensi &rarr;
 							</a>
 						</div>
@@ -213,8 +209,8 @@
 	</div>
 
 	<!-- Quick Actions Strip -->
-	<div class="quick-actions">
-		<div class="quick-actions__header">Aksi Cepat Mentor</div>
+	<div class="quick-actions-card">
+		<h3 class="quick-actions__title">Aksi Cepat Mentor</h3>
 		<div class="quick-actions__grid">
 			<a href="/mentor/jadwal" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #e0e7ff; color: #4f46e5;">
@@ -234,7 +230,7 @@
 				</div>
 				<div class="quick-action-card__label">Roster Siswa</div>
 			</a>
-			<a href="/mentor/tugas" class="quick-action-card">
+			<a href="/mentor/tugas?from=dashboard" class="quick-action-card">
 				<div class="quick-action-card__icon" style="background: #fee2e2; color: #dc2626;">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 				</div>

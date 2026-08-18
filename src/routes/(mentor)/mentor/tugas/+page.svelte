@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-import { enhance } from '$app/forms';
-import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
-import TextInput from '$lib/components/ui/TextInput.svelte';
-import TextArea from '$lib/components/ui/TextArea.svelte';
-import { toast } from '$lib/stores/toast';
-import type { PageData, ActionData } from './$types';
+	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import TextArea from '$lib/components/ui/TextArea.svelte';
+	import { toast } from '$lib/stores/toast';
+	import type { PageData, ActionData } from './$types';
 
 let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -301,7 +303,27 @@ let rosterSortOptions = [
 		selectedSubmissionId = firstPending ? firstPending.id : (subs[0]?.id || null);
 	}
 
+	$effect(() => {
+		const paramPid = $page.url.searchParams.get('pertemuanId');
+		if (paramPid && !isNaN(Number(paramPid))) {
+			const pid = Number(paramPid);
+			const exists = (data.meetingSummaries || []).some((m) => m.pertemuanId === pid);
+			if (exists) {
+				untrack(() => {
+					if (selectedPertemuanId !== pid) {
+						selectMeeting(pid);
+					}
+				});
+			}
+		}
+	});
+
 	function closeStudioView() {
+		const fromSource = $page.url.searchParams.get('from');
+		if (fromSource === 'dashboard') {
+			goto('/mentor');
+			return;
+		}
 		selectedPertemuanId = null;
 		selectedSubmissionId = null;
 		rosterSearchQuery = '';
