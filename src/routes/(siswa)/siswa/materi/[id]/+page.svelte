@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { toast } from '$lib/stores/toast';
+	import { fade, fly } from 'svelte/transition';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -454,8 +455,18 @@
 			</button>
 
 			{#if isMobileTocDrawerOpen}
-				<div class="mobile-toc-overlay" onclick={() => isMobileTocDrawerOpen = false} role="presentation">
-					<div class="mobile-toc-drawer" onclick={(e) => e.stopPropagation()} role="dialog">
+				<div
+					class="mobile-toc-overlay"
+					onclick={() => (isMobileTocDrawerOpen = false)}
+					transition:fade={{ duration: 180 }}
+					role="presentation"
+				>
+					<div
+						class="mobile-toc-drawer"
+						onclick={(e) => e.stopPropagation()}
+						transition:fly={{ y: 320, duration: 240 }}
+						role="dialog"
+					>
 						<div class="drawer-handle-bar"></div>
 						<div class="drawer-header flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
 							<h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
