@@ -439,7 +439,7 @@
 											<div class="student-name-box">
 												<span class="student-fullname">{student.fullName}</span>
 												<div class="student-sub-info">
-													<span class="student-nisn">@{student.username}</span>
+													<span class="student-nisn">{student.nisn ? `NISN: ${student.nisn}` : `@${student.username}`}</span>
 													<span class="rombel-pill">{student.kelasName}</span>
 												</div>
 											</div>
@@ -575,7 +575,7 @@
 		<FormDrawer
 			bind:open={drawerOpen}
 			title="Detail Timeline Presensi Siswa"
-			subtitle={selectedStudentForDrawer ? `${selectedStudentForDrawer.fullName} (@${selectedStudentForDrawer.username})` : ''}
+			subtitle={selectedStudentForDrawer ? `${selectedStudentForDrawer.fullName} (${selectedStudentForDrawer.nisn ? `NISN: ${selectedStudentForDrawer.nisn}` : `@${selectedStudentForDrawer.username}`})` : ''}
 		>
 			{#if selectedStudentForDrawer}
 				<!-- Student Info Card Header -->
@@ -584,7 +584,7 @@
 						<div>
 							<h4 class="font-extrabold text-slate-900 text-base">{selectedStudentForDrawer.fullName}</h4>
 							<div class="student-sub-info mt-1">
-								<span class="text-xs text-slate-500 font-mono">@{selectedStudentForDrawer.username}</span>
+								<span class="text-xs text-slate-500 font-mono">{selectedStudentForDrawer.nisn ? `NISN: ${selectedStudentForDrawer.nisn}` : `@${selectedStudentForDrawer.username}`}</span>
 								<span class="rombel-pill">{selectedStudentForDrawer.kelasName}</span>
 							</div>
 						</div>

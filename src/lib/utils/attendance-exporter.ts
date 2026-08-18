@@ -37,7 +37,8 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 	const matrixHeaders = [
 		'No',
 		'Nama Lengkap Siswa',
-		'NISN / Username',
+		'NISN',
+		'Username',
 		'Rombel Kelas',
 		...data.sessions.map((s) => `${s.title} (${s.sessionDate})`),
 		'Total Hadir',
@@ -57,6 +58,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		return [
 			idx + 1,
 			st.fullName,
+			st.nisn || '-',
 			st.username,
 			st.kelasName,
 			...sessionCols,
@@ -72,6 +74,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		{ wch: 5 },
 		{ wch: 25 },
 		{ wch: 15 },
+		{ wch: 15 },
 		{ wch: 12 },
 		...data.sessions.map(() => ({ wch: 22 })),
 		{ wch: 12 },
@@ -86,6 +89,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		'No',
 		'Waktu Recorded (WIB)',
 		'Nama Siswa',
+		'NISN',
 		'Username',
 		'Rombel',
 		'Pertemuan Sesi',
@@ -99,6 +103,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		idx + 1,
 		new Date(rl.recordedAt).toLocaleString('id-ID'),
 		rl.fullName,
+		rl.nisn || '-',
 		rl.username,
 		rl.kelasName,
 		rl.pertemuanTitle,
@@ -113,6 +118,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 		{ wch: 5 },
 		{ wch: 22 },
 		{ wch: 25 },
+		{ wch: 15 },
 		{ wch: 15 },
 		{ wch: 12 },
 		{ wch: 25 },
@@ -183,12 +189,13 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		'No',
 		'Nama Siswa',
 		'NISN',
+		'Username',
 		'Rombel',
 		'Total Hadir',
 		'Total Izin',
 		'Total Alpha',
 		'% Kehadiran',
-		'Status Risko'
+		'Status Risiko'
 	];
 
 	const tableBody = data.students.map((st, idx) => {
@@ -199,6 +206,7 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		return [
 			idx + 1,
 			st.fullName,
+			st.nisn || '-',
 			st.username,
 			st.kelasName,
 			st.totalHadir,
@@ -227,14 +235,15 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 		},
 		columnStyles: {
 			0: { halign: 'center', cellWidth: 10 },
-			1: { cellWidth: 55 },
-			2: { cellWidth: 30 },
+			1: { cellWidth: 50 },
+			2: { cellWidth: 25 },
 			3: { cellWidth: 25 },
-			4: { halign: 'center', cellWidth: 25 },
-			5: { halign: 'center', cellWidth: 25 },
-			6: { halign: 'center', cellWidth: 25 },
-			7: { halign: 'right', cellWidth: 25, fontStyle: 'bold' },
-			8: { halign: 'center', cellWidth: 30 }
+			4: { cellWidth: 22 },
+			5: { halign: 'center', cellWidth: 22 },
+			6: { halign: 'center', cellWidth: 22 },
+			7: { halign: 'center', cellWidth: 22 },
+			8: { halign: 'right', cellWidth: 22, fontStyle: 'bold' },
+			9: { halign: 'center', cellWidth: 25 }
 		},
 		alternateRowStyles: {
 			fillColor: [248, 250, 252]

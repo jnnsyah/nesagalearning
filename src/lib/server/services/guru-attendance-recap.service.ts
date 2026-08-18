@@ -46,6 +46,7 @@ export interface StudentAttendanceStatus {
 export interface StudentRecapRow {
 	userId: number;
 	username: string;
+	nisn: string | null;
 	fullName: string;
 	kelasName: string;
 	totalHadir: number;
@@ -59,6 +60,7 @@ export interface RecentAttendanceLogItem {
 	id: number;
 	userId: number;
 	username: string;
+	nisn: string | null;
 	fullName: string;
 	kelasName: string;
 	pertemuanId: number;
@@ -264,7 +266,7 @@ export const GuruAttendanceRecapService = {
 
 	/**
 	 * Fetch Tier 2: Detailed Rekap Presensi for a specific Class Instance
-	 * Guarantees 100% parity between Matrix table and Audit Logs.
+	 * Guarantees 100% parity between Matrix table and Audit Logs & selects genuine NISN column.
 	 */
 	async getRecapDetail(params: {
 		kelasInstanceId: number;
@@ -302,6 +304,7 @@ export const GuruAttendanceRecapService = {
 				.select({
 					userId: user.id,
 					username: user.username,
+					nisn: user.nisn,
 					fullName: user.fullName,
 					kelasInstanceId: keanggotaan.kelasInstanceId,
 					kelasName: kelasInstance.name
@@ -315,7 +318,8 @@ export const GuruAttendanceRecapService = {
 						searchQuery
 							? or(
 									like(user.fullName, `%${searchQuery}%`),
-									like(user.username, `%${searchQuery}%`)
+									like(user.username, `%${searchQuery}%`),
+									like(user.nisn, `%${searchQuery}%`)
 								)
 							: undefined
 					)
@@ -363,6 +367,7 @@ export const GuruAttendanceRecapService = {
 							id: attendance.id,
 							userId: attendance.userId,
 							username: user.username,
+							nisn: user.nisn,
 							fullName: user.fullName,
 							kelasName: kelasInstance.name,
 							pertemuanId: attendance.pertemuanId,
@@ -383,7 +388,8 @@ export const GuruAttendanceRecapService = {
 								searchQuery
 									? or(
 											like(user.fullName, `%${searchQuery}%`),
-											like(user.username, `%${searchQuery}%`)
+											like(user.username, `%${searchQuery}%`),
+											like(user.nisn, `%${searchQuery}%`)
 										)
 									: undefined
 							)
@@ -397,6 +403,7 @@ export const GuruAttendanceRecapService = {
 		const studentMap = new Map<number, {
 			userId: number;
 			username: string;
+			nisn: string | null;
 			fullName: string;
 			kelasInstanceId: number;
 			kelasName: string;
@@ -419,6 +426,7 @@ export const GuruAttendanceRecapService = {
 				.select({
 					userId: user.id,
 					username: user.username,
+					nisn: user.nisn,
 					fullName: user.fullName
 				})
 				.from(user)
@@ -428,7 +436,8 @@ export const GuruAttendanceRecapService = {
 						searchQuery
 							? or(
 									like(user.fullName, `%${searchQuery}%`),
-									like(user.username, `%${searchQuery}%`)
+									like(user.username, `%${searchQuery}%`),
+									like(user.nisn, `%${searchQuery}%`)
 								)
 							: undefined
 					)
@@ -438,6 +447,7 @@ export const GuruAttendanceRecapService = {
 				studentMap.set(u.userId, {
 					userId: u.userId,
 					username: u.username,
+					nisn: u.nisn,
 					fullName: u.fullName,
 					kelasInstanceId: classRow.id,
 					kelasName: classRow.name
@@ -457,7 +467,6 @@ export const GuruAttendanceRecapService = {
 		let manualCount = 0;
 
 		for (const rec of attendanceRecords) {
-			// Only count if student is in filtered enrolledStudents
 			if (studentMap.has(rec.userId)) {
 				const key = `${rec.userId}_${rec.pertemuanId}`;
 				recordMap.set(key, rec);
@@ -520,6 +529,7 @@ export const GuruAttendanceRecapService = {
 			return {
 				userId: st.userId,
 				username: st.username,
+				nisn: st.nisn || null,
 				fullName: st.fullName,
 				kelasName: st.kelasName,
 				totalHadir: stHadir,
@@ -557,6 +567,7 @@ export const GuruAttendanceRecapService = {
 			id: rl.id,
 			userId: rl.userId,
 			username: rl.username,
+			nisn: rl.nisn || null,
 			fullName: rl.fullName,
 			kelasName: rl.kelasName,
 			pertemuanId: rl.pertemuanId,
