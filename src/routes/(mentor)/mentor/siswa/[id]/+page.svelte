@@ -65,6 +65,10 @@
 		});
 	});
 
+	const isAnyFilterActive = $derived(
+		statusFilter !== 'all' || Boolean(startDateFilter) || Boolean(endDateFilter) || Boolean(searchQuery.trim())
+	);
+
 	// Derived Pagination Slices
 	const totalPages = $derived(Math.max(1, Math.ceil(filteredLogs.length / pageSize)));
 
@@ -324,8 +328,39 @@
 	{:else}
 		<section aria-label="Riwayat Presensi Sesi Pertemuan">
 			<!-- Filter Controls Grid Card -->
-			<div class="page-filter-card mb-6">
-				<div class="grid grid-cols-4 gap-4 mb-4">
+			<div class="page-filter-card mb-6 space-y-4">
+				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->
+				<div class="flex items-end justify-between gap-4">
+					<div class="flex-1">
+						<label for="page-search-input" class="filter-label">Cari Pertemuan / Topik</label>
+						<TextInput
+							id="page-search-input"
+							placeholder="Ketik judul sesi atau tanggal..."
+							bind:value={searchQuery}
+						/>
+					</div>
+
+					{#if isAnyFilterActive}
+						<div class="flex-shrink-0">
+							<button
+								type="button"
+								class="btn-reset-filters-active"
+								onclick={() => {
+									statusFilter = 'all';
+									startDateFilter = '';
+									endDateFilter = '';
+									searchQuery = '';
+								}}
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+								<span>Reset Filter</span>
+							</button>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Row 2: Status Filter, Dari Tanggal, Sampai Tanggal -->
+				<div class="grid grid-cols-3 gap-4">
 					<div>
 						<label for="page-status-filter" class="filter-label">Filter Status</label>
 						<CustomSelect
@@ -341,35 +376,6 @@
 						/>
 					</div>
 
-					<div class="col-span-2">
-						<label for="page-search-input" class="filter-label">Cari Pertemuan / Topik</label>
-						<TextInput
-							id="page-search-input"
-							placeholder="Ketik judul sesi atau tanggal..."
-							bind:value={searchQuery}
-						/>
-					</div>
-
-					<div>
-						<label for="reset-btn" class="filter-label opacity-0">Reset</label>
-						<button
-							type="button"
-							id="reset-btn"
-							class="btn-reset-filters"
-							disabled={statusFilter === 'all' && !startDateFilter && !endDateFilter && !searchQuery}
-							onclick={() => {
-								statusFilter = 'all';
-								startDateFilter = '';
-								endDateFilter = '';
-								searchQuery = '';
-							}}
-						>
-							Reset Filter
-						</button>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<DatePicker
 							id="page-start-date"
@@ -378,6 +384,7 @@
 							bind:value={startDateFilter}
 						/>
 					</div>
+
 					<div>
 						<DatePicker
 							id="page-end-date"
@@ -788,12 +795,15 @@
 		margin-bottom: 4px;
 	}
 
-	.btn-reset-filters {
-		width: 100%;
-		height: 40px;
-		background: #f1f5f9;
-		color: #475569;
-		border: 1px solid #cbd5e1;
+	.btn-reset-filters-active {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 38px;
+		padding: 0 16px;
+		background: #fee2e2;
+		color: #b91c1c;
+		border: 1px solid #fca5a5;
 		border-radius: 8px;
 		font-size: 13px;
 		font-weight: 700;
@@ -801,14 +811,9 @@
 		transition: all 0.15s ease;
 	}
 
-	.btn-reset-filters:hover:not(:disabled) {
-		background: #e2e8f0;
-		color: #0f172a;
-	}
-
-	.btn-reset-filters:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+	.btn-reset-filters-active:hover {
+		background: #fca5a5;
+		color: #7f1d1d;
 	}
 
 	/* Data Table */
