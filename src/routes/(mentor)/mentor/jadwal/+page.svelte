@@ -277,7 +277,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO HEADER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero mb-6">
+	<header class="page-hero mb-8">
 		<div class="hero-top-row">
 			<div>
 				<div class="hero-title-group">
@@ -304,7 +304,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     METRICS GRID
 	     ══════════════════════════════════════════════════════════ -->
-	<div class="stats-grid mb-6">
+	<div class="stats-grid mb-8">
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -367,7 +367,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     FILTER CARD (2-ROW STANDARD)
 	     ══════════════════════════════════════════════════════════ -->
-	<div class="page-filter-card mb-6">
+	<div class="page-filter-card mb-8">
 		<!-- Row 1: Search Bar & Conditional Reset -->
 		<div class="filter-row-top">
 			<div class="flex-1">
