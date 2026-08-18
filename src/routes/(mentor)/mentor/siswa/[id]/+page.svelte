@@ -328,9 +328,9 @@
 	{:else}
 		<section aria-label="Riwayat Presensi Sesi Pertemuan" class="pt-3">
 			<!-- Filter Controls Grid Card -->
-			<div class="page-filter-card mb-8 space-y-6">
+			<div class="page-filter-card mb-8">
 				<!-- Row 1: Search Bar (Left) & Reset Filter (Right when active) -->
-				<div class="flex items-end justify-between gap-4">
+				<div class="filter-row-top">
 					<div class="flex-1">
 						<TextInput
 							id="page-search-input"
@@ -360,7 +360,7 @@
 				</div>
 
 				<!-- Row 2: Status Filter, Dari Tanggal, Sampai Tanggal -->
-				<div class="pt-5 border-t border-slate-100 grid grid-cols-3 gap-4 items-start">
+				<div class="filter-row-bottom">
 					<div>
 						<CustomSelect
 							id="page-status-filter"
@@ -783,6 +783,23 @@
 		border-radius: 14px;
 		padding: 20px;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+	}
+
+	.filter-row-top {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 24px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		align-items: flex-start;
+		padding-top: 20px;
+		border-top: 1px solid #e2e8f0;
 	}
 
 	.filter-label {
