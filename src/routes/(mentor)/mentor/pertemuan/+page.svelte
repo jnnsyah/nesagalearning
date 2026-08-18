@@ -49,6 +49,37 @@
 	let formTaskTitle = $state('');
 	let formTaskDescription = $state('');
 	let formTaskSize = $state<string | number | null>('sedang');
+	let formMateriId = $state<number | string | null>('');
+
+	let filteredMateriOptions = $derived.by(() => {
+		if (!formSubPhaseId) return [];
+		const list = (data.materis || []).filter((m) => Number(m.subPhaseId) === Number(formSubPhaseId));
+		if (list.length > 0) {
+			return [
+				{ value: '', label: '-- Pilih Materi Sub-Fase --' },
+				...list.map((m) => ({ value: String(m.id), label: m.title }))
+			];
+		}
+		const currentSubPhase = (data.subPhases || []).find((sp) => Number(sp.id) === Number(formSubPhaseId));
+		const subTitle = currentSubPhase?.title || 'Sub-Fase';
+		return [
+			{ value: '', label: '-- Pilih Materi Sub-Fase --' },
+			{ value: 'materi-1', label: `${subTitle} — Modul Utama & Slide Teori` },
+			{ value: 'materi-2', label: `${subTitle} — Hands-on Lab & Latihan Coding` },
+			{ value: 'materi-3', label: `${subTitle} — Case Study & Project Review` }
+		];
+	});
+
+	$effect(() => {
+		if (formMateriId) {
+			const selectedOption = filteredMateriOptions.find((opt) => String(opt.value) === String(formMateriId));
+			if (selectedOption && selectedOption.value) {
+				untrack(() => {
+					formTitle = selectedOption.label;
+				});
+			}
+		}
+	});
 
 	let isUploading = $state(false);
 	let isDragging = $state(false);
@@ -126,6 +157,7 @@
 		formKelasInstanceId = data.kelases[0]?.id ?? '';
 		formTrackId = data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
 		formSubPhaseId = data.subPhases[0]?.id ?? '';
+		formMateriId = '';
 		formTitle = '';
 		formActivityType = 'teori';
 		formSessionDate = new Date().toISOString().slice(0, 10);
@@ -922,6 +954,17 @@
 								bind:value={formSubPhaseId}
 								options={formSubPhaseOptions}
 								placeholder="-- Pilih Sub-Fase --"
+							/>
+						</div>
+
+						<div class="mt-4">
+							<CustomSelect
+								id="form-materi-select"
+								label="Pilih Materi Kurikulum (Sub-Fase)"
+								bind:value={formMateriId}
+								options={filteredMateriOptions}
+								placeholder="-- Pilih Materi Kurikulum --"
+								searchable={false}
 							/>
 						</div>
 

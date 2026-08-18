@@ -5,7 +5,7 @@ import { createPertemuanSchema } from '$lib/validators/pertemuan';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { kelasInstance } from '$lib/server/db/schema/academic';
-import { subPhase, phase, curriculumTrack } from '$lib/server/db/schema/curriculum';
+import { subPhase, phase, curriculumTrack, materi } from '$lib/server/db/schema/curriculum';
 
 import { OperationalMasterAdminService } from '$lib/server/services/operational-master-admin.service';
 
@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/login');
 	}
 
-	const [meetings, kelases, subPhases, tracks, masterData] = await Promise.all([
+	const [meetings, kelases, subPhases, tracks, masterData, materis] = await Promise.all([
 		PertemuanService.getAllPertemuan(),
 		db.select({
 			id: kelasInstance.id,
@@ -34,7 +34,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 			id: curriculumTrack.id,
 			title: curriculumTrack.title
 		}).from(curriculumTrack),
-		OperationalMasterAdminService.getOperationalMasterData()
+		OperationalMasterAdminService.getOperationalMasterData(),
+		db.select({
+			id: materi.id,
+			subPhaseId: materi.subPhaseId,
+			title: materi.title,
+			content: materi.content
+		}).from(materi)
 	]);
 
 	return {
@@ -42,6 +48,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		kelases,
 		subPhases,
 		tracks,
+		materis,
 		activityTypesOptions: masterData.activityTypes.map((a) => ({ value: a.code, label: a.name })),
 		roomsOptions: masterData.rooms.map((r) => ({ value: r.name, label: r.name }))
 	};

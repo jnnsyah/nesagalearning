@@ -8,6 +8,26 @@
 	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
 	let formTrackId = $state<number | string | null>(data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '');
 	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
+	let formMateriId = $state<number | string | null>('');
+
+	let filteredMateriOptions = $derived.by(() => {
+		if (!formSubPhaseId) return [];
+		const list = (data.materis || []).filter((m) => Number(m.subPhaseId) === Number(formSubPhaseId));
+		if (list.length > 0) {
+			return [
+				{ value: '', label: '-- Pilih Materi Sub-Fase --' },
+				...list.map((m) => ({ value: String(m.id), label: m.title }))
+			];
+		}
+		const currentSubPhase = (data.subPhases || []).find((sp) => Number(sp.id) === Number(formSubPhaseId));
+		const subTitle = currentSubPhase?.title || 'Sub-Fase';
+		return [
+			{ value: '', label: '-- Pilih Materi Sub-Fase --' },
+			{ value: 'materi-1', label: `${subTitle} — Modul Utama & Slide Teori` },
+			{ value: 'materi-2', label: `${subTitle} — Hands-on Lab & Latihan Coding` },
+			{ value: 'materi-3', label: `${subTitle} — Case Study & Project Review` }
+		];
+	});
 
 	function findDefaultLab3Room(rooms: any[]): string {
 		if (!rooms || rooms.length === 0) return 'Lab 3';
@@ -180,6 +200,17 @@
 						error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
 					/>
 				</div>
+			</div>
+
+			<div class="mt-4">
+				<CustomSelect
+					id="materi-select-baru"
+					label="Pilih Materi Kurikulum (Sub-Fase)"
+					bind:value={formMateriId}
+					options={filteredMateriOptions}
+					placeholder="-- Pilih Materi Kurikulum --"
+					searchable={false}
+				/>
 			</div>
 		</div>
 
