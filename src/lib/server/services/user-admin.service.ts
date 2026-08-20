@@ -237,7 +237,7 @@ export class UserAdminService {
 			.from(userTable)
 			.where(eq(userTable.username, cleanUsername));
 
-		if (existingUsername && existingUsername.id !== input.id) {
+		if (existingUsername && Number(existingUsername.id) !== Number(input.id)) {
 			throw new Error(`Username '${cleanUsername}' sudah digunakan oleh akun lain.`);
 		}
 
@@ -248,7 +248,7 @@ export class UserAdminService {
 				.from(userTable)
 				.where(eq(userTable.nisn, cleanNisn));
 
-			if (existingNisn && existingNisn.id !== input.id) {
+			if (existingNisn && Number(existingNisn.id) !== Number(input.id)) {
 				throw new Error(`NISN '${cleanNisn}' sudah terdaftar untuk akun lain.`);
 			}
 		}
@@ -260,7 +260,7 @@ export class UserAdminService {
 				.from(userTable)
 				.where(eq(userTable.email, cleanEmail));
 
-			if (existingEmail && existingEmail.id !== input.id) {
+			if (existingEmail && Number(existingEmail.id) !== Number(input.id)) {
 				throw new Error(`Email '${cleanEmail}' sudah digunakan oleh akun lain.`);
 			}
 		}

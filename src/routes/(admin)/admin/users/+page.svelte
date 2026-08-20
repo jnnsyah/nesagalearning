@@ -657,6 +657,7 @@
 			>
 				{#if editingUser}
 					<input type="hidden" name="id" value={editingUser.id} />
+					<input type="hidden" name="username" value={formUsername} />
 				{/if}
 
 				<!-- Section 1: Hak Akses & Peran -->
