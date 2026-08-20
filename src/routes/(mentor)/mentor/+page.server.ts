@@ -2,9 +2,9 @@ import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { pertemuan } from '$lib/server/db/schema/session';
-import { submission } from '$lib/server/db/schema/task';
-import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
-import { eq, gte, desc, asc, count, inArray } from 'drizzle-orm';
+import { submission, task } from '$lib/server/db/schema/task';
+import { keanggotaan, kelasInstance, mentorAssignment } from '$lib/server/db/schema/academic';
+import { eq, gte, desc, asc, count, inArray, and } from 'drizzle-orm';
 import { SubmissionService } from '$lib/server/services/submission.service';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -12,7 +12,30 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/login');
 	}
 
+	const mentorUserId = Number(locals.user.id);
 	const todayIsoStr = new Date().toISOString().slice(0, 10);
+
+	// Fetch class IDs strictly assigned to this mentor
+	const assignedClasses = await db
+		.select({ kelasInstanceId: mentorAssignment.kelasInstanceId })
+		.from(mentorAssignment)
+		.where(eq(mentorAssignment.userId, mentorUserId));
+
+	const assignedClassIds = assignedClasses.map((c) => c.kelasInstanceId);
+
+	// If mentor is unassigned, strictly return zeroed stats
+	if (assignedClassIds.length === 0) {
+		return {
+			user: locals.user,
+			stats: {
+				totalStudents: 0,
+				pendingSubmissions: 0,
+				nextSession: null
+			},
+			recentMeetings: [],
+			meetingSummaries: []
+		};
+	}
 
 	const [
 		totalStudentsRes,
@@ -21,17 +44,19 @@ export const load: PageServerLoad = async ({ locals }) => {
 		recentMeetingsRes,
 		meetingSummaries
 	] = await Promise.all([
-		// 1. Total Active Students
+		// 1. Total Active Students in assigned classes
 		db.select({ count: count() })
 			.from(keanggotaan)
-			.where(eq(keanggotaan.status, 'aktif')),
+			.where(and(inArray(keanggotaan.kelasInstanceId, assignedClassIds), eq(keanggotaan.status, 'aktif'))),
 
-		// 2. Pending & Revisi Submissions Count
-		db.select({ count: count() })
+		// 2. Pending & Revisi Submissions Count in assigned classes
+		db.select({ count: count(submission.id) })
 			.from(submission)
-			.where(inArray(submission.status, ['pending', 'revisi'])),
+			.innerJoin(task, eq(submission.taskId, task.id))
+			.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
+			.where(and(inArray(pertemuan.kelasInstanceId, assignedClassIds), inArray(submission.status, ['pending', 'revisi']))),
 
-		// 3. Next Upcoming / Live Session
+		// 3. Next Upcoming / Live Session in assigned classes
 		db.select({
 			id: pertemuan.id,
 			title: pertemuan.title,
@@ -43,11 +68,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		})
 		.from(pertemuan)
 		.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
-		.where(gte(pertemuan.sessionDate, todayIsoStr))
+		.where(and(inArray(pertemuan.kelasInstanceId, assignedClassIds), gte(pertemuan.sessionDate, todayIsoStr)))
 		.orderBy(asc(pertemuan.sessionDate), asc(pertemuan.startTime))
 		.limit(1),
 
-		// 4. Recent 5 Meetings
+		// 4. Recent 5 Meetings in assigned classes
 		db.select({
 			id: pertemuan.id,
 			title: pertemuan.title,
@@ -59,6 +84,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		})
 		.from(pertemuan)
 		.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
+		.where(inArray(pertemuan.kelasInstanceId, assignedClassIds))
 		.orderBy(desc(pertemuan.sessionDate), desc(pertemuan.startTime))
 		.limit(5),
 

@@ -142,7 +142,7 @@ export const MentorStudentRosterService = {
 	 * Get list of classes assigned to mentor in academic year
 	 */
 	async getMentorClasses(mentorUserId: number, tahunAjaranId?: number): Promise<MentorClassOption[]> {
-		const assignedRows = await db
+		return await db
 			.select({
 				id: kelasInstance.id,
 				name: kelasInstance.name,
@@ -158,20 +158,6 @@ export const MentorStudentRosterService = {
 					tahunAjaranId ? eq(kelasInstance.tahunAjaranId, tahunAjaranId) : undefined
 				)
 			)
-			.orderBy(tingkat.levelOrder, kelasInstance.name);
-
-		if (assignedRows.length > 0) return assignedRows;
-
-		return await db
-			.select({
-				id: kelasInstance.id,
-				name: kelasInstance.name,
-				tingkatName: tingkat.name,
-				tahunAjaranId: kelasInstance.tahunAjaranId
-			})
-			.from(kelasInstance)
-			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
-			.where(tahunAjaranId ? eq(kelasInstance.tahunAjaranId, tahunAjaranId) : undefined)
 			.orderBy(tingkat.levelOrder, kelasInstance.name);
 	},
 
