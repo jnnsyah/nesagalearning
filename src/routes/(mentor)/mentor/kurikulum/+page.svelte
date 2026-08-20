@@ -279,22 +279,29 @@
 					<!-- Card top row: id + status toggle -->
 					<div class="track-card__top">
 						<span class="track-id">TRK-{String(track.id).padStart(3, '0')} · {track.tingkatName}</span>
-						<form method="POST" action="?/togglePublish" use:enhance>
+						<form method="POST" action="?/togglePublish" use:enhance={() => {
+							return async ({ result, update }) => {
+								await update();
+								if (result.type === 'success') {
+									toast.success((result.data as any)?.message || 'Status publikasi diperbarui');
+								}
+							};
+						}}>
 							<input type="hidden" name="id" value={track.id} />
 							<input type="hidden" name="isPublished" value={track.isPublished} />
 							<button
 								type="submit"
-								class="status-toggle"
-								class:status-toggle--pub={track.isPublished}
-								title="Klik untuk ubah status publikasi"
+								class="switch-toggle-pill"
+								class:switch-toggle-pill--active={track.isPublished}
+								title="Klik untuk ubah status publikasi (Published / Draft)"
+								aria-label="Toggle status publikasi track {track.title}"
 							>
-								{#if track.isPublished}
-									<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-									Published
-								{:else}
-									<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-									Draft
-								{/if}
+								<span class="switch-toggle-track">
+									<span class="switch-toggle-thumb" class:switch-toggle-thumb--active={track.isPublished}></span>
+								</span>
+								<span class="switch-toggle-label">
+									{track.isPublished ? 'Published' : 'Draft'}
+								</span>
 							</button>
 						</form>
 					</div>
@@ -950,32 +957,68 @@
 		letter-spacing: 0.03em;
 	}
 
-	/* Status toggle button */
-	.status-toggle {
+	/* Switch toggle pill button */
+	.switch-toggle-pill {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		padding: 4px 10px;
-		border-radius: var(--radius-full);
-		border: 1.5px solid var(--amber-border);
-		background: var(--amber-dim);
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 800;
-		color: #b45309;
+		gap: 7px;
+		padding: 3px 9px 3px 4px;
+		background: #f1f5f9;
+		border: 1px solid #cbd5e1;
+		border-radius: 9999px;
 		cursor: pointer;
-		letter-spacing: 0.02em;
-		transition: all 150ms ease;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		color: #64748b;
+		transition: all 200ms ease;
+		outline: none;
 	}
 
-	.status-toggle--pub {
-		border-color: var(--green-border);
-		background: var(--green-dim);
+	.switch-toggle-pill:hover {
+		border-color: #94a3b8;
+		background: #e2e8f0;
+	}
+
+	.switch-toggle-pill--active {
+		background: #ecfdf5;
+		border-color: #a7f3d0;
 		color: #047857;
 	}
 
-	.status-toggle:hover {
-		transform: scale(1.04);
+	.switch-toggle-pill--active:hover {
+		background: #d1fae5;
+		border-color: #6ee7b7;
+	}
+
+	.switch-toggle-track {
+		width: 30px;
+		height: 16px;
+		border-radius: 9999px;
+		background: #cbd5e1;
+		position: relative;
+		padding: 2px;
+		transition: background 200ms ease;
+		display: flex;
+		align-items: center;
+	}
+
+	.switch-toggle-pill--active .switch-toggle-track {
+		background: #10b981;
+	}
+
+	.switch-toggle-thumb {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: #ffffff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+		transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+		transform: translateX(0);
+	}
+
+	.switch-toggle-thumb--active {
+		transform: translateX(14px);
 	}
 
 	.track-card__title {
