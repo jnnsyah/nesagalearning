@@ -409,7 +409,7 @@
 				</div>
 			</div>
 
-			<div class="stat-card">
+			<a href="/siswa/badges" class="stat-card stat-card--link" title="Lihat Halaman Lencana & Prestasi">
 				<div class="stat-icon-box icon-badges">
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="8" r="7"/>
@@ -417,10 +417,15 @@
 					</svg>
 				</div>
 				<div class="stat-info">
-					<span class="stat-value">{stats.earnedBadges?.length ?? 0}</span>
+					<span class="stat-value flex items-center gap-1">
+						{stats.earnedBadges?.length ?? 0}
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="stat-link-arrow">
+							<polyline points="9 18 15 12 9 6"/>
+						</svg>
+					</span>
 					<span class="stat-label">Lencana Diterima</span>
 				</div>
-			</div>
+			</a>
 
 			<div class="stat-card">
 				<div class="stat-icon-box icon-tasks">
@@ -778,14 +783,38 @@
 
 							{#if stats.earnedBadges && stats.earnedBadges.length > 0}
 								<div class="badges-section">
-									<h3 class="sub-title">Lencana Prestasi Saya</h3>
+									<div class="badges-section-header">
+										<h3 class="sub-title" style="margin: 0;">Lencana Prestasi Saya</h3>
+										<a href="/siswa/badges" class="badges-see-all-btn">
+											<span>Lihat Semua Badges</span>
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+												<polyline points="9 18 15 12 9 6" />
+											</svg>
+										</a>
+									</div>
 									<div class="badges-flex">
 										{#each stats.earnedBadges as b}
-											<div class="badge-item" title={b.description || b.name}>
+											<a href="/siswa/badges" class="badge-item badge-item--link" title={b.description || b.name}>
 												<span class="badge-icon">🏅</span>
 												<span class="badge-name">{b.name}</span>
-											</div>
+											</a>
 										{/each}
+									</div>
+								</div>
+							{:else if user.role === 'siswa'}
+								<div class="badges-section">
+									<div class="badges-section-header">
+										<h3 class="sub-title" style="margin: 0;">Lencana Prestasi Saya</h3>
+										<a href="/siswa/badges" class="badges-see-all-btn">
+											<span>Lihat Katalog Lencana</span>
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+												<polyline points="9 18 15 12 9 6" />
+											</svg>
+										</a>
+									</div>
+									<div class="badges-empty-box">
+										<p class="text-xs text-slate-500 m-0">Belum ada lencana yang diraih. Selesaikan tugas dan dapatkan poin untuk membuka lencana!</p>
+										<a href="/siswa/badges" class="badges-empty-btn">Jelajahi Lencana &rsaquo;</a>
 									</div>
 								</div>
 							{/if}
@@ -1502,6 +1531,89 @@
 	.stat-card:hover {
 		transform: translateY(-2px);
 		box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+	}
+
+	.stat-card--link {
+		text-decoration: none;
+		border-color: #fde047;
+		background: #fffdf5;
+	}
+
+	.stat-card--link:hover {
+		border-color: #ca8a04;
+		background: #fef9c3;
+	}
+
+	.stat-link-arrow {
+		color: #ca8a04;
+		transition: transform 150ms ease;
+	}
+
+	.stat-card--link:hover .stat-link-arrow {
+		transform: translateX(2px);
+	}
+
+	.badges-section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.badges-see-all-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #4f46e5;
+		text-decoration: none;
+		transition: color 150ms ease;
+	}
+
+	.badges-see-all-btn:hover {
+		color: #3730a3;
+		text-decoration: underline;
+	}
+
+	.badge-item--link {
+		text-decoration: none;
+		transition: transform 150ms ease, box-shadow 150ms ease;
+	}
+
+	.badge-item--link:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-sm, 0 2px 6px rgba(0,0,0,0.1));
+	}
+
+	.badges-empty-box {
+		padding: 14px;
+		background: #fffdf5;
+		border: 1px dashed #fde047;
+		border-radius: var(--radius-md, 8px);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.badges-empty-btn {
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #ffffff;
+		background: #d97706;
+		padding: 6px 12px;
+		border-radius: 6px;
+		text-decoration: none;
+		transition: background 150ms ease;
+	}
+
+	.badges-empty-btn:hover {
+		background: #b45309;
 	}
 
 	.stat-icon-box {
