@@ -202,10 +202,30 @@ export class SubmissionService {
 							kelasInstanceId
 						);
 					}
-				} catch (awardErr) {
-					console.error('Warning: Failed to award task points/progress check:', awardErr);
+				} catch (err) {
+					console.error('Failed to process task points/progress during review:', err);
 				}
 			}
+		}
+
+		// 4. Send in-app notification to student
+		try {
+			const { NotificationService } = await import('./notification.service');
+			const title = status === 'approved' ? 'Tugas Disetujui! 🎉' : 'Permintaan Revisi Tugas 📝';
+			const message = feedback
+				? `Catatan Mentor: "${feedback}"`
+				: (status === 'approved' ? 'Tugas Anda telah diverifikasi dan poin berhasil ditambahkan.' : 'Mohon periksa kembali dan kumpulkan ulang submisi tugas Anda.');
+
+			await NotificationService.sendNotification({
+				userId: subRecord.userId,
+				type: 'submission_reviewed',
+				title,
+				message,
+				referenceId: subRecord.id,
+				referenceType: 'submission'
+			});
+		} catch (notifErr) {
+			console.warn('Failed to send submission notification:', notifErr);
 		}
 
 		return updated;

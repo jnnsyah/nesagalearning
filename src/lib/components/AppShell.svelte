@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { NavigationRegistry } from '$lib/navigation/registry';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import NotificationBell from '$lib/components/notifications/NotificationBell.svelte';
 	import type { Snippet } from 'svelte';
 
 	interface User {
@@ -391,6 +392,7 @@
 			</div>
 
 			<div class="topbar-right">
+				<NotificationBell />
 				<a href="/{role}/profile" class="user-pill" title="Lihat Profil Saya">
 					<div class="user-pill-avatar">
 						{#if currentUser?.avatarUrl}
