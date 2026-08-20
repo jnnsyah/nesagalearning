@@ -34,7 +34,9 @@ export async function seed() {
 			email: 'admin@nesaga.sch.id',
 			passwordHash,
 			fullName: 'Administrator Nesaga',
-			role: 'admin'
+			role: 'admin',
+			isEmailVerified: true,
+			isActive: true
 		})
 		.onConflictDoNothing()
 		.returning();
@@ -46,7 +48,9 @@ export async function seed() {
 			email: 'guru@nesaga.sch.id',
 			passwordHash,
 			fullName: 'Pak Guru TKJ',
-			role: 'guru'
+			role: 'guru',
+			isEmailVerified: true,
+			isActive: true
 		})
 		.onConflictDoNothing()
 		.returning();
@@ -58,7 +62,9 @@ export async function seed() {
 			email: 'mentor@nesaga.sch.id',
 			passwordHash,
 			fullName: 'Kak Mentor Alumnus',
-			role: 'mentor'
+			role: 'mentor',
+			isEmailVerified: true,
+			isActive: true
 		})
 		.onConflictDoNothing()
 		.returning();
@@ -70,7 +76,9 @@ export async function seed() {
 			email: 'budi@siswa.nesaga.sch.id',
 			passwordHash,
 			fullName: 'Budi Santoso',
-			role: 'siswa'
+			role: 'siswa',
+			isEmailVerified: true,
+			isActive: true
 		})
 		.onConflictDoNothing()
 		.returning();
@@ -82,7 +90,9 @@ export async function seed() {
 			email: 'siti@siswa.nesaga.sch.id',
 			passwordHash,
 			fullName: 'Siti Rahma',
-			role: 'siswa'
+			role: 'siswa',
+			isEmailVerified: true,
+			isActive: true
 		})
 		.onConflictDoNothing()
 		.returning();
