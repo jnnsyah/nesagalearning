@@ -980,10 +980,12 @@ let rosterSortOptions = [
 								return async ({ result, update }) => {
 									isSubmitting = false;
 									if (result.type === 'success') {
-										toast.success(result.data?.message || 'Penilaian tugas berhasil disimpan.');
-										isStudioOpen = false;
+										const msg = (result.data as any)?.message || 'Penilaian tugas berhasil disimpan.';
+										toast.success(msg);
+										closeStudioView();
 									} else if (result.type === 'failure') {
-										toast.error(result.data?.message || 'Gagal menyimpan penilaian tugas.');
+										const msg = (result.data as any)?.message || 'Gagal menyimpan penilaian tugas.';
+										toast.error(msg);
 									}
 									await update();
 								};
