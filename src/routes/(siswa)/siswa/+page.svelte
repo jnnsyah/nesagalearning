@@ -28,7 +28,7 @@
 				<div class="hero-user-info">
 					<div class="avatar-hero">
 						{#if data.user?.avatarUrl}
-							<img src={data.user.avatarUrl} alt={data.user.fullName} class="avatar-img" />
+							<img src={data.user.avatarUrl} alt={data.user.fullName} class="avatar-img" referrerpolicy="no-referrer" />
 						{:else}
 							{data.user?.fullName?.charAt(0) ?? 'S'}
 						{/if}
@@ -64,8 +64,51 @@
 				</svg>
 				<span>Terus belajar &amp; berkembang bersama Nesaga Learning Community</span>
 			</div>
-		</div>
 	</section>
+
+	<!-- Completeness Warning Banner -->
+	{#if data.completeness?.isIncomplete}
+		<section class="completeness-alert-card mt-4">
+			<div class="completeness-alert-inner">
+				<div class="alert-icon-box">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+						<line x1="12" y1="9" x2="12" y2="13"/>
+						<line x1="12" y1="17" x2="12.01" y2="17"/>
+					</svg>
+				</div>
+				<div class="alert-content">
+					<div class="alert-badge-tag">TINDAKAN DIPERLUKAN</div>
+					<h3 class="alert-title">Data Akun Siswa Belum Lengkap!</h3>
+					<ul class="alert-reasons-list">
+						{#if data.completeness.isNisnMissing}
+							<li>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+								<span><strong>NISN Belum Terisi:</strong> Masukkan 10 digit Nomor Induk Siswa Nasional di menu profil.</span>
+							</li>
+						{/if}
+						{#if data.completeness.isClassUnassigned}
+							<li>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+								<span><strong>Belum Ada Kelas:</strong> Hubungi Admin atau Guru untuk didaftarkan ke Kelas Aktif.</span>
+							</li>
+						{/if}
+					</ul>
+				</div>
+				<div class="alert-actions">
+					{#if data.completeness.isNisnMissing}
+						<a href="/siswa/profile?tab=edit" class="btn-complete-data">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+								<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+							</svg>
+							<span>Lengkapi NISN Sekarang</span>
+						</a>
+					{/if}
+				</div>
+			</div>
+		</section>
+	{/if}
 
 	<!-- Key Metrics Stats Grid -->
 	<section class="stats-grid mt-5">
@@ -253,10 +296,13 @@
 
 <style>
 	.page-container {
-		padding: 24px 28px 60px;
+		padding: 24px 32px 60px;
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
 	}
 
 	/* Welcome banner hero card */
@@ -264,7 +310,7 @@
 		position: relative;
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-xl);
+		border-radius: var(--radius-xl, 16px);
 		overflow: hidden;
 		box-shadow: var(--shadow-sm);
 	}
@@ -278,17 +324,17 @@
 	.welcome-banner__inner {
 		position: relative;
 		z-index: 1;
-		padding: 24px;
+		padding: 24px 28px;
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 18px;
 	}
 
 	.hero-content-flex {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 20px;
+		gap: 24px;
 	}
 
 	.hero-user-info {
@@ -325,14 +371,14 @@
 	.user-details {
 		display: flex;
 		flex-direction: column;
-		gap: 3px;
+		gap: 4px;
 		min-width: 0;
 	}
 
 	.meta-pills-row {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
 		flex-wrap: wrap;
 	}
 
@@ -343,7 +389,7 @@
 		color: #15803d;
 		background: #dcfce7;
 		border: 1px solid #86efac;
-		padding: 2px 8px;
+		padding: 3px 10px;
 		border-radius: 9999px;
 	}
 
@@ -353,7 +399,7 @@
 		font-weight: 700;
 		color: #4338ca;
 		background: #e0e7ff;
-		padding: 2px 8px;
+		padding: 3px 10px;
 		border-radius: 6px;
 	}
 
@@ -387,12 +433,12 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		padding: 10px 18px;
+		padding: 11px 20px;
 		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 		color: #ffffff;
-		border-radius: 10px;
+		border-radius: 12px;
 		font-family: var(--font-macro);
-		font-size: 12.5px;
+		font-size: 13px;
 		font-weight: 700;
 		text-decoration: none;
 		box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
@@ -423,17 +469,17 @@
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 16px;
+		gap: 20px;
 	}
 
 	.stat-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 18px;
+		border-radius: var(--radius-lg, 12px);
+		padding: 20px;
 		display: flex;
 		align-items: center;
-		gap: 14px;
+		gap: 16px;
 		box-shadow: var(--shadow-sm);
 		transition: transform 200ms ease, box-shadow 200ms ease;
 	}
@@ -444,9 +490,9 @@
 	}
 
 	.stat-card__icon-wrap {
-		width: 44px;
-		height: 44px;
-		border-radius: var(--radius-md);
+		width: 48px;
+		height: 48px;
+		border-radius: 12px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -467,7 +513,7 @@
 
 	.stat-card__value {
 		font-family: var(--font-macro);
-		font-size: 1.9rem;
+		font-size: 2rem;
 		font-weight: 800;
 		color: var(--text-primary);
 		line-height: 1;
@@ -486,7 +532,7 @@
 	.two-col-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 20px;
+		gap: 24px;
 	}
 
 	.btn-kerjakan-sm {
@@ -494,16 +540,16 @@
 		align-items: center;
 		justify-content: center;
 		gap: 4px;
-		padding: 6px 12px;
+		padding: 7px 14px;
 		background: #4f46e5;
 		color: #ffffff;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-family: var(--font-macro);
-		font-size: 11.5px;
+		font-size: 12px;
 		font-weight: 700;
 		text-decoration: none;
 		transition: background 150ms ease;
-		min-height: 32px;
+		min-height: 34px;
 	}
 
 	.btn-kerjakan-sm:hover {
@@ -516,7 +562,7 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding: 32px 20px;
+		padding: 36px 24px;
 	}
 
 	.empty-icon-wrap {
@@ -546,17 +592,17 @@
 
 	/* Phase list */
 	.phase-list {
-		padding: 12px;
+		padding: 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 12px;
 	}
 
 	.phase-item {
 		background: var(--bg-inset);
 		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		padding: 12px 14px;
+		border-radius: var(--radius-md, 10px);
+		padding: 14px 16px;
 		transition: background 200ms ease, border-color 200ms ease;
 	}
 
@@ -581,7 +627,7 @@
 	}
 
 	.phase-name {
-		font-size: 12.5px;
+		font-size: 13px;
 		font-weight: 700;
 		color: var(--text-primary);
 		margin-top: 2px;
@@ -609,36 +655,43 @@
 		margin-top: 6px;
 	}
 
-	/* Mobile Responsiveness Enhancements (< 640px & < 768px) */
-	@media (max-width: 768px) {
+	/* Mobile Responsiveness Enhancements (< 1024px & < 640px) */
+	@media (max-width: 1023px) {
+		.page-container {
+			padding: 20px 24px 60px;
+			gap: 20px;
+		}
+
 		.two-col-grid {
 			grid-template-columns: 1fr;
+			gap: 20px;
 		}
 	}
 
 	@media (max-width: 640px) {
 		.page-container {
-			padding: 16px 12px 80px;
+			padding: 16px 16px 84px;
+			gap: 16px;
 		}
 
 		.welcome-banner__inner {
-			padding: 16px;
+			padding: 18px 16px;
 			gap: 14px;
 		}
 
 		.hero-content-flex {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 14px;
+			gap: 16px;
 		}
 
 		.hero-user-info {
-			gap: 12px;
+			gap: 14px;
 		}
 
 		.avatar-hero {
-			width: 52px;
-			height: 52px;
+			width: 54px;
+			height: 54px;
 			font-size: 1.4rem;
 		}
 
@@ -648,15 +701,15 @@
 
 		.btn-scan-hero {
 			width: 100%;
-			padding: 10px 14px;
-			font-size: 12px;
-			min-height: 42px;
+			padding: 11px 16px;
+			font-size: 12.5px;
+			min-height: 44px;
 		}
 
 		.hero-quote-bar {
 			width: 100%;
-			font-size: 11px;
-			padding: 6px 10px;
+			font-size: 11.5px;
+			padding: 8px 12px;
 		}
 
 		.stats-grid {
@@ -665,7 +718,7 @@
 		}
 
 		.stat-card {
-			padding: 16px 14px;
+			padding: 16px;
 			gap: 14px;
 		}
 
@@ -681,5 +734,118 @@
 		.stat-card__label {
 			font-size: 12px;
 		}
+	}
+	/* Completeness Alert Card */
+	.completeness-alert-card {
+		background: linear-gradient(135deg, #fffdf5 0%, #fffbe6 100%);
+		border: 1.5px solid #fde047;
+		border-radius: var(--radius-lg, 12px);
+		padding: 18px 20px;
+		box-shadow: 0 4px 16px rgba(234, 179, 8, 0.12);
+	}
+
+	.completeness-alert-inner {
+		display: flex;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	@media (max-width: 640px) {
+		.completeness-alert-inner {
+			flex-direction: column;
+		}
+	}
+
+	.alert-icon-box {
+		width: 42px;
+		height: 42px;
+		border-radius: 10px;
+		background: #fef08a;
+		color: #a16207;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.alert-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.alert-badge-tag {
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		font-weight: 800;
+		color: #ca8a04;
+		letter-spacing: 0.04em;
+	}
+
+	.alert-title {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: #713f12;
+		margin: 2px 0 8px;
+	}
+
+	.alert-reasons-list {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 12.5px;
+		color: #854d0e;
+	}
+
+	.alert-reasons-list li {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		line-height: 1.4;
+	}
+
+	.alert-reasons-list svg {
+		color: #d97706;
+		flex-shrink: 0;
+		margin-top: 2px;
+	}
+
+	.alert-actions {
+		display: flex;
+		align-items: center;
+		align-self: center;
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 640px) {
+		.alert-actions {
+			width: 100%;
+			margin-top: 6px;
+		}
+	}
+
+	.btn-complete-data {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: linear-gradient(135deg, #d97706, #ca8a04);
+		color: #ffffff;
+		border-radius: 10px;
+		font-size: 13px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-complete-data:hover {
+		background: linear-gradient(135deg, #b45309, #d97706);
+		transform: translateY(-1px);
 	}
 </style>

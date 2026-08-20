@@ -11,7 +11,7 @@ import { pointLog, streakCounter, badge, badgeType } from '../db/schema/gamifica
 import { task, submission } from '../db/schema/task';
 import { attendance, pertemuan } from '../db/schema/session';
 import { avatar as avatarTable } from '../db/schema/system';
-import { eq, and, sum, count, sql, desc } from 'drizzle-orm';
+import { eq, and, sum, count, sql, desc, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { PointsService } from './points.service';
 import { BadgeEvaluatorService } from './badge-evaluator.service';
@@ -153,9 +153,11 @@ export const ProfileService = {
 			// 0. Auto-sync missing point logs & evaluate badge triggers
 			await this.syncApprovedTaskPoints(userId);
 			await BadgeEvaluatorService.evaluateAndAwardBadges(userId);
-			// 1. Class membership details
-			const [membership] = await db
+
+			// 1. Active Class membership details
+			const [activeMembership] = await db
 				.select({
+					kelasInstanceId: keanggotaan.kelasInstanceId,
 					kelasName: kelasInstance.name,
 					tahunAjaranName: tahunAjaran.name,
 					trackName: curriculumTrack.title
@@ -164,35 +166,96 @@ export const ProfileService = {
 				.innerJoin(kelasInstance, eq(keanggotaan.kelasInstanceId, kelasInstance.id))
 				.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
 				.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
-				.where(eq(keanggotaan.userId, userId));
+				.where(and(eq(keanggotaan.userId, userId), eq(keanggotaan.status, 'aktif')));
 
-			if (membership) {
-				stats.kelasName = membership.kelasName;
-				stats.tahunAjaranName = membership.tahunAjaranName;
-				stats.trackName = membership.trackName;
+			if (activeMembership) {
+				stats.kelasName = activeMembership.kelasName;
+				stats.tahunAjaranName = activeMembership.tahunAjaranName;
+				stats.trackName = activeMembership.trackName;
+
+				const activeKelasId = activeMembership.kelasInstanceId;
+
+				// 2. Points sum for active class
+				const [pointsRes] = await db
+					.select({ total: sum(pointLog.amount) })
+					.from(pointLog)
+					.where(and(eq(pointLog.userId, userId), eq(pointLog.kelasInstanceId, activeKelasId)));
+
+				stats.totalPoints = pointsRes?.total ? Number(pointsRes.total) : 0;
+
+				// 3. Streak counter for active class
+				const [streakRes] = await db
+					.select({
+						currentStreak: streakCounter.currentStreak,
+						maxStreak: streakCounter.maxStreak
+					})
+					.from(streakCounter)
+					.where(and(eq(streakCounter.userId, userId), eq(streakCounter.kelasInstanceId, activeKelasId)));
+
+				stats.currentStreak = streakRes?.currentStreak ?? 0;
+				stats.maxStreak = streakRes?.maxStreak ?? 0;
+
+				// Fetch sessions for active class
+				const activeSessions = await db
+					.select({ id: pertemuan.id })
+					.from(pertemuan)
+					.where(eq(pertemuan.kelasInstanceId, activeKelasId));
+				const activeSessionIds = activeSessions.map((s) => s.id);
+
+				// 4. Submissions count for active class
+				if (activeSessionIds.length > 0) {
+					const activeTasks = await db
+						.select({ id: task.id })
+						.from(task)
+						.where(inArray(task.pertemuanId, activeSessionIds));
+					const activeTaskIds = activeTasks.map((t) => t.id);
+
+					if (activeTaskIds.length > 0) {
+						const [subTotalRes] = await db
+							.select({ total: count(submission.id) })
+							.from(submission)
+							.where(and(eq(submission.userId, userId), inArray(submission.taskId, activeTaskIds)));
+
+						const [subApprovedRes] = await db
+							.select({ total: count(submission.id) })
+							.from(submission)
+							.where(
+								and(
+									eq(submission.userId, userId),
+									inArray(submission.taskId, activeTaskIds),
+									eq(submission.status, 'approved')
+								)
+							);
+
+						stats.submissionsCount = Number(subTotalRes?.total ?? 0);
+						stats.approvedSubmissionsCount = Number(subApprovedRes?.total ?? 0);
+					} else {
+						stats.submissionsCount = 0;
+						stats.approvedSubmissionsCount = 0;
+					}
+
+					// 5. Attendance count for active class
+					const [attendRes] = await db
+						.select({ total: count(attendance.id) })
+						.from(attendance)
+						.where(and(eq(attendance.userId, userId), inArray(attendance.pertemuanId, activeSessionIds)));
+
+					stats.attendanceCount = Number(attendRes?.total ?? 0);
+				} else {
+					stats.submissionsCount = 0;
+					stats.approvedSubmissionsCount = 0;
+					stats.attendanceCount = 0;
+				}
+			} else {
+				stats.totalPoints = 0;
+				stats.currentStreak = 0;
+				stats.maxStreak = 0;
+				stats.submissionsCount = 0;
+				stats.approvedSubmissionsCount = 0;
+				stats.attendanceCount = 0;
 			}
 
-			// 2. Points sum
-			const [pointsRes] = await db
-				.select({ total: sum(pointLog.amount) })
-				.from(pointLog)
-				.where(eq(pointLog.userId, userId));
-
-			stats.totalPoints = pointsRes?.total ? Number(pointsRes.total) : 0;
-
-			// 3. Streak
-			const [streakRes] = await db
-				.select({
-					currentStreak: streakCounter.currentStreak,
-					maxStreak: streakCounter.maxStreak
-				})
-				.from(streakCounter)
-				.where(eq(streakCounter.userId, userId));
-
-			stats.currentStreak = streakRes?.currentStreak ?? 0;
-			stats.maxStreak = streakRes?.maxStreak ?? 0;
-
-			// 4. Badges
+			// 6. Badges (global/persistent for the student)
 			const userBadges = await db
 				.select({
 					id: badge.id,
@@ -206,28 +269,6 @@ export const ProfileService = {
 				.where(eq(badge.userId, userId));
 
 			stats.earnedBadges = userBadges;
-
-			// 5. Submissions count
-			const [subTotalRes] = await db
-				.select({ total: count(submission.id) })
-				.from(submission)
-				.where(eq(submission.userId, userId));
-
-			const [subApprovedRes] = await db
-				.select({ total: count(submission.id) })
-				.from(submission)
-				.where(sql`${submission.userId} = ${userId} AND ${submission.status} = 'approved'`);
-
-			stats.submissionsCount = Number(subTotalRes?.total ?? 0);
-			stats.approvedSubmissionsCount = Number(subApprovedRes?.total ?? 0);
-
-			// 6. Attendance count
-			const [attendRes] = await db
-				.select({ total: count(attendance.id) })
-				.from(attendance)
-				.where(eq(attendance.userId, userId));
-
-			stats.attendanceCount = Number(attendRes?.total ?? 0);
 
 			// 7. Paginated Point Logs for large data safety
 			pointLogsData = await this.getPaginatedPointLogs(userId, pointLogPage, pointLogLimit);
@@ -424,7 +465,7 @@ export const ProfileService = {
 	 */
 	async updateProfileInfo(
 		userId: number,
-		input: { fullName: string; email?: string | null; avatarUrl?: string | null }
+		input: { fullName: string; email?: string | null; avatarUrl?: string | null; nisn?: string | null }
 	): Promise<{ success: boolean; message?: string }> {
 		const [existing] = await db
 			.select({ id: userTable.id })
@@ -447,11 +488,24 @@ export const ProfileService = {
 			}
 		}
 
+		// Check if NISN already used by another user
+		if (input.nisn && input.nisn.trim() !== '') {
+			const [nisnCheck] = await db
+				.select({ id: userTable.id })
+				.from(userTable)
+				.where(eq(userTable.nisn, input.nisn.trim()));
+
+			if (nisnCheck && nisnCheck.id !== userId) {
+				return { success: false, message: 'NISN tersebut sudah terdaftar pada akun lain' };
+			}
+		}
+
 		await db
 			.update(userTable)
 			.set({
 				fullName: input.fullName.trim(),
 				email: input.email && input.email.trim() !== '' ? input.email.trim() : null,
+				nisn: input.nisn !== undefined ? (input.nisn && input.nisn.trim() !== '' ? input.nisn.trim() : null) : undefined,
 				avatarUrl: input.avatarUrl !== undefined ? (input.avatarUrl && input.avatarUrl.trim() !== '' ? input.avatarUrl.trim() : null) : undefined,
 				updatedAt: new Date()
 			})
@@ -494,6 +548,14 @@ export const ProfileService = {
 			})
 			.where(eq(userTable.id, userId));
 
-		return { success: true, message: 'Password berhasil diperbarui' };
+		// Invalidate active sessions across devices for security
+		try {
+			const { lucia } = await import('../auth/lucia');
+			await lucia.invalidateUserSessions(String(userId));
+		} catch (err) {
+			console.error('Failed to invalidate user sessions after password update:', err);
+		}
+
+		return { success: true, message: 'Password berhasil diperbarui. Silakan login kembali.' };
 	}
 };

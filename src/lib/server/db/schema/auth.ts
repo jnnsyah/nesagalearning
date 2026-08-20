@@ -12,6 +12,7 @@ export const user = pgTable(
 		role: text('role').notNull(), // 'admin' | 'guru' | 'mentor' | 'siswa'
 		avatarUrl: text('avatar_url'),
 		googleId: text('google_id').unique(),
+		isEmailVerified: boolean('is_email_verified').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

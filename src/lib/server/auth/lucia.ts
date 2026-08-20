@@ -21,11 +21,29 @@ export const lucia = new Lucia(adapter, {
 			role: attributes.role as 'admin' | 'guru' | 'mentor' | 'siswa',
 			avatarUrl: attributes.avatarUrl,
 			googleId: attributes.googleId,
+			isEmailVerified: attributes.isEmailVerified ?? false,
 			isActive: attributes.isActive,
 			nisn: attributes.nisn ?? null
 		};
 	}
 });
+
+declare module 'lucia' {
+	interface Register {
+		Lucia: typeof lucia;
+		DatabaseUserAttributes: {
+			username: string;
+			email: string | null;
+			fullName: string;
+			role: 'admin' | 'guru' | 'mentor' | 'siswa';
+			avatarUrl: string | null;
+			googleId: string | null;
+			isEmailVerified: boolean;
+			isActive: boolean;
+			nisn: string | null;
+		};
+	}
+}
 
 export function isMobileUserAgent(userAgent: string | null): boolean {
 	if (!userAgent) return false;

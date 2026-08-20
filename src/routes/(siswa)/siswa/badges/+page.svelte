@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-	<title>Galeri Badge & Prestasi — Siswa Hub</title>
+	<title>Galeri Badge & Lencana Belajar — Siswa Hub</title>
 </svelte:head>
 
 <div class="content-area">
@@ -46,7 +46,7 @@
 
 		<div class="flex items-start justify-between gap-4 flex-wrap">
 			<div>
-				<h1 class="page-title">Galeri Badge &amp; Lencana Prestasi</h1>
+				<h1 class="page-title">Galeri Badge &amp; Lencana Belajar</h1>
 				<p class="page-sub">
 					Kumpulkan lencana pencapaian, kembangkan keterampilan, dan tingkatkan perolehan poin Anda.
 				</p>
@@ -102,7 +102,7 @@
 					<circle cx="12" cy="8" r="7" />
 					<polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
 				</svg>
-				<h2 class="panel-title">Katalog Lencana Prestasi</h2>
+				<h2 class="panel-title">Katalog Lencana Belajar</h2>
 			</div>
 			<span class="badge-count-pill">{data.earnedBadgesCount} dari {data.totalBadgesCount} Terbuka</span>
 		</div>

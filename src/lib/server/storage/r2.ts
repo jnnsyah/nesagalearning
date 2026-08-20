@@ -2,10 +2,15 @@ import { env } from '$env/dynamic/private';
 import fs from 'fs';
 import path from 'path';
 
+import { compressImageBuffer } from './compressor';
+
 export interface UploadResult {
 	url: string;
 	key: string;
 	storageType: 'r2' | 'local';
+	originalSize?: number;
+	compressedSize?: number;
+	savedPercentage?: number;
 }
 
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
@@ -71,7 +76,7 @@ export function validateFile(file: File, folder: string): { valid: boolean; erro
 		}
 	}
 
-	const maxMB = isAvatarFolder ? 5 : 15;
+	const maxMB = isAvatarFolder ? 5 : 20;
 	const maxBytes = maxMB * 1024 * 1024;
 	if (file.size > maxBytes) {
 		return { valid: false, error: `Ukuran file melebihi batas maksimal ${maxMB} MB`, ext, safeFolder };
@@ -93,13 +98,19 @@ export async function uploadFile(
 	const ext = validation.ext;
 
 	const bytes = await file.arrayBuffer();
-	const buffer = Buffer.from(bytes);
+	const initialBuffer = Buffer.from(bytes);
 
-	if (!checkMagicBytes(buffer, ext)) {
+	if (!checkMagicBytes(initialBuffer, ext)) {
 		throw new Error('Isi file (magic bytes) tidak cocok dengan ekstensi file yang diunggah');
 	}
 
-	const safeName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
+	// Fitur Kompresi Gambar Backend Otomatis (WebP / Responsive Resize / Quality Optimization)
+	const compressionResult = await compressImageBuffer(initialBuffer, ext, safeFolder);
+	const buffer = compressionResult.buffer;
+	const finalExt = compressionResult.ext;
+	const mimeType = compressionResult.mimeType;
+
+	const safeName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${finalExt}`;
 	const key = `${safeFolder}/${safeName}`;
 
 	// If R2 credentials are set in environment, upload to R2
@@ -114,7 +125,7 @@ export async function uploadFile(
 			const resp = await fetch(r2Url, {
 				method: 'PUT',
 				headers: {
-					'Content-Type': file.type || 'application/octet-stream'
+					'Content-Type': mimeType || file.type || 'application/octet-stream'
 				},
 				body: buffer
 			});
@@ -122,7 +133,14 @@ export async function uploadFile(
 				const publicUrl = env.R2_PUBLIC_DOMAIN
 					? `${env.R2_PUBLIC_DOMAIN}/${key}`
 					: r2Url;
-				return { url: publicUrl, key, storageType: 'r2' };
+				return {
+					url: publicUrl,
+					key,
+					storageType: 'r2',
+					originalSize: compressionResult.originalSize,
+					compressedSize: compressionResult.compressedSize,
+					savedPercentage: compressionResult.savedPercentage
+				};
 			}
 		} catch (err) {
 			console.warn('R2 upload network fallback to local:', err);
@@ -139,7 +157,14 @@ export async function uploadFile(
 	fs.writeFileSync(filePath, buffer);
 
 	const localUrl = `/uploads/${safeFolder}/${safeName}`;
-	return { url: localUrl, key, storageType: 'local' };
+	return {
+		url: localUrl,
+		key,
+		storageType: 'local',
+		originalSize: compressionResult.originalSize,
+		compressedSize: compressionResult.compressedSize,
+		savedPercentage: compressionResult.savedPercentage
+	};
 }
 
 export async function deleteFile(urlOrKey: string): Promise<boolean> {

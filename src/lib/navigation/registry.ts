@@ -29,6 +29,7 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 		{ label: 'Health Monitoring', href: '/guru/monitoring', icon: 'activity' },
 		{ label: 'Pantau Track Pembelajaran', href: '/guru/kurikulum', icon: 'book' },
 		{ label: 'Rekap Presensi', href: '/guru/presensi', icon: 'calendar' },
+		{ label: 'Laporan & Export', href: '/guru/laporan', icon: 'file-text' },
 		{ label: 'Laporan Siswa', href: '/guru/siswa', icon: 'users' },
 		{ label: 'Profil Saya', href: '/guru/profile', icon: 'user' }
 	],
@@ -36,6 +37,7 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 		{ label: 'Control Center', href: '/admin', icon: 'dashboard' },
 		{ label: 'Kelola User', href: '/admin/users', icon: 'users' },
 		{ label: 'Master Operasional', href: '/admin/master', icon: 'database' },
+		{ label: 'Manajemen Email', href: '/admin/email', icon: 'mail' },
 		{ label: 'Audit Log System', href: '/admin/audit-logs', icon: 'activity' },
 		{ label: 'Profil Saya', href: '/admin/profile', icon: 'user' }
 	]

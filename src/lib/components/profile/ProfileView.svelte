@@ -101,6 +101,7 @@
 	// Editable profile fields
 	let fullName = $state(user.fullName || '');
 	let email = $state(user.email || '');
+	let nisn = $state(user.nisn || '');
 
 	// File Upload & 1:1 Image Crop Modal State
 	let filePreviewUrl = $state<string | null>(null);
@@ -350,7 +351,7 @@
 		<div class="hero-content">
 			<div class="user-avatar-hero" style="border-color: {roleMeta.color};">
 				{#if user.avatarUrl}
-					<img src={user.avatarUrl} alt={user.fullName} class="hero-avatar-img" />
+					<img src={user.avatarUrl} alt={user.fullName} class="hero-avatar-img" referrerpolicy="no-referrer" />
 				{:else}
 					<span>{user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}</span>
 				{/if}
@@ -409,7 +410,7 @@
 				</div>
 			</div>
 
-			<a href="/siswa/badges" class="stat-card stat-card--link" title="Lihat Halaman Lencana & Prestasi">
+			<a href="/siswa/badges" class="stat-card stat-card--link" title="Lihat Halaman Lencana Belajar">
 				<div class="stat-icon-box icon-badges">
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="8" r="7"/>
@@ -695,7 +696,7 @@
 					<!-- Main Detail Card -->
 					<div class="card card-detail">
 						<div class="card-header">
-							<h2 class="card-title">Informasi Dasar Pengguna</h2>
+							<h2 class="card-title">Informasi Pengguna</h2>
 							<span class="badge" style="background: {roleMeta.bg}; color: {roleMeta.color};">
 								{roleMeta.badgeText}
 							</span>
@@ -751,12 +752,66 @@
 						</div>
 					</div>
 
+					<!-- Card 2: Lencana Belajar Saya (khusus Siswa) -->
+					{#if user.role === 'siswa'}
+						<div class="card card-detail">
+							<div class="card-header">
+								<h2 class="card-title">Lencana Belajar Saya</h2>
+								<span class="badge badge--success">{stats.earnedBadges?.length ?? 0} Diraih</span>
+							</div>
+
+							{#if stats.earnedBadges && stats.earnedBadges.length > 0}
+								<div class="earned-badges-list mb-4 max-h-[260px] overflow-y-auto pr-1">
+									{#each stats.earnedBadges as b}
+										<a href="/siswa/badges" class="badge-card-item" title={b.description || b.name}>
+											<div class="badge-card-icon">
+												{#if b.iconUrl}
+													<img src={b.iconUrl} alt={b.name} class="w-6 h-6 object-contain" />
+												{:else}
+													<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+														<circle cx="12" cy="8" r="7"/>
+														<polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+													</svg>
+												{/if}
+											</div>
+											<div class="badge-card-info flex-1 min-w-0">
+												<div class="badge-card-name">{b.name}</div>
+												{#if b.description}
+													<div class="badge-card-desc truncate">{b.description}</div>
+												{/if}
+												<div class="badge-card-date">Didapat: {formatLogDate(b.earnedAt)}</div>
+											</div>
+										</a>
+									{/each}
+								</div>
+							{:else}
+								<div class="badges-empty-box mb-4">
+									<div class="empty-badge-icon">
+										<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+											<circle cx="12" cy="8" r="7"/>
+											<polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+										</svg>
+									</div>
+									<p class="empty-badge-title">Belum Ada Lencana</p>
+									<p class="empty-badge-sub">Selesaikan tugas & pertahankan presensi untuk membuka lencana pertama Anda.</p>
+								</div>
+							{/if}
+
+							<a href="/siswa/badges" class="btn-all-badges">
+								<span>Katalog Lencana Belajar</span>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<polyline points="9 18 15 12 9 6"/>
+								</svg>
+							</a>
+						</div>
+					{/if}
+
 					<!-- Role-Specific Detail Card -->
 					<div class="card card-detail">
 						{#if user.role === 'siswa'}
 							<div class="card-header">
-								<h2 class="card-title">Informasi Kelas & Akademik</h2>
-								<span class="badge badge--info">TA 2026/2027</span>
+								<h2 class="card-title">Informasi Pembelajaran</h2>
+								<span class="badge badge--info">{stats.tahunAjaranName ? `TA ${stats.tahunAjaranName}` : 'TA Aktif'}</span>
 							</div>
 
 							<div class="detail-rows">
@@ -781,43 +836,27 @@
 								</div>
 							</div>
 
-							{#if stats.earnedBadges && stats.earnedBadges.length > 0}
-								<div class="badges-section">
-									<div class="badges-section-header">
-										<h3 class="sub-title" style="margin: 0;">Lencana Prestasi Saya</h3>
-										<a href="/siswa/badges" class="badges-see-all-btn">
-											<span>Lihat Semua Badges</span>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-												<polyline points="9 18 15 12 9 6" />
-											</svg>
-										</a>
+							<div class="archive-banner-card mt-4">
+								<div class="archive-banner-left">
+									<div class="archive-banner-icon">
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+											<line x1="12" y1="11" x2="12" y2="17"/>
+											<polyline points="9 14 12 17 15 14"/>
+										</svg>
 									</div>
-									<div class="badges-flex">
-										{#each stats.earnedBadges as b}
-											<a href="/siswa/badges" class="badge-item badge-item--link" title={b.description || b.name}>
-												<span class="badge-icon">🏅</span>
-												<span class="badge-name">{b.name}</span>
-											</a>
-										{/each}
+									<div>
+										<h4 class="archive-banner-title">Arsip Belajar Siswa</h4>
+										<p class="archive-banner-sub">Tinjau riwayat presensi, track kurikulum, dan tugas kelas lalu</p>
 									</div>
 								</div>
-							{:else if user.role === 'siswa'}
-								<div class="badges-section">
-									<div class="badges-section-header">
-										<h3 class="sub-title" style="margin: 0;">Lencana Prestasi Saya</h3>
-										<a href="/siswa/badges" class="badges-see-all-btn">
-											<span>Lihat Katalog Lencana</span>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-												<polyline points="9 18 15 12 9 6" />
-											</svg>
-										</a>
-									</div>
-									<div class="badges-empty-box">
-										<p class="text-xs text-slate-500 m-0">Belum ada lencana yang diraih. Selesaikan tugas dan dapatkan poin untuk membuka lencana!</p>
-										<a href="/siswa/badges" class="badges-empty-btn">Jelajahi Lencana &rsaquo;</a>
-									</div>
-								</div>
-							{/if}
+								<a href="/siswa/arsip" class="archive-banner-btn">
+									<span>Buka Arsip Belajar</span>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="9 18 15 12 9 6"/>
+									</svg>
+								</a>
+							</div>
 						{:else if user.role === 'mentor'}
 							<div class="card-header">
 								<h2 class="card-title">Daftar Kelas Pendampingan</h2>
@@ -1030,7 +1069,7 @@
 									{#if filePreviewUrl}
 										<img src={filePreviewUrl} alt="Preview Foto Upload" class="w-full h-full object-cover" />
 									{:else if selectedAvatarUrl}
-										<img src={selectedAvatarUrl} alt="Preview Avatar" class="w-full h-full object-cover" />
+										<img src={selectedAvatarUrl} alt="Preview Avatar" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
 									{:else}
 										<span class="font-extrabold text-indigo-700 text-xl">{user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}</span>
 									{/if}
@@ -1117,6 +1156,16 @@
 							placeholder="contoh@email.com"
 							hint="Email dapat digunakan untuk pemberitahuan dan pemulihan akun."
 							error={typeof formErrors?.email === 'string' ? formErrors.email : formErrors?.email?.[0]}
+						/>
+
+						<TextInput
+							name="nisn"
+							label="Nomor Induk Siswa Nasional (NISN)"
+							type="text"
+							bind:value={nisn}
+							placeholder="Contoh: 0051234567"
+							hint="NISN wajib 10 digit angka untuk validasi data pendaftaran siswa."
+							error={typeof formErrors?.nisn === 'string' ? formErrors.nisn : formErrors?.nisn?.[0]}
 						/>
 
 						<div class="form-actions">
@@ -1751,7 +1800,7 @@
 	/* Detail Cards Grid */
 	.detail-cards-grid {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 		gap: 20px;
 	}
 
@@ -1759,6 +1808,122 @@
 		.detail-cards-grid {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	/* Earned Badges Card Styling */
+	.earned-badges-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.badge-card-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		background: #fffbeb;
+		border: 1px solid #fde68a;
+		border-radius: 10px;
+		text-decoration: none;
+		transition: all 150ms ease;
+	}
+
+	.badge-card-item:hover {
+		background: #fef3c7;
+		border-color: #f59e0b;
+	}
+
+	.badge-card-icon {
+		width: 36px;
+		height: 36px;
+		border-radius: 8px;
+		background: #ffffff;
+		border: 1px solid #fef08a;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+	}
+
+	.badge-card-name {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 800;
+		color: #92400e;
+		margin: 0;
+	}
+
+	.badge-card-desc {
+		font-size: 11px;
+		color: #b45309;
+		margin-top: 1px;
+	}
+
+	.badge-card-date {
+		font-size: 10.5px;
+		color: #d97706;
+		font-weight: 600;
+		margin-top: 2px;
+	}
+
+	.badges-empty-box {
+		text-align: center;
+		padding: 24px 16px;
+		background: #fafafa;
+		border: 1px dashed #cbd5e1;
+		border-radius: 10px;
+	}
+
+	.empty-badge-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		background: #fffbeb;
+		color: #d97706;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 10px;
+	}
+
+	.empty-badge-title {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 800;
+		color: #334155;
+		margin: 0;
+	}
+
+	.empty-badge-sub {
+		font-size: 11.5px;
+		color: #64748b;
+		margin-top: 4px;
+	}
+
+	.btn-all-badges {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		width: 100%;
+		padding: 9px 14px;
+		background: #ffffff;
+		border: 1.5px solid #d97706;
+		color: #b45309;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 150ms ease;
+	}
+
+	.btn-all-badges:hover {
+		background: #fffbeb;
+		color: #92400e;
+		border-color: #b45309;
 	}
 
 	.card {
@@ -1790,6 +1955,116 @@
 		font-size: 12.5px;
 		color: var(--text-muted);
 		margin-top: 4px;
+	}
+
+	.detail-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.detail-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		gap: 12px;
+		transition: all 150ms ease;
+	}
+
+	.detail-row:hover {
+		background: #f1f5f9;
+		border-color: #cbd5e1;
+	}
+
+	.detail-label {
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		flex-shrink: 0;
+	}
+
+	.detail-value {
+		font-size: 13px;
+		font-weight: 600;
+		color: #0f172a;
+		text-align: right;
+		word-break: break-word;
+	}
+
+	.archive-banner-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 18px;
+		background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+		border: 1.5px solid #86efac;
+		border-radius: var(--radius-lg, 12px);
+		gap: 16px;
+		flex-wrap: wrap;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+	}
+
+	.archive-banner-left {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+	}
+
+	.archive-banner-icon {
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		background: #ffffff;
+		color: #15803d;
+		border: 1px solid #bbf7d0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+	}
+
+	.archive-banner-title {
+		font-family: var(--font-macro);
+		font-size: 13.5px;
+		font-weight: 800;
+		color: #14532d;
+		margin: 0;
+	}
+
+	.archive-banner-sub {
+		font-size: 11.5px;
+		color: #166534;
+		margin-top: 2px;
+	}
+
+	.archive-banner-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		background: #15803d;
+		color: #ffffff;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 150ms ease;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+	}
+
+	.archive-banner-btn:hover {
+		background: #14532d;
+		transform: translateY(-1px);
 	}
 
 	/* Points Total Pill */

@@ -34,6 +34,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const fullName = formData.get('fullName') as string;
 		const email = formData.get('email') as string;
+		const nisn = formData.get('nisn') as string;
 		let avatarUrl = (formData.get('avatarUrl') as string) || undefined;
 		const avatarFile = formData.get('avatarFile') as File | null;
 
@@ -42,7 +43,7 @@ export const actions: Actions = {
 			avatarUrl = uploadRes.url;
 		}
 
-		const parseResult = updateProfileSchema.safeParse({ fullName, email });
+		const parseResult = updateProfileSchema.safeParse({ fullName, email, nisn });
 		if (!parseResult.success) {
 			return fail(400, { errors: parseResult.error.flatten().fieldErrors });
 		}

@@ -41,3 +41,5 @@ class SimpleRateLimiter {
 }
 
 export const attendanceRateLimiter = new SimpleRateLimiter();
+export const authRateLimiter = new SimpleRateLimiter();
+export const uploadRateLimiter = new SimpleRateLimiter();

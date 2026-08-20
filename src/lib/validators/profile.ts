@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
 	fullName: z.string().min(2, 'Nama lengkap minimal 2 karakter').max(100, 'Nama terlalu panjang'),
-	email: z.string().email('Format email tidak valid').or(z.literal('')).nullable().optional()
+	email: z.string().email('Format email tidak valid').or(z.literal('')).nullable().optional(),
+	nisn: z.string().regex(/^\d{10}$/, 'NISN harus terdiri dari 10 digit angka').or(z.literal('')).nullable().optional()
 });
 
 export const updatePasswordSchema = z

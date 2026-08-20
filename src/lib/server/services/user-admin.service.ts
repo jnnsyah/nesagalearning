@@ -311,6 +311,14 @@ export class UserAdminService {
 			throw new Error('User tidak ditemukan.');
 		}
 
+		// Invalidate active sessions across devices for security
+		try {
+			const { lucia } = await import('../auth/lucia');
+			await lucia.invalidateUserSessions(String(userId));
+		} catch (err) {
+			console.error('Failed to invalidate user sessions on reset password:', err);
+		}
+
 		return updated;
 	}
 

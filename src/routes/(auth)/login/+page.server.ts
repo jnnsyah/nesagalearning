@@ -3,21 +3,30 @@ import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/validators';
 import { AuthGatekeeper, type UserRole } from '$lib/server/auth/gatekeeper';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
+import { isGoogleOAuthEnabled } from '$lib/server/auth/oauth';
+import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
-		const redirectTo = url.searchParams.get('redirectTo');
-		const targetPath =
-			redirectTo && redirectTo.startsWith('/')
-				? redirectTo
-				: AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
+		const targetPath = AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
 		throw redirect(302, targetPath);
 	}
-	return {};
+
+	return {
+		isGoogleEnabled: isGoogleOAuthEnabled()
+	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async ({ request, cookies, url, getClientAddress }) => {
+		const ipAddress = getClientAddress() || request.headers.get('x-forwarded-for') || '127.0.0.1';
+		const rateLimit = authRateLimiter.check(`login_${ipAddress}`, 10, 60000);
+		if (!rateLimit.allowed) {
+			return fail(429, {
+				error: `Terlalu banyak percobaan login. Silakan tunggu ${Math.ceil(rateLimit.resetInMs / 1000)} detik.`
+			});
+		}
+
 		const formData = await request.formData();
 		const username = formData.get('username')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
@@ -82,7 +91,12 @@ export const actions: Actions = {
 
 			throw redirect(302, targetPath);
 		} catch (err: any) {
-			if (err?.status === 302 || err?.location) throw err;
+			if (err?.status === 302 || err?.status === 303 || err?.location) throw err;
+
+			if (err?.message === 'EMAIL_NOT_VERIFIED') {
+				const emailQuery = err.email ? `&email=${encodeURIComponent(err.email)}` : '';
+				throw redirect(303, `/verify-email?userId=${err.userId}${emailQuery}`);
+			}
 
 			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
 			await AuditLogService.logAction({

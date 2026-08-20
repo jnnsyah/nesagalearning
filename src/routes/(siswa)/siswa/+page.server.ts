@@ -7,6 +7,8 @@ import { ProgressService } from '$lib/server/services/progress.service';
 import { ProfileService } from '$lib/server/services/profile.service';
 import { SubmissionService } from '$lib/server/services/submission.service';
 
+import { user as userTable } from '$lib/server/db/schema/auth';
+
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
 		throw redirect(303, '/login');
@@ -16,6 +18,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	const userId = Number(locals.user.id);
+
+	// Fetch fresh user record (termasuk NISN)
+	const [userData] = await db
+		.select({
+			id: userTable.id,
+			username: userTable.username,
+			fullName: userTable.fullName,
+			email: userTable.email,
+			nisn: userTable.nisn,
+			role: userTable.role,
+			avatarUrl: userTable.avatarUrl,
+			isEmailVerified: userTable.isEmailVerified
+		})
+		.from(userTable)
+		.where(eq(userTable.id, userId))
+		.limit(1);
 
 	// Fetch student's active class membership
 	const [activeMembership] = await db
@@ -57,12 +75,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// Fetch full profile data (points, streak, attendance count)
 	const profileData = await ProfileService.getUserProfileData(userId);
 
+	const isNisnMissing = !userData?.nisn || userData.nisn.trim() === '';
+	const isClassUnassigned = !activeMembership;
+
 	return {
-		user: locals.user,
+		user: userData || locals.user,
 		activeMembership: activeMembership || null,
 		phaseProgress,
 		historicalProgress,
 		pendingTasks,
-		profileStats: profileData?.stats || null
+		profileStats: profileData?.stats || null,
+		completeness: {
+			isNisnMissing,
+			isClassUnassigned,
+			isIncomplete: isNisnMissing || isClassUnassigned
+		}
 	};
 };

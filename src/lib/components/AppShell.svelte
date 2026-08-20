@@ -162,6 +162,12 @@
 					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`
 				},
 				{
+					href: '/admin/email',
+					label: 'Manajemen Email',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`
+				},
+				{
 					href: '/admin/audit-logs',
 					label: 'Audit Log Stream',
 					exact: false,
@@ -315,9 +321,9 @@
 			<div class="sidebar-user-divider"></div>
 			{#if sidebarCollapsed}
 				<a href="/{role}/profile" class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
-					{#if currentUser?.avatarUrl}
-						<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
-					{:else}
+						{#if currentUser?.avatarUrl}
+							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
+						{:else}
 						{currentUser?.fullName?.charAt(0) ?? 'U'}
 					{/if}
 				</a>
@@ -325,7 +331,7 @@
 				<a href="/{role}/profile" class="user-profile-box user-profile-box--link" title="Lihat Profil Saya">
 					<div class="user-avatar">
 						{#if currentUser?.avatarUrl}
-							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
+							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
 						{:else}
 							{currentUser?.fullName?.charAt(0) ?? 'U'}
 						{/if}
@@ -388,7 +394,7 @@
 				<a href="/{role}/profile" class="user-pill" title="Lihat Profil Saya">
 					<div class="user-pill-avatar">
 						{#if currentUser?.avatarUrl}
-							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" />
+							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
 						{:else}
 							{currentUser?.fullName?.charAt(0) ?? 'U'}
 						{/if}
