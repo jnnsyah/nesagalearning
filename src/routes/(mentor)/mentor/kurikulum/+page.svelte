@@ -350,6 +350,31 @@
 						</div>
 
 						<div style="display:flex;gap:6px;">
+							<form action="?/duplicateTrack" method="POST" use:enhance={() => {
+								return async ({ result, update }) => {
+									await update();
+									if (result.type === 'success') {
+										toast.success((result.data as any)?.message || 'Track pembelajaran berhasil diduplikasi!');
+									} else if (result.type === 'failure') {
+										toast.error((result.data as any)?.error || 'Gagal menduplikasi track');
+									}
+								};
+							}}>
+								<input type="hidden" name="id" value={track.id} />
+								<button
+									type="submit"
+									class="btn-delete"
+									style="background: #e0e7ff; color: #4338ca; border-color: #c7d2fe;"
+									title="Duplikasi track ini"
+									aria-label="Duplikasi track {track.title}"
+								>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+										<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+									</svg>
+								</button>
+							</form>
+
 							<button
 								type="button"
 								onclick={() => (deleteTrackTarget = track)}

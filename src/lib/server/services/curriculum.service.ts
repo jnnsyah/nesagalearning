@@ -445,6 +445,70 @@ export const CurriculumTree = {
 					.where(eq(materi.id, orderedIds[i]));
 			}
 		});
+	},
+
+	/**
+	 * Duplicates an entire CurriculumTrack with all nested phases, subPhases, and materis in a single transaction
+	 */
+	async duplicateTrack(trackId: number, customTitle?: string) {
+		const sourceTrack = await this.getTrackWithDetails(trackId);
+		if (!sourceTrack) {
+			throw new Error('Track pembelajaran tidak ditemukan.');
+		}
+
+		const newTitle = customTitle?.trim() || `${sourceTrack.title} (Salinan)`;
+
+		return await db.transaction(async (tx) => {
+			// 1. Create cloned track
+			const [newTrack] = await tx
+				.insert(curriculumTrack)
+				.values({
+					tingkatId: sourceTrack.tingkatId,
+					title: newTitle,
+					description: sourceTrack.description,
+					isPublished: false // Draft mode for the duplicated track
+				})
+				.returning();
+
+			// 2. Clone phases
+			for (const p of sourceTrack.phases) {
+				const [newPhase] = await tx
+					.insert(phase)
+					.values({
+						curriculumTrackId: newTrack.id,
+						title: p.title,
+						description: p.description,
+						sortOrder: p.sortOrder
+					})
+					.returning();
+
+				// 3. Clone sub-phases
+				for (const sp of p.subPhases) {
+					const [newSubPhase] = await tx
+						.insert(subPhase)
+						.values({
+							phaseId: newPhase.id,
+							title: sp.title,
+							description: sp.description,
+							sortOrder: sp.sortOrder
+						})
+						.returning();
+
+					// 4. Clone materis
+					for (const m of sp.materis) {
+						await tx.insert(materi).values({
+							subPhaseId: newSubPhase.id,
+							title: m.title,
+							content: m.content,
+							attachmentUrl: m.attachmentUrl,
+							sortOrder: m.sortOrder
+						});
+					}
+				}
+			}
+
+			return newTrack;
+		});
 	}
 };
 

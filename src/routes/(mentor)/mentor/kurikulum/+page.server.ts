@@ -100,5 +100,29 @@ export const actions: Actions = {
 		} catch (err: any) {
 			return fail(500, { error: err?.message || 'Gagal menghapus track' });
 		}
+	},
+
+	duplicateTrack: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'mentor' && locals.user.role !== 'admin') {
+			return fail(403, { error: 'Akses ditolak' });
+		}
+
+		const formData = await request.formData();
+		const id = Number(formData.get('id'));
+		const customTitle = formData.get('title')?.toString();
+
+		if (!id) {
+			return fail(400, { error: 'ID Track pembelajaran wajib diisi' });
+		}
+
+		try {
+			const clonedTrack = await CurriculumService.duplicateTrack(id, customTitle);
+			return {
+				success: true,
+				message: `Track Pembelajaran berhasil diduplikasi menjadi '${clonedTrack.title}'!`
+			};
+		} catch (err: any) {
+			return fail(500, { error: err?.message || 'Gagal menduplikasi track pembelajaran' });
+		}
 	}
 };
