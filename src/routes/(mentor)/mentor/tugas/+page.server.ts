@@ -72,37 +72,34 @@ export const actions: Actions = {
 			return fail(400, { message: firstError });
 		}
 
-		// Read-Only Enforcement for Mentors not assigned to target class
+		// Read-Only Enforcement: If mentor HAS specific assigned classes, restrict review to those classes
 		if (locals.user.role === 'mentor') {
-			const [subRecord] = await db
-				.select({ kelasInstanceId: pertemuan.kelasInstanceId, studentUserId: submission.userId })
-				.from(submission)
-				.innerJoin(task, eq(submission.taskId, task.id))
-				.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
-				.where(eq(submission.id, parseResult.data.submissionId));
+			const assignedRows = await db
+				.select({ kelasInstanceId: mentorAssignment.kelasInstanceId })
+				.from(mentorAssignment)
+				.where(eq(mentorAssignment.userId, Number(locals.user.id)));
 
-			let targetKelasId = subRecord?.kelasInstanceId;
-			if (!targetKelasId && subRecord?.studentUserId) {
-				const { keanggotaan } = await import('$lib/server/db/schema/academic');
-				const [member] = await db
-					.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
-					.from(keanggotaan)
-					.where(and(eq(keanggotaan.userId, subRecord.studentUserId), eq(keanggotaan.status, 'aktif')));
-				if (member) targetKelasId = member.kelasInstanceId;
-			}
+			const assignedClassIds = assignedRows.map((r) => r.kelasInstanceId);
 
-			if (targetKelasId) {
-				const [assignment] = await db
-					.select({ id: mentorAssignment.id })
-					.from(mentorAssignment)
-					.where(
-						and(
-							eq(mentorAssignment.userId, Number(locals.user.id)),
-							eq(mentorAssignment.kelasInstanceId, Number(targetKelasId))
-						)
-					);
+			if (assignedClassIds.length > 0) {
+				const [subRecord] = await db
+					.select({ kelasInstanceId: pertemuan.kelasInstanceId, studentUserId: submission.userId })
+					.from(submission)
+					.innerJoin(task, eq(submission.taskId, task.id))
+					.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
+					.where(eq(submission.id, parseResult.data.submissionId));
 
-				if (!assignment) {
+				let targetKelasId = subRecord?.kelasInstanceId;
+				if (!targetKelasId && subRecord?.studentUserId) {
+					const { keanggotaan } = await import('$lib/server/db/schema/academic');
+					const [member] = await db
+						.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
+						.from(keanggotaan)
+						.where(and(eq(keanggotaan.userId, subRecord.studentUserId), eq(keanggotaan.status, 'aktif')));
+					if (member) targetKelasId = member.kelasInstanceId;
+				}
+
+				if (targetKelasId && !assignedClassIds.includes(targetKelasId)) {
 					return fail(403, {
 						message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk tugas di kelas yang tidak Anda bina.'
 					});

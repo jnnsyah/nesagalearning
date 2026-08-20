@@ -977,8 +977,14 @@ let rosterSortOptions = [
 							action="?/review"
 							use:enhance={() => {
 								isSubmitting = true;
-								return async ({ update }) => {
+								return async ({ result, update }) => {
 									isSubmitting = false;
+									if (result.type === 'success') {
+										toast.success(result.data?.message || 'Penilaian tugas berhasil disimpan.');
+										isStudioOpen = false;
+									} else if (result.type === 'failure') {
+										toast.error(result.data?.message || 'Gagal menyimpan penilaian tugas.');
+									}
 									await update();
 								};
 							}}
