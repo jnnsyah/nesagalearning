@@ -23,7 +23,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			storageType: result.storageType
 		});
 	} catch (err: unknown) {
+		const errorMessage = err instanceof Error ? err.message : 'Gagal mengunggah file';
 		console.error('File upload error:', err);
-		return json({ error: 'Gagal mengunggah file' }, { status: 500 });
+		return json({ error: errorMessage }, { status: 400 });
 	}
 };
