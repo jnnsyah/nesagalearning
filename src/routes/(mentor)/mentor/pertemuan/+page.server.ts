@@ -63,8 +63,10 @@ function checkIsWeekend(dateStr: string): boolean {
 }
 
 async function checkMentorAssignment(userId: number, role: string, kelasInstanceId: number): Promise<boolean> {
-	if (role === 'admin') return true;
+	if (role === 'admin' || role === 'guru') return true;
 	if (role !== 'mentor') return false;
+	if (!kelasInstanceId || isNaN(kelasInstanceId)) return false;
+
 	const { mentorAssignment } = await import('$lib/server/db/schema/academic');
 	const { and, eq } = await import('drizzle-orm');
 	const [match] = await db
@@ -72,8 +74,8 @@ async function checkMentorAssignment(userId: number, role: string, kelasInstance
 		.from(mentorAssignment)
 		.where(
 			and(
-				eq(mentorAssignment.userId, userId),
-				eq(mentorAssignment.kelasInstanceId, kelasInstanceId)
+				eq(mentorAssignment.userId, Number(userId)),
+				eq(mentorAssignment.kelasInstanceId, Number(kelasInstanceId))
 			)
 		);
 	return Boolean(match);
@@ -143,7 +145,12 @@ export const actions: Actions = {
 			return fail(400, { message: 'ID Pertemuan tidak valid' });
 		}
 
-		const kelasInstanceId = Number(formData.get('kelasInstanceId'));
+		const [existingMeeting] = await db
+			.select({ kelasInstanceId: pertemuan.kelasInstanceId })
+			.from(pertemuan)
+			.where(eq(pertemuan.id, id));
+
+		const kelasInstanceId = Number(formData.get('kelasInstanceId')) || existingMeeting?.kelasInstanceId || 0;
 		const isAllowed = await checkMentorAssignment(Number(locals.user.id), locals.user.role, kelasInstanceId);
 		if (!isAllowed) {
 			return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });

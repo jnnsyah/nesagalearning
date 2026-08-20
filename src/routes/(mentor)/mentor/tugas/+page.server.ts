@@ -75,20 +75,30 @@ export const actions: Actions = {
 		// Read-Only Enforcement for Mentors not assigned to target class
 		if (locals.user.role === 'mentor') {
 			const [subRecord] = await db
-				.select({ kelasInstanceId: pertemuan.kelasInstanceId })
+				.select({ kelasInstanceId: pertemuan.kelasInstanceId, studentUserId: submission.userId })
 				.from(submission)
 				.innerJoin(task, eq(submission.taskId, task.id))
 				.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
 				.where(eq(submission.id, parseResult.data.submissionId));
 
-			if (subRecord) {
+			let targetKelasId = subRecord?.kelasInstanceId;
+			if (!targetKelasId && subRecord?.studentUserId) {
+				const { keanggotaan } = await import('$lib/server/db/schema/academic');
+				const [member] = await db
+					.select({ kelasInstanceId: keanggotaan.kelasInstanceId })
+					.from(keanggotaan)
+					.where(and(eq(keanggotaan.userId, subRecord.studentUserId), eq(keanggotaan.status, 'aktif')));
+				if (member) targetKelasId = member.kelasInstanceId;
+			}
+
+			if (targetKelasId) {
 				const [assignment] = await db
 					.select({ id: mentorAssignment.id })
 					.from(mentorAssignment)
 					.where(
 						and(
 							eq(mentorAssignment.userId, Number(locals.user.id)),
-							eq(mentorAssignment.kelasInstanceId, subRecord.kelasInstanceId)
+							eq(mentorAssignment.kelasInstanceId, Number(targetKelasId))
 						)
 					);
 
