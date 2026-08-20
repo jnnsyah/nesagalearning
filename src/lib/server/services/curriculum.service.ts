@@ -500,7 +500,6 @@ export const CurriculumTree = {
 							subPhaseId: newSubPhase.id,
 							title: m.title,
 							content: m.content,
-							attachmentUrl: m.attachmentUrl,
 							sortOrder: m.sortOrder
 						});
 					}
