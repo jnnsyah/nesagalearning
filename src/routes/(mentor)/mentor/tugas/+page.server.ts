@@ -2,6 +2,11 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { SubmissionService } from '$lib/server/services/submission.service';
 import { reviewSubmissionSchema } from '$lib/validators/submission';
+import { db } from '$lib/server/db';
+import { mentorAssignment } from '$lib/server/db/schema/academic';
+import { submission, task } from '$lib/server/db/schema/task';
+import { pertemuan } from '$lib/server/db/schema/session';
+import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -12,10 +17,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	try {
-		const { db } = await import('$lib/server/db');
-		const { mentorAssignment } = await import('$lib/server/db/schema/academic');
-		const { eq } = await import('drizzle-orm');
-
 		const assignedRows = await db
 			.select({ kelasInstanceId: mentorAssignment.kelasInstanceId })
 			.from(mentorAssignment)
@@ -73,12 +74,6 @@ export const actions: Actions = {
 
 		// Read-Only Enforcement for Mentors not assigned to target class
 		if (locals.user.role === 'mentor') {
-			const { db } = await import('$lib/server/db');
-			const { submission, task } = await import('$lib/server/db/schema/task');
-			const { pertemuan } = await import('$lib/server/db/schema/session');
-			const { mentorAssignment } = await import('$lib/server/db/schema/academic');
-			const { eq, and } = await import('drizzle-orm');
-
 			const [subRecord] = await db
 				.select({ kelasInstanceId: pertemuan.kelasInstanceId })
 				.from(submission)
