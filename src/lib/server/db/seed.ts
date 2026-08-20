@@ -1,9 +1,27 @@
 import { db } from './index';
 import * as schema from './schema';
+import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export async function seed() {
-	console.log('🌱 Starting database seeding...');
+	console.log('🧹 Truncating all existing database tables...');
+
+	// Truncate root tables with CASCADE & RESTART IDENTITY to wipe all dependent data cleanly
+	await db.execute(sql`
+		TRUNCATE TABLE 
+			"user",
+			"tahun_ajaran",
+			"tingkat",
+			"curriculum_track",
+			"room",
+			"activity_type",
+			"avatar",
+			"badge_type",
+			"point_config"
+		RESTART IDENTITY CASCADE;
+	`);
+
+	console.log('🌱 Starting fresh database seeding...');
 
 	const passwordHash = await bcrypt.hash('password123', 10);
 
