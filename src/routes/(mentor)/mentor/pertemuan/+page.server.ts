@@ -62,6 +62,23 @@ function checkIsWeekend(dateStr: string): boolean {
 	return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
+async function checkMentorAssignment(userId: number, role: string, kelasInstanceId: number): Promise<boolean> {
+	if (role === 'admin') return true;
+	if (role !== 'mentor') return false;
+	const { mentorAssignment } = await import('$lib/server/db/schema/academic');
+	const { and, eq } = await import('drizzle-orm');
+	const [match] = await db
+		.select({ id: mentorAssignment.id })
+		.from(mentorAssignment)
+		.where(
+			and(
+				eq(mentorAssignment.userId, userId),
+				eq(mentorAssignment.kelasInstanceId, kelasInstanceId)
+			)
+		);
+	return Boolean(match);
+}
+
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.user) {
@@ -70,6 +87,12 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const kelasInstanceId = Number(formData.get('kelasInstanceId'));
+
+		const isAllowed = await checkMentorAssignment(Number(locals.user.id), locals.user.role, kelasInstanceId);
+		if (!isAllowed) {
+			return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });
+		}
+
 		const subPhaseId = Number(formData.get('subPhaseId'));
 		const title = formData.get('title') as string;
 		const activityType = formData.get('activityType') as any;
@@ -121,6 +144,11 @@ export const actions: Actions = {
 		}
 
 		const kelasInstanceId = Number(formData.get('kelasInstanceId'));
+		const isAllowed = await checkMentorAssignment(Number(locals.user.id), locals.user.role, kelasInstanceId);
+		if (!isAllowed) {
+			return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });
+		}
+
 		const subPhaseId = Number(formData.get('subPhaseId'));
 		const title = formData.get('title') as string;
 		const activityType = formData.get('activityType') as any;
@@ -165,6 +193,18 @@ export const actions: Actions = {
 
 		if (!id || isNaN(id)) {
 			return fail(400, { message: 'ID Pertemuan tidak valid' });
+		}
+
+		const [meetingRecord] = await db
+			.select({ kelasInstanceId: pertemuan.kelasInstanceId })
+			.from(pertemuan)
+			.where(eq(pertemuan.id, id));
+
+		if (meetingRecord) {
+			const isAllowed = await checkMentorAssignment(Number(locals.user.id), locals.user.role, meetingRecord.kelasInstanceId);
+			if (!isAllowed) {
+				return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });
+			}
 		}
 
 		await PertemuanService.deletePertemuan(id);

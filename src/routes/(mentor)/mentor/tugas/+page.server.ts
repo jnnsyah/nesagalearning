@@ -12,12 +12,24 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	try {
+		const { db } = await import('$lib/server/db');
+		const { mentorAssignment } = await import('$lib/server/db/schema/academic');
+		const { eq } = await import('drizzle-orm');
+
+		const assignedRows = await db
+			.select({ kelasInstanceId: mentorAssignment.kelasInstanceId })
+			.from(mentorAssignment)
+			.where(eq(mentorAssignment.userId, Number(locals.user.id)));
+
+		const assignedClassIds = assignedRows.map((r) => r.kelasInstanceId);
+
 		const [submissions, meetingSummaries] = await Promise.all([
 			SubmissionService.getAllSubmissions(),
 			SubmissionService.getMeetingTasksSummary()
 		]);
 		return {
 			user: locals.user,
+			assignedClassIds,
 			submissions,
 			meetingSummaries
 		};
@@ -25,6 +37,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		console.error('Error loading submissions for mentor:', err);
 		return {
 			user: locals.user,
+			assignedClassIds: [],
 			submissions: [],
 			meetingSummaries: [],
 			error: err.message
@@ -56,6 +69,40 @@ export const actions: Actions = {
 		if (!parseResult.success) {
 			const firstError = parseResult.error.issues[0]?.message || 'Input tidak valid';
 			return fail(400, { message: firstError });
+		}
+
+		// Read-Only Enforcement for Mentors not assigned to target class
+		if (locals.user.role === 'mentor') {
+			const { db } = await import('$lib/server/db');
+			const { submission, task } = await import('$lib/server/db/schema/task');
+			const { pertemuan } = await import('$lib/server/db/schema/session');
+			const { mentorAssignment } = await import('$lib/server/db/schema/academic');
+			const { eq, and } = await import('drizzle-orm');
+
+			const [subRecord] = await db
+				.select({ kelasInstanceId: pertemuan.kelasInstanceId })
+				.from(submission)
+				.innerJoin(task, eq(submission.taskId, task.id))
+				.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
+				.where(eq(submission.id, parseResult.data.submissionId));
+
+			if (subRecord) {
+				const [assignment] = await db
+					.select({ id: mentorAssignment.id })
+					.from(mentorAssignment)
+					.where(
+						and(
+							eq(mentorAssignment.userId, Number(locals.user.id)),
+							eq(mentorAssignment.kelasInstanceId, subRecord.kelasInstanceId)
+						)
+					);
+
+				if (!assignment) {
+					return fail(403, {
+						message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk tugas di kelas yang tidak Anda bina.'
+					});
+				}
+			}
 		}
 
 		try {
