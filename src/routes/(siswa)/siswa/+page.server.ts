@@ -1,11 +1,12 @@
-import { redirect, error } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { redirect, error, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { keanggotaan, kelasInstance, tahunAjaran, tingkat } from '$lib/server/db/schema/academic';
 import { eq, and } from 'drizzle-orm';
 import { ProgressService } from '$lib/server/services/progress.service';
 import { ProfileService } from '$lib/server/services/profile.service';
 import { SubmissionService } from '$lib/server/services/submission.service';
+import { submitTaskSchema } from '$lib/validators/submission';
 
 import { user as userTable } from '$lib/server/db/schema/auth';
 
@@ -91,4 +92,42 @@ export const load: PageServerLoad = async ({ locals }) => {
 			isIncomplete: isNisnMissing || isClassUnassigned
 		}
 	};
+};
+
+export const actions: Actions = {
+	submit: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'siswa') {
+			return fail(403, { message: 'Akses ditolak.' });
+		}
+
+		const formData = await request.formData();
+		const rawTaskId = formData.get('taskId');
+		const rawLink = formData.get('link');
+
+		const taskId = Number(rawTaskId);
+		const link = String(rawLink || '').trim();
+
+		const parseResult = submitTaskSchema.safeParse({ taskId, link });
+
+		if (!parseResult.success) {
+			const firstError = parseResult.error.issues[0]?.message || 'Input link tugas tidak valid';
+			return fail(400, { message: firstError });
+		}
+
+		try {
+			await SubmissionService.submitTask({
+				userId: Number(locals.user.id),
+				taskId: parseResult.data.taskId,
+				link: parseResult.data.link
+			});
+
+			return {
+				success: true,
+				message: 'Link tugas berhasil dikirim ke mentor untuk diperiksa!'
+			};
+		} catch (err: any) {
+			console.error('Failed to submit task:', err);
+			return fail(500, { message: err.message || 'Gagal mengirim tugas.' });
+		}
+	}
 };
