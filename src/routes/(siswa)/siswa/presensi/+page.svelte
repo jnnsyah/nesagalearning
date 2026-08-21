@@ -174,11 +174,18 @@
 			const chosenId = targetDeviceId || selectedDeviceId;
 			const config = chosenId ? { deviceId: { exact: chosenId } } : { facingMode: 'environment' };
 
+			const qrboxFunction = (viewfinderWidth: number, viewfinderHeight: number) => {
+				const minEdgePercentage = 0.75;
+				const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+				const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+				return { width: qrboxSize, height: qrboxSize };
+			};
+
 			await html5QrcodeInstance.start(
 				config,
 				{
 					fps: 10,
-					qrbox: { width: 240, height: 240 }
+					qrbox: qrboxFunction
 				},
 				(decodedText) => {
 					// Scanned QR token successfully!
@@ -202,9 +209,16 @@
 			// Fallback: try environment facing mode if exact deviceId failed
 			if (targetDeviceId || selectedDeviceId) {
 				try {
+					const qrboxFunction = (viewfinderWidth: number, viewfinderHeight: number) => {
+						const minEdgePercentage = 0.75;
+						const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+						const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+						return { width: qrboxSize, height: qrboxSize };
+					};
+
 					await html5QrcodeInstance?.start(
 						{ facingMode: 'environment' },
-						{ fps: 10, qrbox: { width: 240, height: 240 } },
+						{ fps: 10, qrbox: qrboxFunction },
 						(decodedText) => {
 							stopCameraScanner();
 							let tokenVal = decodedText.trim();
@@ -740,15 +754,15 @@
 					</div>
 				{/if}
 
-				<!-- Camera Live Stream Frame -->
-				<div class="bg-slate-950 rounded-2xl overflow-hidden relative border border-slate-800 shadow-inner flex flex-col items-center justify-center min-h-[250px]">
+				<!-- 1:1 Aspect Ratio Camera Live Stream Frame -->
+				<div class="qr-camera-frame">
 					{#if isCameraLoading}
 						<div class="p-6 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
 							<svg class="animate-spin h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none">
 								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 							</svg>
-							<span>Memulai sensor kamera... Mohon izinkan akses kamera.</span>
+							<span>Memulai sensor kamera...</span>
 						</div>
 					{/if}
 
@@ -758,7 +772,7 @@
 						</div>
 					{/if}
 
-					<div id="qr-reader" class="w-full h-full rounded-xl overflow-hidden min-h-[220px]"></div>
+					<div id="qr-reader"></div>
 				</div>
 
 				<!-- Sleek Camera Zoom Control Container -->
@@ -846,6 +860,55 @@
 {/if}
 
 <style>
+	.qr-camera-frame {
+		width: 100%;
+		max-width: 320px;
+		aspect-ratio: 1 / 1;
+		margin: 0 auto;
+		background: #020617;
+		border-radius: var(--radius-lg, 12px);
+		overflow: hidden;
+		position: relative;
+		border: 1px solid var(--border-hard, #1e293b);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+	}
+
+	:global(#qr-reader) {
+		width: 100% !important;
+		height: 100% !important;
+		border: none !important;
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		overflow: hidden !important;
+		background: transparent !important;
+	}
+
+	:global(#qr-reader video) {
+		width: 100% !important;
+		height: 100% !important;
+		object-fit: cover !important;
+		border-radius: var(--radius-lg, 12px) !important;
+	}
+
+	:global(#qr-reader canvas) {
+		display: none !important;
+	}
+
+	:global(#qr-reader__scan_region) {
+		width: 100% !important;
+		height: 100% !important;
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+	}
+
+	:global(#qr-reader__dashboard) {
+		display: none !important;
+	}
 	.btn-action-primary {
 		display: inline-flex;
 		align-items: center;
