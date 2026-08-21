@@ -24,6 +24,47 @@
 	let selectedDeviceId = $state<string>('');
 	let html5QrcodeInstance: Html5Qrcode | null = null;
 
+	// Filter Tab State
+	let filterStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
+
+	// Scan success payload state
+	let scanSuccessResult = $state<{
+		message: string;
+		pointsAwarded: number;
+		currentStreak: number;
+		milestoneBonusAwarded: number;
+	} | null>(null);
+
+	const streakInfo = $derived(data.streakInfo ?? { currentStreak: 0 });
+	const logs = $derived(data.attendanceLogs ?? []);
+	const stats = $derived(
+		data.stats ?? { totalSessions: 0, totalHadir: 0, totalExcused: 0, attendancePercentage: 0 }
+	);
+
+	// Filtered history list
+	const filteredLogs = $derived(
+		logs.filter((log) => {
+			if (filterStatus === 'all') return true;
+			return log.status === filterStatus;
+		})
+	);
+
+	// Next milestone target
+	const currentStreak = $derived(streakInfo.currentStreak || 0);
+	const nextMilestone = $derived.by(() => {
+		const cur = currentStreak;
+		if (cur < 3) return { streak: 3, bonus: 50 };
+		if (cur < 5) return { streak: 5, bonus: 100 };
+		if (cur < 10) return { streak: 10, bonus: 250 };
+		if (cur < 15) return { streak: 15, bonus: 500 };
+		return { streak: 20, bonus: 1000 };
+	});
+
+	const milestoneProgressPercent = $derived.by(() => {
+		const target = nextMilestone.streak;
+		return Math.min(100, Math.round((currentStreak / target) * 100));
+	});
+
 	async function loadAvailableCameras() {
 		try {
 			const devices = await Html5Qrcode.getCameras();
