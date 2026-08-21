@@ -690,7 +690,7 @@
 <!-- High-Grade Camera Scanner Modal -->
 {#if isCameraOpen}
 	<div
-		class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-200"
+		class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md transition-all duration-200"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="cameraModalTitle"
@@ -699,10 +699,10 @@
 			class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]"
 		>
 			<!-- Modal Header -->
-			<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-				<div class="flex items-center gap-2.5">
-					<div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<div class="px-5 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
 							<circle cx="12" cy="13" r="4"/>
 						</svg>
@@ -711,13 +711,13 @@
 						<h3 id="cameraModalTitle" class="font-extrabold text-slate-900 text-sm leading-tight">
 							Scan QR Presensi
 						</h3>
-						<p class="text-[11px] text-slate-500 font-medium">Arahkan kamera ke kode QR Presensi</p>
+						<p class="text-[11px] text-slate-500 font-medium mt-0.5">Arahkan kamera ke kode QR Presensi</p>
 					</div>
 				</div>
 				<button
 					type="button"
 					onclick={stopCameraScanner}
-					class="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+					class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
 					aria-label="Tutup modal kamera"
 				>
 					&times;
@@ -731,7 +731,7 @@
 					<div>
 						<CustomSelect
 							id="cameraSelect"
-							label={`Pilih Kamera Device (${availableCameras.length} Kamera Ditemukan)`}
+							label={`Pilih Sensor Kamera (${availableCameras.length} Ditemukan)`}
 							value={selectedDeviceId}
 							options={cameraSelectOptions}
 							searchable={false}
@@ -741,7 +741,7 @@
 				{/if}
 
 				<!-- Camera Live Stream Frame -->
-				<div class="bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 shadow-inner flex flex-col items-center justify-center min-h-[260px]">
+				<div class="bg-slate-950 rounded-2xl overflow-hidden relative border border-slate-800 shadow-inner flex flex-col items-center justify-center min-h-[250px]">
 					{#if isCameraLoading}
 						<div class="p-6 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
 							<svg class="animate-spin h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none">
@@ -753,55 +753,38 @@
 					{/if}
 
 					{#if cameraError}
-						<div class="p-4 text-xs bg-rose-950/90 text-rose-200 rounded-lg border border-rose-800 m-3 text-center font-medium">
+						<div class="p-4 text-xs bg-rose-950/90 text-rose-200 rounded-xl border border-rose-800 m-3 text-center font-medium">
 							{cameraError}
 						</div>
 					{/if}
 
-					<div id="qr-reader" class="w-full h-full rounded-lg overflow-hidden min-h-[220px]"></div>
+					<div id="qr-reader" class="w-full h-full rounded-xl overflow-hidden min-h-[220px]"></div>
 				</div>
 
-				<!-- Camera Zoom Control Bar -->
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
-					<div class="flex items-center justify-between text-xs font-bold text-slate-700">
-						<span class="flex items-center gap-1.5">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<!-- Sleek Camera Zoom Control Bar -->
+				<div class="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col gap-3">
+					<div class="flex items-center justify-between">
+						<span class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-600">
 								<circle cx="11" cy="11" r="8"/>
 								<line x1="21" y1="21" x2="16.65" y2="16.65"/>
 								<line x1="11" y1="8" x2="11" y2="14"/>
 								<line x1="8" y1="11" x2="14" y2="11"/>
 							</svg>
-							Zoom Kamera ({zoomLevel.toFixed(1)}x)
+							Zoom Kamera <span class="font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-[11px]">{zoomLevel.toFixed(1)}x</span>
 						</span>
-						<div class="flex items-center gap-1">
-							<button
-								type="button"
-								onclick={() => setZoom(1)}
-								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
-							>
-								1x
-							</button>
-							<button
-								type="button"
-								onclick={() => setZoom(1.5)}
-								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
-							>
-								1.5x
-							</button>
-							<button
-								type="button"
-								onclick={() => setZoom(2)}
-								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
-							>
-								2x
-							</button>
-							<button
-								type="button"
-								onclick={() => setZoom(3)}
-								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
-							>
-								3x
-							</button>
+
+						<!-- Sleek Zoom Shortcut Pills -->
+						<div class="flex items-center gap-1 bg-white p-1 rounded-full border border-slate-200 shadow-2xs">
+							{#each [1, 1.5, 2, 3] as preset}
+								<button
+									type="button"
+									onclick={() => setZoom(preset)}
+									class="px-2.5 py-0.5 text-[11px] font-bold font-mono rounded-full transition-all cursor-pointer {Math.abs(zoomLevel - preset) < 0.05 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}"
+								>
+									{preset}x
+								</button>
+							{/each}
 						</div>
 					</div>
 
@@ -810,7 +793,7 @@
 							type="button"
 							onclick={() => setZoom(zoomLevel - 0.2)}
 							disabled={zoomLevel <= minZoom}
-							class="w-7 h-7 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold text-sm flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+							class="w-7 h-7 rounded-full border border-slate-200 bg-white text-slate-700 font-extrabold text-sm flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 disabled:opacity-40 cursor-pointer shadow-2xs transition-all"
 							aria-label="Zoom Out"
 						>
 							-
@@ -830,7 +813,7 @@
 							type="button"
 							onclick={() => setZoom(zoomLevel + 0.2)}
 							disabled={zoomLevel >= maxZoom}
-							class="w-7 h-7 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold text-sm flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+							class="w-7 h-7 rounded-full border border-slate-200 bg-white text-slate-700 font-extrabold text-sm flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 disabled:opacity-40 cursor-pointer shadow-2xs transition-all"
 							aria-label="Zoom In"
 						>
 							+
@@ -838,17 +821,17 @@
 					</div>
 				</div>
 
-				<p class="text-[11px] text-slate-500 text-center font-medium">
+				<p class="text-[11px] text-slate-400 text-center font-medium">
 					Sistem akan mendeteksi token presensi secara otomatis begitu QR terlihat pada kamera.
 				</p>
 			</div>
 
-			<!-- Modal Footer -->
-			<div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+			<!-- Modal Footer: Seamless White Background matching card with unified padding -->
+			<div class="px-5 py-4 bg-white border-t border-slate-100 flex items-center justify-end">
 				<button
 					type="button"
 					onclick={stopCameraScanner}
-					class="btn-modal-close"
+					class="btn-modal-close w-full sm:w-auto"
 				>
 					Tutup Kamera
 				</button>
