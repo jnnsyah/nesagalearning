@@ -72,8 +72,9 @@ export class AttendanceService {
 		const startStr = parseTimeOnly(meeting.startTime);
 		const endStr = parseTimeOnly(meeting.endTime);
 
-		const startMs = new Date(`${dateStr}T${startStr}`).getTime();
-		const endMs = new Date(`${dateStr}T${endStr}`).getTime();
+		// Explicitly construct WIB (+07:00) ISO string so timezone is 100% accurate regardless of server OS timezone
+		const startMs = new Date(`${dateStr}T${startStr}+07:00`).getTime();
+		const endMs = new Date(`${dateStr}T${endStr}+07:00`).getTime();
 
 		if (isNaN(startMs) || isNaN(endMs)) return false;
 
