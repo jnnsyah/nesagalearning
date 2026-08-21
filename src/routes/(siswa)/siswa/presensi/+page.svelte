@@ -10,6 +10,9 @@
 	let scanErrorMessage = $state('');
 	let hasAutoSubmitted = $state(false);
 
+	// Filter Tab State
+	let filterStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
+
 	// Scan success payload state
 	let scanSuccessResult = $state<{
 		message: string;
@@ -19,12 +22,23 @@
 	} | null>(null);
 
 	const streakInfo = $derived(data.streakInfo);
-	const history = $derived(data.attendanceHistory ?? []);
-	const totalAttended = $derived(history.filter((h) => h.status === 'hadir').length);
+	const logs = $derived(data.attendanceLogs ?? []);
+	const stats = $derived(
+		data.stats ?? { totalSessions: 0, totalHadir: 0, totalExcused: 0, attendancePercentage: 0 }
+	);
+
+	// Filtered history list
+	const filteredLogs = $derived(
+		logs.filter((log) => {
+			if (filterStatus === 'all') return true;
+			return log.status === filterStatus;
+		})
+	);
 
 	// Next milestone target
+	const currentStreak = $derived(streakInfo.currentStreak || 0);
 	const nextMilestone = $derived.by(() => {
-		const cur = streakInfo.currentStreak;
+		const cur = currentStreak;
 		if (cur < 3) return { streak: 3, bonus: 50 };
 		if (cur < 5) return { streak: 5, bonus: 100 };
 		if (cur < 10) return { streak: 10, bonus: 250 };
@@ -34,7 +48,7 @@
 
 	const milestoneProgressPercent = $derived.by(() => {
 		const target = nextMilestone.streak;
-		return Math.min(100, Math.round((streakInfo.currentStreak / target) * 100));
+		return Math.min(100, Math.round((currentStreak / target) * 100));
 	});
 
 	async function submitToken(tokenToSubmit: string) {
@@ -75,10 +89,41 @@
 	}
 
 	$effect(() => {
-		if (data.urlToken && data.urlToken.trim() && !hasAutoSubmitted) {
+		if (typeof window === 'undefined') return;
+
+		// 1. If URL has token, save to sessionStorage as pending
+		if (data.urlToken && data.urlToken.trim()) {
+			try {
+				sessionStorage.setItem('pending_qr_token', data.urlToken.trim());
+			} catch {}
+		}
+
+		// 2. Read pending token from URL or sessionStorage
+		let pendingToken: string | null = (data.urlToken && data.urlToken.trim()) || null;
+		if (!pendingToken) {
+			try {
+				pendingToken = sessionStorage.getItem('pending_qr_token');
+			} catch {}
+		}
+
+		const cleanToken = pendingToken ? pendingToken.trim() : '';
+
+		if (cleanToken && !hasAutoSubmitted) {
 			hasAutoSubmitted = true;
-			qrTokenInput = data.urlToken.trim();
-			submitToken(data.urlToken.trim());
+			qrTokenInput = cleanToken;
+
+			// Clear pending token from sessionStorage to prevent duplicate auto-submits later
+			try {
+				sessionStorage.removeItem('pending_qr_token');
+			} catch {}
+
+			// Clean up URL query string (?token=...) without page reload
+			if (window.history && window.history.replaceState) {
+				window.history.replaceState({}, '', window.location.pathname);
+			}
+
+			// Automatically submit QR attendance scan
+			submitToken(cleanToken);
 		}
 	});
 
@@ -99,258 +144,356 @@
 		const mm = String(d.getMinutes()).padStart(2, '0');
 		return `${hh}:${mm} WIB`;
 	}
+
+	function formatIndoDate(dateVal: Date | string | null | undefined): string {
+		if (!dateVal) return '-';
+		let d: Date;
+		if (dateVal instanceof Date) {
+			d = dateVal;
+		} else {
+			const str = String(dateVal).trim();
+			const dateOnly = str.includes('T') ? str.split('T')[0] : str;
+			if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+				const [y, m, day] = dateOnly.split('-').map(Number);
+				d = new Date(y, m - 1, day);
+			} else {
+				d = new Date(str);
+			}
+		}
+		if (isNaN(d.getTime())) return String(dateVal);
+		const bulanIndo = [
+			'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+			'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+		];
+		return `${d.getDate()} ${bulanIndo[d.getMonth()]} ${d.getFullYear()}`;
+	}
+
+	function formatTimeOnly(timeStr: string | null | undefined): string {
+		if (!timeStr) return '';
+		const parts = String(timeStr).trim().split(':');
+		if (parts.length >= 2) {
+			return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+		}
+		return String(timeStr);
+	}
 </script>
 
 <svelte:head>
-	<title>Presensi QR & Streak Saya — NLC</title>
+	<title>Riwayat Presensi & Kehadiran — Siswa Hub</title>
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page Header Row -->
-	<div class="page-header-row">
-		<div>
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/siswa" class="bc-link">Dashboard</a>
-				<span class="text-slate-400">/</span>
-				<span class="bc-current">Presensi QR & Streak</span>
-			</nav>
-			<h1 class="page-title">Scan Presensi & Streak Saya</h1>
-			<p class="page-sub">
-				Masukkan token QR dari proyektor mentor untuk mencatat Kehadiran dan pertahankan streak berturut-turut!
-			</p>
-		</div>
-	</div>
+	<!-- Header Card (Original /siswa/riwayat-presensi Header Standard) -->
+	<div class="header-card">
+		<nav class="breadcrumb" aria-label="Breadcrumb">
+			<a href="/siswa" class="bc-link">Dashboard</a>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
+				<polyline points="9 18 15 12 9 6" />
+			</svg>
+			<span class="bc-current">Riwayat Presensi</span>
+		</nav>
 
-	<!-- Streak Showcase Panel -->
-	<div class="panel p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-		<div class="flex items-center justify-between flex-wrap gap-4">
-			<div class="flex items-center gap-4">
-				<div class="w-14 h-14 rounded-2xl bg-amber-400 text-white flex items-center justify-center shadow-lg shadow-amber-200">
-					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-					</svg>
-				</div>
-				<div>
-					<div class="type-mono text-amber-700 font-bold uppercase">Streak Kehadiran Sesi</div>
-					<div class="type-macro text-amber-900 text-3xl">{streakInfo.currentStreak} Sesi Beruntun</div>
-				</div>
+		<div class="flex items-start justify-between gap-4 flex-wrap">
+			<div>
+				<h1 class="page-title">Riwayat Kehadiran &amp; Scan Presensi</h1>
+				<p class="page-sub">
+					Lacak seluruh catatan kehadiran, masukkan token QR proyektor, dan pertahankan streak sesi kelas komunitas Anda.
+				</p>
 			</div>
-
-			<div class="w-full sm:w-72 bg-white/80 backdrop-blur p-3 rounded-xl border border-amber-200">
-				<div class="flex items-center justify-between text-xs font-bold mb-1">
-					<span class="text-amber-800">Target Milestone: {nextMilestone.streak} Sesi</span>
-					<span class="text-indigo-600">+{nextMilestone.bonus} Bonus Poin</span>
-				</div>
-				<div class="w-full h-2.5 bg-amber-100 rounded-full overflow-hidden">
-					<div
-						class="h-full bg-amber-500 rounded-full transition-all duration-500"
-						style="width: {milestoneProgressPercent}%;"
-					></div>
-				</div>
+			<div class="flex items-center gap-2.5 flex-wrap">
+				{#if data.membership}
+					<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
+				{/if}
 			</div>
 		</div>
 	</div>
 
-	<!-- Main Grid: Scanner Input Card + Stats -->
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-		<!-- Scanner Input Form Card -->
-		<div class="panel lg:col-span-2 overflow-hidden">
-			<div class="section-header">
-				<div class="flex items-center gap-2">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
-						<rect x="7" y="7" width="3" height="3" fill="currentColor" />
-						<rect x="14" y="7" width="3" height="3" fill="currentColor" />
-						<rect x="7" y="14" width="3" height="3" fill="currentColor" />
-						<rect x="14" y="14" width="3" height="3" fill="currentColor" />
-					</svg>
-					<span>Form Scan Presensi Mandiri</span>
-				</div>
+	<!-- Stats Row Grid (3 Columns) -->
+	<div class="stats-grid mb-5">
+		<!-- Stat 1: Attendance Percentage -->
+		<div class="stat-card">
+			<div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
 			</div>
+			<div>
+				<div class="stat-label">Persentase Kehadiran</div>
+				<div class="stat-value" style="color: #4f46e5;">{stats.attendancePercentage}%</div>
+				<div class="stat-meta">{stats.totalHadir} dari {stats.totalSessions} Sesi Hadir</div>
+			</div>
+		</div>
 
-			<div class="p-6">
-				{#if scanSuccessResult}
-					<!-- Celebration Success Panel -->
-					<div class="p-6 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl text-center">
-						<div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto mb-3 shadow-md">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</div>
-						<h3 class="font-extrabold text-emerald-900 text-lg">Presensi Berhasil Dicatat!</h3>
-						<p class="text-xs text-emerald-700 font-medium mt-1">{scanSuccessResult.message}</p>
+		<!-- Stat 2: Total Hadir & Excused -->
+		<div class="stat-card">
+			<div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="9 11 12 14 22 4" />
+					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+				</svg>
+			</div>
+			<div>
+				<div class="stat-label">Total Hadir &amp; Izin</div>
+				<div class="stat-value" style="color: #16a34a;">{stats.totalHadir + stats.totalExcused}</div>
+				<div class="stat-meta">Hadir: {stats.totalHadir} | Izin: {stats.totalExcused}</div>
+			</div>
+		</div>
 
-						<div class="flex items-center justify-center gap-3 mt-4 flex-wrap">
-							<span class="badge badge-hadir text-xs px-3 py-1">
-								+ {scanSuccessResult.pointsAwarded} Poin Kehadiran
-							</span>
-							{#if scanSuccessResult.milestoneBonusAwarded > 0}
-								<span class="badge badge-excused text-xs px-3 py-1">
-									Bonus Milestone +{scanSuccessResult.milestoneBonusAwarded} Poin!
-								</span>
-							{/if}
-						</div>
+		<!-- Stat 3: Streak Counter & Progress -->
+		<div class="stat-card">
+			<div class="stat-icon" style="background: #fffbeb; color: #d97706;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+				</svg>
+			</div>
+			<div class="w-full min-w-0">
+				<div class="flex items-center justify-between">
+					<div class="stat-label">Streak Kehadiran Aktif</div>
+					<span class="text-[11px] font-extrabold text-indigo-600">+{nextMilestone.bonus} Poin</span>
+				</div>
+				<div class="stat-value" style="color: #d97706;">
+					{currentStreak} <span class="text-xs font-normal text-slate-500">Sesi</span>
+				</div>
+				<div class="streak-bar-wrap mt-1">
+					<div class="streak-bar" style="width: {milestoneProgressPercent}%;"></div>
+				</div>
+				<div class="stat-meta mt-1">Target Next Milestone: {nextMilestone.streak} Sesi</div>
+			</div>
+		</div>
+	</div>
 
-						<button
-							type="button"
-							onclick={() => (scanSuccessResult = null)}
-							class="btn-ghost text-xs mt-5"
-						>
-							Scan Token Sesi Lain
-						</button>
+	<!-- QR Scanner Form Card -->
+	<div class="scanner-card mb-5">
+		<div class="scanner-header">
+			<div class="flex items-center gap-2">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+					<path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+					<rect x="7" y="7" width="3" height="3" fill="currentColor" />
+					<rect x="14" y="7" width="3" height="3" fill="currentColor" />
+					<rect x="7" y="14" width="3" height="3" fill="currentColor" />
+					<rect x="14" y="14" width="3" height="3" fill="currentColor" />
+				</svg>
+				<span class="scanner-title">Form Scan Presensi Mandiri</span>
+			</div>
+		</div>
+
+		<div class="scanner-body">
+			{#if scanSuccessResult}
+				<!-- Celebration Success Panel -->
+				<div class="p-5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+					<div class="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto mb-2.5 shadow-sm">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="20 6 9 17 4 12" />
+						</svg>
 					</div>
-				{:else}
-					<form onsubmit={handleScanSubmit} class="space-y-4">
-						<div>
-							<label for="tokenInput" class="field-label uppercase">
-								Kode Token QR (Lihat di Proyektor Mentor) *
-							</label>
+					<h3 class="font-extrabold text-emerald-900 text-base">Presensi Berhasil Dicatat!</h3>
+					<p class="text-xs text-emerald-700 font-medium mt-1">{scanSuccessResult.message}</p>
+
+					<div class="flex items-center justify-center gap-2 mt-3 flex-wrap">
+						<span class="badge-status badge-hadir text-xs px-3 py-1 font-bold">
+							+ {scanSuccessResult.pointsAwarded} Poin Kehadiran
+						</span>
+						{#if scanSuccessResult.milestoneBonusAwarded > 0}
+							<span class="badge-status badge-excused text-xs px-3 py-1 font-bold">
+								Bonus Milestone +{scanSuccessResult.milestoneBonusAwarded} Poin!
+							</span>
+						{/if}
+					</div>
+
+					<button
+						type="button"
+						onclick={() => (scanSuccessResult = null)}
+						class="btn-scan-qr text-xs mt-4"
+					>
+						Scan Token Sesi Lain
+					</button>
+				</div>
+			{:else}
+				<form onsubmit={handleScanSubmit} class="space-y-4">
+					<div>
+						<label for="tokenInput" class="stat-label uppercase block mb-1.5">
+							Kode Token QR (Lihat di Proyektor Mentor) *
+						</label>
+						<div class="relative">
 							<input
 								id="tokenInput"
 								type="text"
 								bind:value={qrTokenInput}
 								placeholder="Masukkan kode token di sini..."
-								class="field-input font-mono text-base font-bold tracking-wider py-3"
+								class="scan-input font-mono text-sm font-bold tracking-wider w-full rounded-lg"
 							/>
-						</div>
-
-						{#if scanErrorMessage}
-							<div class="alert-error">
-								{scanErrorMessage}
-							</div>
-						{/if}
-
-						<button
-							type="submit"
-							disabled={isSubmitting || !qrTokenInput.trim()}
-							class="btn-primary py-3 text-base"
-						>
-							{#if isSubmitting}
-								<span>Memproses Presensi...</span>
-							{:else}
-								<span>Kirim Presensi Sekarang</span>
+							{#if qrTokenInput}
+								<button
+									type="button"
+									onclick={() => (qrTokenInput = '')}
+									class="scan-clear-btn"
+									aria-label="Bersihkan input"
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<line x1="18" y1="6" x2="6" y2="18" />
+										<line x1="6" y1="6" x2="18" y2="18" />
+									</svg>
+								</button>
 							{/if}
-						</button>
-					</form>
-				{/if}
-			</div>
-		</div>
+						</div>
+					</div>
 
-		<!-- Right Column Quick Specs -->
-		<div class="space-y-4">
-			<div class="stat-block">
-				<div class="stat-block__label">Total Kehadiran Saya</div>
-				<div class="stat-block__value text-emerald-700">{totalAttended} Sesi</div>
-				<div class="stat-block__meta">Tercatat Hadir Sesi</div>
-			</div>
+					{#if scanErrorMessage}
+						<div class="alert-error p-3 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+							{scanErrorMessage}
+						</div>
+					{/if}
 
-			<div class="stat-block">
-				<div class="stat-block__label">Streak Tertinggi</div>
-				<div class="stat-block__value text-amber-600">{streakInfo.maxStreak} Sesi</div>
-				<div class="stat-block__meta">Rekor Pertemuan Berturut-turut</div>
-			</div>
+					<button
+						type="submit"
+						disabled={isSubmitting || !qrTokenInput.trim()}
+						class="btn-scan-submit w-full text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+					>
+						{#if isSubmitting}
+							<span>Memproses Presensi...</span>
+						{:else}
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<line x1="22" y1="2" x2="11" y2="13" />
+								<polygon points="22 2 15 22 11 13 2 9 22 2" />
+							</svg>
+							<span>Kirim Presensi Sekarang</span>
+						{/if}
+					</button>
+				</form>
+			{/if}
 		</div>
 	</div>
 
-	<!-- History Table Panel -->
-	<div class="panel overflow-hidden">
-		<div class="section-header">
-			<div class="flex items-center gap-2">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="10" />
-					<polyline points="12 6 12 12 16 14" />
-				</svg>
-				<span>Riwayat Kehadiran Sesi Saya</span>
+	<!-- Filter Tabs & List Container (Original riwayat-presensi Container) -->
+	<div class="list-container">
+		<div class="filter-bar">
+			<div class="tab-group">
+				<button
+					type="button"
+					onclick={() => (filterStatus = 'all')}
+					class="tab-btn {filterStatus === 'all' ? 'tab-btn-active' : ''}"
+				>
+					Semua ({logs.length})
+				</button>
+				<button
+					type="button"
+					onclick={() => (filterStatus = 'hadir')}
+					class="tab-btn {filterStatus === 'hadir' ? 'tab-btn-active' : ''}"
+				>
+					Hadir ({stats.totalHadir})
+				</button>
+				<button
+					type="button"
+					onclick={() => (filterStatus = 'excused')}
+					class="tab-btn {filterStatus === 'excused' ? 'tab-btn-active' : ''}"
+				>
+					Izin/Sakit ({stats.totalExcused})
+				</button>
+				<button
+					type="button"
+					onclick={() => (filterStatus = 'absen')}
+					class="tab-btn {filterStatus === 'absen' ? 'tab-btn-active' : ''}"
+				>
+					Absen ({stats.totalSessions - (stats.totalHadir + stats.totalExcused)})
+				</button>
 			</div>
-			<span class="type-mono text-muted">{history.length} Sesi</span>
 		</div>
 
-		<table class="w-full text-left border-collapse">
-			<thead>
-				<tr class="bg-slate-50 border-bottom text-xs font-extrabold text-slate-600 uppercase">
-					<th class="py-3 px-4">Sesi Pertemuan</th>
-					<th class="py-3 px-4">Tanggal</th>
-					<th class="py-3 px-4">Metode Input</th>
-					<th class="py-3 px-4">Status Kehadiran</th>
-					<th class="py-3 px-4">Waktu Presensi</th>
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-slate-100">
-				{#if history.length === 0}
-					<tr>
-						<td colspan="5" class="text-center py-10 text-slate-500 text-sm">
-							Belum ada riwayat presensi yang tercatat.
-						</td>
-					</tr>
-				{:else}
-					{#each history as item}
-						<tr class="hover:bg-slate-50/80 transition-colors">
-							<td class="py-3 px-4">
-								<div class="font-bold text-slate-900 text-sm">{item.sessionTitle}</div>
-								<div class="type-mono text-slate-500 uppercase">{item.activityType}</div>
-							</td>
-							<td class="py-3 px-4 text-xs font-semibold text-slate-700">
-								{item.sessionDate}
-							</td>
-							<td class="py-3 px-4">
-								{#if item.method === 'qr'}
-									<span class="badge badge-live">Scan QR</span>
-								{:else if item.method === 'manual'}
-									<span class="badge badge-excused">Manual Mentor</span>
-								{:else}
-									<span class="text-xs text-slate-400">-</span>
+		{#if filteredLogs.length === 0}
+			<div class="empty-state">
+				<p class="empty-title">Tidak Ada Catatan Presensi</p>
+				<p class="empty-sub">Tidak ditemukan catatan presensi sesuai kriteria filter yang dipilih.</p>
+			</div>
+		{:else}
+			<div class="timeline-list space-y-3 p-4">
+				{#each filteredLogs as item}
+					<div class="timeline-card">
+						<div class="flex items-start justify-between gap-3 flex-wrap">
+							<div class="flex-1 min-w-0">
+								<div class="flex items-center gap-2 mb-1 flex-wrap">
+									<span class="activity-badge">{item.session.activityType.toUpperCase()}</span>
+									{#if item.session.isWeekend}
+										<span class="weekend-badge">WEEKEND</span>
+									{/if}
+
+									{#if item.status === 'hadir'}
+										<span class="badge-status badge-hadir">HADIR</span>
+									{:else if item.status === 'excused'}
+										<span class="badge-status badge-excused">IZIN / SAKIT</span>
+									{:else}
+										<span class="badge-status badge-absen">ABSEN</span>
+									{/if}
+								</div>
+
+								<h4 class="session-title">{item.session.title}</h4>
+
+								<div class="session-meta mt-1">
+									<span>Tanggal: <strong>{formatIndoDate(item.session.sessionDate)}</strong></span>
+									{#if item.session.startTime}
+										<span>Jam: <strong>{formatTimeOnly(item.session.startTime)} - {formatTimeOnly(item.session.endTime)} WIB</strong></span>
+									{/if}
+									{#if item.session.location}
+										<span>Ruangan: <strong>{item.session.location}</strong></span>
+									{/if}
+								</div>
+
+								{#if item.attendance?.manualReason}
+									<div class="manual-reason-box mt-2">
+										<span>Catatan Presensi: "{item.attendance.manualReason}"</span>
+									</div>
 								{/if}
-							</td>
-							<td class="py-3 px-4">
-								{#if item.status === 'hadir'}
-									<span class="badge badge-hadir">HADIR</span>
-								{:else if item.status === 'excused'}
-									<span class="badge badge-excused">EXCUSED / IZIN</span>
+							</div>
+
+							<div class="text-right flex-shrink-0">
+								{#if item.attendance}
+									<span class="method-tag">
+										Metode: {item.attendance.method === 'qr' ? 'QR Code Scan' : 'Input Manual Mentor'}
+									</span>
+									<div class="text-[11px] font-mono text-slate-500 mt-0.5">
+										{formatIndoTime(item.attendance.recordedAt)}
+									</div>
 								{:else}
-									<span class="badge badge-absen">BELUM PRESENSI</span>
+									<span class="method-tag text-slate-400">Belum Terdeteksi</span>
 								{/if}
-							</td>
-							<td class="py-3 px-4 text-xs font-mono text-slate-600">
-								{formatIndoTime(item.recordedAt)}
-							</td>
-						</tr>
-					{/each}
-				{/if}
-			</tbody>
-		</table>
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 </div>
 
 <style>
 	.content-area {
 		padding: 24px 28px 40px;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		max-width: 1300px;
+		max-width: 1100px;
 		margin: 0 auto;
 		width: 100%;
 	}
 
-	.page-header-row {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 20px;
-		flex-wrap: wrap;
+	.header-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		padding: 20px 24px;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 20px;
 	}
 
 	.breadcrumb {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 0.85rem;
-		margin-bottom: 4px;
+		margin-bottom: 10px;
 	}
 
 	.bc-link {
+		font-family: var(--font-mono);
+		font-size: 11px;
 		color: var(--text-muted);
-		font-weight: 500;
+		text-decoration: none;
 	}
 
 	.bc-link:hover {
@@ -366,21 +509,402 @@
 
 	.page-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-size: clamp(1.3rem, 2.5vw, 1.6rem);
 		font-weight: 800;
 		color: var(--text-primary);
-		letter-spacing: -0.02em;
-		margin-bottom: 4px;
+		line-height: 1.25;
 	}
 
 	.page-sub {
-		font-size: 14px;
+		font-size: 12.5px;
 		color: var(--text-secondary);
 	}
 
+	.kelas-badge {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 4px 10px;
+		border-radius: 6px;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+	}
+
 	@media (max-width: 768px) {
+		.stats-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.stat-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		padding: 16px 20px;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.stat-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.stat-label {
+		font-size: 11.5px;
+		font-weight: 700;
+		color: var(--text-secondary);
+	}
+
+	.stat-value {
+		font-family: var(--font-macro);
+		font-size: 1.6rem;
+		font-weight: 800;
+		line-height: 1.1;
+	}
+
+	.stat-meta {
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.streak-bar-wrap {
+		width: 100%;
+		height: 6px;
+		background: #f1f5f9;
+		border-radius: 9999px;
+		overflow: hidden;
+	}
+
+	.streak-bar {
+		height: 100%;
+		background: #d97706;
+		border-radius: 9999px;
+		transition: width 200ms ease;
+	}
+
+	.scanner-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-sm);
+		overflow: hidden;
+	}
+
+	.scanner-header {
+		padding: 14px 20px;
+		border-bottom: 1px solid var(--border-hard);
+		background: var(--bg-inset);
+	}
+
+	.scanner-title {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.scanner-body {
+		padding: 20px;
+	}
+
+	.scan-input {
+		height: 44px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		padding: 10px 40px 10px 14px;
+		color: var(--text-primary);
+		font-size: 14px;
+		border-radius: var(--radius-md);
+		transition: all 150ms ease;
+	}
+
+	.scan-input:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+		outline: none;
+	}
+
+	.scan-clear-btn {
+		position: absolute;
+		right: 10px;
+		top: 50%;
+		transform: translateY(-50%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		border: none;
+		background: transparent;
+		color: #94a3b8;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.scan-clear-btn:hover {
+		background: #f1f5f9;
+		color: #475569;
+	}
+
+	.btn-scan-submit {
+		height: 44px;
+		padding: 10px 20px;
+		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+		color: #ffffff;
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+		transition: all 150ms ease;
+	}
+
+	.btn-scan-submit:hover:not(:disabled) {
+		background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+	}
+
+	.btn-scan-submit:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	.btn-scan-submit:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+		box-shadow: none;
+	}
+
+	@media (max-width: 640px) {
+		.scanner-body {
+			padding: 16px;
+		}
+	}
+
+	.btn-scan-qr {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		background: #4f46e5;
+		color: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		border: none;
+		cursor: pointer;
+		transition: background 150ms ease;
+	}
+
+	.btn-scan-qr:hover {
+		background: #4338ca;
+	}
+
+	.list-container {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-sm);
+		overflow: hidden;
+	}
+
+	.filter-bar {
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--border-hard);
+		background: var(--bg-inset);
+	}
+
+	.tab-group {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.tab-btn {
+		padding: 6px 12px;
+		border: 1px solid var(--border-hard);
+		background: #ffffff;
+		border-radius: 6px;
+		font-family: var(--font-macro);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.tab-btn:hover {
+		border-color: var(--primary-border);
+		color: var(--primary);
+	}
+
+	.tab-btn-active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		border-color: #4f46e5 !important;
+	}
+
+	.timeline-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-md);
+		padding: 14px 16px;
+		transition: all 150ms ease;
+	}
+
+	.timeline-card:hover {
+		border-color: #cbd5e1;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.activity-badge {
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		color: #4f46e5;
+		background: #e0e7ff;
+		padding: 1.5px 6px;
+		border-radius: 4px;
+	}
+
+	.weekend-badge {
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 700;
+		color: #b45309;
+		background: #fffbeb;
+		border: 1px solid #fde68a;
+		padding: 1.5px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-status {
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		font-weight: 800;
+		padding: 1.5px 6px;
+		border-radius: 4px;
+	}
+
+	.badge-hadir {
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #86efac;
+	}
+
+	.badge-excused {
+		background: #e0e7ff;
+		color: #3730a3;
+		border: 1px solid #a5b4fc;
+	}
+
+	.badge-absen {
+		background: #ffe4e6;
+		color: #be123c;
+		border: 1px solid #fecdd3;
+	}
+
+	.session-title {
+		font-family: var(--font-macro);
+		font-size: 13.5px;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin: 0;
+	}
+
+	.session-meta {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 11.5px;
+		color: var(--text-secondary);
+		flex-wrap: wrap;
+	}
+
+	.manual-reason-box {
+		font-size: 11px;
+		color: #475569;
+		background: #f8fafc;
+		padding: 4px 8px;
+		border-radius: 4px;
+		border-left: 3px solid #cbd5e1;
+	}
+
+	.method-tag {
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 36px 20px;
+	}
+
+	.empty-title {
+		font-family: var(--font-macro);
+		font-size: 14px;
+		font-weight: 800;
+		color: var(--text-primary);
+	}
+
+	.empty-sub {
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	@media (max-width: 640px) {
 		.content-area {
-			padding: 16px 16px 40px;
+			padding: 16px 12px 80px;
+		}
+
+		.header-card {
+			padding: 16px;
+		}
+
+		.filter-bar {
+			padding: 8px 10px;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.tab-group {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+			padding-bottom: 2px;
+		}
+
+		.tab-group::-webkit-scrollbar {
+			display: none;
+		}
+
+		.tab-btn {
+			flex-shrink: 0;
+			white-space: nowrap;
+			padding: 6px 10px;
+			font-size: 11px;
 		}
 	}
 </style>

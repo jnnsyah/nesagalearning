@@ -15,8 +15,8 @@ type SubmissionItem = (typeof data.submissions)[number];
 type MeetingSummaryItem = (typeof data.meetingSummaries)[number];
 
 // Master-Detail Navigation State
-let selectedPertemuanId = $state<number | null>(null);
-let selectedSubmissionId = $state<number | null>(null);
+let selectedPertemuanId = $state<number | null>(data.initialPertemuanId ?? null);
+let selectedSubmissionId = $state<number | null>(data.initialSubmissionId ?? null);
 
 // Level 1 Filters & Sorting State
 let selectedKelasFilter = $state<string>('all');
@@ -139,7 +139,7 @@ let rosterSortOptions = [
 		const currentIndex = sortedRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
 		if (currentIndex !== -1 && currentIndex < sortedRosterSubmissions.length - 1) {
 			const nextSub = sortedRosterSubmissions[currentIndex + 1];
-			selectedSubmissionId = nextSub.id;
+			selectSubmission(nextSub.id);
 		}
 	}
 
@@ -148,7 +148,7 @@ let rosterSortOptions = [
 		const currentIndex = sortedRosterSubmissions.findIndex((s) => s.id === activeSubmission?.id);
 		if (currentIndex > 0) {
 			const prevSub = sortedRosterSubmissions[currentIndex - 1];
-			selectedSubmissionId = prevSub.id;
+			selectSubmission(prevSub.id);
 		}
 	}
 
@@ -294,40 +294,90 @@ let rosterSortOptions = [
 		meetingSubmissions.filter((s) => s.status === 'approved').length
 	);
 
-	function selectMeeting(pertemuanId: number) {
+	function selectMeeting(pertemuanId: number, targetSubmissionId?: number | null) {
 		selectedPertemuanId = pertemuanId;
 		rosterSearchQuery = '';
 		rosterStatusFilter = 'all';
 		const subs = (data.submissions || []).filter((s) => s.pertemuanId === pertemuanId);
 		const firstPending = subs.find((s) => s.status === 'pending');
-		selectedSubmissionId = firstPending ? firstPending.id : (subs[0]?.id || null);
+		const chosenSubId = targetSubmissionId ?? (firstPending ? firstPending.id : (subs[0]?.id || null));
+		selectedSubmissionId = chosenSubId;
+
+		if (typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+			url.searchParams.set('pertemuanId', String(pertemuanId));
+			if (chosenSubId) {
+				url.searchParams.set('submissionId', String(chosenSubId));
+			} else {
+				url.searchParams.delete('submissionId');
+			}
+			goto(url.search, { replaceState: true, keepFocus: true, noScroll: true });
+		}
+	}
+
+	function selectSubmission(subId: number) {
+		selectedSubmissionId = subId;
+		if (selectedPertemuanId !== null && typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+			url.searchParams.set('pertemuanId', String(selectedPertemuanId));
+			url.searchParams.set('submissionId', String(subId));
+			goto(url.search, { replaceState: true, keepFocus: true, noScroll: true });
+		}
 	}
 
 	$effect(() => {
 		const paramPid = $page.url.searchParams.get('pertemuanId');
+		const paramSubId = $page.url.searchParams.get('submissionId');
+
 		if (paramPid && !isNaN(Number(paramPid))) {
 			const pid = Number(paramPid);
 			const exists = (data.meetingSummaries || []).some((m) => m.pertemuanId === pid);
 			if (exists) {
 				untrack(() => {
 					if (selectedPertemuanId !== pid) {
-						selectMeeting(pid);
+						selectedPertemuanId = pid;
+					}
+					if (paramSubId && !isNaN(Number(paramSubId))) {
+						const subId = Number(paramSubId);
+						if (selectedSubmissionId !== subId) {
+							selectedSubmissionId = subId;
+						}
+					} else if (selectedSubmissionId === null) {
+						const subs = (data.submissions || []).filter((s) => s.pertemuanId === pid);
+						const firstPending = subs.find((s) => s.status === 'pending');
+						selectedSubmissionId = firstPending ? firstPending.id : (subs[0]?.id || null);
 					}
 				});
+			} else {
+				untrack(() => {
+					selectedPertemuanId = null;
+					selectedSubmissionId = null;
+				});
 			}
+		} else {
+			untrack(() => {
+				if (selectedPertemuanId !== null) {
+					selectedPertemuanId = null;
+					selectedSubmissionId = null;
+				}
+			});
 		}
 	});
 
 	function closeStudioView() {
 		const fromSource = $page.url.searchParams.get('from');
-		if (fromSource === 'dashboard') {
-			goto('/mentor');
-			return;
-		}
 		selectedPertemuanId = null;
 		selectedSubmissionId = null;
 		rosterSearchQuery = '';
 		rosterStatusFilter = 'all';
+
+		if (fromSource === 'dashboard') {
+			goto('/mentor');
+			return;
+		}
+		if (typeof window !== 'undefined') {
+			goto('/mentor/tugas', { replaceState: true, keepFocus: true, noScroll: true });
+		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -339,16 +389,73 @@ let rosterSortOptions = [
 	function isIframeEmbeddable(url: string | null | undefined): boolean {
 		if (!url) return false;
 		const lower = url.toLowerCase();
-		if (
-			lower.includes('github.com') ||
-			lower.includes('drive.google.com') ||
-			lower.includes('figma.com') ||
-			lower.includes('replit.com') ||
-			lower.includes('canva.com')
-		) {
+		// GitHub links show external inspector card directly
+		if (lower.includes('github.com')) {
 			return false;
 		}
 		return url.startsWith('http://') || url.startsWith('https://');
+	}
+
+	function getEmbeddableUrl(rawUrl: string | null | undefined): string {
+		if (!rawUrl) return '';
+		const url = rawUrl.trim();
+		if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+
+		try {
+			const lower = url.toLowerCase();
+
+			// 1. Google Drive Files
+			if (lower.includes('drive.google.com/file/d/')) {
+				const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+				if (match && match[1]) {
+					return `https://drive.google.com/file/d/${match[1]}/preview`;
+				}
+			}
+
+			// Google Drive open link: https://drive.google.com/open?id=FILE_ID
+			if (lower.includes('drive.google.com/open') && url.includes('id=')) {
+				const u = new URL(url);
+				const fileId = u.searchParams.get('id');
+				if (fileId) {
+					return `https://drive.google.com/file/d/${fileId}/preview`;
+				}
+			}
+
+			// 3. Google Docs / Sheets / Slides
+			if (lower.includes('docs.google.com/')) {
+				if (lower.includes('/preview')) return url;
+				return url.replace(/\/edit.*$/, '/preview').replace(/\/view.*$/, '/preview');
+			}
+
+			// 4. Figma Design & Prototype
+			if (lower.includes('figma.com/')) {
+				if (lower.includes('figma.com/embed')) return url;
+				return `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(url)}`;
+			}
+
+			// 5. YouTube Video
+			if (lower.includes('youtube.com/watch') || lower.includes('youtu.be/')) {
+				let videoId = '';
+				if (lower.includes('youtu.be/')) {
+					videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+				} else {
+					const u = new URL(url);
+					videoId = u.searchParams.get('v') || '';
+				}
+				if (videoId) {
+					return `https://www.youtube.com/embed/${videoId}`;
+				}
+			}
+
+			// 6. External PDF / Document Files
+			if (lower.endsWith('.pdf') || lower.endsWith('.docx') || lower.endsWith('.pptx') || lower.endsWith('.xlsx')) {
+				return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+			}
+
+			return url;
+		} catch {
+			return url;
+		}
 	}
 
 	function getDomainFromUrl(url: string | null | undefined): string {
@@ -804,7 +911,7 @@ let rosterSortOptions = [
 								type="button"
 								class="roster-item"
 								class:roster-item--active={activeSubmission?.id === sub.id}
-								onclick={() => (selectedSubmissionId = sub.id)}
+								onclick={() => selectSubmission(sub.id)}
 							>
 								<div class="roster-avatar">
 									{sub.studentName.substring(0, 2).toUpperCase()}
@@ -882,10 +989,10 @@ let rosterSortOptions = [
 						{#if isIframeEmbeddable(activeSubmission.link)}
 							{#key iframeKey}
 								<iframe
-									src={activeSubmission.link}
+									src={getEmbeddableUrl(activeSubmission.link)}
 									title="Preview Pekerjaan Siswa"
 									class="pane-review-iframe"
-									sandbox="allow-scripts allow-same-origin allow-forms"
+									sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
 								></iframe>
 							{/key}
 						{:else}
@@ -982,7 +1089,7 @@ let rosterSortOptions = [
 									if (result.type === 'success') {
 										const msg = (result.data as any)?.message || 'Penilaian tugas berhasil disimpan.';
 										toast.success(msg);
-										closeStudioView();
+										advanceToNextStudent();
 									} else if (result.type === 'failure') {
 										const msg = (result.data as any)?.message || 'Gagal menyimpan penilaian tugas.';
 										toast.error(msg);

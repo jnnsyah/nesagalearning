@@ -34,10 +34,18 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const title = formData.get('title')?.toString() || '';
 		const content = formData.get('content')?.toString() || '';
+		const rawAttachments = formData.get('attachments')?.toString();
+		let attachments = undefined;
+		if (rawAttachments) {
+			try {
+				attachments = JSON.parse(rawAttachments);
+			} catch {}
+		}
 
-		const parse = updateMateriSchema.safeParse({ title, content });
+		const parse = updateMateriSchema.safeParse({ title, content, attachments });
 		if (!parse.success) {
-			return fail(400, { error: 'Input materi tidak valid' });
+			console.error('updateMateri validation error:', parse.error.format());
+			return fail(400, { error: parse.error.issues[0]?.message || 'Input materi tidak valid' });
 		}
 
 		try {

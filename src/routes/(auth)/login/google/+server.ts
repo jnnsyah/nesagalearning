@@ -3,7 +3,7 @@ import { getGoogleOAuthClient, isGoogleOAuthEnabled } from '$lib/server/auth/oau
 import { generateState, generateCodeVerifier } from 'arctic';
 import { redirect } from '@sveltejs/kit';
 
-export const GET: RequestHandler = async ({ cookies }) => {
+export const GET: RequestHandler = async ({ cookies, url }) => {
 	if (!isGoogleOAuthEnabled()) {
 		throw redirect(303, '/login?error=Google+OAuth+is+not+configured');
 	}
@@ -11,6 +11,17 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	const google = getGoogleOAuthClient();
 	if (!google) {
 		throw redirect(303, '/login?error=Failed+to+initialize+Google+OAuth');
+	}
+
+	const redirectToParam = url.searchParams.get('redirectTo');
+	if (redirectToParam && redirectToParam.startsWith('/')) {
+		cookies.set('google_oauth_redirect_to', redirectToParam, {
+			path: '/',
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: 60 * 10,
+			sameSite: 'lax'
+		});
 	}
 
 	const state = generateState();
@@ -33,7 +44,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		sameSite: 'lax'
 	});
 
-	const url = google.createAuthorizationURL(state, codeVerifier, ['openid', 'profile', 'email']);
+	const authUrl = google.createAuthorizationURL(state, codeVerifier, ['openid', 'profile', 'email']);
 
-	throw redirect(302, url.toString());
+	throw redirect(302, authUrl.toString());
 };

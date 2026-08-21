@@ -76,6 +76,9 @@ export const materi = pgTable(
 			.references(() => subPhase.id, { onDelete: 'cascade' }),
 		title: text('title').notNull(),
 		content: text('content'),
+		attachments: jsonb('attachments')
+			.$type<Array<{ name: string; url: string; size: number }>>()
+			.default([]),
 		sortOrder: integer('sort_order').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

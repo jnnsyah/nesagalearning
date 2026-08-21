@@ -6,9 +6,13 @@ import { AuditLogService } from '$lib/server/services/audit-log.service';
 import { isGoogleOAuthEnabled } from '$lib/server/auth/oauth';
 import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
-		const targetPath = AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
+		const redirectToParam = url.searchParams.get('redirectTo');
+		const targetPath =
+			redirectToParam && redirectToParam.startsWith('/')
+				? redirectToParam
+				: AuthGatekeeper.getRoleDefaultPath(locals.user.role as UserRole);
 		throw redirect(302, targetPath);
 	}
 
@@ -99,6 +103,21 @@ export const actions: Actions = {
 			}
 
 			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+
+			// Known safe messages to expose to user
+			const safeMessages = [
+				'Username atau password salah',
+				'Akun Anda telah dinonaktifkan. Hubungi administrator.'
+			];
+			const userMessage = safeMessages.includes(err.message)
+				? err.message
+				: 'Terjadi kesalahan server. Silakan coba lagi.';
+
+			// Log unexpected errors (e.g. DB connection issues) server-side only
+			if (!safeMessages.includes(err.message)) {
+				console.error('[login] Unexpected error:', err);
+			}
+
 			await AuditLogService.logAction({
 				actorId: null,
 				action: 'LOGIN_FAILED',
@@ -114,7 +133,7 @@ export const actions: Actions = {
 
 			return fail(400, {
 				username,
-				error: err.message || 'Login gagal'
+				error: userMessage
 			});
 		}
 	}

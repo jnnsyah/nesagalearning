@@ -143,7 +143,7 @@ export class ProgressService {
 	}
 
 	/**
-	 * Get progress summary for all phases in a curriculum track for a student
+	 * Get progress summary for all phases in a curriculum track for a student (Batch Queries, No N+1)
 	 */
 	static async getStudentPhaseProgress(
 		userId: number,
@@ -159,48 +159,143 @@ export class ProgressService {
 			return [];
 		}
 
-		// 2. Get phases for curriculum track
+		// 2. Get all phases and subPhases for the curriculum track
 		const phasesList = await db
 			.select({ id: phase.id, title: phase.title })
 			.from(phase)
 			.where(eq(phase.curriculumTrackId, kelas.curriculumTrackId))
 			.orderBy(asc(phase.sortOrder));
 
-		const summary: PhaseProgressSummary[] = [];
+		if (phasesList.length === 0) return [];
 
-		for (const p of phasesList) {
-			const subPhasesList = await db
-				.select({ id: subPhase.id })
-				.from(subPhase)
-				.where(eq(subPhase.phaseId, p.id))
-				.orderBy(asc(subPhase.sortOrder));
+		const phaseIds = phasesList.map((p) => p.id);
+		const subPhasesList = await db
+			.select({ id: subPhase.id, phaseId: subPhase.phaseId })
+			.from(subPhase)
+			.where(inArray(subPhase.phaseId, phaseIds))
+			.orderBy(asc(subPhase.sortOrder));
 
-			let completedCount = 0;
-			for (const sp of subPhasesList) {
-				const isCompleted = await ProgressService.checkSubPhaseCompletion(
-					userId,
-					sp.id,
-					kelasInstanceId
+		if (subPhasesList.length === 0) {
+			return phasesList.map((p) => ({
+				phaseId: p.id,
+				phaseTitle: p.title,
+				totalSubPhases: 0,
+				completedSubPhases: 0,
+				progressPercentage: 0
+			}));
+		}
+
+		const subPhaseIds = subPhasesList.map((sp) => sp.id);
+
+		// 3. Batch fetch all sessions for these subPhases in this class
+		const sessions = await db
+			.select({ id: pertemuan.id, subPhaseId: pertemuan.subPhaseId })
+			.from(pertemuan)
+			.where(
+				and(
+					eq(pertemuan.kelasInstanceId, kelasInstanceId),
+					inArray(pertemuan.subPhaseId, subPhaseIds)
+				)
+			);
+
+		if (sessions.length === 0) {
+			return phasesList.map((p) => {
+				const subs = subPhasesList.filter((sp) => sp.phaseId === p.id);
+				return {
+					phaseId: p.id,
+					phaseTitle: p.title,
+					totalSubPhases: subs.length,
+					completedSubPhases: 0,
+					progressPercentage: 0
+				};
+			});
+		}
+
+		const sessionIds = sessions.map((s) => s.id);
+
+		// 4. Batch fetch attendances and tasks in parallel
+		const [attendances, tasks] = await Promise.all([
+			db
+				.select({ pertemuanId: attendance.pertemuanId, status: attendance.status })
+				.from(attendance)
+				.where(and(eq(attendance.userId, userId), inArray(attendance.pertemuanId, sessionIds))),
+			db
+				.select({ id: task.id, pertemuanId: task.pertemuanId })
+				.from(task)
+				.where(inArray(task.pertemuanId, sessionIds))
+		]);
+
+		const validAttendanceSet = new Set(
+			attendances
+				.filter((a) => a.status === 'hadir' || a.status === 'excused')
+				.map((a) => a.pertemuanId)
+		);
+
+		// 5. Batch fetch approved submissions for these tasks
+		const taskIds = tasks.map((t) => t.id);
+		let approvedTaskSet = new Set<number>();
+		if (taskIds.length > 0) {
+			const approvedSubs = await db
+				.select({ taskId: submission.taskId })
+				.from(submission)
+				.where(
+					and(
+						eq(submission.userId, userId),
+						inArray(submission.taskId, taskIds),
+						eq(submission.status, 'approved')
+					)
 				);
-				if (isCompleted) {
-					completedCount++;
-				}
-			}
+			approvedTaskSet = new Set(approvedSubs.map((s) => s.taskId));
+		}
 
-			const totalSubPhases = subPhasesList.length;
+		// 6. Map sessions to their completion state
+		const sessionTaskMap = new Map(tasks.map((t) => [t.pertemuanId, t.id]));
+		const completedSessionSet = new Set<number>();
+
+		for (const s of sessions) {
+			const hasAttendance = validAttendanceSet.has(s.id);
+			if (!hasAttendance) continue;
+
+			const taskId = sessionTaskMap.get(s.id);
+			if (taskId && !approvedTaskSet.has(taskId)) continue;
+
+			completedSessionSet.add(s.id);
+		}
+
+		// 7. Group sessions by subPhase & compute subPhase completion
+		const subPhaseSessionsMap = new Map<number, number[]>();
+		for (const s of sessions) {
+			if (s.subPhaseId === null) continue;
+			if (!subPhaseSessionsMap.has(s.subPhaseId)) {
+				subPhaseSessionsMap.set(s.subPhaseId, []);
+			}
+			subPhaseSessionsMap.get(s.subPhaseId)!.push(s.id);
+		}
+
+		const completedSubPhaseSet = new Set<number>();
+		for (const sp of subPhasesList) {
+			const sList = subPhaseSessionsMap.get(sp.id) || [];
+			if (sList.length > 0 && sList.every((sid) => completedSessionSet.has(sid))) {
+				completedSubPhaseSet.add(sp.id);
+			}
+		}
+
+		// 8. Build final summary per phase
+		return phasesList.map((p) => {
+			const subsInPhase = subPhasesList.filter((sp) => sp.phaseId === p.id);
+			const completedCount = subsInPhase.filter((sp) => completedSubPhaseSet.has(sp.id)).length;
+			const totalSubPhases = subsInPhase.length;
 			const progressPercentage =
 				totalSubPhases > 0 ? Math.round((completedCount / totalSubPhases) * 100) : 0;
 
-			summary.push({
+			return {
 				phaseId: p.id,
 				phaseTitle: p.title,
 				totalSubPhases,
 				completedSubPhases: completedCount,
 				progressPercentage
-			});
-		}
-
-		return summary;
+			};
+		});
 	}
 
 	/**

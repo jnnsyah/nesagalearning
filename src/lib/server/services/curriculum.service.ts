@@ -370,33 +370,71 @@ export const CurriculumTree = {
 	 * Get single Materi with breadcrumbs
 	 */
 	async getMateriWithDetails(materiId: number) {
-		return db.query.materi.findFirst({
-			where: eq(materi.id, materiId),
-			with: {
-				subPhase: {
-					with: {
-						phase: {
-							with: {
-								curriculumTrack: true
-							}
-						}
+		const rows = await db
+			.select({
+				id: materi.id,
+				subPhaseId: materi.subPhaseId,
+				title: materi.title,
+				content: materi.content,
+				attachments: materi.attachments,
+				sortOrder: materi.sortOrder,
+				createdAt: materi.createdAt,
+				updatedAt: materi.updatedAt,
+				subPhaseIdVal: subPhase.id,
+				subPhaseTitle: subPhase.title,
+				phaseIdVal: phase.id,
+				phaseTitle: phase.title,
+				trackIdVal: curriculumTrack.id,
+				trackTitle: curriculumTrack.title
+			})
+			.from(materi)
+			.leftJoin(subPhase, eq(materi.subPhaseId, subPhase.id))
+			.leftJoin(phase, eq(subPhase.phaseId, phase.id))
+			.leftJoin(curriculumTrack, eq(phase.curriculumTrackId, curriculumTrack.id))
+			.where(eq(materi.id, materiId));
+
+		const res = rows[0];
+		if (!res) return null;
+
+		return {
+			id: res.id,
+			subPhaseId: res.subPhaseId,
+			title: res.title,
+			content: res.content,
+			attachments: (res.attachments as Array<{ name: string; url: string; size: number }>) || [],
+			sortOrder: res.sortOrder,
+			createdAt: res.createdAt,
+			updatedAt: res.updatedAt,
+			subPhase: {
+				id: res.subPhaseIdVal,
+				title: res.subPhaseTitle,
+				phase: {
+					id: res.phaseIdVal,
+					title: res.phaseTitle,
+					curriculumTrack: {
+						id: res.trackIdVal,
+						title: res.trackTitle
 					}
 				}
 			}
-		});
+		};
 	},
 
 	/**
 	 * Update Materi
 	 */
 	async updateMateri(id: number, input: UpdateMateriInput) {
+		const updatePayload: Record<string, any> = {
+			title: input.title,
+			content: input.content !== undefined ? input.content : null,
+			updatedAt: new Date()
+		};
+		if (input.attachments !== undefined) {
+			updatePayload.attachments = input.attachments;
+		}
 		const [updated] = await db
 			.update(materi)
-			.set({
-				title: input.title,
-				content: input.content !== undefined ? input.content : null,
-				updatedAt: new Date()
-			})
+			.set(updatePayload)
 			.where(eq(materi.id, id))
 			.returning();
 		return updated;

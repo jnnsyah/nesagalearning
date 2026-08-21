@@ -47,9 +47,16 @@ export const createMateriSchema = z.object({
 	content: z.string().optional()
 });
 
+export const attachmentItemSchema = z.object({
+	name: z.string(),
+	url: z.string(),
+	size: z.number().optional().default(0)
+});
+
 export const updateMateriSchema = z.object({
 	title: z.string().min(3, 'Judul materi minimal 3 karakter').max(150),
-	content: z.string().optional()
+	content: z.string().nullish(),
+	attachments: z.array(attachmentItemSchema).nullish()
 });
 
 export type CreateCurriculumTrackInput = z.infer<typeof createCurriculumTrackSchema>;

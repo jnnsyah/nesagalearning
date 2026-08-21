@@ -78,7 +78,7 @@
 			</div>
 		{/if}
 
-		<form method="POST" class="login-form">
+		<form method="POST" action="{$page.url.pathname}{$page.url.search}" class="login-form">
 			{#if $page.url.searchParams.get('redirectTo')}
 				<input type="hidden" name="redirectTo" value={$page.url.searchParams.get('redirectTo')} />
 			{/if}
@@ -155,7 +155,7 @@
 				<span class="divider-text">atau masuk dengan</span>
 			</div>
 
-			<a href="/login/google" class="google-btn">
+			<a href="/login/google{$page.url.searchParams.get('redirectTo') ? `?redirectTo=${encodeURIComponent($page.url.searchParams.get('redirectTo')!)}` : ''}" class="google-btn">
 				<svg class="google-icon" width="18" height="18" viewBox="0 0 24 24">
 					<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
 					<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -166,7 +166,7 @@
 			</a>
 
 			<div class="auth-footer-links mt-4 text-center">
-				<a href="/register" class="back-link">
+				<a href="/register{$page.url.searchParams.get('redirectTo') ? `?redirectTo=${encodeURIComponent($page.url.searchParams.get('redirectTo')!)}` : ''}" class="back-link">
 					Belum punya akun? <span class="text-indigo-600 font-bold underline">Daftar Akun Baru</span>
 				</a>
 			</div>

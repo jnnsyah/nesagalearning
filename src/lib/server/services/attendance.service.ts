@@ -171,17 +171,13 @@ export class AttendanceService {
 		attendance?: typeof attendance.$inferSelect;
 		points?: { pointsAwarded: number; currentStreak: number; milestoneBonusAwarded: number };
 	}> {
-		// 1. Validate token existence & active status
+		// 1. Validate token existence
 		const tokenRecord = await db.query.attendanceToken.findFirst({
 			where: eq(attendanceToken.token, tokenString)
 		});
 
-		if (!tokenRecord || !tokenRecord.isActive) {
-			throw new Error('Token QR presensi tidak valid atau telah berganti.');
-		}
-
-		if (new Date() > new Date(tokenRecord.expiresAt)) {
-			throw new Error('Token QR presensi 30-detik telah kedaluwarsa. Silakan scan ulang kode terbaru di layar proyektor.');
+		if (!tokenRecord) {
+			throw new Error('Token QR presensi tidak ditemukan. Silakan scan ulang kode terbaru di layar proyektor.');
 		}
 
 		// 2. Fetch associated meeting
@@ -196,6 +192,19 @@ export class AttendanceService {
 		// 3. Strict check: verify meeting schedule window
 		if (!AttendanceService.isMeetingOngoing(meeting)) {
 			throw new Error('Presensi QR ditutup karena jadwal pertemuan kelas tidak sedang berlangsung.');
+		}
+
+		// 4. Grace Period Check for ongoing meetings:
+		// Allow token if it is active OR if it was created within the last 90 seconds (1.5 minutes) for this ongoing meeting
+		const ninetySecondsAgo = new Date(Date.now() - 90 * 1000);
+		const isRecentToken = new Date(tokenRecord.createdAt) >= ninetySecondsAgo;
+
+		if (!tokenRecord.isActive && !isRecentToken) {
+			throw new Error('Token QR presensi telah kedaluwarsa (batas toleransi login 1.5 menit). Silakan scan ulang kode terbaru.');
+		}
+
+		if (new Date() > new Date(tokenRecord.expiresAt) && !isRecentToken) {
+			throw new Error('Token QR presensi telah kedaluwarsa (batas toleransi login 1.5 menit). Silakan scan ulang kode terbaru.');
 		}
 
 		// 3. Verify student enrollment in the meeting's KelasInstance

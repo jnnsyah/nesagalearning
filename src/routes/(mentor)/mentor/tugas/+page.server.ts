@@ -8,7 +8,7 @@ import { submission, task } from '$lib/server/db/schema/task';
 import { pertemuan } from '$lib/server/db/schema/session';
 import { eq, and } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
 		throw redirect(303, '/login');
 	}
@@ -28,11 +28,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 			SubmissionService.getAllSubmissions(),
 			SubmissionService.getMeetingTasksSummary()
 		]);
+		const urlPid = url.searchParams.get('pertemuanId');
+		const urlSubId = url.searchParams.get('submissionId');
+
 		return {
 			user: locals.user,
 			assignedClassIds,
 			submissions,
-			meetingSummaries
+			meetingSummaries,
+			initialPertemuanId: urlPid && !isNaN(Number(urlPid)) ? Number(urlPid) : null,
+			initialSubmissionId: urlSubId && !isNaN(Number(urlSubId)) ? Number(urlSubId) : null
 		};
 	} catch (err: any) {
 		console.error('Error loading submissions for mentor:', err);
@@ -41,6 +46,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			assignedClassIds: [],
 			submissions: [],
 			meetingSummaries: [],
+			initialPertemuanId: null,
+			initialSubmissionId: null,
 			error: err.message
 		};
 	}

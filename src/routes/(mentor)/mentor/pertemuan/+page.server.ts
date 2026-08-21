@@ -8,6 +8,7 @@ import { kelasInstance } from '$lib/server/db/schema/academic';
 import { subPhase, phase, curriculumTrack, materi } from '$lib/server/db/schema/curriculum';
 
 import { OperationalMasterAdminService } from '$lib/server/services/operational-master-admin.service';
+import { pertemuan } from '$lib/server/db/schema/session';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {

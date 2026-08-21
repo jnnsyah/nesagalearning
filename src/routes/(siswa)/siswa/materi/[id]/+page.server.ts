@@ -46,6 +46,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			id: materi.id,
 			title: materi.title,
 			content: materi.content,
+			attachments: materi.attachments,
 			sortOrder: materi.sortOrder,
 			subPhaseId: subPhase.id,
 			subPhaseTitle: subPhase.title,
@@ -101,7 +102,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	return {
 		user: locals.user,
-		materi: materiDetail,
+		materi: {
+			...materiDetail,
+			attachments: (materiDetail.attachments as Array<{ name: string; url: string; size: number }>) || []
+		},
 		isCompleted: !!completionRecord,
 		completedAt: completionRecord?.completedAt || null,
 		sessionSlide,

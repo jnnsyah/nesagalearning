@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { toast } from '$lib/stores/toast';
+	import { formatFileSize } from '$lib/utils/sanitizer';
 	import { fade, fly } from 'svelte/transition';
 	import type { PageData } from './$types';
 
@@ -29,6 +30,22 @@
 
 	function setFontSize(size: 'sm' | 'base' | 'lg') {
 		fontSize = size;
+	}
+
+	function getFileExt(filename: string): string {
+		const parts = filename.split('.');
+		return parts.length > 1 ? parts.pop()!.toUpperCase() : 'FILE';
+	}
+
+	function getFileBadgeClass(filename: string): string {
+		const ext = filename.split('.').pop()?.toLowerCase() || '';
+		if (['pdf'].includes(ext)) return 'bg-rose-50 text-rose-700 border-rose-200';
+		if (['pkt', 'gns3', 'pcap', 'pcapng', 'json', 'yaml', 'yml', 'conf', 'cfg', 'log'].includes(ext))
+			return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+		if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'bg-amber-50 text-amber-700 border-amber-200';
+		if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext))
+			return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+		return 'bg-indigo-50 text-indigo-700 border-indigo-200';
 	}
 
 	function toggleFocusMode() {
@@ -322,6 +339,46 @@
 						</svg>
 						<span>Unduh Berkas PPT</span>
 					</a>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Global Materi Attachments Card (Dedicated Card) -->
+		{#if data.materi.attachments && data.materi.attachments.length > 0}
+			<div class="materi-global-attachments-card mb-6">
+				<div class="card-header-row bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+							<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+						</svg>
+						<h3 class="font-bold text-xs text-slate-800">Lampiran Berkas Modul Materi</h3>
+					</div>
+					<span class="badge-count text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold">
+						{data.materi.attachments.length} Berkas
+					</span>
+				</div>
+				<div class="attachments-grid grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+					{#each data.materi.attachments as att}
+						<div class="materi-attachment-item-card group">
+							<div class="flex items-center gap-3 min-w-0">
+								<div class="px-2 py-1 text-[10px] font-mono font-bold rounded-md border uppercase flex-shrink-0 {getFileBadgeClass(att.name)}">
+									{getFileExt(att.name)}
+								</div>
+								<div class="min-w-0 flex-1">
+									<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>
+										{att.name}
+									</div>
+									<div class="text-[10px] font-mono text-slate-500 font-medium">
+										{formatFileSize(att.size)} · Lampiran Modul
+									</div>
+								</div>
+							</div>
+							<a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" class="attachment-box-dl text-xs font-bold px-3 py-1.5" title="Unduh Berkas">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+								<span>Unduh</span>
+							</a>
+						</div>
+					{/each}
 				</div>
 			</div>
 		{/if}

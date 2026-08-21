@@ -5,18 +5,34 @@
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
+	import {
+		sanitizeFilename,
+		isAllowedAttachmentExtension,
+		sanitizeUrl,
+		formatFileSize
+	} from '$lib/utils/sanitizer';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let title = $state(data.materi.title);
 	let content = $state(data.materi.content || '');
+	type AttachmentItem = { name: string; url: string; size: number };
+	let globalAttachments = $state<AttachmentItem[]>(data.materi.attachments || []);
 	let isSaving = $state(false);
+	let isUploadingGlobal = $state(false);
+	let isDraggingGlobal = $state(false);
+	let globalUploadError = $state('');
 
 	let originalTitle = data.materi.title;
 	let originalContent = data.materi.content || '';
+	let originalAttachmentsJson = JSON.stringify(data.materi.attachments || []);
 
-	let isDirty = $derived(title !== originalTitle || content !== originalContent);
+	let isDirty = $derived(
+		title !== originalTitle ||
+			content !== originalContent ||
+			JSON.stringify(globalAttachments) !== originalAttachmentsJson
+	);
 
 	// Autosave reactive state
 	let saveStatus = $state<'saved' | 'unsaved' | 'saving' | 'error'>('saved');
@@ -43,6 +59,98 @@
 	let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 	const DEBOUNCE_MS = 2000;
 
+	function getFileExt(filename: string): string {
+		const parts = filename.split('.');
+		return parts.length > 1 ? parts.pop()!.toUpperCase() : 'FILE';
+	}
+
+	function getFileBadgeClass(filename: string): string {
+		const ext = filename.split('.').pop()?.toLowerCase() || '';
+		if (['pdf'].includes(ext)) return 'bg-rose-50 text-rose-700 border-rose-200';
+		if (['pkt', 'gns3', 'pcap', 'pcapng', 'json', 'yaml', 'yml', 'conf', 'cfg', 'log'].includes(ext))
+			return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+		if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'bg-amber-50 text-amber-700 border-amber-200';
+		if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext))
+			return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+		return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+	}
+
+	async function processFile(file: File) {
+		globalUploadError = '';
+		if (!isAllowedAttachmentExtension(file.name)) {
+			globalUploadError = 'Ekstensi file tidak diizinkan demi alasan keamanan.';
+			return;
+		}
+
+		if (file.size > 20 * 1024 * 1024) {
+			globalUploadError = 'Ukuran file lampiran tidak boleh melebihi 20MB.';
+			return;
+		}
+
+		isUploadingGlobal = true;
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			formData.append('folder', 'materials');
+
+			const res = await fetch('/api/storage/upload', {
+				method: 'POST',
+				body: formData
+			});
+
+			const resData = await res.json();
+			if (!res.ok || resData.error) {
+				globalUploadError = resData.error || 'Gagal mengunggah file lampiran.';
+				isUploadingGlobal = false;
+				return;
+			}
+
+			const newAtt: AttachmentItem = {
+				name: sanitizeFilename(file.name),
+				url: sanitizeUrl(resData.url),
+				size: file.size
+			};
+
+			globalAttachments = [...globalAttachments, newAtt];
+			isUploadingGlobal = false;
+			toast.success('Lampiran berkas berhasil ditambahkan!');
+		} catch (err: any) {
+			console.error('Global attachment upload error:', err);
+			globalUploadError = 'Gagal mengunggah file lampiran.';
+			isUploadingGlobal = false;
+		}
+	}
+
+	function handleGlobalAttachmentUpload(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (file) processFile(file);
+	}
+
+	function handleDragOver(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isDraggingGlobal = true;
+	}
+
+	function handleDragLeave(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isDraggingGlobal = false;
+	}
+
+	function handleDrop(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isDraggingGlobal = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) processFile(file);
+	}
+
+	function removeGlobalAttachment(index: number) {
+		globalAttachments = globalAttachments.filter((_, i) => i !== index);
+		toast.success('Lampiran dihapus');
+	}
+
 	async function performAutosave() {
 		if (!isDirty || isSaving || !title.trim()) return;
 
@@ -51,6 +159,7 @@
 			const formData = new FormData();
 			formData.append('title', title);
 			formData.append('content', content);
+			formData.append('attachments', JSON.stringify(globalAttachments));
 
 			const res = await fetch('?/updateMateri', {
 				method: 'POST',
@@ -65,6 +174,7 @@
 			if (result.type === 'success') {
 				originalTitle = title;
 				originalContent = content;
+				originalAttachmentsJson = JSON.stringify(globalAttachments);
 				saveStatus = 'saved';
 				lastSavedAt = new Date();
 			} else {
@@ -121,6 +231,7 @@
 			const formData = new FormData();
 			formData.append('title', title);
 			formData.append('content', content);
+			formData.append('attachments', JSON.stringify(globalAttachments));
 
 			const res = await fetch('?/updateMateri', {
 				method: 'POST',
@@ -135,6 +246,7 @@
 			if (result.type === 'success') {
 				originalTitle = title;
 				originalContent = content;
+				originalAttachmentsJson = JSON.stringify(globalAttachments);
 				saveStatus = 'saved';
 				lastSavedAt = new Date();
 				toast.success('Materi berhasil disimpan!');
@@ -481,6 +593,10 @@
 					</div>
 				{/if}
 
+				<!-- Hidden content & attachments field -->
+				<input type="hidden" name="content" value={content} />
+				<input type="hidden" name="attachments" value={JSON.stringify(globalAttachments)} />
+
 				<!-- Title field -->
 				<div class="content-block">
 					<label for="materi-title-input" class="content-block__label">
@@ -499,11 +615,97 @@
 					/>
 				</div>
 
-				<!-- Hidden content field -->
-				<input type="hidden" name="content" value={content} />
-
 				<!-- Editor area by mode -->
 				{#if activeTab === 'edit'}
+					<!-- Global Materi Attachments Block (Edit Mode) -->
+					<div class="content-block materi-global-attachments-card">
+						<div class="content-block__label-row bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+							<span class="content-block__label text-slate-800 font-bold text-xs flex items-center gap-2">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+								Lampiran Berkas Modul (Global)
+							</span>
+							<span class="badge-count text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold">
+								{globalAttachments.length} Berkas
+							</span>
+						</div>
+
+						<div class="p-4 space-y-4">
+							{#if globalUploadError}
+								<div class="inline-alert inline-alert--error mb-2 text-xs">
+									{globalUploadError}
+								</div>
+							{/if}
+
+							{#if globalAttachments.length > 0}
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+									{#each globalAttachments as att, i}
+										<div class="materi-attachment-item-card group">
+											<div class="flex items-center gap-3 min-w-0">
+												<div class="px-2 py-1 text-[10px] font-mono font-bold rounded-md border uppercase flex-shrink-0 {getFileBadgeClass(att.name)}">
+													{getFileExt(att.name)}
+												</div>
+												<div class="min-w-0 flex-1">
+													<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>
+														{att.name}
+													</div>
+													<div class="text-[10px] font-mono text-slate-500 font-medium">
+														{formatFileSize(att.size)} · Lampiran Modul
+													</div>
+												</div>
+											</div>
+											<div class="flex items-center gap-1.5 flex-shrink-0">
+												<a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" class="attachment-box-dl text-xs font-bold px-2.5 py-1" title="Unduh Berkas">
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+													<span>Unduh</span>
+												</a>
+												<button type="button" onclick={() => removeGlobalAttachment(i)} class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Lampiran">
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+												</button>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<!-- Drag and Drop Dropzone -->
+							<div
+								class="upload-dropzone {isDraggingGlobal ? 'upload-dropzone--dragging' : ''}"
+								ondragover={handleDragOver}
+								ondragleave={handleDragLeave}
+								ondrop={handleDrop}
+								role="region"
+								aria-label="Area Drag & Drop File Lampiran"
+							>
+								<input id="global-att-input" type="file" class="sr-only" onchange={handleGlobalAttachmentUpload} disabled={isUploadingGlobal} />
+								<label for="global-att-input" class="cursor-pointer block">
+									{#if isUploadingGlobal}
+										<div class="flex flex-col items-center justify-center py-2 space-y-2">
+											<svg class="animate-spin text-indigo-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+											<span class="text-xs font-bold text-indigo-700">Mengunggah berkas lampiran...</span>
+										</div>
+									{:else}
+										<div class="flex flex-col items-center justify-center space-y-2">
+											<div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+											</div>
+											<div class="text-xs font-bold text-slate-800">
+												Tarik &amp; lepas berkas ke sini, atau <span class="text-indigo-600 underline">pilih dari komputer</span>
+											</div>
+											<div class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] text-slate-500 font-mono">
+												<span class="px-1.5 py-0.5 bg-slate-100 rounded">PDF</span>
+												<span class="px-1.5 py-0.5 bg-slate-100 rounded">PKT</span>
+												<span class="px-1.5 py-0.5 bg-slate-100 rounded">GNS3</span>
+												<span class="px-1.5 py-0.5 bg-slate-100 rounded">ZIP</span>
+												<span class="px-1.5 py-0.5 bg-slate-100 rounded">DOCX</span>
+												<span>• Max 20MB</span>
+											</div>
+										</div>
+									{/if}
+								</label>
+							</div>
+						</div>
+					</div>
+
 					<div class="content-block content-block--editor">
 						<div class="content-block__label-row">
 							<label class="content-block__label">
@@ -521,6 +723,44 @@
 					</div>
 
 				{:else if activeTab === 'preview'}
+					{#if globalAttachments.length > 0}
+						<div class="materi-global-attachments-card mb-4">
+							<div class="card-header-row bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+										<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+									</svg>
+									<h3 class="font-bold text-xs text-slate-800">Lampiran Berkas Modul Materi</h3>
+								</div>
+								<span class="badge-count text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold">
+									{globalAttachments.length} Berkas
+								</span>
+							</div>
+							<div class="attachments-grid grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+								{#each globalAttachments as att}
+									<div class="materi-attachment-item-card group">
+										<div class="flex items-center gap-3 min-w-0">
+											<div class="px-2 py-1 text-[10px] font-mono font-bold rounded-md border uppercase flex-shrink-0 {getFileBadgeClass(att.name)}">
+												{getFileExt(att.name)}
+											</div>
+											<div class="min-w-0 flex-1">
+												<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>
+													{att.name}
+												</div>
+												<div class="text-[10px] font-mono text-slate-500 font-medium">
+													{formatFileSize(att.size)} · Lampiran Modul
+												</div>
+											</div>
+										</div>
+										<a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" class="attachment-box-dl text-xs font-bold px-3 py-1.5" title="Unduh Berkas">
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+											<span>Unduh</span>
+										</a>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 					<div class="content-block">
 						<div class="content-block__label-row">
 							<span class="content-block__label">
@@ -1045,9 +1285,23 @@
 	}
 	.content-block--editor {
 		flex: 1;
-		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
+		min-height: 480px;
+	}
+	.content-block--editor :global(.editor-root) {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		border: none !important;
+		border-radius: 0 !important;
+		box-shadow: none !important;
+		min-height: 0 !important;
+		background: transparent !important;
+	}
+	.content-block--editor :global(.editor-content) {
+		flex: 1;
+		min-height: 340px;
 	}
 	.content-block__label {
 		display: flex;

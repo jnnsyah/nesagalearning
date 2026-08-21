@@ -116,7 +116,13 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 		cookies.delete('google_oauth_state', { path: '/' });
 		cookies.delete('google_oauth_code_verifier', { path: '/' });
 
-		const redirectPath = AuthGatekeeper.getRoleDefaultPath(dbUser.role);
+		const redirectCookie = cookies.get('google_oauth_redirect_to');
+		cookies.delete('google_oauth_redirect_to', { path: '/' });
+
+		const redirectPath = (redirectCookie && redirectCookie.startsWith('/'))
+			? redirectCookie
+			: AuthGatekeeper.getRoleDefaultPath(dbUser.role);
+
 		throw redirect(302, redirectPath);
 	} catch (err) {
 		if (err && typeof err === 'object' && 'status' in err && 'location' in err) {

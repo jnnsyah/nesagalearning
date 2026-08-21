@@ -70,8 +70,11 @@ export const AuthGatekeeper = {
 	 */
 	enforceRoutePolicy(
 		user: { role: UserRole; isEmailVerified?: boolean; id?: number | string; email?: string | null } | null,
-		pathname: string
+		urlOrPath: string | URL
 	) {
+		const targetUrl = typeof urlOrPath === 'string' ? new URL(urlOrPath, 'http://localhost') : urlOrPath;
+		const pathname = targetUrl.pathname.toLowerCase();
+
 		// Ignore non-protected public routes
 		const publicRoutes = ['/login', '/logout', '/forgot-password', '/reset-password', '/register', '/verify-email'];
 		if (publicRoutes.includes(pathname) || pathname.startsWith('/login/google') || pathname.startsWith('/api/public')) {
@@ -88,7 +91,9 @@ export const AuthGatekeeper = {
 		// If user is not authenticated and trying to access any role area
 		const isProtectedArea = Object.values(rolePrefixes).some((prefix) => pathname.startsWith(prefix));
 		if (isProtectedArea && !user) {
-			throw redirect(302, '/login');
+			const fullTarget = `${targetUrl.pathname}${targetUrl.search}`;
+			const loginRedirect = `/login?redirectTo=${encodeURIComponent(fullTarget)}`;
+			throw redirect(302, loginRedirect);
 		}
 
 		if (!user) return;

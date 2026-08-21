@@ -1,4 +1,6 @@
-import { env } from '$env/dynamic/private';
+import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
+import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
@@ -7,14 +9,22 @@ import { compressImageBuffer } from './compressor';
 export interface UploadResult {
 	url: string;
 	key: string;
-	storageType: 'r2' | 'local';
+	storageType: 'supabase' | 'r2' | 'local';
 	originalSize?: number;
 	compressedSize?: number;
 	savedPercentage?: number;
 }
 
+
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
-const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.zip', '.rar', '.txt', '.docx', '.xlsx', '.pptx', '.csv']);
+const ALLOWED_DOC_EXTENSIONS = new Set([
+	// Documents & Text
+	'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.md', '.csv', '.rtf',
+	// Lab Topologies & Network Configs
+	'.pkt', '.gns3', '.pcap', '.pcapng', '.json', '.yaml', '.yml', '.conf', '.cfg', '.log',
+	// Archives
+	'.zip', '.rar', '.7z', '.tar', '.gz'
+]);
 
 const DANGEROUS_EXTENSIONS = new Set([
 	'.php', '.phtml', '.php3', '.php4', '.php5', '.phps', '.phar',
@@ -113,25 +123,70 @@ export async function uploadFile(
 	const safeName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${finalExt}`;
 	const key = `${safeFolder}/${safeName}`;
 
-	// If R2 credentials are set in environment, upload to R2
+	// 1. Primary: Supabase Storage
+	const supabaseUrl =
+		publicEnv.PUBLIC_SUPABASE_URL ||
+		privateEnv.PUBLIC_SUPABASE_URL ||
+		process.env.PUBLIC_SUPABASE_URL ||
+		process.env.VITE_SUPABASE_URL;
+
+	const supabaseKey =
+		privateEnv.SUPABASE_SERVICE_ROLE_KEY ||
+		publicEnv.PUBLIC_SUPABASE_ANON_KEY ||
+		privateEnv.PUBLIC_SUPABASE_ANON_KEY ||
+		process.env.SUPABASE_SERVICE_ROLE_KEY ||
+		process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+	if (supabaseUrl && supabaseKey) {
+		try {
+			const supabase = createClient(supabaseUrl, supabaseKey);
+			const { error } = await supabase.storage
+				.from(safeFolder)
+				.upload(safeName, buffer, {
+					contentType: mimeType || file.type || 'application/octet-stream',
+					upsert: true
+				});
+
+			if (!error) {
+				const { data: publicUrlData } = supabase.storage
+					.from(safeFolder)
+					.getPublicUrl(safeName);
+
+				return {
+					url: publicUrlData.publicUrl,
+					key,
+					storageType: 'supabase',
+					originalSize: compressionResult.originalSize,
+					compressedSize: compressionResult.compressedSize,
+					savedPercentage: compressionResult.savedPercentage
+				};
+			} else {
+				console.error('Supabase storage upload error, falling back:', error);
+			}
+		} catch (err) {
+			console.error('Supabase storage exception, falling back:', err);
+		}
+	}
+
+	// 2. Secondary: Cloudflare R2
 	if (
-		env.R2_ACCOUNT_ID &&
-		env.R2_ACCESS_KEY_ID &&
-		env.R2_SECRET_ACCESS_KEY &&
-		env.R2_BUCKET_NAME
+		privateEnv.R2_ACCOUNT_ID &&
+		privateEnv.R2_ACCESS_KEY_ID &&
+		privateEnv.R2_SECRET_ACCESS_KEY &&
+		privateEnv.R2_BUCKET_NAME
 	) {
-		const r2Url = `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
+		const r2Url = `https://${privateEnv.R2_BUCKET_NAME}.${privateEnv.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
 		try {
 			const resp = await fetch(r2Url, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': mimeType || file.type || 'application/octet-stream'
 				},
-				body: buffer
+				body: new Uint8Array(buffer)
 			});
 			if (resp.ok) {
-				const publicUrl = env.R2_PUBLIC_DOMAIN
-					? `${env.R2_PUBLIC_DOMAIN}/${key}`
+				const publicUrl = privateEnv.R2_PUBLIC_DOMAIN
+					? `${privateEnv.R2_PUBLIC_DOMAIN}/${key}`
 					: r2Url;
 				return {
 					url: publicUrl,
@@ -147,28 +202,62 @@ export async function uploadFile(
 		}
 	}
 
-	// Fallback: save to local uploads directory in app/static/uploads
-	const staticUploadsDir = path.join(process.cwd(), 'static', 'uploads', safeFolder);
-	if (!fs.existsSync(staticUploadsDir)) {
-		fs.mkdirSync(staticUploadsDir, { recursive: true });
+	// 3. Fallback: save to local uploads directory in app/static/uploads
+	try {
+		const staticUploadsDir = path.join(process.cwd(), 'static', 'uploads', safeFolder);
+		if (!fs.existsSync(staticUploadsDir)) {
+			fs.mkdirSync(staticUploadsDir, { recursive: true });
+		}
+
+		const filePath = path.join(staticUploadsDir, safeName);
+		fs.writeFileSync(filePath, buffer);
+
+		const localUrl = `/uploads/${safeFolder}/${safeName}`;
+		return {
+			url: localUrl,
+			key,
+			storageType: 'local',
+			originalSize: compressionResult.originalSize,
+			compressedSize: compressionResult.compressedSize,
+			savedPercentage: compressionResult.savedPercentage
+		};
+	} catch (fsErr: any) {
+		console.error('Local filesystem upload failed:', fsErr);
+		throw new Error(`Gagal menyimpan file: ${fsErr?.message || 'Gagal menyimpan ke penyimpanan lokal'}`);
 	}
-
-	const filePath = path.join(staticUploadsDir, safeName);
-	fs.writeFileSync(filePath, buffer);
-
-	const localUrl = `/uploads/${safeFolder}/${safeName}`;
-	return {
-		url: localUrl,
-		key,
-		storageType: 'local',
-		originalSize: compressionResult.originalSize,
-		compressedSize: compressionResult.compressedSize,
-		savedPercentage: compressionResult.savedPercentage
-	};
 }
 
 export async function deleteFile(urlOrKey: string): Promise<boolean> {
 	if (!urlOrKey) return false;
+
+	const supabaseUrl =
+		publicEnv.PUBLIC_SUPABASE_URL ||
+		privateEnv.PUBLIC_SUPABASE_URL ||
+		process.env.PUBLIC_SUPABASE_URL ||
+		process.env.VITE_SUPABASE_URL;
+
+	const supabaseKey =
+		privateEnv.SUPABASE_SERVICE_ROLE_KEY ||
+		publicEnv.PUBLIC_SUPABASE_ANON_KEY ||
+		privateEnv.PUBLIC_SUPABASE_ANON_KEY ||
+		process.env.SUPABASE_SERVICE_ROLE_KEY ||
+		process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+	if (urlOrKey.includes('/storage/v1/object/public/')) {
+		try {
+			const pathAfterPublic = urlOrKey.split('/storage/v1/object/public/')[1];
+			const [bucket, ...rest] = pathAfterPublic.split('/');
+			const filePath = rest.join('/');
+
+			if (supabaseUrl && supabaseKey) {
+				const supabase = createClient(supabaseUrl, supabaseKey);
+				await supabase.storage.from(bucket).remove([filePath]);
+				return true;
+			}
+		} catch (err) {
+			console.warn('Supabase storage delete error:', err);
+		}
+	}
 
 	if (urlOrKey.startsWith('/uploads/')) {
 		const relativePath = urlOrKey.replace('/uploads/', '');
@@ -186,14 +275,14 @@ export async function deleteFile(urlOrKey: string): Promise<boolean> {
 	}
 
 	if (
-		env.R2_ACCOUNT_ID &&
-		env.R2_ACCESS_KEY_ID &&
-		env.R2_SECRET_ACCESS_KEY &&
-		env.R2_BUCKET_NAME
+		privateEnv.R2_ACCOUNT_ID &&
+		privateEnv.R2_ACCESS_KEY_ID &&
+		privateEnv.R2_SECRET_ACCESS_KEY &&
+		privateEnv.R2_BUCKET_NAME
 	) {
 		try {
 			const key = urlOrKey.includes('.com/') ? urlOrKey.split('.com/')[1] : urlOrKey;
-			const r2Url = `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
+			const r2Url = `https://${privateEnv.R2_BUCKET_NAME}.${privateEnv.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
 			await fetch(r2Url, { method: 'DELETE' });
 			return true;
 		} catch (err) {
@@ -203,3 +292,4 @@ export async function deleteFile(urlOrKey: string): Promise<boolean> {
 
 	return false;
 }
+

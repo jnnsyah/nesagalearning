@@ -12,7 +12,7 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 		{ label: 'Materi', href: '/siswa/materi', icon: 'book' },
 		{ label: 'Tugas', href: '/siswa/tugas', icon: 'task' },
 		{ label: 'Beranda', href: '/siswa', icon: 'dashboard' },
-		{ label: 'Presensi', href: '/siswa/riwayat-presensi', icon: 'history' },
+		{ label: 'Presensi', href: '/siswa/presensi', icon: 'history' },
 		{ label: 'Profil', href: '/siswa/profile', icon: 'user' }
 	],
 	mentor: [

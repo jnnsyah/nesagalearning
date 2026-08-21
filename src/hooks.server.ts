@@ -17,11 +17,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Prevent logged-in user from visiting /login
 	if (pathname === '/login' && user) {
-		throw redirect(302, `/${user.role}`);
+		const redirectTo = event.url.searchParams.get('redirectTo');
+		const targetPath = redirectTo && redirectTo.startsWith('/') ? redirectTo : `/${user.role}`;
+		throw redirect(302, targetPath);
 	}
 
 	// 2. Enforce Server RBAC Policy via AuthGatekeeper
-	AuthGatekeeper.enforceRoutePolicy(user, pathname);
+	AuthGatekeeper.enforceRoutePolicy(user, event.url);
 
 	const response = await resolve(event);
 

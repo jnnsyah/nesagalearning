@@ -2,7 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { uploadFile } from '$lib/server/storage/r2';
 import { uploadRateLimiter } from '$lib/server/utils/rate-limiter';
 
-const ALLOWED_FOLDERS = ['avatars', 'materials', 'submissions'];
+const ALLOWED_FOLDERS = ['avatars', 'materials', 'submissions', 'attachments'];
 const DANGEROUS_EXTENSIONS = ['.php', '.exe', '.sh', '.bat', '.cmd', '.js', '.mjs', '.py', '.pl', '.html', '.htm', '.phtml', '.cgi'];
 
 export const POST: RequestHandler = async ({ request, locals }) => {

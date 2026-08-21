@@ -6,6 +6,13 @@
 	import { ResizableImage } from '$lib/tiptap/ResizableImage';
 
 import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
+import {
+	sanitizeFilename,
+	isAllowedAttachmentExtension,
+	sanitizeUrl,
+	formatFileSize
+} from '$lib/utils/sanitizer';
+import { toast } from '$lib/stores/toast';
 
 	let {
 		value = $bindable(''),
@@ -283,6 +290,89 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 		reader.onload = (ev) => { insertUrl = ev.target?.result as string; };
 		reader.readAsDataURL(file);
 	}
+
+	// ── File ATTACHMENT Dialog State ──
+	let showAttachmentDialog = $state(false);
+	let attachmentUrl = $state('');
+	let attachmentName = $state('');
+	let attachmentSize = $state(0);
+	let isUploadingAttachment = $state(false);
+	let attachmentError = $state('');
+
+	function openAttachmentDialog() {
+		attachmentUrl = '';
+		attachmentName = '';
+		attachmentSize = 0;
+		attachmentError = '';
+		showAttachmentDialog = true;
+	}
+
+	function closeAttachmentDialog() {
+		showAttachmentDialog = false;
+		attachmentUrl = '';
+		attachmentName = '';
+		attachmentSize = 0;
+		attachmentError = '';
+		isUploadingAttachment = false;
+	}
+
+	async function handleAttachmentFileUpload(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+
+		attachmentError = '';
+		if (!isAllowedAttachmentExtension(file.name)) {
+			attachmentError = 'Ekstensi file tidak diizinkan untuk lampiran demi alasan keamanan.';
+			return;
+		}
+
+		if (file.size > 20 * 1024 * 1024) {
+			attachmentError = 'Ukuran file lampiran tidak boleh melebihi 20MB.';
+			return;
+		}
+
+		isUploadingAttachment = true;
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			formData.append('folder', 'materials');
+
+			const res = await fetch('/api/storage/upload', {
+				method: 'POST',
+				body: formData
+			});
+
+			const data = await res.json();
+			if (!res.ok || data.error) {
+				attachmentError = data.error || 'Gagal mengunggah file lampiran.';
+				isUploadingAttachment = false;
+				return;
+			}
+
+			attachmentUrl = data.url;
+			attachmentName = sanitizeFilename(file.name);
+			attachmentSize = file.size;
+			isUploadingAttachment = false;
+		} catch (err: any) {
+			console.error('Attachment upload failed:', err);
+			attachmentError = 'Terjadi kesalahan jaringan saat mengunggah file.';
+			isUploadingAttachment = false;
+		}
+	}
+
+	function insertAttachment() {
+		const url = sanitizeUrl(attachmentUrl);
+		const name = sanitizeFilename(attachmentName || 'Lampiran_Materi');
+		if (!url || !editor) return;
+
+		const sizeText = formatFileSize(attachmentSize);
+
+		const attachmentHtml = ` <a href="${url}" download="${name}" target="_blank" rel="noopener noreferrer" class="tiptap-attachment-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span>${name} (${sizeText})</span></a> `;
+
+		editor.chain().focus().insertContent(attachmentHtml).run();
+		toast.success('Lampiran file berhasil disisipkan');
+		closeAttachmentDialog();
+	}
 </script>
 
 <!-- ══════════════ INSERT DIALOG ══════════════ -->
@@ -375,6 +465,63 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 	</div>
 {/if}
 
+<!-- ══════════════ ATTACHMENT DIALOG ══════════════ -->
+{#if showAttachmentDialog}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div class="dialog-backdrop" onclick={closeAttachmentDialog} role="dialog" aria-modal="true" aria-label="Sisipkan Lampiran File">
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div class="dialog-panel" onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => { if (e.key === 'Enter' && attachmentUrl) insertAttachment(); if (e.key === 'Escape') closeAttachmentDialog(); }}>
+			<div class="dialog-header">
+				<div class="dialog-title">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+					Sisipkan Lampiran File
+				</div>
+				<button type="button" class="dialog-close" onclick={closeAttachmentDialog} aria-label="Tutup">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
+			</div>
+			<div class="dialog-body">
+				{#if attachmentError}
+					<div class="inline-alert inline-alert--error" style="margin-bottom: 8px;">
+						{attachmentError}
+					</div>
+				{/if}
+				<div class="upload-zone">
+					<label for="att-file" class="upload-label">
+						{#if isUploadingAttachment}
+							<svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+							<span>Mengunggah file lampiran...</span>
+						{:else}
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+							<span>Pilih Berkas Lampiran (PDF, PKT, ZIP, DOCX, dll.)</span>
+						{/if}
+					</label>
+					<input id="att-file" type="file" class="sr-only" onchange={handleAttachmentFileUpload} disabled={isUploadingAttachment} />
+				</div>
+				{#if attachmentUrl}
+					<div class="attachment-preview-box">
+						<div class="flex items-center gap-2">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+							</svg>
+							<span class="font-bold text-xs text-slate-800 truncate">{attachmentName}</span>
+						</div>
+						<span class="text-xs text-slate-500 font-mono">{formatFileSize(attachmentSize)}</span>
+					</div>
+				{/if}
+			</div>
+			<div class="dialog-footer">
+				<button type="button" class="btn-ghost-sm" onclick={closeAttachmentDialog}>Batal</button>
+				<button type="button" class="btn-primary-sm" onclick={insertAttachment} disabled={!attachmentUrl || isUploadingAttachment}>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+					Sisipkan
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <!-- ══════════════ EDITOR ROOT ══════════════ -->
 <div class="editor-root" class:editor-root--disabled={disabled} bind:this={editorRoot}>
 
@@ -441,6 +588,10 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 				<button type="button" class="tb-btn tb-btn--img"
 					onclick={openInsertDialog} aria-label="Insert image" data-tooltip="Insert image">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+				</button>
+				<button type="button" class="tb-btn tb-btn--attachment"
+					onclick={openAttachmentDialog} aria-label="Sisipkan Lampiran" data-tooltip="Sisipkan Lampiran File">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
 				</button>
 			</div>
 
@@ -619,6 +770,7 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 		box-shadow: var(--shadow-sm);
 		display: flex;
 		flex-direction: column;
+		min-height: 380px;
 		overflow: hidden;
 		transition: border-color 180ms ease, box-shadow 180ms ease;
 	}
@@ -657,6 +809,17 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 	.tb-btn:hover:not(:disabled) { background: white; border-color: var(--border-hard); color: var(--text-primary); }
 	.tb-btn--on { background: var(--primary-light) !important; border-color: var(--primary-border) !important; color: var(--primary) !important; }
 	.tb-btn--img:hover:not(:disabled) { background: #ecfdf5 !important; border-color: #a7f3d0 !important; color: #059669 !important; }
+	.tb-btn--attachment:hover:not(:disabled) { background: #eef2ff !important; border-color: #c7d2fe !important; color: #4f46e5 !important; }
+	.attachment-preview-box {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 12px;
+		background: #f1f5f9;
+		border: 1px solid #cbd5e1;
+		border-radius: var(--radius-md);
+		margin-top: 10px;
+	}
 	.tb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 	.tb-btn--text { font-size: 11px; }
 
@@ -674,6 +837,7 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 
 	/* ── Status bar ── */
 	.statusbar {
+		margin-top: auto;
 		padding: 6px 14px; background: var(--bg-inset); border-top: 1px solid var(--border-hard);
 		display: flex; align-items: center; justify-content: space-between;
 		font-family: var(--font-mono); font-size: 10.5px; color: var(--text-ghost); flex-shrink: 0;
@@ -814,12 +978,23 @@ import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
 
 	/* ── ProseMirror ── */
 	.editor-content {
-		max-height: 520px;
+		flex: 1;
+		min-height: 300px;
+		max-height: 580px;
 		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
 	}
 	:global(.editor-content .ProseMirror) {
-		outline: none; padding: 20px 24px; min-height: 280px;
-		font-family: var(--font-body); font-size: 14.5px; color: var(--text-primary); line-height: 1.75;
+		flex: 1;
+		outline: none;
+		padding: 20px 24px;
+		min-height: 280px;
+		box-sizing: border-box;
+		font-family: var(--font-body);
+		font-size: 14.5px;
+		color: var(--text-primary);
+		line-height: 1.75;
 	}
 	:global(.editor-content .ProseMirror > * + *) { margin-top: 0.75em; }
 	:global(.editor-content .ProseMirror p) { margin: 0; }
