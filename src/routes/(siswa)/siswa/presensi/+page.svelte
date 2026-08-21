@@ -12,66 +12,82 @@
 	let hasAutoSubmitted = $state(false);
 
 	// Camera scanner state
+	interface CameraDevice {
+		id: string;
+		label: string;
+	}
+
 	let isCameraOpen = $state(false);
 	let isCameraLoading = $state(false);
 	let cameraError = $state('');
+	let availableCameras = $state<CameraDevice[]>([]);
+	let selectedDeviceId = $state<string>('');
 	let html5QrcodeInstance: Html5Qrcode | null = null;
 
-	// Filter Tab State
-	let filterStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
+	async function loadAvailableCameras() {
+		try {
+			const devices = await Html5Qrcode.getCameras();
+			if (devices && devices.length > 0) {
+				availableCameras = devices.map((d, i) => ({
+					id: d.id,
+					label: d.label || `Kamera ${i + 1}`
+				}));
 
-	// Scan success payload state
-	let scanSuccessResult = $state<{
-		message: string;
-		pointsAwarded: number;
-		currentStreak: number;
-		milestoneBonusAwarded: number;
-	} | null>(null);
+				if (!selectedDeviceId) {
+					// Prefer main rear camera (avoid 0.5x ultra-wide or front)
+					const mainRear =
+						devices.find((d) => {
+							const lbl = d.label.toLowerCase();
+							return (
+								(lbl.includes('back') ||
+									lbl.includes('rear') ||
+									lbl.includes('0') ||
+									lbl.includes('main') ||
+									lbl.includes('utama')) &&
+								!lbl.includes('wide') &&
+								!lbl.includes('0.5') &&
+								!lbl.includes('front')
+							);
+						}) ||
+						devices.find((d) => {
+							const lbl = d.label.toLowerCase();
+							return (lbl.includes('back') || lbl.includes('rear')) && !lbl.includes('0.5');
+						}) ||
+						devices[0];
 
-	const streakInfo = $derived(data.streakInfo);
-	const logs = $derived(data.attendanceLogs ?? []);
-	const stats = $derived(
-		data.stats ?? { totalSessions: 0, totalHadir: 0, totalExcused: 0, attendancePercentage: 0 }
-	);
+					selectedDeviceId = mainRear.id;
+				}
+			}
+		} catch (err) {
+			console.warn('Gagal membaca daftar kamera device:', err);
+		}
+	}
 
-	// Filtered history list
-	const filteredLogs = $derived(
-		logs.filter((log) => {
-			if (filterStatus === 'all') return true;
-			return log.status === filterStatus;
-		})
-	);
-
-	// Next milestone target
-	const currentStreak = $derived(streakInfo.currentStreak || 0);
-	const nextMilestone = $derived.by(() => {
-		const cur = currentStreak;
-		if (cur < 3) return { streak: 3, bonus: 50 };
-		if (cur < 5) return { streak: 5, bonus: 100 };
-		if (cur < 10) return { streak: 10, bonus: 250 };
-		if (cur < 15) return { streak: 15, bonus: 500 };
-		return { streak: 20, bonus: 1000 };
-	});
-
-	const milestoneProgressPercent = $derived.by(() => {
-		const target = nextMilestone.streak;
-		return Math.min(100, Math.round((currentStreak / target) * 100));
-	});
-
-	async function startCameraScanner() {
+	async function startCameraScanner(targetDeviceId?: string) {
 		isCameraOpen = true;
 		isCameraLoading = true;
 		cameraError = '';
 
 		try {
+			await loadAvailableCameras();
 			await new Promise((r) => setTimeout(r, 150));
 
-			if (!html5QrcodeInstance) {
-				html5QrcodeInstance = new Html5Qrcode('qr-reader');
+			if (html5QrcodeInstance) {
+				try {
+					if (html5QrcodeInstance.isScanning) {
+						await html5QrcodeInstance.stop();
+					}
+				} catch {}
+				html5QrcodeInstance = null;
 			}
 
+			html5QrcodeInstance = new Html5Qrcode('qr-reader');
+
+			const chosenId = targetDeviceId || selectedDeviceId;
+			const config = chosenId ? { deviceId: { exact: chosenId } } : { facingMode: 'environment' };
+
 			await html5QrcodeInstance.start(
-				{ facingMode: 'environment' }, // Prefer rear camera
+				config,
 				{
 					fps: 10,
 					qrbox: { width: 240, height: 240 }
@@ -95,8 +111,32 @@
 				() => {}
 			);
 		} catch (err: any) {
+			// Fallback: try environment facing mode if exact deviceId failed
+			if (targetDeviceId || selectedDeviceId) {
+				try {
+					await html5QrcodeInstance?.start(
+						{ facingMode: 'environment' },
+						{ fps: 10, qrbox: { width: 240, height: 240 } },
+						(decodedText) => {
+							stopCameraScanner();
+							let tokenVal = decodedText.trim();
+							if (tokenVal.includes('token=')) {
+								try {
+									const parsed = new URL(tokenVal);
+									tokenVal = parsed.searchParams.get('token') || tokenVal;
+								} catch {}
+							}
+							qrTokenInput = tokenVal;
+							toast.success('Kode QR berhasil dipindai!');
+							submitToken(tokenVal);
+						},
+						() => {}
+					);
+					return;
+				} catch {}
+			}
 			cameraError =
-				'Gagal mengakses kamera belakang: ' +
+				'Gagal mengakses kamera: ' +
 				(err?.message || 'Pastikan izin kamera sudah diberikan di browser Anda.');
 		} finally {
 			isCameraLoading = false;
@@ -114,6 +154,14 @@
 		}
 		isCameraOpen = false;
 		isCameraLoading = false;
+	}
+
+	async function onCameraSelectChange(e: Event) {
+		const selectEl = e.target as HTMLSelectElement;
+		if (selectEl && selectEl.value) {
+			selectedDeviceId = selectEl.value;
+			await startCameraScanner(selectEl.value);
+		}
 	}
 
 	async function submitToken(tokenToSubmit: string) {
@@ -271,7 +319,7 @@
 			<div>
 				<h1 class="page-title">Riwayat Kehadiran &amp; Scan Presensi</h1>
 				<p class="page-sub">
-					Lacak seluruh catatan kehadiran, masukkan token QR proyektor, dan pertahankan streak sesi kelas komunitas Anda.
+					Lacak seluruh catatan kehadiran, pindai kode QR presensi, dan pertahankan streak sesi kelas komunitas Anda.
 				</p>
 			</div>
 			<div class="flex items-center gap-2.5 flex-wrap">
@@ -388,49 +436,20 @@
 					<div>
 						<div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
 							<label for="tokenInput" class="stat-label uppercase m-0">
-								Kode Token QR (Lihat di Proyektor Mentor) *
+								Kode Token QR Presensi *
 							</label>
 							<button
 								type="button"
-								onclick={isCameraOpen ? stopCameraScanner : startCameraScanner}
-								class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer {isCameraOpen ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'}"
+								onclick={() => startCameraScanner()}
+								class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
 							>
 								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
 									<circle cx="12" cy="13" r="4"/>
 								</svg>
-								<span>{isCameraOpen ? 'Tutup Kamera' : 'Buka Kamera Rear / Scan QR'}</span>
+								<span>Buka Camera QR Scanner</span>
 							</button>
 						</div>
-
-						{#if isCameraOpen}
-							<div class="camera-scanner-wrapper mb-4 p-3 bg-slate-900 rounded-xl text-white relative overflow-hidden border border-slate-700">
-								<div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
-									<span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-										<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-										Kamera Belakang (Rear Camera) Aktif
-									</span>
-									<button type="button" onclick={stopCameraScanner} class="text-slate-400 hover:text-white text-xs font-bold cursor-pointer">
-										&times; Batal
-									</button>
-								</div>
-
-								{#if isCameraLoading}
-									<div class="p-6 text-center text-xs text-slate-400">
-										Memulai sensor kamera... Mohon izinkan akses kamera pada browser.
-									</div>
-								{/if}
-
-								{#if cameraError}
-									<div class="p-3 text-xs bg-rose-950/80 text-rose-200 rounded-lg border border-rose-800 mb-2">
-										{cameraError}
-									</div>
-								{/if}
-
-								<div id="qr-reader" class="w-full rounded-lg overflow-hidden min-h-[220px]"></div>
-								<p class="text-[11px] text-slate-400 text-center mt-2">Arahkan kamera HP Anda ke kode QR yang ada pada proyektor mentor.</p>
-							</div>
-						{/if}
 						<div class="relative">
 							<input
 								id="tokenInput"
@@ -580,6 +599,111 @@
 		{/if}
 	</div>
 </div>
+
+<!-- High-Grade Camera Scanner Modal -->
+{#if isCameraOpen}
+	<div
+		class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all duration-200"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="cameraModalTitle"
+	>
+		<div
+			class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]"
+		>
+			<!-- Modal Header -->
+			<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+				<div class="flex items-center gap-2.5">
+					<div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+							<circle cx="12" cy="13" r="4"/>
+						</svg>
+					</div>
+					<div>
+						<h3 id="cameraModalTitle" class="font-extrabold text-slate-900 text-sm leading-tight">
+							Scan QR Presensi
+						</h3>
+						<p class="text-[11px] text-slate-500 font-medium">Arahkan kamera ke kode QR Presensi</p>
+					</div>
+				</div>
+				<button
+					type="button"
+					onclick={stopCameraScanner}
+					class="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+					aria-label="Tutup modal kamera"
+				>
+					&times;
+				</button>
+			</div>
+
+			<!-- Modal Body -->
+			<div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
+				<!-- Device Camera Selector Dropdown -->
+				{#if availableCameras.length > 1}
+					<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+						<label for="cameraSelect" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
+							Pilih Kamera Device ({availableCameras.length} Kamera Ditemukan):
+						</label>
+						<div class="relative">
+							<select
+								id="cameraSelect"
+								value={selectedDeviceId}
+								onchange={onCameraSelectChange}
+								class="w-full bg-white border border-slate-300 text-slate-800 text-xs font-bold rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none cursor-pointer shadow-xs"
+							>
+								{#each availableCameras as cam}
+									<option value={cam.id}>{cam.label}</option>
+								{/each}
+							</select>
+							<div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<polyline points="6 9 12 15 18 9" />
+								</svg>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Camera Live Stream Frame -->
+				<div class="bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 shadow-inner flex flex-col items-center justify-center min-h-[260px]">
+					{#if isCameraLoading}
+						<div class="p-6 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
+							<svg class="animate-spin h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Memulai sensor kamera... Mohon izinkan akses kamera.</span>
+						</div>
+					{/if}
+
+					{#if cameraError}
+						<div class="p-4 text-xs bg-rose-950/90 text-rose-200 rounded-lg border border-rose-800 m-3 text-center font-medium">
+							{cameraError}
+						</div>
+					{/if}
+
+					<div id="qr-reader" class="w-full h-full rounded-lg overflow-hidden min-h-[220px]"></div>
+				</div>
+
+				<p class="text-[11px] text-slate-500 text-center font-medium">
+					Sistem akan mendeteksi token presensi secara otomatis begitu QR terlihat pada kamera.
+				</p>
+			</div>
+
+			<!-- Modal Footer -->
+			<div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+				<button
+					type="button"
+					onclick={stopCameraScanner}
+					class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
+				>
+					Tutup Kamera
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.content-area {
