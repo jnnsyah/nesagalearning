@@ -528,13 +528,13 @@
 							<button
 								type="button"
 								onclick={() => startCameraScanner()}
-								class="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+								class="btn-action-primary flex items-center gap-1.5"
 							>
 								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
 									<circle cx="12" cy="13" r="4"/>
 								</svg>
-								<span>Buka Camera QR Scanner</span>
+								<span>Buka Kamera</span>
 							</button>
 						</div>
 						<div class="relative">
