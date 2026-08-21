@@ -45,7 +45,7 @@
 				</div>
 
 				<div class="hero-actions">
-					<a href="/siswa/presensi" class="btn-scan-hero">
+					<a href="/siswa/presensi?scan=true" class="btn-scan-hero">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<rect x="3" y="3" width="7" height="7" rx="1.5" />
 							<rect x="14" y="3" width="7" height="7" rx="1.5" />

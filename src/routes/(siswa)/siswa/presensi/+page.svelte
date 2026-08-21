@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
+	import { Html5Qrcode } from 'html5-qrcode';
 
 	let { data }: { data: PageData } = $props();
 
@@ -9,6 +10,12 @@
 	let isSubmitting = $state(false);
 	let scanErrorMessage = $state('');
 	let hasAutoSubmitted = $state(false);
+
+	// Camera scanner state
+	let isCameraOpen = $state(false);
+	let isCameraLoading = $state(false);
+	let cameraError = $state('');
+	let html5QrcodeInstance: Html5Qrcode | null = null;
 
 	// Filter Tab State
 	let filterStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
@@ -51,6 +58,64 @@
 		return Math.min(100, Math.round((currentStreak / target) * 100));
 	});
 
+	async function startCameraScanner() {
+		isCameraOpen = true;
+		isCameraLoading = true;
+		cameraError = '';
+
+		try {
+			await new Promise((r) => setTimeout(r, 150));
+
+			if (!html5QrcodeInstance) {
+				html5QrcodeInstance = new Html5Qrcode('qr-reader');
+			}
+
+			await html5QrcodeInstance.start(
+				{ facingMode: 'environment' }, // Prefer rear camera
+				{
+					fps: 10,
+					qrbox: { width: 240, height: 240 }
+				},
+				(decodedText) => {
+					// Scanned QR token successfully!
+					stopCameraScanner();
+
+					let tokenVal = decodedText.trim();
+					if (tokenVal.includes('token=')) {
+						try {
+							const parsed = new URL(tokenVal);
+							tokenVal = parsed.searchParams.get('token') || tokenVal;
+						} catch {}
+					}
+
+					qrTokenInput = tokenVal;
+					toast.success('Kode QR berhasil dipindai!');
+					submitToken(tokenVal);
+				},
+				() => {}
+			);
+		} catch (err: any) {
+			cameraError =
+				'Gagal mengakses kamera belakang: ' +
+				(err?.message || 'Pastikan izin kamera sudah diberikan di browser Anda.');
+		} finally {
+			isCameraLoading = false;
+		}
+	}
+
+	async function stopCameraScanner() {
+		if (html5QrcodeInstance) {
+			try {
+				if (html5QrcodeInstance.isScanning) {
+					await html5QrcodeInstance.stop();
+				}
+			} catch {}
+			html5QrcodeInstance = null;
+		}
+		isCameraOpen = false;
+		isCameraLoading = false;
+	}
+
 	async function submitToken(tokenToSubmit: string) {
 		if (!tokenToSubmit.trim() || isSubmitting) return;
 
@@ -91,14 +156,23 @@
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 
-		// 1. If URL has token, save to sessionStorage as pending
+		// 1. Check if URL has ?scan=true (opened from dashboard button)
+		const params = new URLSearchParams(window.location.search);
+		if (params.get('scan') === 'true') {
+			if (window.history && window.history.replaceState) {
+				window.history.replaceState({}, '', window.location.pathname);
+			}
+			startCameraScanner();
+		}
+
+		// 2. If URL has token, save to sessionStorage as pending
 		if (data.urlToken && data.urlToken.trim()) {
 			try {
 				sessionStorage.setItem('pending_qr_token', data.urlToken.trim());
 			} catch {}
 		}
 
-		// 2. Read pending token from URL or sessionStorage
+		// 3. Read pending token from URL or sessionStorage
 		let pendingToken: string | null = (data.urlToken && data.urlToken.trim()) || null;
 		if (!pendingToken) {
 			try {
@@ -209,7 +283,7 @@
 	</div>
 
 	<!-- Stats Row Grid (3 Columns) -->
-	<div class="stats-grid mb-5">
+	<div class="stats-grid">
 		<!-- Stat 1: Attendance Percentage -->
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
@@ -264,7 +338,7 @@
 	</div>
 
 	<!-- QR Scanner Form Card -->
-	<div class="scanner-card mb-5">
+	<div class="scanner-card">
 		<div class="scanner-header">
 			<div class="flex items-center gap-2">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
@@ -312,9 +386,51 @@
 			{:else}
 				<form onsubmit={handleScanSubmit} class="space-y-4">
 					<div>
-						<label for="tokenInput" class="stat-label uppercase block mb-1.5">
-							Kode Token QR (Lihat di Proyektor Mentor) *
-						</label>
+						<div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+							<label for="tokenInput" class="stat-label uppercase m-0">
+								Kode Token QR (Lihat di Proyektor Mentor) *
+							</label>
+							<button
+								type="button"
+								onclick={isCameraOpen ? stopCameraScanner : startCameraScanner}
+								class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer {isCameraOpen ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'}"
+							>
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+									<circle cx="12" cy="13" r="4"/>
+								</svg>
+								<span>{isCameraOpen ? 'Tutup Kamera' : 'Buka Kamera Rear / Scan QR'}</span>
+							</button>
+						</div>
+
+						{#if isCameraOpen}
+							<div class="camera-scanner-wrapper mb-4 p-3 bg-slate-900 rounded-xl text-white relative overflow-hidden border border-slate-700">
+								<div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
+									<span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+										<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+										Kamera Belakang (Rear Camera) Aktif
+									</span>
+									<button type="button" onclick={stopCameraScanner} class="text-slate-400 hover:text-white text-xs font-bold cursor-pointer">
+										&times; Batal
+									</button>
+								</div>
+
+								{#if isCameraLoading}
+									<div class="p-6 text-center text-xs text-slate-400">
+										Memulai sensor kamera... Mohon izinkan akses kamera pada browser.
+									</div>
+								{/if}
+
+								{#if cameraError}
+									<div class="p-3 text-xs bg-rose-950/80 text-rose-200 rounded-lg border border-rose-800 mb-2">
+										{cameraError}
+									</div>
+								{/if}
+
+								<div id="qr-reader" class="w-full rounded-lg overflow-hidden min-h-[220px]"></div>
+								<p class="text-[11px] text-slate-400 text-center mt-2">Arahkan kamera HP Anda ke kode QR yang ada pada proyektor mentor.</p>
+							</div>
+						{/if}
 						<div class="relative">
 							<input
 								id="tokenInput"
@@ -471,6 +587,9 @@
 		max-width: 1100px;
 		margin: 0 auto;
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
 	}
 
 	.header-card {
@@ -479,7 +598,6 @@
 		border-radius: var(--radius-lg);
 		padding: 20px 24px;
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 20px;
 	}
 
 	.breadcrumb {
