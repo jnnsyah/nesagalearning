@@ -1,0 +1,19 @@
+name: CI/CD Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Docker Container
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy Latest Code to Docker
+        run: |
+          cd /home/jian/web-nesagalearn
+          git fetch origin main
+          git reset --hard origin/main
+          docker compose up -d --build
