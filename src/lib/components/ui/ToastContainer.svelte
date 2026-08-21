@@ -124,14 +124,12 @@
 		align-items: flex-start;
 		gap: 12px;
 		padding: 14px 16px;
-		background: rgba(255, 255, 255, 0.96);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		background: #ffffff;
 		border-radius: var(--radius-lg);
 		border: 1px solid var(--border-hard);
 		box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
 		animation: toastSlideInDesktop 240ms cubic-bezier(0.16, 1, 0.3, 1);
-		transition: all 180ms ease;
+		transition: transform 180ms ease, opacity 180ms ease;
 		user-select: none;
 		-webkit-user-select: none;
 	}
