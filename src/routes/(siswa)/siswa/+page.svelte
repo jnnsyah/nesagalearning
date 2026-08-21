@@ -1,10 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import TextInput from '$lib/components/ui/TextInput.svelte';
-	import { toast } from '$lib/stores/toast';
-	import type { PageData, ActionData } from './$types';
-
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { data } = $props();
 
 	let role = $derived(data.user?.role ?? 'siswa');
 	let firstName = $derived(data.user?.fullName?.split(' ')[0] ?? 'Siswa');
@@ -17,31 +12,6 @@
 	let phaseProgressList = $derived(data.phaseProgress ?? []);
 	let pendingTasksList = $derived(data.pendingTasks ?? []);
 	let historicalList = $derived(data.historicalProgress ?? []);
-
-	// Task Submission Modal State
-	let activeSubmitTask = $state<any>(null);
-	let submissionLink = $state('');
-	let isSubmittingTask = $state(false);
-
-	$effect(() => {
-		if (form?.success) {
-			toast.success(form.message || 'Link tugas berhasil dikirim!');
-			activeSubmitTask = null;
-			submissionLink = '';
-		} else if (form?.message) {
-			toast.error(form.message);
-		}
-	});
-
-	function openSubmitModal(task: any) {
-		activeSubmitTask = task;
-		submissionLink = task.submission?.link || '';
-	}
-
-	function closeSubmitModal() {
-		activeSubmitTask = null;
-		submissionLink = '';
-	}
 </script>
 
 <svelte:head>
@@ -234,17 +204,13 @@
 							</div>
 
 							<div class="task-card-action">
-								<button
-									type="button"
-									onclick={() => openSubmitModal(t)}
-									class="btn-kerjakan-action cursor-pointer"
-								>
+								<a href="/siswa/tugas?taskId={t.taskId}" class="btn-kerjakan-action">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 										<line x1="22" y1="2" x2="11" y2="13" />
 										<polygon points="22 2 15 22 11 13 2 9 22 2" />
 									</svg>
 									<span>{t.submission ? 'Edit Submisi' : 'Submit Tugas'}</span>
-								</button>
+								</a>
 							</div>
 						</div>
 					{/each}
@@ -345,106 +311,6 @@
 		</section>
 	{/if}
 </div>
-
-<!-- Modal Dialog Submit Tugas Direct from Dashboard -->
-{#if activeSubmitTask}
-	<div
-		class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md transition-all duration-200"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="submitModalTitle"
-	>
-		<div
-			class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]"
-		>
-			<!-- Modal Header -->
-			<div class="px-5 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-							<polyline points="14 2 14 8 20 8" />
-						</svg>
-					</div>
-					<div>
-						<h3 id="submitModalTitle" class="font-extrabold text-slate-900 text-sm leading-tight">
-							{activeSubmitTask.submission ? 'Edit Link Submisi Tugas' : 'Submit Link Tugas'}
-						</h3>
-						<p class="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">
-							{activeSubmitTask.taskTitle} ({activeSubmitTask.pertemuanTitle})
-						</p>
-					</div>
-				</div>
-				<button
-					type="button"
-					onclick={closeSubmitModal}
-					class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
-					aria-label="Tutup modal"
-				>
-					&times;
-				</button>
-			</div>
-
-			<!-- Form Body -->
-			<form
-				method="POST"
-				action="?/submit"
-				use:enhance={() => {
-					isSubmittingTask = true;
-					return async ({ update }) => {
-						isSubmittingTask = false;
-						await update();
-					};
-				}}
-				class="p-5 flex-1 overflow-y-auto flex flex-col gap-4"
-			>
-				<input type="hidden" name="taskId" value={activeSubmitTask.taskId} />
-
-				<div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100 text-xs text-indigo-900 leading-relaxed">
-					<span class="font-bold block mb-1">Panduan Pengiriman Tugas:</span>
-					Kirimkan link repository (GitHub, GitLab), Google Drive, Figma, Vercel, dsb. Mentor akan langsung memeriksa link hasil pekerjaan Anda.
-				</div>
-
-				<div>
-					<TextInput
-						id="submissionLinkInput"
-						name="link"
-						label="Link Hasil Tugas / Repository *"
-						placeholder="https://github.com/username/project-repo..."
-						bind:value={submissionLink}
-						required={true}
-					/>
-				</div>
-
-				<!-- Modal Footer -->
-				<div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 mt-2">
-					<button
-						type="button"
-						onclick={closeSubmitModal}
-						class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
-					>
-						Batal
-					</button>
-					<button
-						type="submit"
-						disabled={isSubmittingTask || !submissionLink.trim()}
-						class="px-5 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs disabled:opacity-45 disabled:cursor-not-allowed flex items-center gap-1.5"
-					>
-						{#if isSubmittingTask}
-							<span>Memproses...</span>
-						{:else}
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<line x1="22" y1="2" x2="11" y2="13" />
-								<polygon points="22 2 15 22 11 13 2 9 22 2" />
-							</svg>
-							<span>{activeSubmitTask.submission ? 'Simpan Perubahan' : 'Kirim Submisi'}</span>
-						{/if}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-{/if}
 
 <style>
 	.page-container {

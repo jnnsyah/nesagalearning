@@ -3,6 +3,7 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
+	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -13,6 +14,17 @@
 	let activeSubmitTask = $state<TaskItem | null>(null);
 	let submissionLink = $state('');
 	let isSubmitting = $state(false);
+
+	// Auto-open modal if navigated with ?taskId=... query param
+	$effect(() => {
+		const targetTaskId = page.url.searchParams.get('taskId');
+		if (targetTaskId && data.tasks && data.tasks.length > 0 && !activeSubmitTask) {
+			const found = data.tasks.find((t) => String(t.taskId) === targetTaskId);
+			if (found) {
+				openSubmitModal(found);
+			}
+		}
+	});
 
 	// Cancel submission modal state
 	let showCancelConfirmModal = $state(false);
