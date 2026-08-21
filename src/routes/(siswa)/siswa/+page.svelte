@@ -2,7 +2,6 @@
 	let { data } = $props();
 
 	let role = $derived(data.user?.role ?? 'siswa');
-	let uid = $derived(`USR/S-${String(data.user?.id ?? '000').padStart(3, '0')}`);
 	let firstName = $derived(data.user?.fullName?.split(' ')[0] ?? 'Siswa');
 
 	let totalPoints = $derived(data.profileStats?.totalPoints ?? 0);
@@ -41,7 +40,7 @@
 							<span class="badge-ta">{tahunAjaranName}</span>
 						</div>
 						<h1 class="welcome-title">Halo, {firstName}!</h1>
-						<p class="user-sub">@{data.user?.username} &bull; {uid}</p>
+						<p class="user-sub">@{data.user?.username} &bull; {data.user?.nisn ? `NISN: ${data.user.nisn}` : (data.user?.email ?? 'Siswa Active')}</p>
 					</div>
 				</div>
 

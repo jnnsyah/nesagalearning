@@ -58,7 +58,7 @@
 
 <div class="content-area">
 	<!-- Header Banner Card -->
-	<div class="header-card mb-6">
+	<div class="header-card">
 		<nav class="breadcrumb" aria-label="Breadcrumb">
 			<a href="/siswa" class="bc-link">Dashboard</a>
 			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -81,7 +81,7 @@
 	</div>
 
 	<!-- Filter & Search Bar -->
-	<div class="filter-card mb-6">
+	<div class="filter-card">
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 align-items-center">
 			<div class="md:col-span-2">
 				<TextInput
@@ -182,6 +182,9 @@
 		max-width: 1100px;
 		margin: 0 auto;
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
 	}
 
 	.header-card {
