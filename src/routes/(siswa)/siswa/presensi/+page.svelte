@@ -4,6 +4,8 @@
 	import { toast } from '$lib/stores/toast';
 	import { Html5Qrcode } from 'html5-qrcode';
 
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+
 	let { data }: { data: PageData } = $props();
 
 	let qrTokenInput = $state('');
@@ -23,6 +25,18 @@
 	let availableCameras = $state<CameraDevice[]>([]);
 	let selectedDeviceId = $state<string>('');
 	let html5QrcodeInstance: Html5Qrcode | null = null;
+
+	// Camera Zoom State
+	let zoomLevel = $state(1); // 1.0x to 4.0x
+	let minZoom = $state(1);
+	let maxZoom = $state(4);
+
+	const cameraSelectOptions = $derived(
+		availableCameras.map((c) => ({
+			value: c.id,
+			label: c.label
+		}))
+	);
 
 	// Filter Tab State
 	let filterStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
@@ -104,10 +118,43 @@
 		}
 	}
 
+	async function setZoom(newZoom: number) {
+		zoomLevel = Math.max(minZoom, Math.min(maxZoom, Number(newZoom.toFixed(1))));
+
+		// Try hardware MediaTrackConstraints zoom if available
+		if (html5QrcodeInstance) {
+			try {
+				// @ts-ignore
+				const videoEl = document.querySelector('#qr-reader video') as HTMLVideoElement;
+				const track = (videoEl?.srcObject as MediaStream)?.getVideoTracks()?.[0];
+
+				if (track) {
+					const caps = track.getCapabilities ? track.getCapabilities() : {};
+					if ('zoom' in caps) {
+						minZoom = caps.zoom?.min || 1;
+						maxZoom = caps.zoom?.max || 4;
+						await track.applyConstraints({
+							advanced: [{ zoom: zoomLevel }] as any
+						});
+					}
+				}
+			} catch {}
+		}
+
+		// CSS Scale Zoom fallback for video container element (100% reliable across all browsers)
+		const videoEl = document.querySelector('#qr-reader video') as HTMLVideoElement;
+		if (videoEl) {
+			videoEl.style.transform = `scale(${zoomLevel})`;
+			videoEl.style.transformOrigin = 'center center';
+			videoEl.style.transition = 'transform 150ms ease-out';
+		}
+	}
+
 	async function startCameraScanner(targetDeviceId?: string) {
 		isCameraOpen = true;
 		isCameraLoading = true;
 		cameraError = '';
+		zoomLevel = 1;
 
 		try {
 			await loadAvailableCameras();
@@ -197,11 +244,10 @@
 		isCameraLoading = false;
 	}
 
-	async function onCameraSelectChange(e: Event) {
-		const selectEl = e.target as HTMLSelectElement;
-		if (selectEl && selectEl.value) {
-			selectedDeviceId = selectEl.value;
-			await startCameraScanner(selectEl.value);
+	async function onCameraSelectChange(val: string | number | null) {
+		if (val) {
+			selectedDeviceId = String(val);
+			await startCameraScanner(String(val));
 		}
 	}
 
@@ -680,29 +726,17 @@
 
 			<!-- Modal Body -->
 			<div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
-				<!-- Device Camera Selector Dropdown -->
+				<!-- Device Camera Selector Dropdown using CustomSelect UI -->
 				{#if availableCameras.length > 1}
-					<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-						<label for="cameraSelect" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
-							Pilih Kamera Device ({availableCameras.length} Kamera Ditemukan):
-						</label>
-						<div class="relative">
-							<select
-								id="cameraSelect"
-								value={selectedDeviceId}
-								onchange={onCameraSelectChange}
-								class="w-full bg-white border border-slate-300 text-slate-800 text-xs font-bold rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none cursor-pointer shadow-xs"
-							>
-								{#each availableCameras as cam}
-									<option value={cam.id}>{cam.label}</option>
-								{/each}
-							</select>
-							<div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<polyline points="6 9 12 15 18 9" />
-								</svg>
-							</div>
-						</div>
+					<div>
+						<CustomSelect
+							id="cameraSelect"
+							label={`Pilih Kamera Device (${availableCameras.length} Kamera Ditemukan)`}
+							value={selectedDeviceId}
+							options={cameraSelectOptions}
+							searchable={false}
+							onchange={onCameraSelectChange}
+						/>
 					</div>
 				{/if}
 
@@ -727,6 +761,83 @@
 					<div id="qr-reader" class="w-full h-full rounded-lg overflow-hidden min-h-[220px]"></div>
 				</div>
 
+				<!-- Camera Zoom Control Bar -->
+				<div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
+					<div class="flex items-center justify-between text-xs font-bold text-slate-700">
+						<span class="flex items-center gap-1.5">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="11" cy="11" r="8"/>
+								<line x1="21" y1="21" x2="16.65" y2="16.65"/>
+								<line x1="11" y1="8" x2="11" y2="14"/>
+								<line x1="8" y1="11" x2="14" y2="11"/>
+							</svg>
+							Zoom Kamera ({zoomLevel.toFixed(1)}x)
+						</span>
+						<div class="flex items-center gap-1">
+							<button
+								type="button"
+								onclick={() => setZoom(1)}
+								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
+							>
+								1x
+							</button>
+							<button
+								type="button"
+								onclick={() => setZoom(1.5)}
+								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
+							>
+								1.5x
+							</button>
+							<button
+								type="button"
+								onclick={() => setZoom(2)}
+								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
+							>
+								2x
+							</button>
+							<button
+								type="button"
+								onclick={() => setZoom(3)}
+								class="px-2 py-0.5 text-[11px] font-bold rounded border bg-white border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
+							>
+								3x
+							</button>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-3">
+						<button
+							type="button"
+							onclick={() => setZoom(zoomLevel - 0.2)}
+							disabled={zoomLevel <= minZoom}
+							class="w-7 h-7 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold text-sm flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+							aria-label="Zoom Out"
+						>
+							-
+						</button>
+
+						<input
+							type="range"
+							min={minZoom}
+							max={maxZoom}
+							step="0.1"
+							value={zoomLevel}
+							oninput={(e) => setZoom(parseFloat((e.target as HTMLInputElement).value))}
+							class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+						/>
+
+						<button
+							type="button"
+							onclick={() => setZoom(zoomLevel + 0.2)}
+							disabled={zoomLevel >= maxZoom}
+							class="w-7 h-7 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold text-sm flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+							aria-label="Zoom In"
+						>
+							+
+						</button>
+					</div>
+				</div>
+
 				<p class="text-[11px] text-slate-500 text-center font-medium">
 					Sistem akan mendeteksi token presensi secara otomatis begitu QR terlihat pada kamera.
 				</p>
@@ -737,7 +848,7 @@
 				<button
 					type="button"
 					onclick={stopCameraScanner}
-					class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all cursor-pointer shadow-xs"
+					class="btn-modal-close"
 				>
 					Tutup Kamera
 				</button>
@@ -747,6 +858,43 @@
 {/if}
 
 <style>
+	.btn-action-primary {
+		background: var(--primary, #4f46e5);
+		color: #ffffff;
+		font-family: var(--font-macro, inherit);
+		font-size: 13px;
+		font-weight: 700;
+		padding: 9px 16px;
+		border-radius: var(--radius-md, 8px);
+		border: 1px solid transparent;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-action-primary:hover {
+		background: #4338ca;
+		box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+	}
+
+	.btn-modal-close {
+		background: #ffffff;
+		color: var(--text-primary, #0f172a);
+		font-family: var(--font-macro, inherit);
+		font-size: 13px;
+		font-weight: 700;
+		padding: 9px 18px;
+		border-radius: var(--radius-md, 8px);
+		border: 1px solid var(--border-hard, #cbd5e1);
+		box-shadow: var(--shadow-sm);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-modal-close:hover {
+		background: #f8fafc;
+		border-color: #94a3b8;
+	}
 	.content-area {
 		padding: 24px 28px 40px;
 		max-width: 1100px;
