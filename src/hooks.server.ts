@@ -27,11 +27,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event);
 
-	// 3. Inject Security Hardening Headers
+	// 3. Inject Security Hardening & Performance Caching Headers
 	response.headers.set('X-Frame-Options', 'DENY');
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+
+	if (event.url.pathname.startsWith('/_app/immutable/')) {
+		response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+	}
 
 	return response;
 };
