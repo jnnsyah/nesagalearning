@@ -52,15 +52,85 @@
 		}
 	});
 
+	// Dynamic local state for live attendance list
+	let liveAttendanceList = $state<any[]>(data.attendanceList ?? []);
+
+	$effect(() => {
+		if (data.attendanceList) {
+			liveAttendanceList = [...data.attendanceList];
+		}
+	});
+
 	// Derivations
 	const currentMeeting = $derived(data.selectedMeeting);
 	const isOngoing = $derived(data.isOngoing ?? false);
-	const students = $derived(data.attendanceList ?? []);
+	const students = $derived(liveAttendanceList);
 	const totalStudents = $derived(students.length);
 	const totalHadir = $derived(students.filter((s) => s.status === 'hadir').length);
 	const totalExcused = $derived(students.filter((s) => s.status === 'excused').length);
 	const totalBelumHadir = $derived(students.filter((s) => s.status === 'belum_hadir').length);
 	const hadirPercent = $derived(totalStudents > 0 ? Math.round((totalHadir / totalStudents) * 100) : 0);
+
+	// Live Polling & Notification Tracker
+	let livePollingInterval: ReturnType<typeof setInterval> | null = null;
+	const knownAttendanceMap = new Map<number, { status: string; name: string }>();
+
+	async function pollLiveAttendance() {
+		if (!currentMeeting || isBulkEditMode) return;
+
+		try {
+			const res = await fetch(`/api/attendance/list/${currentMeeting.id}`);
+			if (!res.ok) return;
+
+			const json = await res.json();
+			if (json.success && json.data?.students) {
+				const freshStudents: any[] = json.data.students;
+
+				for (const s of freshStudents) {
+					const prev = knownAttendanceMap.get(s.userId);
+					if (prev && prev.status === 'belum_hadir' && s.status === 'hadir') {
+						const methodText = s.method === 'qr' ? 'Scan QR' : 'Manual';
+						toast.success(`🎯 ${s.fullName} berhasil presensi (${methodText})!`);
+					}
+					knownAttendanceMap.set(s.userId, { status: s.status, name: s.fullName });
+				}
+
+				liveAttendanceList = freshStudents;
+			}
+		} catch (err) {
+			// Silent catch for background polling
+		}
+	}
+
+	function startLivePolling() {
+		stopLivePolling();
+		if (!currentMeeting) return;
+
+		for (const s of liveAttendanceList) {
+			knownAttendanceMap.set(s.userId, { status: s.status, name: s.fullName });
+		}
+
+		livePollingInterval = setInterval(pollLiveAttendance, 2500);
+	}
+
+	function stopLivePolling() {
+		if (livePollingInterval) {
+			clearInterval(livePollingInterval);
+			livePollingInterval = null;
+		}
+	}
+
+	$effect(() => {
+		if (currentMeeting) {
+			startLivePolling();
+		} else {
+			stopLivePolling();
+		}
+
+		return () => {
+			stopLivePolling();
+		};
+	});
 
 	// Initialize / reset bulk map whenever attendanceList changes or bulk mode opens
 	$effect(() => {
@@ -901,7 +971,7 @@
 									</td>
 									<td class="py-3 px-4">
 										{#if s.method === 'qr'}
-											<span class="badge badge-live">Scan QR</span>
+											<span class="badge badge-hadir">Scan QR</span>
 										{:else if s.method === 'manual'}
 											<span class="badge badge-excused">Manual Mentor</span>
 										{:else}
