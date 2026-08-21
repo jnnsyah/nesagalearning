@@ -761,26 +761,29 @@
 					<div id="qr-reader" class="w-full h-full rounded-xl overflow-hidden min-h-[220px]"></div>
 				</div>
 
-				<!-- Sleek Camera Zoom Control Bar -->
-				<div class="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col gap-3">
-					<div class="flex items-center justify-between">
-						<span class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-600">
-								<circle cx="11" cy="11" r="8"/>
-								<line x1="21" y1="21" x2="16.65" y2="16.65"/>
-								<line x1="11" y1="8" x2="11" y2="14"/>
-								<line x1="8" y1="11" x2="14" y2="11"/>
-							</svg>
-							Zoom Kamera <span class="font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-[11px]">{zoomLevel.toFixed(1)}x</span>
+				<!-- Sleek Camera Zoom Control Container -->
+				<div class="zoom-card-container">
+					<div class="flex items-center justify-between gap-2 mb-3">
+						<span class="zoom-card-title flex items-center gap-2">
+							<div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<circle cx="11" cy="11" r="8"/>
+									<line x1="21" y1="21" x2="16.65" y2="16.65"/>
+									<line x1="11" y1="8" x2="11" y2="14"/>
+									<line x1="8" y1="11" x2="14" y2="11"/>
+								</svg>
+							</div>
+							<span>Zoom Kamera</span>
+							<span class="zoom-value-pill font-mono">{zoomLevel.toFixed(1)}x</span>
 						</span>
 
-						<!-- Sleek Zoom Shortcut Pills -->
-						<div class="flex items-center gap-1 bg-white p-1 rounded-full border border-slate-200 shadow-2xs">
+						<!-- Shortcut Preset Buttons -->
+						<div class="zoom-preset-group">
 							{#each [1, 1.5, 2, 3] as preset}
 								<button
 									type="button"
 									onclick={() => setZoom(preset)}
-									class="px-2.5 py-0.5 text-[11px] font-bold font-mono rounded-full transition-all cursor-pointer {Math.abs(zoomLevel - preset) < 0.05 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}"
+									class="zoom-preset-btn {Math.abs(zoomLevel - preset) < 0.05 ? 'zoom-preset-btn-active' : ''}"
 								>
 									{preset}x
 								</button>
@@ -788,32 +791,34 @@
 						</div>
 					</div>
 
-					<div class="flex items-center gap-3">
+					<div class="flex items-center gap-3 px-1">
 						<button
 							type="button"
 							onclick={() => setZoom(zoomLevel - 0.2)}
 							disabled={zoomLevel <= minZoom}
-							class="w-7 h-7 rounded-full border border-slate-200 bg-white text-slate-700 font-extrabold text-sm flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 disabled:opacity-40 cursor-pointer shadow-2xs transition-all"
+							class="zoom-step-btn"
 							aria-label="Zoom Out"
 						>
 							-
 						</button>
 
-						<input
-							type="range"
-							min={minZoom}
-							max={maxZoom}
-							step="0.1"
-							value={zoomLevel}
-							oninput={(e) => setZoom(parseFloat((e.target as HTMLInputElement).value))}
-							class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-						/>
+						<div class="flex-1 relative flex items-center">
+							<input
+								type="range"
+								min={minZoom}
+								max={maxZoom}
+								step="0.1"
+								value={zoomLevel}
+								oninput={(e) => setZoom(parseFloat((e.target as HTMLInputElement).value))}
+								class="zoom-range-slider"
+							/>
+						</div>
 
 						<button
 							type="button"
 							onclick={() => setZoom(zoomLevel + 0.2)}
 							disabled={zoomLevel >= maxZoom}
-							class="w-7 h-7 rounded-full border border-slate-200 bg-white text-slate-700 font-extrabold text-sm flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 disabled:opacity-40 cursor-pointer shadow-2xs transition-all"
+							class="zoom-step-btn"
 							aria-label="Zoom In"
 						>
 							+
@@ -842,34 +847,48 @@
 
 <style>
 	.btn-action-primary {
-		background: var(--primary, #4f46e5);
-		color: #ffffff;
-		font-family: var(--font-macro, inherit);
-		font-size: 13px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 36px;
+		padding: 0 14px;
+		background: #eef2ff;
+		color: #4338ca;
+		border: 1px solid #c7d2fe;
+		border-radius: var(--radius-md);
+		font-family: var(--font-macro);
+		font-size: 12.5px;
 		font-weight: 700;
-		padding: 9px 16px;
-		border-radius: var(--radius-md, 8px);
-		border: 1px solid transparent;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
 
 	.btn-action-primary:hover {
-		background: #4338ca;
-		box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+		background: #e0e7ff;
+		border-color: #a5b4fc;
+		color: #3730a3;
+		transform: translateY(-1px);
+		box-shadow: 0 2px 5px rgba(79, 70, 229, 0.15);
+	}
+
+	.btn-action-primary:active {
+		transform: translateY(0);
 	}
 
 	.btn-modal-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 38px;
+		padding: 0 18px;
 		background: #ffffff;
-		color: var(--text-primary, #0f172a);
-		font-family: var(--font-macro, inherit);
+		color: var(--text-primary);
+		font-family: var(--font-macro);
 		font-size: 13px;
 		font-weight: 700;
-		padding: 9px 18px;
-		border-radius: var(--radius-md, 8px);
-		border: 1px solid var(--border-hard, #cbd5e1);
-		box-shadow: var(--shadow-sm);
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-hard);
+		box-shadow: var(--shadow-xs);
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
@@ -877,6 +896,120 @@
 	.btn-modal-close:hover {
 		background: #f8fafc;
 		border-color: #94a3b8;
+		color: #0f172a;
+	}
+
+	.zoom-card-container {
+		background: var(--bg-inset, #f8fafc);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.zoom-card-title {
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--text-primary, #0f172a);
+	}
+
+	.zoom-value-pill {
+		font-size: 11px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 2px 8px;
+		border-radius: 6px;
+	}
+
+	.zoom-preset-group {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		background: #ffffff;
+		padding: 3px;
+		border-radius: var(--radius-md, 8px);
+		border: 1px solid var(--border-hard, #cbd5e1);
+	}
+
+	.zoom-preset-btn {
+		padding: 3px 9px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		border-radius: 6px;
+		border: none;
+		background: transparent;
+		color: var(--text-secondary, #475569);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.zoom-preset-btn:hover {
+		background: #f1f5f9;
+		color: var(--text-primary);
+	}
+
+	.zoom-preset-btn-active {
+		background: #4f46e5 !important;
+		color: #ffffff !important;
+		box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+	}
+
+	.zoom-step-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: var(--radius-md, 8px);
+		border: 1px solid var(--border-hard, #cbd5e1);
+		background: #ffffff;
+		color: var(--text-primary);
+		font-family: var(--font-macro);
+		font-size: 16px;
+		font-weight: 800;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 150ms ease;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.zoom-step-btn:hover:not(:disabled) {
+		background: #f8fafc;
+		border-color: #94a3b8;
+	}
+
+	.zoom-step-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.zoom-range-slider {
+		width: 100%;
+		height: 6px;
+		background: #e2e8f0;
+		border-radius: 9999px;
+		appearance: none;
+		outline: none;
+		cursor: pointer;
+	}
+
+	.zoom-range-slider::-webkit-slider-thumb {
+		appearance: none;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: #4f46e5;
+		box-shadow: 0 2px 4px rgba(79, 70, 229, 0.4);
+		cursor: pointer;
+		transition: transform 100ms ease;
+	}
+
+	.zoom-range-slider::-webkit-slider-thumb:hover {
+		transform: scale(1.15);
 	}
 	.content-area {
 		padding: 24px 28px 40px;
