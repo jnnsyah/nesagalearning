@@ -89,8 +89,7 @@
 				for (const s of freshStudents) {
 					const prev = knownAttendanceMap.get(s.userId);
 					if (prev && prev.status === 'belum_hadir' && s.status === 'hadir') {
-						const methodText = s.method === 'qr' ? 'Scan QR' : 'Manual';
-						toast.success(`🎯 ${s.fullName} berhasil presensi (${methodText})!`);
+						toast.success(`${s.fullName} Presensi!`);
 					}
 					knownAttendanceMap.set(s.userId, { status: s.status, name: s.fullName });
 				}
