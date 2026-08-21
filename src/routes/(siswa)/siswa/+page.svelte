@@ -158,13 +158,15 @@
 		<section class="panel">
 			<div class="section-header">
 				<div class="flex items-center gap-2">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-					</svg>
-					<span>Tugas Perlu Dikerjakan</span>
+					<div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+							<polyline points="14 2 14 8 20 8" />
+						</svg>
+					</div>
+					<span class="font-extrabold text-slate-900 text-sm">Tugas Perlu Dikerjakan</span>
 				</div>
-				<span class="badge {pendingTasksList.length > 0 ? 'badge-pending' : 'badge-hadir'}">{pendingTasksList.length} Tugas</span>
+				<span class="badge {pendingTasksList.length > 0 ? 'badge-pending' : 'badge-hadir'}">{pendingTasksList.length} Tugas Pending</span>
 			</div>
 
 			{#if pendingTasksList.length === 0}
@@ -179,20 +181,36 @@
 					<p class="empty-sub">Tidak ada tugas pending. Semua tugas telah diselesaikan dengan baik.</p>
 				</div>
 			{:else}
-				<div class="task-list p-3 space-y-2.5">
+				<div class="task-list">
 					{#each pendingTasksList as t}
-						<div class="task-item-card p-3.5 bg-slate-50 rounded-lg border border-slate-200 flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-							<div class="min-w-0 flex-1">
-								<span class="text-xs font-bold text-indigo-600 block mb-0.5">{t.pertemuanTitle}</span>
-								<h4 class="text-sm font-extrabold text-slate-800 leading-snug">{t.taskTitle}</h4>
-								<p class="text-xs text-slate-500 mt-1 line-clamp-2">{t.taskDescription || 'Tidak ada deskripsi tugas'}</p>
+						<div class="task-card-item">
+							<div class="task-card-content">
+								<div class="flex items-center gap-2 mb-1 flex-wrap">
+									<span class="task-pertemuan-tag">{t.pertemuanTitle}</span>
+									{#if t.dueDate}
+										<span class="task-deadline-tag flex items-center gap-1">
+											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<circle cx="12" cy="12" r="10"/>
+												<polyline points="12 6 12 12 16 14"/>
+											</svg>
+											Tenggat: {t.dueDate}
+										</span>
+									{/if}
+								</div>
+								<h4 class="task-title-text">{t.taskTitle}</h4>
+								{#if t.taskDescription}
+									<p class="task-desc-text line-clamp-2">{t.taskDescription}</p>
+								{/if}
 							</div>
-							<a href="/siswa/tugas" class="btn-kerjakan-sm w-full sm:w-auto text-center shrink-0">
-								<span>Kerjakan</span>
-								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<polyline points="9 18 15 12 9 6" />
-								</svg>
-							</a>
+
+							<div class="task-card-action">
+								<a href="/siswa/tugas" class="btn-kerjakan-action">
+									<span>Kerjakan</span>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="9 18 15 12 9 6" />
+									</svg>
+								</a>
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -534,25 +552,104 @@
 		gap: 24px;
 	}
 
-	.btn-kerjakan-sm {
+	/* Task List & Card Item Styling */
+	.task-list {
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.task-card-item {
+		background: var(--bg-inset, #f8fafc);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		transition: all 150ms ease;
+	}
+
+	.task-card-item:hover {
+		background: #ffffff;
+		border-color: #c7d2fe;
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+	}
+
+	.task-card-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.task-pertemuan-tag {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: #4338ca;
+		background: #e0e7ff;
+		padding: 2px 8px;
+		border-radius: 6px;
+	}
+
+	.task-deadline-tag {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		color: #c2410c;
+		background: #ffedd5;
+		padding: 2px 8px;
+		border-radius: 6px;
+	}
+
+	.task-title-text {
+		font-family: var(--font-macro);
+		font-size: 13.5px;
+		font-weight: 800;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.35;
+		margin-top: 4px;
+	}
+
+	.task-desc-text {
+		font-size: 12px;
+		color: var(--text-secondary, #64748b);
+		margin-top: 4px;
+		line-height: 1.45;
+	}
+
+	.task-card-action {
+		flex-shrink: 0;
+	}
+
+	.btn-kerjakan-action {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 4px;
-		padding: 7px 14px;
-		background: #4f46e5;
+		gap: 6px;
+		height: 36px;
+		padding: 0 16px;
+		background: var(--primary, #4f46e5);
 		color: #ffffff;
-		border-radius: 8px;
+		border-radius: var(--radius-md, 8px);
 		font-family: var(--font-macro);
-		font-size: 12px;
+		font-size: 12.5px;
 		font-weight: 700;
 		text-decoration: none;
-		transition: background 150ms ease;
-		min-height: 34px;
+		box-shadow: 0 2px 5px rgba(79, 70, 229, 0.25);
+		transition: all 150ms ease;
+		white-space: nowrap;
 	}
 
-	.btn-kerjakan-sm:hover {
+	.btn-kerjakan-action:hover {
 		background: #4338ca;
+		box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+		transform: translateY(-1px);
+	}
+
+	.btn-kerjakan-action:active {
+		transform: translateY(0);
 	}
 
 	/* Empty state */
@@ -732,6 +829,22 @@
 
 		.stat-card__label {
 			font-size: 12px;
+		}
+
+		.task-card-item {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 12px;
+			padding: 14px;
+		}
+
+		.task-card-action {
+			width: 100%;
+		}
+
+		.btn-kerjakan-action {
+			width: 100%;
+			height: 38px;
 		}
 	}
 	/* Completeness Alert Card */
