@@ -129,22 +129,22 @@
 						{/if}
 					</div>
 
-					<div class="phase-body space-y-4 p-4">
+					<div class="phase-body space-y-5 p-6">
 						{#each p.subPhases as sp, spIdx}
 							<div class="subphase-block">
-								<div class="subphase-header mb-3">
+								<div class="subphase-header mb-3.5">
 									<h4 class="subphase-title">
 										Sub-Fase {pIdx + 1}.{spIdx + 1}: {sp.title}
 									</h4>
 									{#if sp.description}
-										<p class="subphase-desc">{sp.description}</p>
+										<p class="subphase-desc mt-0.5">{sp.description}</p>
 									{/if}
 								</div>
 
 								{#if sp.materiList.length === 0}
 									<div class="no-materi-item">Belum ada modul materi pada sub-fase ini.</div>
 								{:else}
-									<div class="materi-list space-y-2">
+									<div class="materi-list space-y-3">
 										{#each sp.materiList as m, mIdx}
 											<div class="materi-row">
 												<div class="flex items-center gap-3 min-w-0 flex-1">
@@ -179,8 +179,9 @@
 <style>
 	.content-area {
 		padding: 24px 28px 40px;
-		max-width: 1050px;
+		max-width: 1100px;
 		margin: 0 auto;
+		width: 100%;
 	}
 
 	.header-card {
@@ -243,7 +244,7 @@
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 16px 20px;
+		padding: 18px 24px;
 		box-shadow: var(--shadow-sm);
 	}
 
@@ -256,7 +257,7 @@
 	}
 
 	.phase-header {
-		padding: 16px 20px;
+		padding: 18px 24px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border-hard);
 	}
@@ -288,7 +289,7 @@
 		background: #f8fafc;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
-		padding: 14px 16px;
+		padding: 18px 22px;
 	}
 
 	.subphase-title {
@@ -314,11 +315,11 @@
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: 6px;
-		padding: 10px 14px;
+		padding: 14px 18px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: 16px;
 		transition: all 150ms ease;
 	}
 
