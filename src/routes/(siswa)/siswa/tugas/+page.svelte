@@ -344,8 +344,8 @@
 
 <style>
 	.content-area {
-		padding: 24px 32px 60px;
-		max-width: 1400px;
+		padding: 24px 28px 40px;
+		max-width: 1100px;
 		margin: 0 auto;
 		width: 100%;
 	}
