@@ -200,7 +200,6 @@
 					}
 
 					qrTokenInput = tokenVal;
-					toast.success('Kode QR berhasil dipindai!');
 					submitToken(tokenVal);
 				},
 				() => {}
@@ -229,7 +228,6 @@
 								} catch {}
 							}
 							qrTokenInput = tokenVal;
-							toast.success('Kode QR berhasil dipindai!');
 							submitToken(tokenVal);
 						},
 						() => {}
