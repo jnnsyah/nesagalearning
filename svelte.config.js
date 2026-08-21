@@ -6,7 +6,7 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter(),
-		inlineStyleThreshold: 20480,
+		inlineStyleThreshold: 65536,
 		csrf: {
 			checkOrigin: false
 		}

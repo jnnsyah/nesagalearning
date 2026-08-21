@@ -4,6 +4,13 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	build: {
+		// Inject <link rel="modulepreload"> for all JS chunks reachable from the entry point.
+		// This parallelises the JS waterfall that PageSpeed flags as a long network dependency chain.
+		modulePreload: { polyfill: true },
+		// Raise the chunk-size warning threshold (Tailwind v4 produces a large base CSS).
+		chunkSizeWarningLimit: 700
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({
@@ -18,6 +25,11 @@ export default defineConfig({
 			csrf: {
 				checkOrigin: false
 			},
+
+			// Inline CSS files smaller than 64 KB directly into the HTML <style> block,
+			// eliminating render-blocking <link rel="stylesheet"> requests.
+			// Covers: 0.css (~61KB Tailwind global), 20.css (~7KB login), ToastContainer.css (~2.8KB).
+			inlineStyleThreshold: 65536,
 
 			typescript: {
 				config: (config) => {
