@@ -85,21 +85,41 @@ export class PertemuanService {
 			.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
 			.orderBy(desc(pertemuan.sessionDate));
 
-		// Attach attendance counts for each meeting
-		const attendanceCounts = await db
-			.select({
-				pertemuanId: attendance.pertemuanId,
-				count: sql<number>`count(*)::int`
-			})
-			.from(attendance)
-			.where(eq(attendance.status, 'hadir'))
-			.groupBy(attendance.pertemuanId);
+		// Attach attendance counts and tasks for each meeting in parallel
+		const [attendanceCounts, allTasks] = await Promise.all([
+			db
+				.select({
+					pertemuanId: attendance.pertemuanId,
+					count: sql<number>`count(*)::int`
+				})
+				.from(attendance)
+				.where(eq(attendance.status, 'hadir'))
+				.groupBy(attendance.pertemuanId),
+			db
+				.select({
+					id: task.id,
+					pertemuanId: task.pertemuanId,
+					title: task.title,
+					description: task.description,
+					taskSize: task.taskSize
+				})
+				.from(task)
+		]);
 
 		const countMap = new Map(attendanceCounts.map((a) => [a.pertemuanId, a.count]));
+		const taskMap = new Map<number, { id: number; title: string; description: string | null; taskSize: string }[]>();
+		for (const t of allTasks) {
+			if (t.pertemuanId) {
+				const arr = taskMap.get(t.pertemuanId) || [];
+				arr.push({ id: t.id, title: t.title, description: t.description, taskSize: t.taskSize });
+				taskMap.set(t.pertemuanId, arr);
+			}
+		}
 
 		return list.map((m) => ({
 			...m,
-			totalHadir: countMap.get(m.id) ?? 0
+			totalHadir: countMap.get(m.id) ?? 0,
+			tasks: taskMap.get(m.id) || []
 		}));
 	}
 

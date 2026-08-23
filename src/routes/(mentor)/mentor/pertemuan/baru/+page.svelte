@@ -130,28 +130,35 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page Header Row -->
-	<div class="page-header-row">
-		<div>
+	<!-- Standardized Header Card -->
+	<div class="header-card mb-5">
+		<div class="header-top-row">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
 				<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
 				<span class="bc-current">Buat Baru</span>
 			</nav>
-			<h1 class="page-title">Buat Pertemuan Baru</h1>
-			<p class="page-sub">Jadwalkan pertemuan kelas, unggah materi/PPT, dan lampirkan task opsional.</p>
+
+			<div class="header-badges-row">
+				<a href="/mentor/pertemuan" class="btn-back-track-pill">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="19" y1="12" x2="5" y2="12" />
+						<polyline points="12 19 5 12 12 5" />
+					</svg>
+					<span>Kembali</span>
+				</a>
+			</div>
 		</div>
 
-		<div class="header-actions">
-			<a href="/mentor/pertemuan" class="btn-ghost">
-				&larr; Kembali
-			</a>
+		<div class="header-main-content">
+			<h1 class="page-title">Buat Pertemuan Baru</h1>
+			<p class="page-sub">Jadwalkan pertemuan kelas, unggah materi/PPT, dan lampirkan task opsional.</p>
 		</div>
 	</div>
 
@@ -465,17 +472,74 @@
 		}
 	}
 
-	.page-header-row {
+	.header-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		box-sizing: border-box;
 		display: flex;
-		align-items: flex-start;
+		flex-direction: column;
+		gap: 10px;
+		max-width: 100%;
+		word-break: break-word;
+	}
+
+	.header-top-row {
+		display: flex;
+		align-items: center;
 		justify-content: space-between;
-		gap: 20px;
-		margin-bottom: 24px;
+		gap: 8px;
+		flex-wrap: wrap;
+		min-height: 26px;
+	}
+
+	.header-badges-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.btn-back-track-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 26px;
+		padding: 0 10px;
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11px;
+		font-weight: 700;
+		text-decoration: none;
+		line-height: 1;
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-back-track-pill:hover {
+		background: #e2e8f0;
+		color: #1e293b;
+		border-color: #94a3b8;
+	}
+
+	.header-main-content {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 	}
 
 	@media (max-width: 640px) {
-		.page-header-row {
-			flex-direction: column;
+		.header-card {
+			padding: 12px 14px;
+			gap: 8px;
+		}
+		.header-main-content {
+			gap: 3px;
 		}
 	}
 
@@ -483,42 +547,43 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		margin-bottom: 4px;
+		margin: 0;
 	}
 
 	.bc-link {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
-		color: var(--text-muted);
+		color: var(--text-muted, #64748b);
 		text-decoration: none;
 		transition: color 150ms ease;
 	}
 
 	.bc-link:hover {
-		color: var(--primary);
+		color: var(--primary, #4f46e5);
 	}
 
 	.bc-current {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
 		font-weight: 700;
-		color: var(--primary);
+		color: var(--primary, #4f46e5);
 	}
 
 	.page-title {
-		font-family: var(--font-macro);
-		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-family: var(--font-macro, sans-serif);
+		font-size: clamp(1.3rem, 2.5vw, 1.65rem);
 		font-weight: 800;
-		color: var(--text-primary);
+		color: var(--text-primary, #0f172a);
 		letter-spacing: -0.02em;
-		margin-bottom: 4px;
+		margin: 0;
 	}
 
 	.page-sub {
-		font-size: 14px;
-		color: var(--text-secondary);
+		font-size: 13.5px;
+		color: var(--text-secondary, #64748b);
 		max-width: 680px;
-		line-height: 1.5;
+		line-height: 1.45;
+		margin: 0;
 	}
 </style>
 

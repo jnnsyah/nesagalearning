@@ -64,55 +64,56 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Top Navigation Breadcrumb & Back -->
-	<div class="header-top-nav">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/mentor" class="bc-link">Dashboard</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Detail Sesi #{m.id}</span>
-		</nav>
+	<!-- Standardized Header Card -->
+	<div class="header-card mb-5">
+		<div class="header-top-row">
+			<nav class="breadcrumb" aria-label="Breadcrumb">
+				<a href="/mentor" class="bc-link">Dashboard</a>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
+				<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
+				<span class="bc-current">Detail Sesi #{m.id}</span>
+			</nav>
 
-		<a href="/mentor/pertemuan" class="btn-back">
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<line x1="19" y1="12" x2="5" y2="12" />
-				<polyline points="12 19 5 12 12 5" />
-			</svg>
-			<span>Kembali ke Daftar Sesi</span>
-		</a>
-	</div>	<!-- Main Hero Title Banner -->
-	<div class="hero-card mb-5">
-		<div class="hero-card__content">
-			<div class="flex flex-wrap items-center gap-2 mb-2">
-				<span class="activity-badge {actBadge.bg} {actBadge.text} {actBadge.border}">
+			<div class="header-badges-row">
+				<span class="activity-badge-pill {actBadge.bg} {actBadge.text} {actBadge.border}">
 					{actBadge.label}
 				</span>
 				{#if m.isWeekend}
-					<span class="weekend-tag">WEEKEND (+50% BONUS POIN)</span>
+					<span class="weekend-tag-pill">WEEKEND (+50% POIN)</span>
 				{/if}
-				<span class="kelas-tag">{m.kelasName}</span>
-			</div>
-
-			<h1 class="hero-title">{m.title}</h1>
-
-			<div class="flex items-center gap-2 mt-2 text-sm text-slate-600">
-				<span class="font-medium">Sub-Fase Track Pembelajaran:</span>
-				<span class="subphase-pill">{m.subPhaseTitle}</span>
+				<span class="kelas-tag-pill">{m.kelasName}</span>
+				<a href="/mentor/pertemuan" class="btn-back-track-pill">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="19" y1="12" x2="5" y2="12" />
+						<polyline points="12 19 5 12 12 5" />
+					</svg>
+					<span>Kembali</span>
+				</a>
 			</div>
 		</div>
 
-		<div class="hero-card__actions">
-			<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-hero-primary">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-				</svg>
-				<span>Buka Presensi QR</span>
-			</a>
+		<div class="header-main-content">
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+				<div>
+					<h1 class="page-title">{m.title}</h1>
+					<p class="page-sub">
+						Sub-Fase Track Pembelajaran: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle}</strong>
+					</p>
+				</div>
+				<div class="flex items-center gap-2 flex-wrap">
+					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-hero-primary-pill">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+						</svg>
+						<span>Buka Presensi QR</span>
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -385,60 +386,187 @@
 		}
 	}
 
-	.header-top-nav {
+	.header-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		max-width: 100%;
+		word-break: break-word;
+	}
+
+	.header-top-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
-		margin-bottom: 20px;
+		gap: 8px;
+		flex-wrap: wrap;
+		min-height: 26px;
+	}
+
+	.header-badges-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.activity-badge-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		padding: 0 10px;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11px;
+		font-weight: 700;
+		line-height: 1;
+		border-width: 1px;
+		border-style: solid;
+		white-space: nowrap;
+	}
+
+	.weekend-tag-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		padding: 0 10px;
+		background: #fffbeb;
+		color: #b45309;
+		border: 1px solid #fde68a;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11px;
+		font-weight: 700;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.kelas-tag-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		padding: 0 10px;
+		background: #f8fafc;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.btn-back-track-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 26px;
+		padding: 0 10px;
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11px;
+		font-weight: 700;
+		text-decoration: none;
+		line-height: 1;
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-back-track-pill:hover {
+		background: #e2e8f0;
+		color: #1e293b;
+		border-color: #94a3b8;
+	}
+
+	.btn-hero-primary-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		padding: 0 12px;
+		background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+		color: #ffffff;
+		border-radius: 6px;
+		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11.5px;
+		font-weight: 700;
+		line-height: 1;
+		box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-hero-primary-pill:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+	}
+
+	.header-main-content {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	@media (max-width: 640px) {
+		.header-card {
+			padding: 12px 14px;
+			gap: 8px;
+		}
+		.header-main-content {
+			gap: 3px;
+		}
 	}
 
 	.breadcrumb {
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		margin: 0;
 	}
 
 	.bc-link {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
-		color: var(--text-muted);
+		color: var(--text-muted, #64748b);
 		text-decoration: none;
 		transition: color 150ms ease;
 	}
 
 	.bc-link:hover {
-		color: var(--primary);
+		color: var(--primary, #4f46e5);
 	}
 
 	.bc-current {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
 		font-weight: 700;
-		color: var(--primary);
+		color: var(--primary, #4f46e5);
 	}
 
-	.btn-back {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-family: var(--font-mono);
-		font-size: 12px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		padding: 7px 14px;
-		text-decoration: none;
-		box-shadow: var(--shadow-sm);
-		transition: all 150ms ease;
+	.page-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: clamp(1.3rem, 2.5vw, 1.65rem);
+		font-weight: 800;
+		color: var(--text-primary, #0f172a);
+		letter-spacing: -0.02em;
+		margin: 0;
 	}
 
-	.btn-back:hover {
-		background: var(--bg-inset);
-		color: var(--text-primary);
-		border-color: var(--text-muted);
+	.page-sub {
+		font-size: 13.5px;
+		color: var(--text-secondary, #64748b);
+		margin: 0;
 	}
 
 	/* Explicit Vertical Spacing Rules (UI-UX Pro Max 8dp Rhythm) */
@@ -446,70 +574,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px !important;
-	}
-
-	/* Hero Card */
-	.hero-card {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 22px 26px;
-		box-shadow: var(--shadow-sm);
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 20px;
-		margin-bottom: 20px !important;
-	}
-
-	@media (max-width: 768px) {
-		.hero-card {
-			flex-direction: column;
-			padding: 18px 20px;
-			margin-bottom: 16px !important;
-		}
-	}
-
-	.hero-title {
-		font-family: var(--font-macro);
-		font-size: clamp(1.35rem, 2.2vw, 1.8rem);
-		font-weight: 800;
-		color: var(--text-primary);
-		line-height: 1.25;
-		letter-spacing: -0.02em;
-	}
-
-	.subphase-pill {
-		display: inline-block;
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 700;
-		color: var(--primary);
-		background: var(--primary-light);
-		padding: 2px 8px;
-		border-radius: var(--radius-full);
-	}
-
-	.btn-hero-primary {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-		color: #ffffff;
-		font-family: var(--font-macro);
-		font-size: 13px;
-		font-weight: 700;
-		padding: 10px 18px;
-		border-radius: var(--radius-md);
-		text-decoration: none;
-		box-shadow: var(--shadow-glow);
-		transition: transform 150ms ease, box-shadow 150ms ease;
-		white-space: nowrap;
-	}
-
-	.btn-hero-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 24px -4px rgba(5, 150, 105, 0.45);
 	}
 
 	/* Stats Grid */
