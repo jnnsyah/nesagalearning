@@ -594,10 +594,13 @@
 		display: flex;
 		justify-content: center;
 		align-items: flex-start;
-		max-width: 1180px;
+		max-width: 1200px;
 		margin: 0 auto;
 		position: relative;
-		padding: 0 16px;
+		padding: 24px 32px 60px;
+		width: 100%;
+		min-height: 100%;
+		box-sizing: border-box;
 	}
 
 	.viewer-container {
@@ -1214,9 +1217,15 @@
 		font-weight: 800;
 	}
 
+	@media (max-width: 1023px) {
+		.reader-outer-wrapper {
+			padding: 20px 24px 60px;
+		}
+	}
+
 	@media (max-width: 640px) {
 		.reader-outer-wrapper {
-			padding: 0 10px;
+			padding: 16px 16px 84px;
 		}
 		.reader-header-card {
 			padding: 16px 14px;

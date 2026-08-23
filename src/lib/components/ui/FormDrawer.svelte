@@ -55,6 +55,7 @@
 			aria-modal="true"
 			aria-labelledby="drawer-title"
 		>
+			<div class="drawer-handle-bar" aria-hidden="true"></div>
 			<div class="form-drawer__header">
 				<div>
 					<h3 id="drawer-title" class="drawer-title">{title}</h3>
@@ -110,6 +111,10 @@
 		flex-direction: column;
 		animation: slideInRight 250ms cubic-bezier(0.16, 1, 0.3, 1);
 		position: relative;
+	}
+
+	.drawer-handle-bar {
+		display: none;
 	}
 
 	@keyframes fadeIn {
@@ -183,5 +188,46 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+	}
+
+	@media (max-width: 640px) {
+		.drawer-overlay {
+			align-items: flex-end;
+			justify-content: center;
+		}
+
+		.form-drawer {
+			max-width: 100%;
+			height: auto;
+			max-height: 88vh;
+			border-radius: 20px 20px 0 0;
+			animation: slideInUp 250ms cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		@keyframes slideInUp {
+			from {
+				transform: translateY(100%);
+			}
+			to {
+				transform: translateY(0);
+			}
+		}
+
+		.drawer-handle-bar {
+			display: block;
+			width: 38px;
+			height: 4.5px;
+			background: #cbd5e1;
+			border-radius: 9999px;
+			margin: 10px auto 4px;
+		}
+
+		.form-drawer__header {
+			padding: 14px 20px;
+		}
+
+		.form-drawer__body {
+			padding: 16px 20px 24px;
+		}
 	}
 </style>

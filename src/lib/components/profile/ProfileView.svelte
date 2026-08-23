@@ -443,6 +443,24 @@
 					<span class="stat-label">Tugas Disetujui</span>
 				</div>
 			</div>
+
+			<a href="/siswa/pertemuan" class="stat-card stat-card--link" title="Lihat Sesi Pertemuan & Riwayat Presensi">
+				<div class="stat-icon-box icon-sessions">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+						<polyline points="22 4 12 14.01 9 11.01" />
+					</svg>
+				</div>
+				<div class="stat-info">
+					<span class="stat-value flex items-center gap-1">
+						{stats.attendanceCount ?? 0} Sesi
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="stat-link-arrow">
+							<polyline points="9 18 15 12 9 6"/>
+						</svg>
+					</span>
+					<span class="stat-label">Kehadiran Presensi</span>
+				</div>
+			</a>
 		{:else if user.role === 'mentor'}
 			<div class="stat-card">
 				<div class="stat-icon-box icon-classes">
@@ -1377,14 +1395,24 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
-		max-width: 1100px;
+		max-width: 1200px;
 		margin: 0 auto;
-		padding: 24px 20px 40px;
+		width: 100%;
+		min-height: 100%;
+		padding: 24px 32px 60px;
+		box-sizing: border-box;
+	}
+
+	@media (max-width: 1023px) {
+		.profile-page {
+			padding: 20px 24px 60px;
+			gap: 16px;
+		}
 	}
 
 	@media (max-width: 640px) {
 		.profile-page {
-			padding: 16px 12px 80px;
+			padding: 16px 16px 84px;
 			gap: 14px;
 		}
 	}

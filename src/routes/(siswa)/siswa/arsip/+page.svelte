@@ -470,9 +470,15 @@
 
 <style>
 	.content-area {
-		padding: 24px 28px 48px;
-		max-width: 1100px;
+		padding: 24px 32px 60px;
+		max-width: 1200px;
 		margin: 0 auto;
+		width: 100%;
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		box-sizing: border-box;
 	}
 
 	.header-card {
@@ -481,7 +487,6 @@
 		border-radius: var(--radius-lg);
 		padding: 20px 24px;
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 20px;
 	}
 
 	.breadcrumb {
@@ -962,7 +967,12 @@
 		color: var(--text-muted);
 	}
 
-	@media (max-width: 768px) {
+	@media (max-width: 1023px) {
+		.content-area {
+			padding: 20px 24px 60px;
+			gap: 16px;
+		}
+
 		.stats-grid {
 			grid-template-columns: 1fr;
 		}
@@ -970,7 +980,8 @@
 
 	@media (max-width: 640px) {
 		.content-area {
-			padding: 16px 12px 80px;
+			padding: 16px 16px 84px;
+			gap: 14px;
 		}
 
 		.main-tabs {

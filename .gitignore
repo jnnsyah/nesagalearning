@@ -25,6 +25,7 @@ vite.config.ts.timestamp-*
 # Uploads
 static/uploads/
 !static/uploads/.gitkeep
+/uploads/
 
 # Graphify
 graphify-out/

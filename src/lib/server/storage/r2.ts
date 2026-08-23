@@ -202,14 +202,15 @@ export async function uploadFile(
 		}
 	}
 
-	// 3. Fallback: save to local uploads directory in app/static/uploads
+	// 3. Fallback: save to local uploads directory
 	try {
-		const staticUploadsDir = path.join(process.cwd(), 'static', 'uploads', safeFolder);
-		if (!fs.existsSync(staticUploadsDir)) {
-			fs.mkdirSync(staticUploadsDir, { recursive: true });
+		const baseDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'static', 'uploads');
+		const targetDir = path.join(baseDir, safeFolder);
+		if (!fs.existsSync(targetDir)) {
+			fs.mkdirSync(targetDir, { recursive: true });
 		}
 
-		const filePath = path.join(staticUploadsDir, safeName);
+		const filePath = path.join(targetDir, safeName);
 		fs.writeFileSync(filePath, buffer);
 
 		const localUrl = `/uploads/${safeFolder}/${safeName}`;
@@ -262,14 +263,22 @@ export async function deleteFile(urlOrKey: string): Promise<boolean> {
 	if (urlOrKey.startsWith('/uploads/')) {
 		const relativePath = urlOrKey.replace('/uploads/', '');
 		const safeRelative = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '');
-		const filePath = path.join(process.cwd(), 'static', 'uploads', safeRelative);
-		if (fs.existsSync(filePath)) {
-			try {
-				fs.unlinkSync(filePath);
-				return true;
-			} catch (err) {
-				console.error('Failed to delete local file:', err);
-				return false;
+		const possiblePaths = [
+			...(process.env.UPLOADS_DIR ? [path.join(process.env.UPLOADS_DIR, safeRelative)] : []),
+			path.join(process.cwd(), 'static', 'uploads', safeRelative),
+			path.join(process.cwd(), 'uploads', safeRelative),
+			path.join(process.cwd(), 'build', 'client', 'uploads', safeRelative)
+		];
+
+		for (const fp of possiblePaths) {
+			if (fs.existsSync(fp)) {
+				try {
+					fs.unlinkSync(fp);
+					return true;
+				} catch (err) {
+					console.error('Failed to delete local file:', err);
+					return false;
+				}
 			}
 		}
 	}

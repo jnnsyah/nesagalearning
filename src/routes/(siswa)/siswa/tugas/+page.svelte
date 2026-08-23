@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
@@ -12,16 +13,25 @@
 
 	let selectedStatusFilter = $state<string>('all');
 	let activeSubmitTask = $state<TaskItem | null>(null);
+	let isSubmitDrawerOpen = $state(false);
 	let submissionLink = $state('');
 	let isSubmitting = $state(false);
+	let hasHandledInitialUrl = false;
 
-	// Auto-open modal if navigated with ?taskId=... query param
+	// Auto-open drawer if navigated with ?taskId=... query param (one-time upon load)
 	$effect(() => {
+		if (typeof window === 'undefined') return;
 		const targetTaskId = page.url.searchParams.get('taskId');
-		if (targetTaskId && data.tasks && data.tasks.length > 0 && !activeSubmitTask) {
+		if (targetTaskId && data.tasks && data.tasks.length > 0 && !hasHandledInitialUrl) {
+			hasHandledInitialUrl = true;
 			const found = data.tasks.find((t) => String(t.taskId) === targetTaskId);
 			if (found) {
 				openSubmitModal(found);
+			}
+			if (window.history && window.history.replaceState) {
+				const url = new URL(window.location.href);
+				url.searchParams.delete('taskId');
+				window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
 			}
 		}
 	});
@@ -34,8 +44,7 @@
 	$effect(() => {
 		if (form?.success) {
 			toast.success(form.message || 'Tugas berhasil diproses!');
-			activeSubmitTask = null;
-			submissionLink = '';
+			closeSubmitModal();
 		} else if (form?.message) {
 			toast.error(form.message);
 		}
@@ -64,12 +73,21 @@
 		})
 	);
 
-	let openSubmitModal = (task: TaskItem) => {
+	function openSubmitModal(task: TaskItem) {
 		activeSubmitTask = task;
 		submissionLink = task.submission?.link || '';
-	};
+		isSubmitDrawerOpen = true;
+	}
 
 	function closeSubmitModal() {
+		if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+			const url = new URL(window.location.href);
+			if (url.searchParams.has('taskId')) {
+				url.searchParams.delete('taskId');
+				window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+			}
+		}
+		isSubmitDrawerOpen = false;
 		activeSubmitTask = null;
 		submissionLink = '';
 	}
@@ -201,7 +219,16 @@
 								</p>
 							{/if}
 							{#if t.taskDescription}
-								<p class="task-desc">{t.taskDescription}</p>
+								<div class="task-card-instruction">
+									<div class="instruction-label">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+											<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+											<polyline points="14 2 14 8 20 8" />
+										</svg>
+										<span>Petunjuk Tugas:</span>
+									</div>
+									<p class="task-desc">{t.taskDescription}</p>
+								</div>
 							{/if}
 						</div>
 
@@ -226,32 +253,43 @@
 
 					<div class="task-card__footer">
 						{#if !t.submission}
-							<button type="button" onclick={() => openSubmitModal(t)} class="btn-create" style="width:100%; justify-content:center;">
+							<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-submit">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+									<line x1="22" y1="2" x2="11" y2="13" />
+									<polygon points="22 2 15 22 11 13 2 9 22 2" />
+								</svg>
 								<span>Submit Link Tugas</span>
 							</button>
 						{:else if t.submission.status === 'revisi'}
-							<div style="display: flex; align-items: center; gap: 8px; width: 100%;">
-								<button type="button" onclick={() => openSubmitModal(t)} class="btn-create" style="flex: 1; justify-content: center; background: #d97706;">
+							<div class="footer-btn-split">
+								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-revisi">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+									</svg>
 									<span>Perbaiki &amp; Kirim Ulang</span>
 								</button>
 								<button
 									type="button"
 									onclick={() => t.submission && promptCancelSubmission(t.submission.id, t.taskTitle)}
-									class="btn-cancel-sub"
+									class="btn-card-cancel"
 									title="Batal Submit / Tarik Submisi"
 								>
 									Batal
 								</button>
 							</div>
 						{:else if t.submission.status === 'pending'}
-							<div style="display: flex; align-items: center; gap: 8px; width: 100%;">
-								<button type="button" onclick={() => openSubmitModal(t)} class="btn-ghost" style="flex: 1; justify-content: center;">
+							<div class="footer-btn-split">
+								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-edit">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+										<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+									</svg>
 									<span>Edit Link</span>
 								</button>
 								<button
 									type="button"
 									onclick={() => t.submission && promptCancelSubmission(t.submission.id, t.taskTitle)}
-									class="btn-cancel-sub"
+									class="btn-card-cancel"
 									title="Batal Submit / Tarik Submisi"
 								>
 									Batal Submit
@@ -299,72 +337,167 @@
 	<input type="hidden" name="submissionId" value={cancelTargetSubmission?.id || 0} />
 </form>
 
-<!-- Modal Dialog Submit -->
+<!-- ══════════════════════════════════════════════════════════
+     FORM DRAWER SUBMIT / EDIT TUGAS (SLIDER BOTTOM SHEET)
+     ══════════════════════════════════════════════════════════ -->
 {#if activeSubmitTask}
-	<div class="form-scrim" role="dialog" aria-modal="true">
-		<div class="submit-modal">
-			<div class="modal-header">
-				<div>
-					<h3 class="modal-title">
-						{activeSubmitTask.submission ? 'Edit Link Submisi Tugas' : 'Submit Link Tugas'}
-					</h3>
-					<p class="modal-sub">
-						{activeSubmitTask.taskTitle} ({activeSubmitTask.pertemuanTitle})
-					</p>
+	{@const t = activeSubmitTask}
+	<FormDrawer
+		bind:open={isSubmitDrawerOpen}
+		title={t.submission ? 'Edit Link Submisi Tugas' : 'Submit Lembar Kerja Tugas'}
+		subtitle={`Sesi: ${t.pertemuanTitle}`}
+		onclose={closeSubmitModal}
+	>
+		{#snippet children()}
+			{#if activeSubmitTask}
+				{@const currentTask = activeSubmitTask}
+				<div class="drawer-task-layout">
+					<!-- Task Info Hero Box -->
+					<div class="drawer-task-hero">
+						<div class="flex items-center justify-between gap-2 flex-wrap mb-2.5">
+							<span class="badge {currentTask.submission ? (currentTask.submission.status === 'revisi' ? 'badge-revisi' : currentTask.submission.status === 'pending' ? 'badge-pending' : 'badge-approved') : 'badge-unsubmitted'} font-bold text-xs px-2.5 py-0.5">
+								{currentTask.submission ? (currentTask.submission.status === 'revisi' ? 'PERLU REVISI' : currentTask.submission.status === 'pending' ? 'PENDING REVIEW' : 'DISETUJUI') : 'BELUM SUBMIT'}
+							</span>
+							<span class="task-size-tag">
+								SKALA {currentTask.taskSize.toUpperCase()} (+{currentTask.taskSize === 'kecil' ? '50' : currentTask.taskSize === 'besar' ? '200' : '100'} POIN)
+							</span>
+						</div>
+
+						<h3 class="drawer-task-title">{currentTask.taskTitle}</h3>
+
+						{#if currentTask.taskDescription}
+							<div class="drawer-task-desc-box">
+								<div class="desc-heading">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+										<polyline points="14 2 14 8 20 8" />
+										<line x1="16" y1="13" x2="8" y2="13" />
+										<line x1="16" y1="17" x2="8" y2="17" />
+										<polyline points="10 9 9 9 8 9" />
+									</svg>
+									<span>Petunjuk &amp; Instruksi Tugas:</span>
+								</div>
+								<p class="desc-content">{currentTask.taskDescription}</p>
+							</div>
+						{/if}
+
+						{#if currentTask.submission?.status === 'revisi' && currentTask.submission.feedback}
+							<div class="drawer-feedback-box">
+								<div class="flex items-center gap-1.5 font-bold text-rose-800 text-xs mb-1">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<circle cx="12" cy="12" r="10"/>
+										<line x1="12" y1="8" x2="12" y2="12"/>
+										<line x1="12" y1="16" x2="12.01" y2="16"/>
+									</svg>
+									<span>Catatan Revisi Mentor:</span>
+								</div>
+								<p class="italic text-xs text-rose-900 leading-relaxed">"{currentTask.submission.feedback}"</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Form Submission Input Section -->
+					<form
+						id="task-submission-form"
+						method="POST"
+						action="?/submit"
+						use:enhance={() => {
+							isSubmitting = true;
+							return async ({ result, update }) => {
+								isSubmitting = false;
+								await update();
+								if (result.type === 'success') {
+									closeSubmitModal();
+								}
+							};
+						}}
+						class="drawer-form-card"
+					>
+						<input type="hidden" name="taskId" value={currentTask.taskId} />
+
+						<div class="space-y-3">
+							<TextInput
+								id="link"
+								name="link"
+								label="Link Hasil Tugas (URL Publik)"
+								placeholder="https://github.com/username/repo atau https://figma.com/..."
+								bind:value={submissionLink}
+								required
+							/>
+
+							<div class="submission-tips-box">
+								<div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+										<circle cx="12" cy="12" r="10"/>
+										<line x1="12" y1="16" x2="12" y2="12"/>
+										<line x1="12" y1="8" x2="12.01" y2="8"/>
+									</svg>
+									<span>Panduan Pengiriman Link:</span>
+								</div>
+								<p class="text-[11.5px] text-slate-500 leading-relaxed">
+									Pastikan izin link sudah diatur publik (Anyone with the link can view). Platform yang didukung: GitHub, GitLab, Google Drive, Google Docs, Figma, Notion, Vercel/Netlify.
+								</p>
+							</div>
+						</div>
+					</form>
 				</div>
-				<button type="button" onclick={closeSubmitModal} class="modal-close-btn" aria-label="Tutup">✕</button>
-			</div>
+			{/if}
+		{/snippet}
 
-			<form
-				method="POST"
-				action="?/submit"
-				use:enhance={() => {
-					isSubmitting = true;
-					return async ({ update }) => {
-						isSubmitting = false;
-						await update();
-					};
-				}}
-				class="modal-body"
-			>
-				<input type="hidden" name="taskId" value={activeSubmitTask.taskId} />
-
-				<TextInput
-					id="link"
-					name="link"
-					label="Link Hasil Tugas (URL)"
-					placeholder="https://github.com/username/repository-tugas"
-					bind:value={submissionLink}
-					required
-				/>
-				<p class="hint-text">
-					Masukkan URL publik ke hasil pekerjaan kamu (misal: GitHub, Figma, Google Docs/Drive, Notion, Vercel).
-				</p>
-
-				<div class="modal-footer">
-					<button type="button" onclick={closeSubmitModal} class="btn-ghost">
+		{#snippet footer()}
+			{#if activeSubmitTask}
+				<div class="drawer-footer-actions">
+					<button
+						type="button"
+						onclick={closeSubmitModal}
+						class="btn-drawer-secondary"
+					>
 						Batal
 					</button>
-					<button type="submit" disabled={isSubmitting || !submissionLink.trim()} class="btn-create">
-						{isSubmitting ? 'Mengirim...' : 'Kirim Tugas'}
+
+					<button
+						type="submit"
+						form="task-submission-form"
+						disabled={isSubmitting || !submissionLink.trim()}
+						class="btn-drawer-primary"
+					>
+						{#if isSubmitting}
+							<svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Mengirim...</span>
+						{:else}
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<line x1="22" y1="2" x2="11" y2="13" />
+								<polygon points="22 2 15 22 11 13 2 9 22 2" />
+							</svg>
+							<span>{activeSubmitTask.submission ? 'Perbarui Submisi' : 'Kirim Tugas Sekarang'}</span>
+						{/if}
 					</button>
 				</div>
-			</form>
-		</div>
-	</div>
+			{/if}
+		{/snippet}
+	</FormDrawer>
 {/if}
 
 <style>
 	.content-area {
-		padding: 24px 28px 40px;
-		max-width: 1100px;
+		padding: 24px 32px 60px;
+		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		box-sizing: border-box;
 	}
 
-	@media (max-width: 768px) {
+	@media (max-width: 1023px) {
 		.content-area {
-			padding: 16px 16px 40px;
+			padding: 20px 24px 60px;
+			gap: 16px;
 		}
 	}
 
@@ -372,23 +505,18 @@
 	.header-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 20px 24px;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 24px;
+		border-radius: 14px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		margin-bottom: 0;
 	}
 
 	.page-header-row {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: space-between;
-		gap: 20px;
-	}
-
-	@media (max-width: 640px) {
-		.page-header-row {
-			flex-direction: column;
-		}
+		gap: 16px;
+		flex-wrap: wrap;
 	}
 
 	.breadcrumb {
@@ -403,7 +531,6 @@
 		font-size: 11px;
 		color: var(--text-muted);
 		text-decoration: none;
-		transition: color 150ms ease;
 	}
 
 	.bc-link:hover {
@@ -413,18 +540,17 @@
 	.bc-current {
 		font-family: var(--font-mono);
 		font-size: 11px;
-		font-weight: 700;
 		color: var(--primary);
+		font-weight: 700;
 	}
 
 	.page-title {
 		font-family: var(--font-macro);
-		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-size: 1.5rem;
 		font-weight: 800;
 		color: var(--text-primary);
-		letter-spacing: -0.02em;
-		margin-bottom: 4px;
 		line-height: 1.2;
+		margin: 0 0 6px;
 	}
 
 	.page-sub {
@@ -434,223 +560,277 @@
 		line-height: 1.5;
 	}
 
-	.btn-create {
+	/* Task Card Footer Buttons */
+	.btn-card-submit {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		justify-content: center;
+		gap: 7px;
+		width: 100%;
+		padding: 10px 16px;
 		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-		color: white;
-		font-family: var(--font-macro);
-		font-size: 13px;
-		font-weight: 700;
-		padding: 10px 18px;
+		color: #ffffff;
 		border: none;
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-glow);
-		transition: transform 150ms ease, box-shadow 150ms ease;
-		white-space: nowrap;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
 		cursor: pointer;
-		text-decoration: none;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+		transition: all 150ms ease;
 	}
 
-	.btn-create:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 24px -4px rgba(79, 70, 229, 0.45);
+	.btn-card-submit:hover {
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 	}
 
-	.btn-ghost {
+	.btn-card-submit:active {
+		transform: scale(0.98);
+	}
+
+	.btn-card-revisi {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		justify-content: center;
+		gap: 6px;
+		flex: 1;
+		padding: 9px 14px;
+		background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+		color: #ffffff;
+		border: none;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+		transition: all 150ms ease;
+	}
+
+	.btn-card-revisi:hover {
+		background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+	}
+
+	.btn-card-revisi:active {
+		transform: scale(0.98);
+	}
+
+	.btn-card-edit {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		flex: 1;
+		padding: 9px 14px;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		font-family: var(--font-body);
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		padding: 9px 16px;
+		color: #475569;
+		border: 1.5px solid #cbd5e1;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
-		text-decoration: none;
 	}
 
-	.btn-ghost:hover {
-		background: var(--primary-light);
-		color: var(--primary);
-		border-color: var(--primary-border);
+	.btn-card-edit:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+		transform: translateY(-1px);
 	}
 
-	.btn-cancel-sub {
-		background: #ffffff;
-		border: 1px solid #fca5a5;
+	.btn-card-edit:active {
+		transform: scale(0.98);
+	}
+
+	.btn-card-cancel {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 9px 14px;
+		background: #fff1f2;
 		color: #e11d48;
-		font-family: var(--font-mono);
+		border: 1.5px solid #fecdd3;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
 		font-size: 12px;
-		font-weight: 600;
-		padding: 9px 12px;
-		border-radius: var(--radius-md);
+		font-weight: 700;
 		cursor: pointer;
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
-	.btn-cancel-sub:hover {
+	.btn-card-cancel:hover {
 		background: #ffe4e6;
-		border-color: #e11d48;
+		border-color: #fda4af;
+		color: #be123c;
+		transform: translateY(-1px);
+	}
+
+	.btn-card-cancel:active {
+		transform: scale(0.98);
+	}
+
+	.footer-btn-split {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
 	}
 
 	/* Filter Bar Tabs */
 	.filter-panel {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 12px;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 24px;
+		border-radius: 12px;
+		padding: 10px 12px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+		margin-bottom: 0;
 	}
 
 	.tabs-row {
 		display: flex;
-		align-items: center;
 		gap: 8px;
-		overflow-x: auto;
+		flex-wrap: wrap;
 	}
 
 	.tab-btn {
-		font-family: var(--font-body);
+		padding: 6px 14px;
+		font-family: var(--font-macro);
 		font-size: 12.5px;
-		font-weight: 600;
+		font-weight: 700;
+		border-radius: 8px;
+		border: 1px solid transparent;
+		background: transparent;
 		color: var(--text-secondary);
-		background: var(--bg-inset);
-		border: 1px solid var(--border-hard);
-		padding: 8px 16px;
-		border-radius: var(--radius-md);
 		cursor: pointer;
-		white-space: nowrap;
 		transition: all 150ms ease;
 	}
 
 	.tab-btn:hover {
-		background: var(--primary-light);
-		color: var(--primary);
+		background: var(--bg-hover);
+		color: var(--text-primary);
 	}
 
 	.tab-btn--active {
-		background: var(--primary);
-		color: #ffffff !important;
-		border-color: var(--primary);
+		background: var(--primary-light);
+		color: var(--primary);
+		border-color: var(--primary-border);
 	}
 
 	/* Tasks Grid */
 	.tasks-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 16px;
-	}
-
-	@media (max-width: 768px) {
-		.tasks-grid {
-			grid-template-columns: 1fr;
-		}
+		grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+		gap: 12px;
 	}
 
 	.task-card {
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-sm);
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: 14px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, opacity 200ms ease;
+		transition: transform 150ms ease, box-shadow 150ms ease;
 	}
 
 	.task-card:hover {
 		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
+		box-shadow: 0 5px 14px rgba(0, 0, 0, 0.06);
 	}
 
-	/* Task Card Visual State Variants */
 	.task-card--approved {
-		background: #f8fafc;
-		border: 1.5px solid #cbd5e1;
-		opacity: 0.92;
-	}
-
-	.task-card--approved .task-title {
-		color: #334155;
-	}
-
-	.task-card--pending {
-		background: #fffdf5;
-		border: 1.5px solid #fde68a;
+		border-left: 4px solid #16a34a;
 	}
 
 	.task-card--revisi {
-		background: #fff5f5;
-		border: 1.5px solid #fecdd3;
+		border-left: 4px solid #e11d48;
+	}
+
+	.task-card--pending {
+		border-left: 4px solid #d97706;
 	}
 
 	.task-card--unsubmitted {
-		background: #ffffff;
-		border: 1.5px solid var(--border-hard);
+		border-left: 4px solid #94a3b8;
 	}
 
 	.task-card__body {
-		padding: 20px;
+		padding: 14px 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 12px;
 	}
 
 	.card-top-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 8px;
 	}
 
 	.task-size-tag {
 		font-family: var(--font-mono);
 		font-size: 10px;
-		font-weight: 700;
-		color: var(--primary);
-		background: var(--primary-light);
+		font-weight: 800;
+		color: var(--text-muted);
+		background: var(--bg-cell);
 		padding: 2px 8px;
 		border-radius: 4px;
-		border: 1px solid var(--primary-border);
-	}
-
-	.task-title-block {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
 	}
 
 	.task-title {
 		font-family: var(--font-macro);
-		font-size: 1.1rem;
+		font-size: 1.15rem;
 		font-weight: 800;
 		color: var(--text-primary);
+		margin-bottom: 4px;
 		line-height: 1.3;
 	}
 
 	.session-meta {
 		font-size: 12px;
 		color: var(--text-muted);
+		margin-bottom: 4px;
+	}
+
+	.task-card-instruction {
+		margin-top: 8px;
+		padding: 10px 12px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-left: 3px solid #4f46e5;
+		border-radius: 8px;
+	}
+
+	.instruction-label {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 11px;
+		font-weight: 700;
+		color: #334155;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		margin-bottom: 4px;
 	}
 
 	.task-desc {
 		font-size: 12.5px;
-		color: var(--text-secondary);
-		background: var(--bg-inset);
-		padding: 10px 12px;
-		border-radius: var(--radius-md);
-		border: 1px solid var(--border-soft);
+		color: #334155;
+		line-height: 1.55;
+		margin: 0;
 	}
 
 	.submission-info-box {
 		background: var(--bg-inset);
-		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-md);
 		padding: 12px;
 		display: flex;
@@ -661,21 +841,20 @@
 
 	.submission-link-line {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
+		flex-direction: column;
+		gap: 2px;
 	}
 
 	.info-label {
-		color: var(--text-secondary);
-		font-weight: 600;
+		color: var(--text-muted);
+		font-size: 11px;
 	}
 
 	.link-url {
 		font-family: var(--font-mono);
-		font-size: 11.5px;
 		color: var(--primary);
 		text-decoration: underline;
+		word-break: break-all;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -788,85 +967,158 @@
 		max-width: 400px;
 	}
 
-	/* Modal Dialog */
-	.form-scrim {
-		position: fixed;
-		inset: 0;
-		background: rgba(15, 23, 42, 0.5);
-		backdrop-filter: blur(4px);
-		z-index: 1000;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 16px;
-	}
-
-	.submit-modal {
-		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		width: 100%;
-		max-width: 520px;
-		box-shadow: var(--shadow-lg);
+	/* ══════════════════════════════════════════════════════════
+	   DRAWER SUBMIT TUGAS STYLING
+	   ══════════════════════════════════════════════════════════ */
+	.drawer-task-layout {
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		gap: 12px;
 	}
 
-	.modal-header {
-		padding: 18px 20px;
-		border-bottom: 1px solid var(--border-hard);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
+	.drawer-task-hero {
+		padding: 14px 16px;
+		border-radius: 12px;
+		background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 	}
 
-	.modal-title {
-		font-family: var(--font-macro);
-		font-size: 1.15rem;
+	.drawer-task-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: 1.1rem;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
+		line-height: 1.35;
 	}
 
-	.modal-sub {
-		font-size: 12px;
-		color: var(--text-muted);
-		margin-top: 2px;
+	.drawer-task-desc-box {
+		margin-top: 10px;
+		padding: 10px 12px;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-left: 3.5px solid #4f46e5;
+		border-radius: 8px;
 	}
 
-	.modal-close-btn {
-		background: none;
-		border: none;
-		font-size: 16px;
-		color: var(--text-muted);
-		cursor: pointer;
-	}
-
-	.modal-body {
-		padding: 20px;
+	.desc-heading {
 		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.hint-text {
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-macro, system-ui, sans-serif);
 		font-size: 11px;
-		color: var(--text-muted);
-		margin-top: -8px;
+		font-weight: 700;
+		color: #334155;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		margin-bottom: 4px;
 	}
 
-	.modal-footer {
+	.desc-content {
+		font-size: 12.5px;
+		color: #334155;
+		line-height: 1.55;
+		margin: 0;
+		white-space: pre-line;
+	}
+
+	.drawer-feedback-box {
+		margin-top: 10px;
+		padding: 10px 12px;
+		background: #fff1f2;
+		border: 1px solid #fecdd3;
+		border-radius: 10px;
+	}
+
+	.drawer-form-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 14px 16px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+	}
+
+	.submission-tips-box {
+		padding: 10px 12px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+	}
+
+	/* Drawer Footer Action Buttons */
+	.drawer-footer-actions {
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
 		gap: 10px;
-		margin-top: 8px;
+		width: 100%;
+	}
+
+	.btn-drawer-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 10px 20px;
+		background: #ffffff;
+		color: #475569;
+		border: 1.5px solid #cbd5e1;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-drawer-secondary:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+		border-color: #94a3b8;
+		transform: translateY(-1px);
+	}
+
+	.btn-drawer-secondary:active {
+		transform: scale(0.98);
+	}
+
+	.btn-drawer-primary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 10px 22px;
+		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+		color: #ffffff;
+		border: none;
+		border-radius: 10px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+		transition: all 150ms ease;
+	}
+
+	.btn-drawer-primary:hover:not(:disabled) {
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+	}
+
+	.btn-drawer-primary:active:not(:disabled) {
+		transform: scale(0.98);
+	}
+
+	.btn-drawer-primary:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	/* Mobile Responsiveness Enhancements */
 	@media (max-width: 640px) {
 		.content-area {
-			padding: 16px 12px 80px;
+			padding: 16px 16px 84px;
+			gap: 14px;
 		}
 
 		.header-card {
@@ -883,77 +1135,31 @@
 			flex-wrap: nowrap;
 			overflow-x: auto;
 			-webkit-overflow-scrolling: touch;
-			scrollbar-width: none;
-			padding-bottom: 2px;
 		}
 
-		.tabs-row::-webkit-scrollbar {
-			display: none;
-		}
-
-		.tab-btn {
-			flex-shrink: 0;
-			white-space: nowrap;
-			padding: 6px 12px;
-			font-size: 11.5px;
+		.tasks-grid {
+			grid-template-columns: 1fr;
 		}
 
 		.task-card__body {
-			padding: 14px;
-			gap: 10px;
-		}
-
-		.card-top-row {
-			flex-wrap: wrap;
-			gap: 6px;
-		}
-
-		.task-title {
-			font-size: 1rem;
-		}
-
-		.task-card__footer {
-			padding: 10px 14px;
-		}
-
-		.form-scrim {
-			padding: 0;
-			align-items: flex-end;
-		}
-
-		.submit-modal {
-			max-height: 85vh;
-			overflow-y: auto;
-			border-radius: 16px 16px 0 0;
-			max-width: 100%;
-		}
-
-		.modal-header,
-		.modal-body {
 			padding: 16px;
 		}
 
-		.modal-footer {
-			flex-direction: column-reverse;
-			gap: 8px;
-			width: 100%;
+		.task-card__footer {
+			padding: 10px 16px;
 		}
 
-		.modal-footer button {
+		.drawer-footer-actions {
+			flex-direction: column-reverse;
+			align-items: stretch;
+			gap: 8px;
+		}
+
+		.btn-drawer-secondary,
+		.btn-drawer-primary {
 			width: 100%;
 			justify-content: center;
-		}
-
-		.submission-link-line {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 4px;
-		}
-
-		.link-url {
-			max-width: 100%;
-			word-break: break-all;
-			white-space: normal;
+			padding: 11px 16px;
 		}
 	}
 </style>

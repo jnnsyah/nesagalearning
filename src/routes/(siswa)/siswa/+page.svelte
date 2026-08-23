@@ -45,7 +45,7 @@
 				</div>
 
 				<div class="hero-actions">
-					<a href="/siswa/presensi?scan=true" class="btn-scan-hero">
+					<a href="/siswa/pertemuan?scan=true" class="btn-scan-hero">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<rect x="3" y="3" width="7" height="7" rx="1.5" />
 							<rect x="14" y="3" width="7" height="7" rx="1.5" />
@@ -318,9 +318,11 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
+		min-height: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: 20px;
+		box-sizing: border-box;
 	}
 
 	/* Welcome banner hero card */
@@ -756,19 +758,19 @@
 	@media (max-width: 1023px) {
 		.page-container {
 			padding: 20px 24px 60px;
-			gap: 20px;
+			gap: 16px;
 		}
 
 		.two-col-grid {
 			grid-template-columns: 1fr;
-			gap: 20px;
+			gap: 16px;
 		}
 	}
 
 	@media (max-width: 640px) {
 		.page-container {
 			padding: 16px 16px 84px;
-			gap: 16px;
+			gap: 14px;
 		}
 
 		.welcome-banner__inner {

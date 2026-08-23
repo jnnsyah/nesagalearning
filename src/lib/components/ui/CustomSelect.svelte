@@ -209,6 +209,8 @@
 		flex-direction: column;
 		gap: 4px;
 		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
 	}
 
 	.field-label {
@@ -223,6 +225,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
 		margin-bottom: 0 !important;
+		min-width: 0;
 	}
 
 	.req-star {
@@ -231,6 +234,8 @@
 
 	.select-trigger {
 		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -245,6 +250,7 @@
 		text-align: left;
 		transition: all 180ms ease;
 		outline: none;
+		gap: 8px;
 	}
 
 	.select-trigger:hover:not(:disabled) {
@@ -268,6 +274,8 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.trigger-placeholder {
