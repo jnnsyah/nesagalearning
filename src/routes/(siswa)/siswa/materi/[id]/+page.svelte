@@ -7,7 +7,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let isReadCompleted = $state(data.isCompleted);
+	let isReadCompleted = $state(false);
 	let isSubmitting = $state(false);
 	let fontSize = $state<'sm' | 'base' | 'lg'>('base');
 	let isFocusMode = $state(false);
@@ -60,6 +60,22 @@
 			el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}
+
+	// Scroll progress calculation
+	function handleScroll() {
+		const totalScroll = document.documentElement.scrollTop || document.body.scrollTop;
+		const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+		if (windowHeight > 0) {
+			scrollProgress = Math.min(100, Math.max(0, Math.round((totalScroll / windowHeight) * 100)));
+		}
+	}
+
+	$effect(() => {
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => {
+			window.removeEventListener('scroll', handleScroll);
+		};
+	});
 
 	$effect(() => {
 		if (isFocusMode) {
@@ -187,127 +203,30 @@
 </div>
 
 <div class="reader-outer-wrapper">
-	<!-- Main Center/Left Reading Container (Fixed Reading Width Unchanged) -->
+	<!-- Main Center/Left Reading Container -->
 	<div class="viewer-container {isFocusMode ? 'focus-mode' : ''}">
-		<!-- Reader Toolbar & Header Card -->
+		<!-- 1. Minimalist Header Card (Gold Standard 2-Tier Hierarchy) -->
 		<div class="reader-header-card">
-			<nav class="breadcrumb mb-3" aria-label="Breadcrumb">
-				<a href="/siswa" class="bc-link">Dashboard</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<a href="/siswa/materi" class="bc-link">Katalog Materi</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<span class="bc-current truncate max-w-[140px] sm:max-w-[200px]">{data.materi.title}</span>
-			</nav>
+			<div class="header-top-row">
+				<a href={`/siswa/materi?track=${data.materi.trackId}`} class="btn-back-track-pill">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<span>Kembali ke Track</span>
+				</a>
 
-			<div class="flex items-center gap-2 mb-3 flex-wrap">
-				<span class="track-badge">{data.materi.trackTitle}</span>
-				<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
+				<div class="header-badges-row">
+					<span class="track-tingkat-badge">{data.materi.trackTitle}</span>
+					<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
+				</div>
 			</div>
 
-			<h1 class="reader-title">{data.materi.title}</h1>
-			<p class="reader-subtitle">Modul pembelajaran interaktif kurikulum Nesaga Learning Center.</p>
-
-			<!-- Reader Utility Controls Bar -->
-			<div class="reader-controls-bar mt-5 pt-4">
-				<div class="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-between sm:justify-start">
-					<!-- Font Size Adjuster -->
-					<div class="font-size-group">
-						<span class="ctrl-label">Ukuran:</span>
-						<button
-							type="button"
-							onclick={() => setFontSize('sm')}
-							class="size-btn {fontSize === 'sm' ? 'size-btn-active' : ''}"
-							title="Teks Kecil"
-						>
-							A-
-						</button>
-						<button
-							type="button"
-							onclick={() => setFontSize('base')}
-							class="size-btn {fontSize === 'base' ? 'size-btn-active' : ''}"
-							title="Teks Normal"
-						>
-							A
-						</button>
-						<button
-							type="button"
-							onclick={() => setFontSize('lg')}
-							class="size-btn {fontSize === 'lg' ? 'size-btn-active' : ''}"
-							title="Teks Besar"
-						>
-							A+
-						</button>
-					</div>
-
-					<!-- Focus Mode Toggle -->
-					<button
-						type="button"
-						onclick={toggleFocusMode}
-						class="ctrl-btn {isFocusMode ? 'ctrl-btn-active' : ''}"
-					>
-						{#if isFocusMode}
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
-							</svg>
-							<span>Keluar Fokus</span>
-						{:else}
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-							</svg>
-							<span>Mode Fokus</span>
-						{/if}
-					</button>
-				</div>
-
-				<!-- Read Completion Toggle Form Button -->
-				<form
-					method="POST"
-					action="?/toggleCompletion"
-					class="w-full sm:w-auto mt-2 sm:mt-0"
-					use:enhance={() => {
-						isSubmitting = true;
-						return async ({ result, update }) => {
-							isSubmitting = false;
-							if (result.type === 'success' && result.data) {
-								const actionData = result.data as { isCompleted?: boolean; message?: string };
-								isReadCompleted = !!actionData.isCompleted;
-								if (isReadCompleted) {
-									toast.success(actionData.message || 'Materi ditandai selesai dibaca.');
-								} else {
-									toast.info(actionData.message || 'Status selesai dibaca dibatalkan.');
-								}
-							}
-							await update({ reset: false });
-						};
-					}}
-				>
-					<button
-						type="submit"
-						disabled={isSubmitting}
-						class="btn-mark-read w-full sm:w-auto justify-center {isReadCompleted ? 'btn-read-completed' : ''}"
-					>
-						{#if isReadCompleted}
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-							<span>Selesai Dibaca</span>
-						{:else}
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10" />
-								<polyline points="12 6 12 12 16 14" />
-							</svg>
-							<span>Tandai Selesai</span>
-						{/if}
-					</button>
-				</form>
+			<div class="header-main-content">
+				<h1 class="reader-title">{data.materi.title}</h1>
 			</div>
 		</div>
 
-		<!-- Slide Presentasi Attachment Card -->
+		<!-- 2. Slide Presentasi PPT Attachment Card (If Available) -->
 		{#if data.sessionSlide?.materialUrl}
 			<div class="slide-card mb-6">
 				<div class="flex items-center justify-between gap-3 flex-wrap">
@@ -343,7 +262,7 @@
 			</div>
 		{/if}
 
-		<!-- Global Materi Attachments Card (Dedicated Card) -->
+		<!-- 3. Global Materi Attachments Card (Dedicated Card) -->
 		{#if data.materi.attachments && data.materi.attachments.length > 0}
 			<div class="materi-global-attachments-card mb-6">
 				<div class="card-header-row bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
@@ -383,7 +302,7 @@
 			</div>
 		{/if}
 
-		<!-- Main Article Reading Card -->
+		<!-- 4. Main Article Reading Card -->
 		<main class="reading-article-card size-{fontSize}">
 			{#if data.materi.content}
 				<div class="prose-reading">
@@ -403,8 +322,76 @@
 			{/if}
 		</main>
 
-		<!-- Footer Lesson Navigation -->
-		<nav class="lesson-nav-footer mt-8">
+		<!-- 5. Completion Action Box (Reward & Mark Read Section at End of Reading) -->
+		<div class="completion-box {isReadCompleted ? 'completion-box--completed' : ''} mt-6">
+			<div class="completion-box-inner flex items-center justify-between gap-4 flex-wrap">
+				<div class="completion-info flex items-center gap-3">
+					<div class="completion-icon {isReadCompleted ? 'completion-icon--completed' : ''}">
+						{#if isReadCompleted}
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						{:else}
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<polyline points="12 6 12 12 16 14" />
+							</svg>
+						{/if}
+					</div>
+					<div>
+						<h4 class="completion-title">
+							{isReadCompleted ? 'Materi Selesai Dipelajari!' : 'Sudah selesai membaca materi ini?'}
+						</h4>
+						<p class="completion-sub">
+							{isReadCompleted ? 'Progres belajar Anda pada track ini telah diperbarui.' : 'Tandai materi ini agar progres belajar Anda tercatat.'}
+						</p>
+					</div>
+				</div>
+
+				<form
+					method="POST"
+					action="?/toggleCompletion"
+					class="w-full sm:w-auto"
+					use:enhance={() => {
+						isSubmitting = true;
+						return async ({ result, update }) => {
+							isSubmitting = false;
+							if (result.type === 'success' && result.data) {
+								const actionData = result.data as { isCompleted?: boolean; message?: string };
+								isReadCompleted = !!actionData.isCompleted;
+								if (isReadCompleted) {
+									toast.success(actionData.message || 'Materi ditandai selesai dibaca.');
+								} else {
+									toast.info(actionData.message || 'Status selesai dibaca dibatalkan.');
+								}
+							}
+							await update({ reset: false });
+						};
+					}}
+				>
+					<button
+						type="submit"
+						disabled={isSubmitting}
+						class="btn-mark-completion w-full sm:w-auto {isReadCompleted ? 'btn-mark-completion--completed' : 'btn-mark-completion--pending'}"
+					>
+						{#if isReadCompleted}
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+							<span>Selesai Dibaca (Batalkan)</span>
+						{:else}
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+							<span>Tandai Selesai Dibaca</span>
+						{/if}
+					</button>
+				</form>
+			</div>
+		</div>
+
+		<!-- 6. Footer Lesson Navigation -->
+		<nav class="lesson-nav-footer mt-6">
 			{#if data.prevMateri}
 				<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-lesson-nav prev-lesson">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -433,36 +420,91 @@
 		</nav>
 	</div>
 
-	<!-- Dedicated Right ToC Side Container (Separate Container Outside Main Container) -->
-	{#if tocList.length > 0}
-		<!-- Desktop Sticky Sidebar -->
-		<aside class="toc-right-container hidden lg:block {isTocCollapsed ? 'toc-right-collapsed' : ''}">
-			<!-- Collapse Toggle Button -->
-			<button
-				type="button"
-				onclick={() => (isTocCollapsed = !isTocCollapsed)}
-				class="toc-collapse-btn"
-				title={isTocCollapsed ? 'Tampilkan Daftar Isi' : 'Sembunyikan Daftar Isi'}
+	<!-- Dedicated Right ToC & Reading Preferences Sidebar (Desktop) -->
+	<aside class="toc-right-container hidden lg:block {isTocCollapsed ? 'toc-right-collapsed' : ''}">
+		<button
+			type="button"
+			onclick={() => (isTocCollapsed = !isTocCollapsed)}
+			class="toc-collapse-btn"
+			title={isTocCollapsed ? 'Tampilkan Opsi & Daftar Isi' : 'Sembunyikan Panel'}
+		>
+			<svg
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				class="transform transition-transform {isTocCollapsed ? '' : 'rotate-180'}"
 			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					class="transform transition-transform {isTocCollapsed ? '' : 'rotate-180'}"
-				>
-					<polyline points="15 18 9 12 15 6" />
-				</svg>
-				<span>{isTocCollapsed ? 'TOC' : 'Sembunyikan'}</span>
-			</button>
+				<polyline points="15 18 9 12 15 6" />
+			</svg>
+			<span>{isTocCollapsed ? 'Panel Membaca' : 'Sembunyikan'}</span>
+		</button>
 
-			{#if !isTocCollapsed}
-				<div class="toc-right-card">
-					<div class="toc-header mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
-						<div class="flex items-center gap-2">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		{#if !isTocCollapsed}
+			<div class="toc-right-card">
+				<!-- Reading Preferences Section -->
+				<div class="reading-pref-section mb-3 pb-3 border-b border-slate-100">
+					<div class="pref-title-row flex items-center justify-between mb-2">
+						<span class="pref-title text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tampilan</span>
+						<button
+							type="button"
+							onclick={toggleFocusMode}
+							class="btn-focus-toggle {isFocusMode ? 'btn-focus-toggle--active' : ''}"
+							title={isFocusMode ? 'Keluar Mode Fokus' : 'Masuk Mode Fokus'}
+						>
+							{#if isFocusMode}
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
+								</svg>
+								<span>Fokus Aktif</span>
+							{:else}
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+								</svg>
+								<span>Mode Fokus</span>
+							{/if}
+						</button>
+					</div>
+
+					<!-- Font Size Pills -->
+					<div class="font-size-pills-row flex items-center justify-between gap-1.5">
+						<span class="text-[11px] text-slate-500 font-medium">Ukuran Teks:</span>
+						<div class="flex items-center gap-1">
+							<button
+								type="button"
+								onclick={() => setFontSize('sm')}
+								class="size-pill {fontSize === 'sm' ? 'size-pill-active' : ''}"
+								title="Kecil (14px)"
+							>
+								A-
+							</button>
+							<button
+								type="button"
+								onclick={() => setFontSize('base')}
+								class="size-pill {fontSize === 'base' ? 'size-pill-active' : ''}"
+								title="Normal (16px)"
+							>
+								A
+							</button>
+							<button
+								type="button"
+								onclick={() => setFontSize('lg')}
+								class="size-pill {fontSize === 'lg' ? 'size-pill-active' : ''}"
+								title="Besar (18px)"
+							>
+								A+
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- ToC Heading List -->
+				{#if tocList.length > 0}
+					<div class="toc-header mb-2 pb-2 border-b border-slate-100 flex items-center justify-between">
+						<div class="flex items-center gap-1.5">
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
 								<line x1="8" y1="6" x2="21" y2="6" />
 								<line x1="8" y1="12" x2="21" y2="12" />
 								<line x1="8" y1="18" x2="21" y2="18" />
@@ -470,7 +512,7 @@
 								<line x1="3" y1="12" x2="3.01" y2="12" />
 								<line x1="3" y1="18" x2="3.01" y2="18" />
 							</svg>
-							<h3 class="toc-title font-bold text-xs text-slate-800">Daftar Isi Materi</h3>
+							<h3 class="toc-title font-bold text-xs text-slate-800">Daftar Isi</h3>
 						</div>
 						<span class="toc-pill font-mono text-[9.5px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
 							{tocList.length} Topik
@@ -489,57 +531,115 @@
 							</button>
 						{/each}
 					</nav>
-				</div>
-			{/if}
-		</aside>
+				{/if}
+			</div>
+		{/if}
+	</aside>
 
-		<!-- Mobile Floating Action Pill & Bottom Sheet Drawer (< 1024px) -->
-		<div class="lg:hidden">
-			<button
-				type="button"
-				onclick={() => isMobileTocDrawerOpen = !isMobileTocDrawerOpen}
-				class="mobile-toc-fab"
+	<!-- Mobile Floating Action Pill & Bottom Sheet Drawer (< 1024px) -->
+	<div class="lg:hidden">
+		<button
+			type="button"
+			onclick={() => (isMobileTocDrawerOpen = !isMobileTocDrawerOpen)}
+			class="mobile-toc-fab"
+			aria-label="Buka Opsi & Daftar Isi Membaca"
+		>
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<line x1="8" y1="6" x2="21" y2="6" />
+				<line x1="8" y1="12" x2="21" y2="12" />
+				<line x1="8" y1="18" x2="21" y2="18" />
+				<line x1="3" y1="6" x2="3.01" y2="6" />
+				<line x1="3" y1="12" x2="3.01" y2="12" />
+				<line x1="3" y1="18" x2="3.01" y2="18" />
+			</svg>
+			<span>Daftar Isi &amp; Opsi</span>
+		</button>
+
+		{#if isMobileTocDrawerOpen}
+			<div
+				class="mobile-toc-overlay"
+				onclick={() => (isMobileTocDrawerOpen = false)}
+				transition:fade={{ duration: 180 }}
+				role="presentation"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<line x1="8" y1="6" x2="21" y2="6" />
-					<line x1="8" y1="12" x2="21" y2="12" />
-					<line x1="8" y1="18" x2="21" y2="18" />
-					<line x1="3" y1="6" x2="3.01" y2="6" />
-					<line x1="3" y1="12" x2="3.01" y2="12" />
-					<line x1="3" y1="18" x2="3.01" y2="18" />
-				</svg>
-				<span>Daftar Isi ({tocList.length})</span>
-			</button>
-
-			{#if isMobileTocDrawerOpen}
 				<div
-					class="mobile-toc-overlay"
-					onclick={() => (isMobileTocDrawerOpen = false)}
-					transition:fade={{ duration: 180 }}
-					role="presentation"
+					class="mobile-toc-drawer"
+					onclick={(e) => e.stopPropagation()}
+					transition:fly={{ y: 320, duration: 240 }}
+					role="dialog"
+					aria-modal="true"
+					tabindex="-1"
 				>
-					<div
-						class="mobile-toc-drawer"
-						onclick={(e) => e.stopPropagation()}
-						transition:fly={{ y: 320, duration: 240 }}
-						role="dialog"
-					>
-						<div class="drawer-handle-bar"></div>
-						<div class="drawer-header flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
-							<h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<line x1="8" y1="6" x2="21" y2="6" />
-									<line x1="8" y1="12" x2="21" y2="12" />
-									<line x1="8" y1="18" x2="21" y2="18" />
-								</svg>
-								Daftar Isi &amp; Sub-Bab Topik
-							</h3>
-							<button type="button" onclick={() => isMobileTocDrawerOpen = false} class="text-xs font-bold text-slate-500">
-								Tutup
-							</button>
+					<div class="drawer-handle-bar"></div>
+					<div class="drawer-header flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+						<h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+								<line x1="8" y1="6" x2="21" y2="6" />
+								<line x1="8" y1="12" x2="21" y2="12" />
+								<line x1="8" y1="18" x2="21" y2="18" />
+							</svg>
+							Pengaturan &amp; Daftar Isi
+						</h3>
+						<button type="button" onclick={() => (isMobileTocDrawerOpen = false)} class="text-xs font-bold text-slate-500">
+							Tutup
+						</button>
+					</div>
+
+					<!-- Mobile Reading Controls -->
+					<div class="p-3 bg-slate-50 rounded-xl mb-4 border border-slate-200/80">
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-xs font-bold text-slate-700">Ukuran Teks:</span>
+							<div class="flex items-center gap-1.5">
+								<button
+									type="button"
+									onclick={() => setFontSize('sm')}
+									class="size-pill {fontSize === 'sm' ? 'size-pill-active' : ''}"
+								>
+									A-
+								</button>
+								<button
+									type="button"
+									onclick={() => setFontSize('base')}
+									class="size-pill {fontSize === 'base' ? 'size-pill-active' : ''}"
+								>
+									A
+								</button>
+								<button
+									type="button"
+									onclick={() => setFontSize('lg')}
+									class="size-pill {fontSize === 'lg' ? 'size-pill-active' : ''}"
+								>
+									A+
+								</button>
+							</div>
 						</div>
 
-						<nav class="drawer-toc-list space-y-1 max-h-[60vh] overflow-y-auto">
+						<button
+							type="button"
+							onclick={() => {
+								toggleFocusMode();
+								isMobileTocDrawerOpen = false;
+							}}
+							class="w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 {isFocusMode ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'}"
+						>
+							{#if isFocusMode}
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 10h6V4" />
+								</svg>
+								<span>Keluar Mode Fokus</span>
+							{:else}
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+								</svg>
+								<span>Masuk Mode Fokus</span>
+							{/if}
+						</button>
+					</div>
+
+					<!-- Mobile ToC Headings -->
+					{#if tocList.length > 0}
+						<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sub-Bab Topik</div>
+						<nav class="drawer-toc-list space-y-1 max-h-[45vh] overflow-y-auto">
 							{#each tocList as item}
 								<button
 									type="button"
@@ -551,13 +651,12 @@
 								</button>
 							{/each}
 						</nav>
-					</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</div>
 </div>
-
 <style>
 	/* Global Focus Mode body overrides */
 	:global(body.focus-mode-active .app-topbar),
@@ -604,7 +703,7 @@
 	}
 
 	.viewer-container {
-		padding: 24px 0 48px;
+		padding: 0 0 48px;
 		max-width: 860px;
 		width: 100%;
 		flex: 1;
@@ -614,161 +713,170 @@
 
 	.viewer-container.focus-mode {
 		max-width: 960px;
-		padding-top: 32px;
+		padding-top: 24px;
 	}
 
+	/* ══════════════════════════════════════════════════════════
+	   MINIMALIST HEADER CARD (GOLD STANDARD 2-ROW RHYTHM)
+	   ══════════════════════════════════════════════════════════ */
 	.reader-header-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 20px 24px;
-		box-shadow: var(--shadow-sm);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 		margin-bottom: 20px;
 	}
 
-	.breadcrumb {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.bc-link {
-		font-family: var(--font-mono);
-		font-size: 11px;
-		color: var(--text-muted);
-		text-decoration: none;
-	}
-
-	.bc-link:hover {
-		color: var(--primary);
-	}
-
-	.bc-current {
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 700;
-		color: var(--primary);
-	}
-
-	.track-badge {
-		font-family: var(--font-mono);
-		font-size: 9.5px;
-		font-weight: 800;
-		color: #4338ca;
-		background: #e0e7ff;
-		padding: 2px 8px;
-		border-radius: 4px;
-	}
-
-	.phase-badge {
-		font-family: var(--font-mono);
-		font-size: 9.5px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: var(--bg-inset);
-		padding: 2px 8px;
-		border-radius: 4px;
-	}
-
-	.reader-title {
-		font-family: var(--font-macro);
-		font-size: clamp(1.3rem, 3.5vw, 1.8rem);
-		font-weight: 800;
-		color: var(--text-primary);
-		line-height: 1.25;
-		margin-bottom: 4px;
-	}
-
-	.reader-subtitle {
-		font-size: 12.5px;
-		color: var(--text-secondary);
-	}
-
-	.reader-controls-bar {
+	.header-top-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-		border-top: 1px solid var(--border-soft);
+		gap: 8px;
+		flex-wrap: wrap;
+		min-height: 26px;
+	}
+
+	.header-badges-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		flex-wrap: wrap;
 	}
 
-	.font-size-group {
+	.header-main-content {
 		display: flex;
-		align-items: center;
+		flex-direction: column;
 		gap: 4px;
-		font-size: 11.5px;
 	}
 
-	.ctrl-label {
-		font-weight: 700;
-		color: var(--text-muted);
-		margin-right: 4px;
-	}
-
-	.size-btn {
-		padding: 3px 8px;
-		border: 1px solid var(--border-hard);
-		background: #ffffff;
-		border-radius: 4px;
-		font-family: var(--font-mono);
+	.btn-back-track-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 26px;
+		padding: 0 10px;
+		background: #e0e7ff;
+		color: #4338ca;
+		border: 1px solid #c7d2fe;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
 		font-size: 11px;
 		font-weight: 700;
-		color: var(--text-secondary);
-		cursor: pointer;
+		text-decoration: none;
+		line-height: 1;
 		transition: all 150ms ease;
-		min-height: 32px;
 	}
 
-	.size-btn:hover {
-		border-color: var(--primary-border);
-		color: var(--primary);
+	.btn-back-track-pill:hover {
+		background: #c7d2fe;
+		color: #3730a3;
 	}
 
-	.size-btn-active {
-		background: #e0e7ff !important;
-		color: #4338ca !important;
-		border-color: #a5b4fc !important;
+	.btn-back-track-pill:active {
+		transform: scale(0.98);
 	}
 
-	.ctrl-btn {
+	.track-tingkat-badge {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		padding: 5px 12px;
-		border: 1px solid var(--border-hard);
-		background: #ffffff;
+		height: 26px;
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		font-weight: 800;
+		color: #0369a1;
+		background: #e0f2fe;
+		border: 1px solid #bae6fd;
+		padding: 0 9px;
 		border-radius: 6px;
-		font-family: var(--font-macro);
+		line-height: 1;
+		letter-spacing: 0.02em;
+	}
+
+	.phase-badge {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		font-weight: 600;
+		color: #475569;
+		background: #f1f5f9;
+		border: 1px solid #e2e8f0;
+		padding: 0 9px;
+		border-radius: 6px;
+		line-height: 1;
+	}
+
+	.reader-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+		font-weight: 800;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.25;
+		margin: 0;
+	}
+
+	/* ══════════════════════════════════════════════════════════
+	   COMPLETION ACTION BOX (END OF READING)
+	   ══════════════════════════════════════════════════════════ */
+	.completion-box {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 18px 20px;
+		transition: all 200ms ease;
+	}
+
+	.completion-box--completed {
+		background: #f0fdf4;
+		border-color: #bbf7d0;
+	}
+
+	.completion-icon {
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		background: #e2e8f0;
+		color: #64748b;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.completion-icon--completed {
+		background: #dcfce7;
+		color: #16a34a;
+	}
+
+	.completion-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: 13.5px;
+		font-weight: 800;
+		color: #0f172a;
+		margin: 0 0 2px;
+	}
+
+	.completion-sub {
 		font-size: 11.5px;
-		font-weight: 700;
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 150ms ease;
-		min-height: 36px;
+		color: #64748b;
+		margin: 0;
+		line-height: 1.4;
 	}
 
-	.ctrl-btn:hover {
-		border-color: var(--primary-border);
-		color: var(--primary);
-	}
-
-	.ctrl-btn-active {
-		background: #4f46e5 !important;
-		color: #ffffff !important;
-		border-color: #4f46e5 !important;
-	}
-
-	.btn-mark-read {
+	.btn-mark-completion {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 6px;
-		padding: 7px 16px;
-		border: 1px solid var(--border-hard);
-		background: #ffffff;
-		color: var(--text-primary);
-		border-radius: 6px;
-		font-family: var(--font-macro);
+		padding: 8px 18px;
+		border-radius: 8px;
+		font-family: var(--font-macro, sans-serif);
 		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
@@ -776,29 +884,44 @@
 		min-height: 38px;
 	}
 
-	.btn-mark-read:hover {
-		border-color: var(--primary-border);
-		background: var(--primary-light);
-		color: var(--primary);
+	.btn-mark-completion--pending {
+		background: #4f46e5;
+		color: #ffffff;
+		border: 1px solid #4338ca;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
 	}
 
-	.btn-read-completed {
-		background: #dcfce7 !important;
-		color: #15803d !important;
-		border-color: #86efac !important;
+	.btn-mark-completion--pending:hover {
+		background: #4338ca;
+		transform: translateY(-1px);
 	}
 
+	.btn-mark-completion--completed {
+		background: #dcfce7;
+		color: #15803d;
+		border: 1px solid #86efac;
+	}
+
+	.btn-mark-completion--completed:hover {
+		background: #fee2e2;
+		color: #b91c1c;
+		border-color: #fca5a5;
+	}
+
+	/* ══════════════════════════════════════════════════════════
+	   SLIDE & ATTACHMENT CARDS
+	   ══════════════════════════════════════════════════════════ */
 	.slide-card {
 		background: #f8fafc;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 16px 20px;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
+		padding: 14px 18px;
 	}
 
 	.slide-icon-wrap {
-		width: 40px;
-		height: 40px;
-		border-radius: 10px;
+		width: 36px;
+		height: 36px;
+		border-radius: 8px;
 		background: #e0e7ff;
 		color: #4f46e5;
 		display: flex;
@@ -808,46 +931,83 @@
 	}
 
 	.slide-card-title {
-		font-family: var(--font-macro);
-		font-size: 13.5px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 13px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: var(--text-primary, #0f172a);
+		margin: 0;
 	}
 
 	.slide-card-sub {
-		font-size: 12px;
-		color: var(--text-secondary);
+		font-size: 11.5px;
+		color: var(--text-secondary, #475569);
+		margin: 0;
 	}
 
 	.btn-download-slide {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 7px 14px;
+		padding: 6px 14px;
 		background: #4f46e5;
 		color: #ffffff;
 		border-radius: 6px;
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 11.5px;
 		font-weight: 700;
 		text-decoration: none;
 		transition: background 150ms ease;
-		min-height: 36px;
+		min-height: 34px;
 	}
 
 	.btn-download-slide:hover {
 		background: #4338ca;
 	}
 
-	/* ══════════════════════════════════════════
-	   DEDICATED RIGHT TOC SIDE CONTAINER
-	══════════════════════════════════════════ */
+	.materi-global-attachments-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.materi-attachment-item-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 10px 12px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+	}
+
+	.attachment-box-dl {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		color: #334155;
+		border-radius: 6px;
+		text-decoration: none;
+		transition: all 150ms ease;
+	}
+
+	.attachment-box-dl:hover {
+		background: #e0e7ff;
+		color: #4338ca;
+		border-color: #c7d2fe;
+	}
+
+	/* ══════════════════════════════════════════════════════════
+	   DEDICATED RIGHT TOC & PREFERENCES SIDE CONTAINER
+	   ══════════════════════════════════════════════════════════ */
 	.toc-right-container {
 		position: sticky;
 		top: 24px;
 		width: 270px;
 		margin-left: 24px;
-		margin-top: 24px;
 		flex-shrink: 0;
 		transition: all 200ms ease;
 	}
@@ -862,31 +1022,80 @@
 		gap: 6px;
 		padding: 5px 12px;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
+		border: 1px solid var(--border-hard, #e2e8f0);
 		border-radius: 6px;
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 11.5px;
 		font-weight: 700;
-		color: var(--text-secondary);
+		color: var(--text-secondary, #475569);
 		cursor: pointer;
-		box-shadow: var(--shadow-sm);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		margin-bottom: 10px;
 		transition: all 150ms ease;
 	}
 
 	.toc-collapse-btn:hover {
-		border-color: var(--primary-border);
-		color: var(--primary);
+		border-color: #cbd5e1;
+		color: #0f172a;
 	}
 
 	.toc-right-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 16px;
-		box-shadow: var(--shadow-sm);
-		max-height: 480px;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
+		padding: 14px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		max-height: calc(100vh - 120px);
 		overflow-y: auto;
+	}
+
+	.btn-focus-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		border-radius: 5px;
+		font-size: 10.5px;
+		font-weight: 700;
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #e2e8f0;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-focus-toggle--active {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4f46e5;
+	}
+
+	.size-pill {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 24px;
+		border-radius: 5px;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		color: #64748b;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.size-pill:hover {
+		border-color: #cbd5e1;
+		color: #0f172a;
+	}
+
+	.size-pill-active {
+		background: #e0e7ff !important;
+		color: #4338ca !important;
+		border-color: #c7d2fe !important;
 	}
 
 	.toc-list {
@@ -904,17 +1113,17 @@
 		background: transparent;
 		text-align: left;
 		font-size: 12px;
-		color: var(--text-secondary);
+		color: var(--text-secondary, #475569);
 		border-radius: 4px;
 		cursor: pointer;
 		transition: all 150ms ease;
 		width: 100%;
-		min-height: 34px;
+		min-height: 32px;
 	}
 
-	.toc-item.level-1 { font-weight: 800; color: var(--text-primary); }
+	.toc-item.level-1 { font-weight: 800; color: var(--text-primary, #0f172a); }
 	.toc-item.level-2 { padding-left: 14px; }
-	.toc-item.level-3 { padding-left: 22px; font-size: 11.5px; color: var(--text-muted); }
+	.toc-item.level-3 { padding-left: 22px; font-size: 11px; color: #64748b; }
 
 	.toc-bullet {
 		width: 4px;
@@ -948,7 +1157,7 @@
 		color: #ffffff;
 		padding: 9px 15px;
 		border-radius: 9999px;
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 11.5px;
 		font-weight: 700;
 		border: 2px solid #ffffff;
@@ -976,7 +1185,7 @@
 		width: 100%;
 		max-width: 600px;
 		padding: 16px 20px 24px;
-		box-shadow: var(--shadow-lg);
+		box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
 	}
 
 	.drawer-handle-bar {
@@ -990,13 +1199,14 @@
 	/* Main Reading Article Card */
 	.reading-article-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
 		padding: 32px 36px;
-		box-shadow: var(--shadow-sm);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		line-height: 1.8;
 		letter-spacing: -0.01em;
 		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.reading-article-card.size-sm { font-size: 14.5px; }
@@ -1010,16 +1220,16 @@
 	.prose-reading :global(h1),
 	.prose-reading :global(h2),
 	.prose-reading :global(h3) {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-weight: 800;
-		color: var(--text-primary);
+		color: var(--text-primary, #0f172a);
 		margin-top: 1.6em;
 		margin-bottom: 0.6em;
 		line-height: 1.3;
 		scroll-margin-top: 24px;
 	}
 
-	.prose-reading :global(h1) { font-size: 1.5em; border-bottom: 2px solid var(--border-soft); padding-bottom: 0.3em; }
+	.prose-reading :global(h1) { font-size: 1.5em; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.3em; }
 	.prose-reading :global(h2) { font-size: 1.3em; }
 	.prose-reading :global(h3) { font-size: 1.15em; }
 
@@ -1028,7 +1238,7 @@
 	}
 
 	.prose-reading :global(code) {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 0.88em;
 		background: #eef2ff;
 		border: 1px solid #c7d2fe;
@@ -1041,7 +1251,7 @@
 	/* PRO CODE BLOCK BOX */
 	.prose-reading :global(.tiptap-code-block-wrapper) {
 		margin: 1.25em 0;
-		border-radius: var(--radius-md);
+		border-radius: 10px;
 		border: 1px solid #334155;
 		background: #0f172a;
 		overflow: hidden;
@@ -1076,7 +1286,7 @@
 	.prose-reading :global(.mac-dot--green)  { background: #27c93f; border: 1px solid #1aab29; }
 
 	.prose-reading :global(.code-block-lang) {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 10.5px;
 		font-weight: 700;
 		color: #94a3b8;
@@ -1096,7 +1306,7 @@
 		align-items: center;
 		gap: 4px;
 		padding: 4px 10px;
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
 		font-weight: 600;
 		color: #94a3b8;
@@ -1128,7 +1338,7 @@
 		background: #0f172a !important;
 		border: none !important;
 		border-radius: 0 !important;
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 13px;
 		line-height: 1.6;
 		color: #e2e8f0 !important;
@@ -1162,15 +1372,15 @@
 	}
 
 	.empty-title {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 15px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: var(--text-primary, #0f172a);
 	}
 
 	.empty-sub {
 		font-size: 12.5px;
-		color: var(--text-muted);
+		color: var(--text-muted, #64748b);
 	}
 
 	.lesson-nav-footer {
@@ -1186,33 +1396,34 @@
 		gap: 12px;
 		padding: 14px 18px;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
 		text-decoration: none;
-		color: var(--text-primary);
-		box-shadow: var(--shadow-sm);
+		color: var(--text-primary, #0f172a);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		transition: all 150ms ease;
 		max-width: 48%;
 		flex: 1;
 		min-height: 48px;
+		box-sizing: border-box;
 	}
 
 	.btn-lesson-nav:hover {
-		border-color: var(--primary-border);
-		background: var(--bg-inset);
+		border-color: #cbd5e1;
+		background: #f8fafc;
 		transform: translateY(-1px);
 	}
 
 	.lesson-nav-dir {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 10px;
 		font-weight: 700;
-		color: var(--text-muted);
+		color: var(--text-muted, #64748b);
 		display: block;
 	}
 
 	.lesson-nav-title {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 13px;
 		font-weight: 800;
 	}
@@ -1228,7 +1439,17 @@
 			padding: 16px 16px 84px;
 		}
 		.reader-header-card {
-			padding: 16px 14px;
+			padding: 12px 14px;
+			gap: 8px;
+		}
+		.header-top-row {
+			gap: 6px;
+		}
+		.header-badges-row {
+			gap: 5px;
+		}
+		.reader-title {
+			font-size: 1.15rem;
 		}
 		.reading-article-card {
 			padding: 20px 14px;
@@ -1262,6 +1483,10 @@
 			font-size: 12px !important;
 			line-height: 1.55 !important;
 			max-height: 360px;
+		}
+
+		.completion-box {
+			padding: 14px 14px;
 		}
 
 		.lesson-nav-footer {

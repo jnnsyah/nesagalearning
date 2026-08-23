@@ -2,6 +2,7 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { materi, subPhase, phase, curriculumTrack, materiCompletion } from '$lib/server/db/schema/curriculum';
+import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
 import { pertemuan } from '$lib/server/db/schema/session';
 import { eq, and, asc, sql } from 'drizzle-orm';
 
@@ -39,6 +40,17 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	if (isNaN(materiId)) {
 		throw error(400, 'ID Materi tidak valid.');
 	}
+
+	// 0. Fetch student active class membership
+	const [membership] = await db
+		.select({
+			kelasInstanceId: keanggotaan.kelasInstanceId,
+			kelasName: kelasInstance.name,
+			curriculumTrackId: kelasInstance.curriculumTrackId
+		})
+		.from(keanggotaan)
+		.innerJoin(kelasInstance, eq(keanggotaan.kelasInstanceId, kelasInstance.id))
+		.where(and(eq(keanggotaan.userId, userId), eq(keanggotaan.status, 'aktif')));
 
 	// 1. Fetch main materi details with subPhase, phase, and track
 	const [materiDetail] = await db
@@ -102,6 +114,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	return {
 		user: locals.user,
+		membership,
 		materi: {
 			...materiDetail,
 			attachments: (materiDetail.attachments as Array<{ name: string; url: string; size: number }>) || []
