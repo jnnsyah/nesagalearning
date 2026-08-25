@@ -16,7 +16,7 @@
 	let taDropdownOptions = $derived(
 		(data.cardsData.academicYears || []).map((y: any) => ({
 			value: String(y.id),
-			label: `Tahun Ajaran ${y.name}${y.isActive ? ' (Aktif)' : ''}`
+			label: `Periode ${y.name}${y.isActive ? ' (Aktif)' : ''}`
 		}))
 	);
 
@@ -143,14 +143,14 @@
 		<section class="class-cards-section">
 			<div class="section-header-flex">
 				<h2 class="section-title">Daftar Kelas ({data.cardsData.classCards.length} Kelas)</h2>
-				<span class="type-mono text-xs text-slate-500">Tahun Ajaran: {data.cardsData.selectedTahunAjaran?.name}</span>
+				<span class="type-mono text-xs text-slate-500">Periode: {data.cardsData.selectedTahunAjaran?.name}</span>
 			</div>
 
 			{#if data.cardsData.classCards.length === 0}
 				<div class="card-table text-center py-12">
 					<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-slate-400 mb-2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-					<p class="font-bold text-slate-800 text-sm">Belum Ada Kelas di Tahun Ajaran Ini</p>
-					<p class="text-xs text-slate-500 mt-1">Silakan pilih Tahun Ajaran lain dari dropdown di atas.</p>
+					<p class="font-bold text-slate-800 text-sm">Belum Ada Kelas di Periode Ini</p>
+					<p class="text-xs text-slate-500 mt-1">Silakan pilih Periode lain dari dropdown di atas.</p>
 				</div>
 			{:else}
 				<div class="class-cards-grid">

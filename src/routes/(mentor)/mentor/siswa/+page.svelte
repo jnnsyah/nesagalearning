@@ -61,6 +61,22 @@
 		updateUrlFilters({ risk: String(val ?? 'all') });
 	}
 
+	// Filter Target Angkatan State
+	let selectedAngkatanFilter = $state('all');
+
+	const angkatanFilterOptions = $derived.by(() => {
+		const set = new Set<string>();
+		for (const st of data.rosterData.roster || []) {
+			const year = st.angkatan || st.targetAngkatan;
+			if (year) set.add(String(year));
+		}
+		const sorted = Array.from(set).sort().reverse();
+		return [
+			{ value: 'all', label: 'Semua Target Angkatan' },
+			...sorted.map((yr) => ({ value: yr, label: `Angkatan ${yr}` }))
+		];
+	});
+
 	// Sorting State
 	let selectedSort = $state<
 		| 'nama_az'
@@ -83,7 +99,10 @@
 	];
 
 	let sortedRoster = $derived.by(() => {
-		const list = [...(data.rosterData.roster || [])];
+		let list = [...(data.rosterData.roster || [])];
+		if (selectedAngkatanFilter !== 'all') {
+			list = list.filter((st) => String(st.angkatan || st.targetAngkatan) === selectedAngkatanFilter);
+		}
 		if (selectedSort === 'nama_az') {
 			list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
 		} else if (selectedSort === 'nama_za') {
@@ -123,6 +142,7 @@
 	$effect(() => {
 		data.rosterData.roster;
 		selectedSort;
+		selectedAngkatanFilter;
 		itemsPerPage;
 		untrack(() => {
 			currentPage = 1;
@@ -150,12 +170,14 @@
 	let isRosterFilterActive = $derived(
 		searchInput.trim() !== '' ||
 		selectedRiskFilter !== 'all' ||
+		selectedAngkatanFilter !== 'all' ||
 		selectedSort !== 'nama_az'
 	);
 
 	function resetRosterFilters() {
 		searchInput = '';
 		selectedRiskFilter = 'all';
+		selectedAngkatanFilter = 'all';
 		selectedSort = 'nama_az';
 		updateUrlFilters({ q: '', risk: 'all' });
 	}
@@ -178,12 +200,15 @@
 	     ══════════════════════════════════════════════════════════ -->
 	<header class="page-hero">
 		<div class="hero-top-row">
-			<div>
-				<div class="hero-title-group">
+			<div class="header-main-content flex-1">
+				<div class="hero-title-group flex items-center gap-2 flex-wrap mb-1">
 					<h1 class="hero-title">Roster Siswa & Progress Track Pembelajaran</h1>
 					{#if data.rosterData.selectedKelas}
-						<span class="badge badge-primary">
-							{data.rosterData.selectedKelas.name}
+						<span class="badge badge-neutral font-semibold h-[26px] leading-none text-[11px] px-2.5 inline-flex items-center">
+							Angkatan {data.rosterData.selectedKelas.targetAngkatan || 2025}
+						</span>
+						<span class="badge badge-primary h-[26px] leading-none text-[11px] px-2.5 inline-flex items-center">
+							⭐ {data.rosterData.selectedKelas.name} ({data.rosterData.selectedKelas.tingkatName})
 						</span>
 					{/if}
 				</div>
@@ -194,7 +219,7 @@
 
 			<div class="flex items-center gap-3 flex-wrap">
 				<div class="w-48">
-					<label for="ta-select" class="filter-label">Tahun Ajaran</label>
+					<label for="ta-select" class="filter-label">Periode</label>
 					<CustomSelect
 						id="ta-select"
 						name="tahunAjaranId"
@@ -206,7 +231,7 @@
 				</div>
 
 				<div class="w-56">
-					<label for="kelas-select" class="filter-label">Pilih Rombel Kelas</label>
+					<label for="kelas-select" class="filter-label">Pilih Kelompok Belajar</label>
 					<CustomSelect
 						id="kelas-select"
 						name="kelasInstanceId"
@@ -270,10 +295,9 @@
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     FILTER BAR & SEARCH
+	     FILTER BAR & SEARCH (2-ROW LAYOUT)
 	     ══════════════════════════════════════════════════════════ -->
-	<!-- Filter Card 2-Row Layout Standard -->
-	<div class="page-filter-card mb-5">
+	<div class="page-filter-card mb-6">
 		<form onsubmit={handleSearchSubmit}>
 			<!-- Row 1: Search Bar & Conditional Reset -->
 			<div class="filter-row-top">
@@ -306,8 +330,18 @@
 				{/if}
 			</div>
 
-			<!-- Row 2: Select Controls Grid -->
+			<!-- Row 2: Select Controls Grid (3 Columns) -->
 			<div class="filter-row-bottom">
+				<div>
+					<label for="angkatan-filter" class="filter-label">Filter Target Angkatan</label>
+					<CustomSelect
+						id="angkatan-filter"
+						options={angkatanFilterOptions}
+						bind:value={selectedAngkatanFilter}
+						searchable={false}
+					/>
+				</div>
+
 				<div>
 					<label for="risk-filter" class="filter-label">Filter Tingkat Risiko</label>
 					<CustomSelect
@@ -340,7 +374,7 @@
 		{#if sortedRoster.length === 0}
 			<div class="empty-card py-12 text-center">
 				<div class="empty-icon-circle">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 				</div>
 				<h3 class="font-bold text-slate-800 text-base">Tidak Ada Siswa Ditemukan</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
@@ -383,9 +417,16 @@
 											>
 												{student.fullName}
 											</a>
-											<div class="student-sub-info">
-												<span class="student-nisn">{student.nisn ? `NISN: ${student.nisn}` : `@${student.username}`}</span>
-												<span class="rombel-pill">{student.kelasName}</span>
+											<div class="student-sub-info flex items-center gap-1.5 flex-wrap mt-0.5">
+												<span class="student-nisn text-xs text-slate-500 font-mono">{student.nisn ? `NISN: ${student.nisn}` : `@${student.username}`}</span>
+												<span class="badge badge-neutral text-[10px] px-2 py-0.5 font-semibold">
+													Angkatan {student.angkatan || student.targetAngkatan || 2025}
+												</span>
+												{#if student.rombelLabel}
+													<span class="rombel-pill">{student.rombelLabel}</span>
+												{:else}
+													<span class="rombel-pill">{student.kelasName}</span>
+												{/if}
 											</div>
 										</div>
 									</div>
@@ -932,7 +973,7 @@
 
 	.filter-row-bottom {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(3, 1fr);
 		gap: 16px;
 		align-items: flex-start;
 	}

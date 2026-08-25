@@ -75,7 +75,23 @@
 			const selectedOption = filteredMateriOptions.find((opt) => String(opt.value) === String(formMateriId));
 			if (selectedOption && selectedOption.value) {
 				untrack(() => {
-					formTitle = selectedOption.label;
+					if (!formTitle || formTitle === selectedOption.label) {
+						formTitle = selectedOption.label;
+					}
+
+					const matObj = (data.materis || []).find((m) => String(m.id) === String(formMateriId));
+					if (matObj) {
+						let matUrl = '';
+						if (matObj.attachments && Array.isArray(matObj.attachments) && matObj.attachments.length > 0) {
+							matUrl = matObj.attachments[0]?.url || '';
+						} else if (matObj.content && (matObj.content.startsWith('http') || matObj.content.startsWith('/uploads/'))) {
+							matUrl = matObj.content.trim();
+						}
+						if (matUrl && !formMaterialUrl) {
+							formMaterialUrl = matUrl;
+							uploadedFileName = getFileNameFromUrl(matUrl);
+						}
+					}
 				});
 			}
 		}
@@ -221,7 +237,29 @@
 		const foundSub = (data.subPhases || []).find((sp) => Number(sp.id) === Number(meeting.subPhaseId));
 		formTrackId = foundSub?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
 		formSubPhaseId = meeting.subPhaseId;
-		formMateriId = '';
+
+		const matchingMateri = (data.materis || []).find(
+			(m) =>
+				Number(m.subPhaseId) === Number(meeting.subPhaseId) &&
+				(m.title.trim().toLowerCase() === meeting.title.trim().toLowerCase() ||
+					meeting.title.toLowerCase().includes(m.title.toLowerCase()) ||
+					m.title.toLowerCase().includes(meeting.title.toLowerCase()))
+		);
+
+		if (matchingMateri) {
+			formMateriId = String(matchingMateri.id);
+		} else {
+			const matchedOpt = filteredMateriOptions.find(
+				(opt) => opt.value && opt.label.trim().toLowerCase() === meeting.title.trim().toLowerCase()
+			);
+			if (matchedOpt) {
+				formMateriId = String(matchedOpt.value);
+			} else {
+				const firstSubMateri = (data.materis || []).find((m) => Number(m.subPhaseId) === Number(meeting.subPhaseId));
+				formMateriId = firstSubMateri ? String(firstSubMateri.id) : '';
+			}
+		}
+
 		formTitle = meeting.title;
 		formActivityType = meeting.activityType;
 		formSessionDate = normalizeDateIso(meeting.sessionDate);
@@ -229,6 +267,9 @@
 		formEndTime = formatTimeOnly(meeting.endTime);
 		formLocation = meeting.location ?? '';
 		formMaterialUrl = meeting.materialUrl ?? '';
+		if (meeting.materialUrl) {
+			uploadedFileName = getFileNameFromUrl(meeting.materialUrl);
+		}
 		formIsWeekend = Boolean(meeting.isWeekend);
 		
 		if (meeting.tasks && meeting.tasks.length > 0) {
@@ -549,7 +590,7 @@
 
 <div class="content-area">
 	<!-- Standardized Header Card -->
-	<div class="header-card mb-5">
+	<div class="header-card mb-6">
 		<div class="header-top-row">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
@@ -562,7 +603,7 @@
 			<div class="header-badges-row">
 				<span class="header-badge-pill">{totalCount} Sesi Total</span>
 				<button type="button" onclick={openCreateForm} class="btn-create-pill" aria-label="Buat sesi pertemuan baru">
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<line x1="12" y1="5" x2="12" y2="19" />
 						<line x1="5" y1="12" x2="19" y2="12" />
 					</svg>
@@ -851,6 +892,14 @@
 											<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
 										</svg>
 										<span>Edit</span>
+									</button>
+
+									<button type="button" onclick={() => promptDelete(m)} class="btn-danger-ghost-sm" title="Hapus Pertemuan">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<polyline points="3 6 5 6 21 6" />
+											<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+										</svg>
+										<span>Hapus</span>
 									</button>
 
 									<a href={`/mentor/pertemuan/${m.id}`} class="btn-detail" title="Detail Pertemuan">
@@ -1328,6 +1377,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+		margin-bottom: 24px !important;
 		max-width: 100%;
 		word-break: break-word;
 	}
@@ -1351,14 +1401,14 @@
 	.header-badge-pill {
 		display: inline-flex;
 		align-items: center;
-		height: 26px;
-		padding: 0 10px;
+		height: 38px;
+		padding: 0 14px;
 		background: #eef2ff;
 		color: #4338ca;
 		border: 1px solid #c7d2fe;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-family: var(--font-macro, sans-serif);
-		font-size: 11px;
+		font-size: 13px;
 		font-weight: 700;
 		line-height: 1;
 		white-space: nowrap;
@@ -1367,26 +1417,27 @@
 	.btn-create-pill {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		height: 26px;
-		padding: 0 12px;
+		gap: 8px;
+		height: 38px;
+		padding: 0 18px;
 		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 		color: #ffffff;
 		border: none;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-family: var(--font-macro, sans-serif);
-		font-size: 11px;
+		font-size: 13.5px;
 		font-weight: 700;
 		line-height: 1;
 		cursor: pointer;
-		box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
 	.btn-create-pill:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
 	}
 
 	.btn-create-pill:active {
@@ -1496,12 +1547,34 @@
 		border-color: var(--primary-border);
 	}
 
+	.btn-danger-ghost-sm {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		background: #ffffff;
+		border: 1px solid #fecaca;
+		border-radius: var(--radius-md, 8px);
+		font-size: 11px;
+		font-weight: 600;
+		color: #dc2626;
+		padding: 4px 8px;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-danger-ghost-sm:hover {
+		background: #fef2f2;
+		color: #b91c1c;
+		border-color: #fca5a5;
+	}
+
 	/* Stats Grid */
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-top: 0 !important;
+		margin-bottom: 24px !important;
 	}
 
 	@media (max-width: 900px) {

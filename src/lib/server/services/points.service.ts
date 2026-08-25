@@ -1,11 +1,46 @@
 import { db } from '../db';
 import { pointLog, streakCounter } from '../db/schema/gamification';
 import { attendance, pertemuan } from '../db/schema/session';
-import { eq, and, asc, inArray } from 'drizzle-orm';
+import { tahunAjaran } from '../db/schema/academic';
+import { eq, and, asc, inArray, sum } from 'drizzle-orm';
 import { calculateStreak, STREAK_MILESTONES } from './streak.service';
 import { BadgeEvaluatorService } from './badge-evaluator.service';
 
 export class PointsService {
+	/**
+	 * Helper to get active Periode ID
+	 */
+	static async getActivePeriodeId(): Promise<number | null> {
+		const activePeriode = await db
+			.select({ id: tahunAjaran.id })
+			.from(tahunAjaran)
+			.where(eq(tahunAjaran.isActive, true))
+			.limit(1);
+		return activePeriode.length > 0 ? activePeriode[0].id : null;
+	}
+
+	/**
+	 * Dual-Track EXP stats: Lifetime EXP vs Seasonal Periode EXP
+	 */
+	static async getUserExpStats(userId: number, periodeIdInput?: number): Promise<{ lifetimeExp: number; seasonalExp: number }> {
+		const currentPeriodeId = periodeIdInput ?? (await PointsService.getActivePeriodeId());
+
+		const logs = await db
+			.select({
+				amount: pointLog.amount,
+				periodeId: pointLog.periodeId
+			})
+			.from(pointLog)
+			.where(eq(pointLog.userId, userId));
+
+		const lifetimeExp = logs.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+		const seasonalExp = currentPeriodeId
+			? logs.filter((l) => l.periodeId === currentPeriodeId).reduce((acc, curr) => acc + (curr.amount || 0), 0)
+			: lifetimeExp;
+
+		return { lifetimeExp, seasonalExp };
+	}
+
 	/**
 	 * Default base points for attendance
 	 */
@@ -25,6 +60,7 @@ export class PointsService {
 			? PointsService.WEEKEND_ATTENDANCE_POINTS
 			: PointsService.WEEKDAY_ATTENDANCE_POINTS;
 		const source = isWeekend ? 'attendance_weekend' : 'attendance_weekday';
+		const activePeriodeId = await PointsService.getActivePeriodeId();
 
 		// 1. Log attendance base points (Idempotent: check if already logged)
 		const existingPointLogs = await db
@@ -44,6 +80,7 @@ export class PointsService {
 			await db.insert(pointLog).values({
 				userId,
 				kelasInstanceId,
+				periodeId: activePeriodeId,
 				source,
 				amount: pointsAmount,
 				referenceId: pertemuanId,
@@ -121,6 +158,7 @@ export class PointsService {
 				await db.insert(pointLog).values({
 					userId,
 					kelasInstanceId,
+					periodeId: activePeriodeId,
 					source: 'streak_milestone',
 					amount: milestone.bonusPoints,
 					referenceId: milestone.streak,
@@ -234,9 +272,12 @@ export class PointsService {
 			return existingLogs[0].amount;
 		}
 
+		const activePeriodeId = await PointsService.getActivePeriodeId();
+
 		await db.insert(pointLog).values({
 			userId,
 			kelasInstanceId,
+			periodeId: activePeriodeId,
 			source,
 			amount,
 			referenceId: taskId,

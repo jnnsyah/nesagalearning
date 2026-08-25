@@ -6,6 +6,31 @@
 	const actBadge = $derived(getActivityBadgeStyle(m.activityType));
 
 	let isInfoExpanded = $state(true);
+	let rosterFilter = $state<'all' | 'hadir' | 'excused' | 'belum_hadir'>('all');
+	let searchQuery = $state('');
+
+	// Attendance Roster Derived Metrics
+	const studentList = $derived(data.attendanceList || []);
+	const totalStudents = $derived(studentList.length);
+	const totalHadir = $derived(studentList.filter((s) => s.status === 'hadir').length);
+	const totalIzin = $derived(studentList.filter((s) => s.status === 'excused').length);
+	const totalBelum = $derived(studentList.filter((s) => s.status === 'belum_hadir').length);
+	const attendancePercentage = $derived(
+		totalStudents > 0 ? Math.round((totalHadir / totalStudents) * 100) : 0
+	);
+
+	const filteredRoster = $derived.by(() => {
+		return studentList.filter((s) => {
+			if (rosterFilter !== 'all' && s.status !== rosterFilter) return false;
+			if (searchQuery.trim()) {
+				const q = searchQuery.trim().toLowerCase();
+				const matchName = s.fullName.toLowerCase().includes(q);
+				const matchUser = s.username.toLowerCase().includes(q);
+				if (!matchName && !matchUser) return false;
+			}
+			return true;
+		});
+	});
 
 	function formatIndoDate(dateStr: string): string {
 		if (!dateStr) return '-';
@@ -18,6 +43,13 @@
 			'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 		];
 		return `${days[dateObj.getDay()]}, ${d} ${months[mVal - 1]} ${y}`;
+	}
+
+	function formatTime(val: string | Date | null | undefined): string {
+		if (!val) return '-';
+		const d = new Date(val);
+		if (isNaN(d.getTime())) return String(val);
+		return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
 	}
 
 	function getActivityBadgeStyle(type: string) {
@@ -52,9 +84,10 @@
 
 	function getFileExt(url: string | null): string {
 		if (!url) return 'FILE';
-		const parts = url.split('.');
+		const clean = url.split('?')[0];
+		const parts = clean.split('.');
 		const ext = parts[parts.length - 1]?.toUpperCase() ?? 'FILE';
-		if (ext.length > 5) return 'FILE';
+		if (ext.length > 5 || ext === clean.toUpperCase()) return 'LINK';
 		return ext;
 	}
 </script>
@@ -64,8 +97,8 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Standardized Header Card -->
-	<div class="header-card mb-5">
+	<!-- Standardized Gold-Standard Header Card -->
+	<div class="header-card mb-6">
 		<div class="header-top-row">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
@@ -87,27 +120,26 @@
 					<span class="weekend-tag-pill">WEEKEND (+50% POIN)</span>
 				{/if}
 				<span class="kelas-tag-pill">{m.kelasName}</span>
-				<a href="/mentor/pertemuan" class="btn-back-track-pill">
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<line x1="19" y1="12" x2="5" y2="12" />
-						<polyline points="12 19 5 12 12 5" />
-					</svg>
-					<span>Kembali</span>
-				</a>
 			</div>
 		</div>
 
-		<div class="header-main-content">
-			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-				<div>
-					<h1 class="page-title">{m.title}</h1>
-					<p class="page-sub">
+		<div class="header-main-content text-left">
+			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+				<div class="text-left">
+					<h1 class="page-title text-left">{m.title}</h1>
+					<p class="page-sub text-left">
 						Sub-Fase Track Pembelajaran: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle}</strong>
 					</p>
 				</div>
-				<div class="flex items-center gap-2 flex-wrap">
-					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-hero-primary-pill">
+				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
+					<a href="/mentor/pertemuan" class="btn-secondary-head-pill">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<polyline points="15 18 9 12 15 6" />
+						</svg>
+						<span>Kembali ke Daftar</span>
+					</a>
+					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-create-pill">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
 						</svg>
 						<span>Buka Presensi QR</span>
@@ -117,11 +149,11 @@
 		</div>
 	</div>
 
-	<!-- Quick Stats Row -->
-	<div class="stats-grid mb-5">
+	<!-- Quick Stats Grid (4 Metrics Cards) -->
+	<div class="stats-grid mb-6">
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<rect x="3" y="4" width="18" height="18" rx="2" />
 					<line x1="16" y1="2" x2="16" y2="6" />
 					<line x1="8" y1="2" x2="8" y2="6" />
@@ -136,7 +168,7 @@
 
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #ecfdf5; color: #047857;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<circle cx="12" cy="12" r="10" />
 					<polyline points="12 6 12 12 16 14" />
 				</svg>
@@ -149,7 +181,7 @@
 
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #fdf4ff; color: #a21caf;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
 					<circle cx="12" cy="10" r="3" />
 				</svg>
@@ -162,21 +194,21 @@
 
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #fffbeb; color: #b45309;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-					<polyline points="14 2 14 8 20 8" />
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<path d="M12 6v6l4 2" />
 				</svg>
 			</div>
 			<div>
-				<div class="stat-label">Status Slide Materi</div>
-				<div class="stat-value-sm">{m.materialUrl ? 'Slide Tersedia' : 'Belum Ada Slide'}</div>
+				<div class="stat-label">Tingkat Kehadiran</div>
+				<div class="stat-value-sm text-emerald-700">{attendancePercentage}% ({totalHadir}/{totalStudents})</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Main Details Grid Layout -->
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-		<!-- Left Main Column (Details & Materials) -->
+		<!-- Left Main Column (Details & Materials & Presensi Roster) -->
 		<div class="lg:col-span-2 stacked-column">
 			<!-- Detail Card (Collapsible) -->
 			<div class="detail-panel">
@@ -301,6 +333,133 @@
 					{/if}
 				</div>
 			</div>
+
+			<!-- Student Presensi Roster Panel -->
+			<div class="detail-panel">
+				<div class="panel-header flex items-center justify-between flex-wrap gap-3">
+					<h2 class="panel-title">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+							<circle cx="9" cy="7" r="4" />
+							<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+						</svg>
+						Daftar Presensi Siswa Sesi ({totalHadir}/{totalStudents} Hadir)
+					</h2>
+
+					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+						Kelola Presensi Full &rarr;
+					</a>
+				</div>
+
+				<div class="panel-body">
+					<!-- Roster Filters & Search -->
+					<div class="roster-toolbar mb-4">
+						<div class="flex items-center gap-1.5 flex-wrap">
+							<button
+								type="button"
+								class="roster-tab"
+								class:active={rosterFilter === 'all'}
+								onclick={() => (rosterFilter = 'all')}
+							>
+								Semua ({totalStudents})
+							</button>
+							<button
+								type="button"
+								class="roster-tab roster-tab--hadir"
+								class:active={rosterFilter === 'hadir'}
+								onclick={() => (rosterFilter = 'hadir')}
+							>
+								Hadir ({totalHadir})
+							</button>
+							<button
+								type="button"
+								class="roster-tab roster-tab--izin"
+								class:active={rosterFilter === 'excused'}
+								onclick={() => (rosterFilter = 'excused')}
+							>
+								Izin/Sakit ({totalIzin})
+							</button>
+							<button
+								type="button"
+								class="roster-tab roster-tab--belum"
+								class:active={rosterFilter === 'belum_hadir'}
+								onclick={() => (rosterFilter = 'belum_hadir')}
+							>
+								Belum Absen ({totalBelum})
+							</button>
+						</div>
+
+						<input
+							type="text"
+							placeholder="Cari siswa…"
+							bind:value={searchQuery}
+							class="roster-search-input"
+						/>
+					</div>
+
+					{#if filteredRoster.length === 0}
+						<div class="empty-task-state py-8 text-center text-xs text-slate-500">
+							Tidak ada data siswa yang sesuai dengan filter.
+						</div>
+					{:else}
+						<div class="table-responsive">
+							<table class="roster-data-table">
+								<thead>
+									<tr>
+										<th style="width: 44px;">#</th>
+										<th>Nama Siswa</th>
+										<th>Status Presensi</th>
+										<th>Metode</th>
+										<th style="text-align: right;">Waktu Presensi</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each filteredRoster as st, idx (st.userId)}
+										<tr>
+											<td class="font-mono text-xs text-slate-400">{idx + 1}</td>
+											<td>
+												<div class="flex items-center gap-2">
+													<div class="w-7 h-7 rounded-full bg-slate-100 font-bold text-slate-600 text-xs flex items-center justify-center shrink-0">
+														{st.fullName.charAt(0).toUpperCase()}
+													</div>
+													<div class="flex flex-col min-w-0">
+														<span class="font-bold text-slate-900 text-xs truncate">{st.fullName}</span>
+														<span class="text-[11px] text-slate-500 font-mono">@{st.username}</span>
+													</div>
+												</div>
+											</td>
+											<td>
+												{#if st.status === 'hadir'}
+													<span class="badge-status-pill badge-status-pill--hadir">HADIR</span>
+												{:else if st.status === 'excused'}
+													<span class="badge-status-pill badge-status-pill--izin" title={st.manualReason || ''}>
+														IZIN / SAKIT
+													</span>
+												{:else}
+													<span class="badge-status-pill badge-status-pill--belum">BELUM ABSEN</span>
+												{/if}
+											</td>
+											<td>
+												{#if st.method === 'qr'}
+													<span class="method-tag method-tag--qr">QR Code</span>
+												{:else if st.method === 'manual'}
+													<span class="method-tag method-tag--manual" title={st.manualReason || ''}>Manual</span>
+												{:else}
+													<span class="text-xs text-slate-400">-</span>
+												{/if}
+											</td>
+											<td style="text-align: right;" class="font-mono text-xs text-slate-600">
+												{formatTime(st.recordedAt)}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+			</div>
 		</div>
 
 		<!-- Right Side Column (Task & Quick Presensi) -->
@@ -386,6 +545,7 @@
 		}
 	}
 
+	/* Standardized Header Card (Blueprint Spec) */
 	.header-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard, #e2e8f0);
@@ -395,7 +555,8 @@
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 12px;
+		margin-bottom: 24px !important;
 		max-width: 100%;
 		word-break: break-word;
 	}
@@ -463,53 +624,54 @@
 		white-space: nowrap;
 	}
 
-	.btn-back-track-pill {
+	.btn-secondary-head-pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		height: 26px;
-		padding: 0 10px;
-		background: #f1f5f9;
+		height: 38px;
+		padding: 0 16px;
+		background: #ffffff;
 		color: #475569;
 		border: 1px solid #cbd5e1;
-		border-radius: 6px;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 11px;
-		font-weight: 700;
+		border-radius: 9999px;
 		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 13px;
+		font-weight: 700;
 		line-height: 1;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
-	.btn-back-track-pill:hover {
-		background: #e2e8f0;
-		color: #1e293b;
+	.btn-secondary-head-pill:hover {
+		background: #f8fafc;
+		color: #0f172a;
 		border-color: #94a3b8;
 	}
 
-	.btn-hero-primary-pill {
+	.btn-create-pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		height: 28px;
-		padding: 0 12px;
-		background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+		height: 38px;
+		padding: 0 16px;
+		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
 		color: #ffffff;
-		border-radius: 6px;
+		border-radius: 9999px;
 		text-decoration: none;
 		font-family: var(--font-macro, sans-serif);
-		font-size: 11.5px;
+		font-size: 13.5px;
 		font-weight: 700;
 		line-height: 1;
-		box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
-	.btn-hero-primary-pill:hover {
+	.btn-create-pill:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 	}
 
 	.header-main-content {
@@ -569,7 +731,7 @@
 		margin: 0;
 	}
 
-	/* Explicit Vertical Spacing Rules (UI-UX Pro Max 8dp Rhythm) */
+	/* Vertical Spacing & Column Rhythm */
 	.stacked-column {
 		display: flex;
 		flex-direction: column;
@@ -581,7 +743,8 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 20px !important;
+		margin-top: 0 !important;
+		margin-bottom: 24px !important;
 	}
 
 	@media (max-width: 1024px) {
@@ -598,19 +761,19 @@
 
 	.stat-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 20px 22px;
-		box-shadow: var(--shadow-sm);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		display: flex;
 		align-items: center;
-		gap: 16px;
+		gap: 14px;
 	}
 
 	.stat-icon {
-		width: 44px;
-		height: 44px;
-		border-radius: var(--radius-md);
+		width: 42px;
+		height: 42px;
+		border-radius: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -618,79 +781,79 @@
 	}
 
 	.stat-label {
-		font-family: var(--font-mono);
-		font-size: 10px;
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
 		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--text-muted);
-		margin-bottom: 3px;
+		letter-spacing: 0.03em;
+		color: #64748b;
+		margin-bottom: 2px;
 	}
 
 	.stat-value-sm {
-		font-family: var(--font-macro);
-		font-size: 13.5px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 14px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
 	}
 
-	/* Detail Panel */
+	/* Detail Panels */
 	.detail-panel {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-sm);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		overflow: hidden;
 	}
 
 	.panel-header {
-		padding: 18px 24px;
-		border-bottom: 1px solid var(--border-soft);
-		background: var(--bg-inset);
+		padding: 16px 22px;
+		border-bottom: 1px solid #f1f5f9;
+		background: #f8fafc;
 	}
 
 	.panel-title {
-		font-family: var(--font-macro);
-		font-size: 13px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 13.5px;
 		font-weight: 800;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--text-primary);
+		letter-spacing: 0.03em;
+		color: #0f172a;
 		display: flex;
 		align-items: center;
 		gap: 10px;
 	}
 
 	.panel-body {
-		padding: 24px 28px;
+		padding: 22px 24px;
 	}
 
 	.info-group {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 5px;
 	}
 
 	.info-label {
-		font-family: var(--font-mono);
-		font-size: 10px;
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
 		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--text-muted);
+		letter-spacing: 0.03em;
+		color: #64748b;
 	}
 
 	.info-val {
 		font-size: 14px;
 		font-weight: 600;
-		color: var(--text-primary);
+		color: #0f172a;
 	}
 
 	.info-val-bold {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 14.5px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
 	}
 
 	/* Material Download Box */
@@ -698,10 +861,10 @@
 		display: flex;
 		align-items: center;
 		gap: 20px;
-		background: var(--bg-inset);
-		border: 1.5px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		padding: 20px 24px;
+		background: #f8fafc;
+		border: 1.5px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 18px 22px;
 	}
 
 	@media (max-width: 640px) {
@@ -712,27 +875,27 @@
 	}
 
 	.ext-badge {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 12px;
 		font-weight: 800;
 		color: #047857;
 		background: #d1fae5;
 		border: 1px solid #a7f3d0;
-		padding: 10px 14px;
-		border-radius: var(--radius-md);
+		padding: 8px 12px;
+		border-radius: 8px;
 		flex-shrink: 0;
 	}
 
 	.material-box-title {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 14px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
 	}
 
 	.material-box-sub {
 		font-size: 12px;
-		color: var(--text-secondary);
+		color: #64748b;
 		margin-top: 2px;
 	}
 
@@ -741,28 +904,28 @@
 		align-items: center;
 		gap: 8px;
 		background: #ffffff;
-		border: 1.5px solid var(--primary-border);
-		color: var(--primary);
-		font-family: var(--font-macro);
+		border: 1.5px solid #c7d2fe;
+		color: #4f46e5;
+		font-family: var(--font-macro, sans-serif);
 		font-size: 12.5px;
 		font-weight: 700;
 		padding: 9px 16px;
-		border-radius: var(--radius-md);
+		border-radius: 8px;
 		text-decoration: none;
-		box-shadow: var(--shadow-sm);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
 	.btn-download:hover {
-		background: var(--primary-light);
-		border-color: var(--primary);
+		background: #eef2ff;
+		border-color: #4f46e5;
 	}
 
 	.empty-material-state {
 		text-align: center;
-		padding: 32px 20px;
-		color: var(--text-muted);
+		padding: 28px 20px;
+		color: #64748b;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -774,43 +937,147 @@
 	}
 
 	.panel-header-clickable:hover {
-		background: #e2e8f0;
+		background: #f1f5f9;
 	}
 
 	.collapse-icon-badge {
-		width: 30px;
-		height: 30px;
+		width: 28px;
+		height: 28px;
 		border-radius: 50%;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
+		border: 1px solid #cbd5e1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--text-secondary);
+		color: #64748b;
 	}
 
-	/* Presensi Quick Card (Light Theme Match) */
+	/* Student Presensi Roster Table */
+	.roster-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.roster-tab {
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 700;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		color: #475569;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.roster-tab:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+	}
+
+	.roster-tab.active {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4f46e5;
+	}
+
+	.roster-tab--hadir.active { background: #10b981; border-color: #10b981; }
+	.roster-tab--izin.active { background: #f59e0b; border-color: #f59e0b; }
+	.roster-tab--belum.active { background: #64748b; border-color: #64748b; }
+
+	.roster-search-input {
+		padding: 4px 10px;
+		border-radius: 6px;
+		border: 1px solid #cbd5e1;
+		font-size: 11.5px;
+		outline: none;
+		transition: border-color 150ms ease;
+		width: 160px;
+	}
+
+	.roster-search-input:focus {
+		border-color: #6366f1;
+	}
+
+	.table-responsive {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.roster-data-table {
+		width: 100%;
+		border-collapse: collapse;
+		min-width: 620px;
+	}
+
+	.roster-data-table th {
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		color: #64748b;
+		padding: 8px 10px;
+		border-bottom: 1px solid #e2e8f0;
+		text-align: left;
+	}
+
+	.roster-data-table td {
+		padding: 10px;
+		border-bottom: 1px solid #f1f5f9;
+		font-size: 12.5px;
+	}
+
+	.badge-status-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 20px;
+		padding: 0 8px;
+		border-radius: 4px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 10px;
+		font-weight: 700;
+	}
+
+	.badge-status-pill--hadir { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+	.badge-status-pill--izin { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+	.badge-status-pill--belum { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+	.method-tag {
+		display: inline-flex;
+		align-items: center;
+		height: 18px;
+		padding: 0 6px;
+		border-radius: 4px;
+		font-size: 10px;
+		font-weight: 600;
+	}
+
+	.method-tag--qr { background: #e0e7ff; color: #4338ca; }
+	.method-tag--manual { background: #f3e8ff; color: #7e22ce; }
+
+	/* Presensi Quick Card */
 	.presensi-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg);
-		padding: 24px 28px;
-		color: var(--text-primary);
-		box-shadow: var(--shadow-sm);
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 22px 24px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 	}
 
 	.presensi-card__title {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 1.05rem;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
 		margin-top: 8px;
 		margin-bottom: 4px;
 	}
 
 	.presensi-card__sub {
 		font-size: 12px;
-		color: var(--text-secondary);
+		color: #64748b;
 		margin-bottom: 18px;
 		line-height: 1.5;
 	}
@@ -823,13 +1090,13 @@
 		width: 100%;
 		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 		color: #ffffff;
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 13px;
 		font-weight: 800;
 		padding: 11px 18px;
-		border-radius: var(--radius-md);
+		border-radius: 8px;
 		text-decoration: none;
-		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 		transition: transform 150ms ease;
 	}
 
@@ -839,49 +1106,49 @@
 
 	/* Task Card Box */
 	.task-card-box {
-		background: var(--bg-inset);
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
 		padding: 14px;
 	}
 
 	.task-card-title {
-		font-family: var(--font-macro);
+		font-family: var(--font-macro, sans-serif);
 		font-size: 13.5px;
 		font-weight: 800;
-		color: var(--text-primary);
+		color: #0f172a;
 	}
 
 	.task-points-pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 11px;
 		color: #b45309;
 		background: #fffbeb;
-		border: 1px solid #fef3c7;
+		border: 1px solid #fde68a;
 		padding: 2px 8px;
-		border-radius: var(--radius-full);
+		border-radius: 9999px;
 	}
 
 	.task-desc-box {
 		margin-top: 6px;
 		padding-top: 6px;
-		border-top: 1px solid var(--border-soft);
+		border-top: 1px solid #f1f5f9;
 	}
 
 	.task-desc-label {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 10px;
 		font-weight: 700;
-		color: var(--text-muted);
+		color: #64748b;
 		text-transform: uppercase;
 	}
 
 	.task-desc-text {
 		font-size: 12.5px;
-		color: var(--text-secondary);
+		color: #475569;
 		margin-top: 2px;
 		line-height: 1.5;
 	}
@@ -890,45 +1157,12 @@
 		padding: 12px 0;
 	}
 
-	/* Utility Badges */
-	.activity-badge {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 800;
-		padding: 3px 8px;
-		border-radius: var(--radius-sm);
-		border: 1px solid transparent;
-		letter-spacing: 0.04em;
-	}
-
-	.weekend-tag {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 800;
-		background: #fef3c7;
-		color: #b45309;
-		border: 1px solid #fde68a;
-		padding: 3px 8px;
-		border-radius: var(--radius-sm);
-	}
-
-	.kelas-tag {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 700;
-		background: var(--bg-panel);
-		color: var(--text-secondary);
-		border: 1px solid var(--border-hard);
-		padding: 3px 8px;
-		border-radius: var(--radius-sm);
-	}
-
 	.badge {
-		font-family: var(--font-mono);
+		font-family: var(--font-mono, monospace);
 		font-size: 10px;
 		font-weight: 700;
 		padding: 2px 6px;
-		border-radius: var(--radius-sm);
+		border-radius: 4px;
 		border: 1px solid transparent;
 	}
 

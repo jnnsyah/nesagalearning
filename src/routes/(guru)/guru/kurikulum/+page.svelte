@@ -127,7 +127,7 @@
 				</div>
 
 				<div class="w-64 flex-shrink-0">
-					<label for="grid-ta-select" class="filter-label">Tahun Ajaran</label>
+					<label for="grid-ta-select" class="filter-label">Periode</label>
 					<CustomSelect
 						id="grid-ta-select"
 						name="tahunAjaranId"
@@ -147,7 +147,7 @@
 				</div>
 				<h3 class="font-bold text-slate-800 text-base">Belum Ada Track Pembelajaran Dipublikasi</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-					Tidak ditemukan alur track pembelajaran aktif untuk Tahun Ajaran {data.monitoringData.selectedTahunAjaran?.name || ''}.
+					Tidak ditemukan alur track pembelajaran aktif untuk Periode {data.monitoringData.selectedTahunAjaran?.name || ''}.
 				</p>
 			</div>
 		{:else}

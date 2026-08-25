@@ -50,7 +50,7 @@
 			</div>
 
 			<div class="w-64 flex-shrink-0">
-				<label for="dash-ta-select" class="filter-label">Tahun Ajaran</label>
+				<label for="dash-ta-select" class="filter-label">Periode</label>
 				<CustomSelect
 					id="dash-ta-select"
 					name="tahunAjaranId"
@@ -129,7 +129,7 @@
 				{#if data.dashboardData.runningClasses.length === 0}
 					<div class="empty-card py-10 text-center">
 						<h3 class="font-bold text-slate-800 text-sm">Belum Ada Rombel Berjalan</h3>
-						<p class="text-xs text-slate-500 mt-1">Tidak ada kelas aktif pada tahun ajaran yang dipilih.</p>
+						<p class="text-xs text-slate-500 mt-1">Tidak ada kelas aktif pada periode yang dipilih.</p>
 					</div>
 				{:else}
 					<div class="classes-grid">

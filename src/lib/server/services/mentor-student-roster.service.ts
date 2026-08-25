@@ -30,6 +30,7 @@ export interface MentorClassOption {
 	name: string;
 	tingkatName: string;
 	tahunAjaranId: number;
+	targetAngkatan: number | null;
 }
 
 export interface StudentRosterItem {
@@ -38,6 +39,9 @@ export interface StudentRosterItem {
 	nisn: string | null;
 	fullName: string;
 	avatarUrl: string | null;
+	angkatan: number | null;
+	rombelLabel: string | null;
+	targetAngkatan: number | null;
 	kelasId: number;
 	kelasName: string;
 	tingkatName: string;
@@ -147,7 +151,8 @@ export const MentorStudentRosterService = {
 				id: kelasInstance.id,
 				name: kelasInstance.name,
 				tingkatName: tingkat.name,
-				tahunAjaranId: kelasInstance.tahunAjaranId
+				tahunAjaranId: kelasInstance.tahunAjaranId,
+				targetAngkatan: kelasInstance.targetAngkatan
 			})
 			.from(kelasInstance)
 			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
@@ -170,6 +175,7 @@ export const MentorStudentRosterService = {
 		kelasInstanceId?: number;
 		searchQuery?: string;
 		riskFilter?: 'all' | 'warning' | 'critical' | 'good';
+		angkatanFilter?: string;
 	}): Promise<MentorRosterViewData> {
 		const searchQuery = params.searchQuery?.trim() || '';
 		const riskFilter = params.riskFilter || 'all';
@@ -225,9 +231,12 @@ export const MentorStudentRosterService = {
 					nisn: user.nisn,
 					fullName: user.fullName,
 					avatarUrl: user.avatarUrl,
+					angkatan: user.angkatan,
+					rombelLabel: user.rombelLabel,
 					kelasId: keanggotaan.kelasInstanceId,
 					kelasName: kelasInstance.name,
-					tingkatName: tingkat.name
+					tingkatName: tingkat.name,
+					targetAngkatan: kelasInstance.targetAngkatan
 				})
 				.from(keanggotaan)
 				.innerJoin(user, eq(keanggotaan.userId, user.id))
@@ -487,6 +496,9 @@ export const MentorStudentRosterService = {
 				nisn: st.nisn,
 				fullName: st.fullName,
 				avatarUrl: st.avatarUrl,
+				angkatan: st.angkatan,
+				rombelLabel: st.rombelLabel,
+				targetAngkatan: st.targetAngkatan,
 				kelasId: st.kelasId,
 				kelasName: st.kelasName,
 				tingkatName: st.tingkatName,

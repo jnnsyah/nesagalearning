@@ -93,7 +93,7 @@
 			<div class="flex-1 min-w-[240px]">
 				<h1 class="page-title">Arsip Belajar Siswa</h1>
 				<p class="page-sub">
-					Tinjau riwayat presensi, pencapaian track pembelajaran, dan tugas yang telah diselesaikan pada kelas / tahun ajaran sebelumnya.
+					Tinjau riwayat presensi, pencapaian track pembelajaran, dan tugas yang telah diselesaikan pada kelas / periode sebelumnya.
 				</p>
 			</div>
 
@@ -101,7 +101,7 @@
 			{#if data.memberships && data.memberships.length > 0}
 				<div class="selector-box">
 					<CustomSelect
-						label="Pilih Kelas / Tahun Ajaran"
+						label="Pilih Kelas / Periode Akademik"
 						options={classSelectOptions}
 						value={data.selectedKelasId}
 						searchable={data.memberships.length > 4}
@@ -116,7 +116,7 @@
 		{#if selectedMembership}
 			<div class="class-summary-bar mt-4">
 				<div class="summary-tag">
-					<span>Tahun Ajaran:</span>
+					<span>Periode:</span>
 					<strong>{selectedMembership.tahunAjaranName}</strong>
 				</div>
 				<div class="summary-tag">

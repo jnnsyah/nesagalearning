@@ -148,7 +148,7 @@
 				</div>
 
 				<div class="w-64 flex-shrink-0">
-					<label for="grid-ta-select" class="filter-label">Tahun Ajaran</label>
+					<label for="grid-ta-select" class="filter-label">Periode</label>
 					<CustomSelect
 						id="grid-ta-select"
 						name="tahunAjaranId"
@@ -168,7 +168,7 @@
 				</div>
 				<h3 class="font-bold text-slate-800 text-base">Belum Ada Rombel Kelas Aktif</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-					Tidak ditemukan rombel kelas berjalan untuk Tahun Ajaran {data.recapData.selectedTahunAjaran?.name || ''}.
+					Tidak ditemukan rombel kelas berjalan untuk Periode {data.recapData.selectedTahunAjaran?.name || ''}.
 				</p>
 			</div>
 		{:else}

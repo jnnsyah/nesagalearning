@@ -2,13 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
-import { attendance, pertemuan } from '$lib/server/db/schema/session';
+import { attendance, attendanceToken, pertemuan } from '$lib/server/db/schema/session';
 import { streakCounter } from '$lib/server/db/schema/gamification';
 import { subPhase, phase } from '$lib/server/db/schema/curriculum';
 import { task, submission } from '$lib/server/db/schema/task';
 import { SubmissionService } from '$lib/server/services/submission.service';
+import { AttendanceService } from '$lib/server/services/attendance.service';
 import { submitTaskSchema } from '$lib/validators/submission';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, gt } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
 	if (!locals.user) {
@@ -75,23 +76,40 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		.where(eq(pertemuan.kelasInstanceId, kelasInstanceId))
 		.orderBy(desc(pertemuan.sessionDate), desc(pertemuan.startTime));
 
-	// 4. Fetch student attendance records
-	const attendanceRecords = await db
-		.select({
-			id: attendance.id,
-			pertemuanId: attendance.pertemuanId,
-			method: attendance.method,
-			status: attendance.status,
-			manualReason: attendance.manualReason,
-			recordedAt: attendance.recordedAt
-		})
-		.from(attendance)
-		.where(eq(attendance.userId, userId));
+	// 4. Fetch student attendance records & active QR tokens
+	const meetingIds = sessions.map((s) => s.id);
+
+	const [attendanceRecords, activeTokens] = await Promise.all([
+		db
+			.select({
+				id: attendance.id,
+				pertemuanId: attendance.pertemuanId,
+				method: attendance.method,
+				status: attendance.status,
+				manualReason: attendance.manualReason,
+				recordedAt: attendance.recordedAt
+			})
+			.from(attendance)
+			.where(eq(attendance.userId, userId)),
+
+		meetingIds.length > 0
+			? db
+					.select({ pertemuanId: attendanceToken.pertemuanId })
+					.from(attendanceToken)
+					.where(
+						and(
+							inArray(attendanceToken.pertemuanId, meetingIds),
+							eq(attendanceToken.isActive, true),
+							gt(attendanceToken.expiresAt, new Date())
+						)
+					)
+			: []
+	]);
 
 	const attMap = new Map(attendanceRecords.map((a) => [a.pertemuanId, a]));
+	const activePertemuanSet = new Set(activeTokens.map((t) => t.pertemuanId));
 
 	// 5. Fetch tasks linked to meetings and student's submissions
-	const meetingIds = sessions.map((s) => s.id);
 	let taskRecords: { id: number; pertemuanId: number; title: string; description: string | null; taskSize: string }[] = [];
 	let userSubmissions: { id: number; taskId: number; link: string; status: string; feedback: string | null; submittedAt: Date }[] = [];
 
@@ -125,7 +143,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const taskMap = new Map(taskRecords.map((t) => [t.pertemuanId, t]));
 	const subMap = new Map(userSubmissions.map((s) => [s.taskId, s]));
 
-	// 6. Build meetings list with attendance and task submission details & compute stats
+	// 6. Build meetings list with live status, attendance, and task submission details & compute stats
 	let totalHadir = 0;
 	let totalExcused = 0;
 
@@ -142,9 +160,11 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 		const t = taskMap.get(s.id);
 		const sub = t ? subMap.get(t.id) : null;
+		const isLive = activePertemuanSet.has(s.id) || AttendanceService.isMeetingOngoing(s);
 
 		return {
 			...s,
+			isLive,
 			attendance: att || null,
 			attendanceStatus: attStatus,
 			task: t ? { ...t, submission: sub || null } : null

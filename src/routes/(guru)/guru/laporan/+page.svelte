@@ -49,7 +49,7 @@
 		const link = document.createElement('a');
 		link.setAttribute('href', encodedUri);
 		const selectedKelasObj = data.kelasOptions.find((k) => String(k.id) === selectedKelasStr);
-		const filename = `Rekap_Akademik_${selectedKelasObj?.name || 'Kelas'}_${new Date().toISOString().slice(0, 10)}.csv`;
+		const filename = `Rekap_Komunitas_${selectedKelasObj?.name || 'Kelas'}_${new Date().toISOString().slice(0, 10)}.csv`;
 		link.setAttribute('download', filename);
 		document.body.appendChild(link);
 		link.click();
@@ -62,7 +62,7 @@
 </script>
 
 <svelte:head>
-	<title>Laporan & Rekapitulasi Akademik — NLC</title>
+	<title>Laporan & Rekapitulasi Komunitas — NLC</title>
 </svelte:head>
 
 <div class="page-container">
@@ -72,7 +72,7 @@
 	<header class="page-hero">
 		<div class="hero-content">
 			<div class="hero-title-row">
-				<h1 class="page-title">Laporan & Rekapitulasi Akademik</h1>
+				<h1 class="page-title">Laporan & Rekapitulasi Komunitas</h1>
 				<span class="badge badge-primary">Fase 12.4 Export Suite</span>
 			</div>
 			<p class="page-subtitle">

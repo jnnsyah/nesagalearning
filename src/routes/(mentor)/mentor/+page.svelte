@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MeetingAttendanceTrendChart from '$lib/components/ui/MeetingAttendanceTrendChart.svelte';
 	let { data } = $props();
 
 	let pendingMeetingSummaries = $derived(
@@ -106,6 +107,14 @@
 				{/if}
 			</div>
 		</div>
+	</div>
+
+	<!-- Interactive Session Attendance Trend Chart Card -->
+	<div class="mb-6">
+		<MeetingAttendanceTrendChart
+			sessions={data.sessionAttendanceTrend || []}
+			mentorClasses={data.mentorClasses || []}
+		/>
 	</div>
 
 	<!-- Two-column grid -->

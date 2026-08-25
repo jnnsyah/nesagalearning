@@ -36,8 +36,14 @@
 					<div class="user-details">
 						<div class="meta-pills-row">
 							<span class="badge-role">{role.toUpperCase()}</span>
-							<span class="badge-class">{kelasName}</span>
-							<span class="badge-ta">{tahunAjaranName}</span>
+							{#if data.user?.angkatan}
+								<span class="badge-class">Angkatan {data.user.angkatan}</span>
+							{/if}
+							{#if data.user?.rombelLabel}
+								<span class="badge-ta">{data.user.rombelLabel}</span>
+							{:else}
+								<span class="badge-ta">{kelasName}</span>
+							{/if}
 						</div>
 						<h1 class="welcome-title">Halo, {firstName}!</h1>
 						<p class="user-sub">@{data.user?.username} &bull; {data.user?.nisn ? `NISN: ${data.user.nisn}` : (data.user?.email ?? 'Siswa Active')}</p>

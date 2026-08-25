@@ -40,7 +40,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			id: materi.id,
 			subPhaseId: materi.subPhaseId,
 			title: materi.title,
-			content: materi.content
+			content: materi.content,
+			attachments: materi.attachments
 		}).from(materi)
 	]);
 

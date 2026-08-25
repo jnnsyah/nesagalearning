@@ -159,11 +159,18 @@ export const CurriculumMonitoringService = {
 	/**
 	 * Fetch Tier 1: Grid of Curriculum Track Cards for an Academic Year (Parallel Query Batching)
 	 */
-	async getTrackCards(tahunAjaranId?: number): Promise<CurriculumGridViewData> {
-		const tahunAjaranOptions = await this.getTahunAjaranOptions();
+	async getTrackCards(
+		tahunAjaranId?: number,
+		options?: { onlyExecuting?: boolean; kelasInstanceId?: number }
+	): Promise<CurriculumGridViewData> {
+		// Always fetch active academic year if not provided
+		const tahunAjaranOptions = await db
+			.select({ id: tahunAjaran.id, name: tahunAjaran.name, isActive: tahunAjaran.isActive })
+			.from(tahunAjaran)
+			.orderBy(desc(tahunAjaran.isActive), desc(tahunAjaran.name));
 
 		const selectedTahunAjaran = tahunAjaranId
-			? tahunAjaranOptions.find((ta) => ta.id === tahunAjaranId) || null
+			? tahunAjaranOptions.find((ta) => ta.id === tahunAjaranId) || tahunAjaranOptions[0] || null
 			: tahunAjaranOptions.find((ta) => ta.isActive) || tahunAjaranOptions[0] || null;
 
 		if (!selectedTahunAjaran) {
@@ -177,13 +184,8 @@ export const CurriculumMonitoringService = {
 
 		const activeTaId = selectedTahunAjaran.id;
 
-		let trackState: 'active' | 'upcoming' | 'archived' = 'active';
-		if (!selectedTahunAjaran.isActive) {
-			trackState = 'archived';
-		}
-
-		// 1. Fetch running classes with assigned tracks & all published tracks in parallel
-		const [runningClassesWithTracks, allTracks] = await Promise.all([
+		// 1. Fetch running classes with assigned tracks & session-based tracks & all published tracks in parallel
+		const [runningClassesWithTracks, sessionClassesWithTracks, allTracks] = await Promise.all([
 			db
 				.select({
 					kelasId: kelasInstance.id,
@@ -196,9 +198,37 @@ export const CurriculumMonitoringService = {
 				})
 				.from(kelasInstance)
 				.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
-				.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
-				.where(eq(kelasInstance.tahunAjaranId, activeTaId))
+				.leftJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
+				.where(
+					and(
+						eq(kelasInstance.tahunAjaranId, activeTaId),
+						options?.kelasInstanceId ? eq(kelasInstance.id, options.kelasInstanceId) : undefined
+					)
+				)
 				.orderBy(tingkat.levelOrder, curriculumTrack.title),
+
+			db
+				.select({
+					kelasId: kelasInstance.id,
+					kelasName: kelasInstance.name,
+					tingkatId: kelasInstance.tingkatId,
+					tingkatName: tingkat.name,
+					trackId: curriculumTrack.id,
+					trackTitle: curriculumTrack.title,
+					trackDesc: curriculumTrack.description
+				})
+				.from(pertemuan)
+				.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
+				.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+				.innerJoin(phase, eq(subPhase.phaseId, phase.id))
+				.innerJoin(curriculumTrack, eq(phase.curriculumTrackId, curriculumTrack.id))
+				.leftJoin(tingkat, eq(curriculumTrack.tingkatId, tingkat.id))
+				.where(
+					and(
+						eq(kelasInstance.tahunAjaranId, activeTaId),
+						options?.kelasInstanceId ? eq(kelasInstance.id, options.kelasInstanceId) : undefined
+					)
+				),
 
 			db
 				.select({
@@ -209,7 +239,7 @@ export const CurriculumMonitoringService = {
 					tingkatName: tingkat.name
 				})
 				.from(curriculumTrack)
-				.innerJoin(tingkat, eq(curriculumTrack.tingkatId, tingkat.id))
+				.leftJoin(tingkat, eq(curriculumTrack.tingkatId, tingkat.id))
 				.where(eq(curriculumTrack.isPublished, true))
 				.orderBy(tingkat.levelOrder, curriculumTrack.title)
 		]);
@@ -224,34 +254,38 @@ export const CurriculumMonitoringService = {
 			classNames: string[];
 		}>();
 
-		for (const row of runningClassesWithTracks) {
+		for (const row of [...runningClassesWithTracks, ...sessionClassesWithTracks]) {
 			if (!trackMap.has(row.trackId)) {
 				trackMap.set(row.trackId, {
 					id: row.trackId,
 					title: row.trackTitle,
 					description: row.trackDesc,
-					tingkatId: row.tingkatId,
-					tingkatName: row.tingkatName,
+					tingkatId: row.tingkatId ?? 0,
+					tingkatName: row.tingkatName ?? 'Umum',
 					kelasIds: [],
 					classNames: []
 				});
 			}
 			const entry = trackMap.get(row.trackId)!;
-			entry.kelasIds.push(row.kelasId);
-			entry.classNames.push(row.kelasName);
+			if (!entry.kelasIds.includes(row.kelasId)) {
+				entry.kelasIds.push(row.kelasId);
+				entry.classNames.push(row.kelasName);
+			}
 		}
 
-		for (const tr of allTracks) {
-			if (!trackMap.has(tr.id)) {
-				trackMap.set(tr.id, {
-					id: tr.id,
-					title: tr.title,
-					description: tr.description,
-					tingkatId: tr.tingkatId,
-					tingkatName: tr.tingkatName,
-					kelasIds: [],
-					classNames: []
-				});
+		if (!options?.onlyExecuting || trackMap.size === 0) {
+			for (const tr of allTracks) {
+				if (!trackMap.has(tr.id)) {
+					trackMap.set(tr.id, {
+						id: tr.id,
+						title: tr.title,
+						description: tr.description,
+						tingkatId: tr.tingkatId ?? 0,
+						tingkatName: tr.tingkatName ?? 'Umum',
+						kelasIds: [],
+						classNames: []
+					});
+				}
 			}
 		}
 
@@ -451,6 +485,13 @@ export const CurriculumMonitoringService = {
 						hasQuiz: false // defer quiz to detail view
 					});
 
+			const trackState: 'active' | 'upcoming' | 'archived' =
+				tr.kelasIds.length === 0
+					? 'upcoming'
+					: avgCompletionRate >= 100
+						? 'archived'
+						: 'active';
+
 			trackCards.push({
 				id: tr.id,
 				title: tr.title,
@@ -465,7 +506,7 @@ export const CurriculumMonitoringService = {
 				totalMateri: materiCountMap.get(tr.id) || 0,
 				totalQuizzes: quizCountMap.get(tr.id) || 0,
 				avgCompletionRate,
-				trackState: tr.kelasIds.length === 0 ? 'upcoming' : trackState
+				trackState
 			});
 		}
 
@@ -498,8 +539,8 @@ export const CurriculumMonitoringService = {
 
 		const activeTaId = selectedTahunAjaran?.id || 1;
 
-		// 1. Parallel: Track profile, executing classes, phases
-		const [[trackRow], runningClasses, trackPhases] = await Promise.all([
+		// 1. Parallel: Track profile, executing classes (direct + sessions), phases
+		const [[trackRow], directClasses, sessionClasses, trackPhases] = await Promise.all([
 			db
 				.select({
 					id: curriculumTrack.id,
@@ -519,6 +560,14 @@ export const CurriculumMonitoringService = {
 				.orderBy(kelasInstance.name),
 
 			db
+				.select({ id: kelasInstance.id, name: kelasInstance.name })
+				.from(pertemuan)
+				.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
+				.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+				.innerJoin(phase, eq(subPhase.phaseId, phase.id))
+				.where(and(eq(kelasInstance.tahunAjaranId, activeTaId), eq(phase.curriculumTrackId, params.trackId))),
+
+			db
 				.select({ id: phase.id, title: phase.title, description: phase.description, sortOrder: phase.sortOrder })
 				.from(phase)
 				.where(eq(phase.curriculumTrackId, params.trackId))
@@ -528,6 +577,13 @@ export const CurriculumMonitoringService = {
 		if (!trackRow) {
 			throw new Error('Curriculum Track tidak ditemukan');
 		}
+
+		// Combine direct & session classes without duplicates
+		const classMap = new Map<number, { id: number; name: string }>();
+		for (const c of [...directClasses, ...sessionClasses]) {
+			classMap.set(c.id, c);
+		}
+		const runningClasses = Array.from(classMap.values());
 
 		const kelasOptions: ClassInstanceOption[] = runningClasses.map((c) => ({ id: c.id, name: c.name }));
 		const selectedKelas = params.kelasInstanceId ? kelasOptions.find((k) => k.id === params.kelasInstanceId) || null : null;

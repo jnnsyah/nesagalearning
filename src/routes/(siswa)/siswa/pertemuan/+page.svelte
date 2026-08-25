@@ -189,10 +189,19 @@
 	}
 
 	function getMeetingStatus(m: MeetingItem): 'live' | 'upcoming' | 'completed' {
-		if (m.sessionDate < todayStr) return 'completed';
-		if (m.sessionDate > todayStr) return 'upcoming';
+		if (m.isLive) return 'live';
 
 		const now = new Date();
+		const yyyy = now.getFullYear();
+		const mm = String(now.getMonth() + 1).padStart(2, '0');
+		const dd = String(now.getDate()).padStart(2, '0');
+		const localTodayStr = `${yyyy}-${mm}-${dd}`;
+
+		const sessionDateStr = String(m.sessionDate || '').slice(0, 10);
+
+		if (sessionDateStr < localTodayStr) return 'completed';
+		if (sessionDateStr > localTodayStr) return 'upcoming';
+
 		const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
 		const [startH, startM] = (m.startTime || '00:00').split(':').map(Number);

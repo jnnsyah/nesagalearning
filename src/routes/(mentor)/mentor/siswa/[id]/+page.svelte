@@ -119,10 +119,20 @@
 <div class="page-container">
 	<!-- Top Back Button Navigation -->
 	<div class="mb-5">
-		<a href="/mentor/siswa?kelasInstanceId={data.kelasInstanceId}" class="btn-back-link">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-			<span>Kembali ke Roster Siswa Kelas</span>
-		</a>
+		{#if data.from === 'progress'}
+			<a
+				href="/mentor/progress?{data.trackId ? `trackId=${data.trackId}&` : ''}kelasInstanceId={data.kelasInstanceId}{data.tahunAjaranId ? `&tahunAjaranId=${data.tahunAjaranId}` : ''}"
+				class="btn-back-link"
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+				<span>Kembali ke Progress Pembelajaran</span>
+			</a>
+		{:else}
+			<a href="/mentor/siswa?kelasInstanceId={data.kelasInstanceId}" class="btn-back-link">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+				<span>Kembali ke Roster Siswa Kelas</span>
+			</a>
+		{/if}
 	</div>
 
 	<!-- ══════════════════════════════════════════════════════════

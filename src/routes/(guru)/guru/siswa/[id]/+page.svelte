@@ -11,7 +11,7 @@
 	let selectedCategory = $state('intervensi');
 
 	const categoryOptions = [
-		{ value: 'intervensi', label: 'Pendampingan Akademik' },
+		{ value: 'intervensi', label: 'Pendampingan Siswa' },
 		{ value: 'konseling', label: 'Bimbingan & Konseling' },
 		{ value: 'catatan_umum', label: 'Catatan Umum Pembimbing' }
 	];

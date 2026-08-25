@@ -31,6 +31,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	}
 
 	const activeTab = (url.searchParams.get('tab') as 'curriculum' | 'attendance') || 'curriculum';
+	const from = url.searchParams.get('from') || undefined;
+	const trackId = url.searchParams.get('trackId') || undefined;
+	const tahunAjaranId = url.searchParams.get('tahunAjaranId') || undefined;
 
 	const [studentProgress, studentAttendanceHistory] = await Promise.all([
 		MentorStudentRosterService.getStudentCurriculumProgress(studentUserId, kelasInstanceId),
@@ -45,6 +48,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		studentUserId,
 		kelasInstanceId,
 		activeTab,
+		from,
+		trackId,
+		tahunAjaranId,
 		studentProgress,
 		studentAttendanceHistory
 	};

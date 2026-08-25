@@ -67,7 +67,7 @@ export function exportAttendanceToExcel(data: GuruAttendanceDetailViewData) {
 					<td colspan="9" class="section-header">INFORMASI KELAS & METRIK UTAMA PRESENSI</td>
 				</tr>
 				<tr>
-					<td colspan="2" class="label-cell">Tahun Ajaran:</td>
+					<td colspan="2" class="label-cell">Periode:</td>
 					<td colspan="2" class="val-cell">${taName}</td>
 					<td colspan="2" class="label-cell">Rombel Kelas:</td>
 					<td colspan="3" class="val-cell">${kelasName}</td>
@@ -191,7 +191,7 @@ export function exportAttendanceToPDF(data: GuruAttendanceDetailViewData) {
 	doc.setTextColor(15, 23, 42);
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(9);
-	doc.text(`Tahun Ajaran: ${taName}   |   Rombel: ${kelasName}   |   Total Pertemuan: ${data.summary.totalSessionsCount} Sesi   |   Siswa Terdaftar: ${data.summary.totalStudentsCount} Siswa`, 18, 35);
+	doc.text(`Periode: ${taName}   |   Rombel: ${kelasName}   |   Total Pertemuan: ${data.summary.totalSessionsCount} Sesi   |   Siswa Terdaftar: ${data.summary.totalStudentsCount} Siswa`, 18, 35);
 
 	// Summary Cards Stats
 	doc.setFontSize(8);
