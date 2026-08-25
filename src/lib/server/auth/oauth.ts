@@ -65,12 +65,13 @@ export function isGoogleOAuthEnabled(): boolean {
 export function getGoogleOAuthClient(): Google | null {
 	const clientId = getEnvVal('GOOGLE_CLIENT_ID');
 	const clientSecret = getEnvVal('GOOGLE_CLIENT_SECRET');
-	const appUrl = getEnvVal('PUBLIC_APP_URL') || 'http://localhost:5173';
+	const rawAppUrl = getEnvVal('PUBLIC_APP_URL') || getEnvVal('ORIGIN') || 'http://localhost:5173';
+	const cleanAppUrl = rawAppUrl.replace(/\/$/, '');
 
 	if (!clientId || !clientSecret) {
 		return null;
 	}
 
-	const redirectURI = `${appUrl}/login/google/callback`;
+	const redirectURI = `${cleanAppUrl}/login/google/callback`;
 	return new Google(clientId, clientSecret, redirectURI);
 }

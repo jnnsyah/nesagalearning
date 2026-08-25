@@ -14,5 +14,7 @@
 	stats={data.stats}
 	pointLogs={data.pointLogs}
 	availableAvatars={data.availableAvatars}
+	availableClasses={data.availableClasses}
+	availableRombels={data.availableRombels}
 	formErrors={form?.errors}
 />

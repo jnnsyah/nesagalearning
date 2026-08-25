@@ -21,7 +21,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		user: profileData.user,
 		stats: profileData.stats,
 		pointLogs: profileData.pointLogs,
-		availableAvatars: profileData.availableAvatars
+		availableAvatars: profileData.availableAvatars,
+		availableClasses: profileData.availableClasses,
+		availableRombels: profileData.availableRombels
 	};
 };
 
@@ -33,8 +35,10 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const fullName = formData.get('fullName') as string;
+		const username = formData.get('username') as string;
 		const email = formData.get('email') as string;
 		const nisn = formData.get('nisn') as string;
+		const rombelLabel = formData.get('rombelLabel') as string;
 		let avatarUrl = (formData.get('avatarUrl') as string) || undefined;
 		const avatarFile = formData.get('avatarFile') as File | null;
 
@@ -43,7 +47,7 @@ export const actions: Actions = {
 			avatarUrl = uploadRes.url;
 		}
 
-		const parseResult = updateProfileSchema.safeParse({ fullName, email, nisn });
+		const parseResult = updateProfileSchema.safeParse({ fullName, username, email, nisn, rombelLabel });
 		if (!parseResult.success) {
 			return fail(400, { errors: parseResult.error.flatten().fieldErrors });
 		}

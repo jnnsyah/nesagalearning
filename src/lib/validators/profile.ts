@@ -2,8 +2,17 @@ import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
 	fullName: z.string().min(2, 'Nama lengkap minimal 2 karakter').max(100, 'Nama terlalu panjang'),
+	username: z
+		.string()
+		.min(3, 'Username minimal 3 karakter')
+		.max(30, 'Username maksimal 30 karakter')
+		.regex(/^[a-z0-9_]+$/, 'Username hanya boleh berisi huruf kecil, angka, dan garis bawah (_)')
+		.or(z.literal(''))
+		.nullable()
+		.optional(),
 	email: z.string().email('Format email tidak valid').or(z.literal('')).nullable().optional(),
-	nisn: z.string().regex(/^\d{10}$/, 'NISN harus terdiri dari 10 digit angka').or(z.literal('')).nullable().optional()
+	nisn: z.string().regex(/^\d{10}$/, 'NISN harus terdiri dari 10 digit angka').or(z.literal('')).nullable().optional(),
+	rombelLabel: z.string().max(50, 'Label kelas terlalu panjang').or(z.literal('')).nullable().optional()
 });
 
 export const updatePasswordSchema = z

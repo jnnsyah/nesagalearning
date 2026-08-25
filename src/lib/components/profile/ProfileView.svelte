@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
 
@@ -15,6 +16,8 @@
 		isActive: boolean;
 		createdAt: Date | string;
 		nisn?: string | null;
+		rombelLabel?: string | null;
+		angkatan?: number | null;
 	}
 
 	interface ProfileStats {
@@ -71,12 +74,16 @@
 		stats,
 		pointLogs = undefined,
 		availableAvatars = [],
+		availableClasses = [],
+		availableRombels = [],
 		formErrors = undefined
 	}: {
 		user: User;
 		stats: ProfileStats;
 		pointLogs?: PaginatedPointLogs;
 		availableAvatars?: { id: number; name: string; imageUrl: string }[];
+		availableClasses?: { id: number; name: string; tahunAjaran: string; track: string }[];
+		availableRombels?: { id: number; name: string }[];
 		formErrors?: { [key: string]: string[] | string };
 	} = $props();
 
@@ -100,8 +107,100 @@
 
 	// Editable profile fields
 	let fullName = $state(user.fullName || '');
+	let username = $state(user.username || '');
 	let email = $state(user.email || '');
 	let nisn = $state(user.nisn || '');
+	let rombelLabel = $state(user.rombelLabel || '');
+	let selectedKelasInstanceId = $state(String(stats.kelasInstanceId || ''));
+
+	// Re-sync state when user object updates
+	$effect(() => {
+		if (user) {
+			fullName = user.fullName || '';
+			username = user.username || '';
+			email = user.email || '';
+			nisn = user.nisn || '';
+			rombelLabel = user.rombelLabel || '';
+		}
+	});
+
+	// Derived Rombel Options with fallback for current user's rombelLabel
+	let rombelOptions = $derived.by(() => {
+		const list = (availableRombels || []).map((r) => ({
+			value: r.name,
+			label: r.name
+		}));
+
+		if (user.rombelLabel && !list.some((opt) => opt.value === user.rombelLabel)) {
+			list.unshift({ value: user.rombelLabel, label: user.rombelLabel });
+		}
+
+		return [
+			{ value: '', label: '-- Pilih Label Rombel Sekolah --' },
+			...list
+		];
+	});
+
+	// Front-end Username Validation
+	let usernameClientError = $derived.by(() => {
+		if (!username || username.trim() === '') {
+			return 'Username wajib diisi';
+		}
+		if (username.length < 3) {
+			return 'Username minimal 3 karakter';
+		}
+		if (username.length > 30) {
+			return 'Username maksimal 30 karakter';
+		}
+		if (!/^[a-z0-9_]+$/.test(username)) {
+			return 'Username hanya boleh berisi huruf kecil, angka, dan garis bawah (_) tanpa spasi';
+		}
+		return undefined;
+	});
+
+	// Async Username Uniqueness Checking
+	let isCheckingUsername = $state(false);
+	let usernameAvailabilityError = $state<string | undefined>(undefined);
+	let usernameAvailableSuccess = $state<string | undefined>(undefined);
+	let usernameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		const cleanVal = username.trim().toLowerCase();
+
+		// Resets status if user hasn't changed their username or format is invalid
+		if (!cleanVal || cleanVal === user.username.toLowerCase() || usernameClientError) {
+			isCheckingUsername = false;
+			usernameAvailabilityError = undefined;
+			usernameAvailableSuccess = undefined;
+			return;
+		}
+
+		// Set loading state
+		isCheckingUsername = true;
+		usernameAvailabilityError = undefined;
+		usernameAvailableSuccess = undefined;
+
+		if (usernameDebounceTimer) clearTimeout(usernameDebounceTimer);
+
+		usernameDebounceTimer = setTimeout(async () => {
+			try {
+				const res = await fetch(`/api/users/check-username?username=${encodeURIComponent(cleanVal)}`);
+				const data = await res.json();
+				isCheckingUsername = false;
+				if (!data.available) {
+					usernameAvailabilityError = data.message || 'Username sudah digunakan oleh akun lain';
+					usernameAvailableSuccess = undefined;
+				} else {
+					usernameAvailabilityError = undefined;
+					usernameAvailableSuccess = 'Username tersedia!';
+				}
+			} catch (e) {
+				isCheckingUsername = false;
+				usernameAvailabilityError = undefined;
+				usernameAvailableSuccess = undefined;
+			}
+		}, 400); // 400ms debounce
+	});
 
 	// File Upload & 1:1 Image Crop Modal State
 	let filePreviewUrl = $state<string | null>(null);
@@ -749,6 +848,30 @@
 								</div>
 							{/if}
 
+							{#if user.role === 'siswa'}
+								<div class="detail-row">
+									<span class="detail-label">Kelas / Rombel</span>
+									<span class="detail-value font-bold">
+										{#if user.rombelLabel}
+											{user.rombelLabel}
+										{:else}
+											<span class="detail-value--muted">Belum diisi</span>
+										{/if}
+									</span>
+								</div>
+
+								<div class="detail-row">
+									<span class="detail-label">Angkatan</span>
+									<span class="detail-value">
+										{#if user.angkatan}
+											{user.angkatan}
+										{:else}
+											<span class="detail-value--muted">Belum diisi</span>
+										{/if}
+									</span>
+								</div>
+							{/if}
+
 							<div class="detail-row">
 								<span class="detail-label">Peran (Role)</span>
 								<span class="detail-value capitalize">{user.role}</span>
@@ -1142,17 +1265,30 @@
 							{/if}
 
 							<div class="mt-3 pt-3 border-t border-slate-200">
-								<label for="userAvatarFile" class="field-label font-bold text-xs text-slate-700 block mb-1">
+								<label class="field-label font-bold text-xs text-slate-700 block mb-1.5">
 									Atau Upload Foto Profil Sendiri
 								</label>
-								<input
-									type="file"
-									id="userAvatarFile"
-									name="avatarFile"
-									accept="image/*"
-									onchange={handleFileChange}
-									class="w-full p-2 text-xs border border-slate-300 rounded-md bg-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-								/>
+								<div class="file-upload-box flex items-center gap-3 p-3 bg-slate-50 border border-dashed border-slate-300 rounded-xl">
+									<label for="userAvatarFile" class="btn-upload-trigger">
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+											<polyline points="17 8 12 3 7 8"/>
+											<line x1="12" y1="3" x2="12" y2="15"/>
+										</svg>
+										<span>Pilih Foto dari Perangkat</span>
+									</label>
+									<input
+										type="file"
+										id="userAvatarFile"
+										name="avatarFile"
+										accept="image/*"
+										onchange={handleFileChange}
+										class="sr-only"
+									/>
+									<span class="text-xs text-slate-500 font-medium truncate flex-1">
+										{filePreviewUrl ? 'Foto terpilih & siap dipotong' : 'Format PNG, JPG, WEBP (Maks 5MB)'}
+									</span>
+								</div>
 							</div>
 						</div>
 
@@ -1166,6 +1302,33 @@
 							error={typeof formErrors?.fullName === 'string' ? formErrors.fullName : formErrors?.fullName?.[0]}
 						/>
 
+						<div class="field-group-wrap">
+							<TextInput
+								name="username"
+								label="Username Akun"
+								type="text"
+								required={true}
+								bind:value={username}
+								placeholder="contoh: bima_sakti"
+								hint="Username digunakan untuk login portal. Hanya boleh huruf kecil, angka, dan garis bawah (_)."
+								error={usernameClientError || usernameAvailabilityError || (typeof formErrors?.username === 'string' ? formErrors.username : formErrors?.username?.[0])}
+							/>
+
+							{#if isCheckingUsername}
+								<div class="flex items-center gap-1.5 mt-1 text-xs text-indigo-600 font-semibold">
+									<span class="spinner-sm"></span>
+									<span>Memeriksa ketersediaan username...</span>
+								</div>
+							{:else if usernameAvailableSuccess && !usernameClientError && !usernameAvailabilityError}
+								<div class="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-semibold">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="20 6 9 17 4 12"/>
+									</svg>
+									<span>{usernameAvailableSuccess}</span>
+								</div>
+							{/if}
+						</div>
+
 						<TextInput
 							name="email"
 							label="Alamat Email"
@@ -1176,15 +1339,66 @@
 							error={typeof formErrors?.email === 'string' ? formErrors.email : formErrors?.email?.[0]}
 						/>
 
-						<TextInput
-							name="nisn"
-							label="Nomor Induk Siswa Nasional (NISN)"
-							type="text"
-							bind:value={nisn}
-							placeholder="Contoh: 0051234567"
-							hint="NISN wajib 10 digit angka untuk validasi data pendaftaran siswa."
-							error={typeof formErrors?.nisn === 'string' ? formErrors.nisn : formErrors?.nisn?.[0]}
-						/>
+						{#if user.role === 'siswa'}
+							<TextInput
+								name="nisn"
+								label="Nomor Induk Siswa Nasional (NISN)"
+								type="text"
+								bind:value={nisn}
+								placeholder="Contoh: 0051234567"
+								hint="NISN wajib 10 digit angka untuk validasi data pendaftaran siswa."
+								error={typeof formErrors?.nisn === 'string' ? formErrors.nisn : formErrors?.nisn?.[0]}
+							/>
+
+							<CustomSelect
+								id="profileRombelSelect"
+								name="rombelLabel"
+								label="Label Kelas / Rombel Sekolah"
+								bind:value={rombelLabel}
+								options={rombelOptions}
+								searchable={true}
+								hint="Pilih label rombel kelas resmi sekolah Anda (misal: X PPLG 1 atau XI TKT 2)."
+								error={typeof formErrors?.rombelLabel === 'string' ? formErrors.rombelLabel : formErrors?.rombelLabel?.[0]}
+							/>
+
+							<!-- Informasi & Status Kelompok Belajar Siswa (Card Kotak & Badge Kotak) -->
+							<div class="field-group border-t border-slate-200/80 pt-4 mt-2">
+								<label class="field-label font-bold text-xs text-slate-700 block mb-2">Penempatan Kelompok Belajar</label>
+
+								{#if stats.kelasName}
+									<div class="card-status-box p-4 bg-emerald-50/90 border border-emerald-300 rounded-lg flex items-center justify-between gap-3 shadow-xs">
+										<div class="flex items-center gap-3">
+											<div class="w-10 h-10 bg-emerald-600 text-white font-extrabold text-base flex items-center justify-center rounded shrink-0">
+												✓
+											</div>
+											<div>
+												<span class="text-[10.5px] font-bold text-emerald-800 font-mono uppercase tracking-wider block">Kelompok Belajar Aktif</span>
+												<h4 class="font-extrabold text-sm text-slate-900">{stats.kelasName}</h4>
+												<p class="text-xs text-slate-600 mt-0.5">{stats.tahunAjaranName || 'Periode Aktif'} • Track {stats.trackName || 'Utama'}</p>
+											</div>
+										</div>
+										<div class="badge-square-tag px-3 py-1 bg-emerald-700 text-white font-extrabold text-[11px] rounded uppercase tracking-wider shrink-0">
+											TERDAFTAR
+										</div>
+									</div>
+								{:else}
+									<div class="card-status-box p-4 bg-amber-50/90 border border-amber-300 rounded-lg flex items-start gap-3 shadow-xs">
+										<div class="w-10 h-10 bg-amber-600 text-white font-extrabold text-base flex items-center justify-center rounded shrink-0 mt-0.5">
+											!
+										</div>
+										<div class="flex-1 min-w-0">
+											<h4 class="font-extrabold text-sm text-amber-950">Belum Terdaftar di Kelompok Belajar</h4>
+											<p class="text-xs text-amber-800 mt-1 leading-relaxed">
+												Akun siswa Anda belum dimasukkan ke kelompok belajar (kelas). Silakan hubungi <strong>Admin Nesaga Learning Community</strong> untuk penempatan kelompok kelas berjalan.
+											</p>
+										</div>
+										<div class="badge-square-tag px-3 py-1 bg-amber-700 text-white font-extrabold text-[11px] rounded uppercase tracking-wider shrink-0">
+											BELUM TERHUBUNG
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/if}
 
 						<div class="form-actions">
 							<button
@@ -2715,6 +2929,29 @@
 	.btn-reset-crop:hover {
 		background: #f1f5f9;
 		color: #0f172a;
+	}
+
+	.btn-upload-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 14px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 10px;
+		color: #334155;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	}
+
+	.btn-upload-trigger:hover {
+		background: #f8fafc;
+		border-color: #6366f1;
+		color: #4f46e5;
 	}
 
 	.crop-modal-footer {

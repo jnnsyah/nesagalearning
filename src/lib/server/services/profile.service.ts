@@ -4,7 +4,8 @@ import {
 	keanggotaan,
 	kelasInstance,
 	tahunAjaran,
-	mentorAssignment
+	mentorAssignment,
+	masterRombel
 } from '../db/schema/academic';
 import { curriculumTrack } from '../db/schema/curriculum';
 import { pointLog, streakCounter, badge, badgeType } from '../db/schema/gamification';
@@ -42,6 +43,7 @@ export interface ProfileUserStats {
 	currentStreak?: number;
 	maxStreak?: number;
 	earnedBadges?: { id: number; name: string; description: string | null; iconUrl: string | null; earnedAt: Date }[];
+	kelasInstanceId?: number;
 	kelasName?: string;
 	tahunAjaranName?: string;
 	trackName?: string;
@@ -80,10 +82,14 @@ export interface ProfileData {
 		isActive: boolean;
 		createdAt: Date;
 		nisn: string | null;
+		rombelLabel: string | null;
+		angkatan: number | null;
 	};
 	stats: ProfileUserStats;
 	pointLogs?: PaginatedPointLogs;
 	availableAvatars?: { id: number; name: string; imageUrl: string }[];
+	availableClasses?: { id: number; name: string; tahunAjaran: string; track: string }[];
+	availableRombels?: { id: number; name: string }[];
 }
 
 export const ProfileService = {
@@ -138,7 +144,9 @@ export const ProfileService = {
 				avatarUrl: userTable.avatarUrl,
 				isActive: userTable.isActive,
 				createdAt: userTable.createdAt,
-				nisn: userTable.nisn
+				nisn: userTable.nisn,
+				rombelLabel: userTable.rombelLabel,
+				angkatan: userTable.angkatan
 			})
 			.from(userTable)
 			.where(eq(userTable.id, userId));
@@ -169,6 +177,7 @@ export const ProfileService = {
 				.where(and(eq(keanggotaan.userId, userId), eq(keanggotaan.status, 'aktif')));
 
 			if (activeMembership) {
+				stats.kelasInstanceId = activeMembership.kelasInstanceId;
 				stats.kelasName = activeMembership.kelasName;
 				stats.tahunAjaranName = activeMembership.tahunAjaranName;
 				stats.trackName = activeMembership.trackName;
@@ -407,11 +416,38 @@ export const ProfileService = {
 			console.error('[getUserProfileData avatar query error]:', e);
 		}
 
+		let availableClasses: { id: number; name: string; tahunAjaran: string; track: string }[] = [];
+		let availableRombels: { id: number; name: string }[] = [];
+		if (role === 'siswa') {
+			try {
+				availableClasses = await db
+					.select({
+						id: kelasInstance.id,
+						name: kelasInstance.name,
+						tahunAjaran: tahunAjaran.name,
+						track: curriculumTrack.title
+					})
+					.from(kelasInstance)
+					.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
+					.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
+					.where(eq(kelasInstance.isActive, true));
+
+				availableRombels = await db
+					.select({ id: masterRombel.id, name: masterRombel.name })
+					.from(masterRombel)
+					.orderBy(masterRombel.levelOrder, masterRombel.name);
+			} catch (e) {
+				console.error('[getUserProfileData availableClasses/Rombels query error]:', e);
+			}
+		}
+
 		return {
 			user: userRecord,
 			stats,
 			pointLogs: pointLogsData,
-			availableAvatars
+			availableAvatars,
+			availableClasses,
+			availableRombels
 		};
 	},
 
@@ -465,7 +501,16 @@ export const ProfileService = {
 	 */
 	async updateProfileInfo(
 		userId: number,
-		input: { fullName: string; email?: string | null; avatarUrl?: string | null; nisn?: string | null }
+		input: {
+			fullName: string;
+			username?: string | null;
+			email?: string | null;
+			avatarUrl?: string | null;
+			nisn?: string | null;
+			rombelLabel?: string | null;
+			angkatan?: number | null;
+			kelasInstanceId?: number | null;
+		}
 	): Promise<{ success: boolean; message?: string }> {
 		const [existing] = await db
 			.select({ id: userTable.id })
@@ -474,6 +519,19 @@ export const ProfileService = {
 
 		if (!existing) {
 			return { success: false, message: 'User tidak ditemukan' };
+		}
+
+		// Check if username already used by another user
+		if (input.username && input.username.trim() !== '') {
+			const cleanUsername = input.username.trim().toLowerCase();
+			const [usernameCheck] = await db
+				.select({ id: userTable.id })
+				.from(userTable)
+				.where(eq(userTable.username, cleanUsername));
+
+			if (usernameCheck && usernameCheck.id !== userId) {
+				return { success: false, message: 'Username sudah digunakan oleh akun lain. Silakan pilih username lain.' };
+			}
 		}
 
 		// Check if email already used by another user
@@ -504,12 +562,47 @@ export const ProfileService = {
 			.update(userTable)
 			.set({
 				fullName: input.fullName.trim(),
+				username: input.username && input.username.trim() !== '' ? input.username.trim().toLowerCase() : undefined,
 				email: input.email && input.email.trim() !== '' ? input.email.trim() : null,
 				nisn: input.nisn !== undefined ? (input.nisn && input.nisn.trim() !== '' ? input.nisn.trim() : null) : undefined,
+				rombelLabel: input.rombelLabel !== undefined ? (input.rombelLabel && input.rombelLabel.trim() !== '' ? input.rombelLabel.trim() : null) : undefined,
+				angkatan: input.angkatan !== undefined ? (input.angkatan ? Number(input.angkatan) : null) : undefined,
 				avatarUrl: input.avatarUrl !== undefined ? (input.avatarUrl && input.avatarUrl.trim() !== '' ? input.avatarUrl.trim() : null) : undefined,
 				updatedAt: new Date()
 			})
 			.where(eq(userTable.id, userId));
+
+		// Update or assign active class membership if provided
+		if (input.kelasInstanceId !== undefined) {
+			if (input.kelasInstanceId) {
+				const newKelasId = Number(input.kelasInstanceId);
+				const [currentActive] = await db
+					.select()
+					.from(keanggotaan)
+					.where(and(eq(keanggotaan.userId, userId), eq(keanggotaan.status, 'aktif')));
+
+				if (!currentActive) {
+					await db.insert(keanggotaan).values({
+						userId,
+						kelasInstanceId: newKelasId,
+						status: 'aktif',
+						joinedAt: new Date()
+					});
+				} else if (currentActive.kelasInstanceId !== newKelasId) {
+					await db
+						.update(keanggotaan)
+						.set({ status: 'keluar' })
+						.where(eq(keanggotaan.id, currentActive.id));
+
+					await db.insert(keanggotaan).values({
+						userId,
+						kelasInstanceId: newKelasId,
+						status: 'aktif',
+						joinedAt: new Date()
+					});
+				}
+			}
+		}
 
 		return { success: true, message: 'Profil berhasil diperbarui' };
 	},
