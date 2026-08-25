@@ -91,6 +91,17 @@
 
 	<!-- Auth card -->
 	<div class="auth-card">
+		<!-- Top Navigation: Kembali & Ubah Email Button -->
+		<div class="auth-top-nav">
+			<a href="/register" class="btn-back-clean">
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<line x1="19" y1="12" x2="5" y2="12" />
+					<polyline points="12 19 5 12 12 5" />
+				</svg>
+				<span>Kembali & Ubah Email</span>
+			</a>
+		</div>
+
 		<!-- Brand header -->
 		<div class="auth-brand">
 			<div class="nlc-mark">NLC</div>
@@ -205,6 +216,18 @@
 					{/if}
 				</button>
 			</form>
+
+			<div class="wrong-email-wrapper mt-4 pt-3 border-t border-slate-200/60 text-center">
+				<span class="text-xs text-slate-500">Salah memasukkan alamat email?</span>
+				<div class="mt-1">
+					<a href="/register" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline inline-flex items-center gap-1">
+						<span>Kembali ke Pendaftaran & Ubah Email</span>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="9 18 15 12 9 6" />
+						</svg>
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -263,6 +286,36 @@
 			0 4px 24px rgba(79, 70, 229, 0.08),
 			0 24px 64px rgba(15, 23, 42, 0.1),
 			inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	}
+
+	.auth-top-nav {
+		display: flex;
+		align-items: center;
+		margin-bottom: 16px;
+	}
+
+	.btn-back-clean {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		background: rgba(241, 245, 249, 0.85);
+		border: 1px solid #cbd5e1;
+		border-radius: 9999px;
+		color: #475569;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 150ms ease;
+	}
+
+	.btn-back-clean:hover {
+		background: #ffffff;
+		color: #0f172a;
+		border-color: #94a3b8;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+		transform: translateX(-2px);
 	}
 
 	@media (max-width: 480px) {
