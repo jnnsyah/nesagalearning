@@ -28,6 +28,22 @@ export const tingkat = pgTable('tingkat', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const masterAngkatan = pgTable('master_angkatan', {
+	id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+	year: integer('year').notNull().unique(),
+	name: text('name').notNull(),
+	isActive: boolean('is_active').notNull().default(true),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const masterRombel = pgTable('master_rombel', {
+	id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+	name: text('name').notNull().unique(),
+	levelOrder: integer('level_order').notNull().default(1),
+	nextRombelId: bigint('next_rombel_id', { mode: 'number' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const kelasInstance = pgTable(
 	'kelas_instance',
 	{
@@ -42,6 +58,7 @@ export const kelasInstance = pgTable(
 			.notNull()
 			.references(() => curriculumTrack.id),
 		name: text('name').notNull(),
+		targetAngkatan: integer('target_angkatan'),
 		isActive: boolean('is_active').notNull().default(true),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
@@ -50,7 +67,8 @@ export const kelasInstance = pgTable(
 		unique('kelas_instance_tahun_tingkat_unique').on(table.tahunAjaranId, table.tingkatId),
 		index('idx_kelas_instance_tahun').on(table.tahunAjaranId),
 		index('idx_kelas_instance_tingkat').on(table.tingkatId),
-		index('idx_kelas_instance_track').on(table.curriculumTrackId)
+		index('idx_kelas_instance_track').on(table.curriculumTrackId),
+		index('idx_kelas_instance_target_angkatan').on(table.targetAngkatan)
 	]
 );
 

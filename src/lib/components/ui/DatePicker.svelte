@@ -140,12 +140,6 @@
 		return today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day;
 	}
 
-	function handleClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			isOpen = false;
-		}
-	}
-
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && isOpen) isOpen = false;
 	}
@@ -158,6 +152,26 @@
 			const rect = containerEl.getBoundingClientRect();
 			popoverAlign = rect.left + 300 > window.innerWidth - 16 ? 'right' : 'left';
 			popoverVAlign = rect.bottom + 340 > window.innerHeight && rect.top > 340 ? 'top' : 'bottom';
+		}
+	});
+
+	// Capture-phase document click listener to ensure popover closes when clicking anywhere outside (including inside drawers/modals)
+	$effect(() => {
+		if (!isOpen) return;
+
+		function handleOutsideClick(e: Event) {
+			if (containerEl && !containerEl.contains(e.target as Node)) {
+				isOpen = false;
+			}
+		}
+
+		if (typeof window !== 'undefined') {
+			document.addEventListener('pointerdown', handleOutsideClick, true);
+			document.addEventListener('click', handleOutsideClick, true);
+			return () => {
+				document.removeEventListener('pointerdown', handleOutsideClick, true);
+				document.removeEventListener('click', handleOutsideClick, true);
+			};
 		}
 	});
 
@@ -179,7 +193,7 @@
 	});
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="datepicker-field" bind:this={containerEl}>
 	{#if label}

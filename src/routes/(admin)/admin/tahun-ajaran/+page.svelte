@@ -33,6 +33,34 @@
 	let isSetActiveModalOpen = $state(false);
 	let targetActiveTa = $state<any | null>(null);
 
+	// Promotion Preview Drawer states
+	let isPromotionPreviewOpen = $state(false);
+	let previewSearchQuery = $state('');
+	let previewFilterStatus = $state<'all' | 'promote' | 'graduate' | 'unchanged'>('all');
+	let isSubmittingPromotion = $state(false);
+
+	// Derived filtered promotion preview items
+	let filteredPreviewItems = $derived.by(() => {
+		let list = [...(data.promotionPreview?.items || [])];
+
+		if (previewSearchQuery.trim() !== '') {
+			const term = previewSearchQuery.toLowerCase().trim();
+			list = list.filter(
+				(item) =>
+					item.fullName.toLowerCase().includes(term) ||
+					item.username.toLowerCase().includes(term) ||
+					(item.currentRombel && item.currentRombel.toLowerCase().includes(term)) ||
+					item.nextRombel.toLowerCase().includes(term)
+			);
+		}
+
+		if (previewFilterStatus !== 'all') {
+			list = list.filter((item) => item.status === previewFilterStatus);
+		}
+
+		return list;
+	});
+
 	// Sync server form responses to toast notifications
 	$effect(() => {
 		if (form?.success && form?.message) {
@@ -214,28 +242,41 @@
 		<div class="hero-content-row">
 			<div>
 				<div class="hero-title-group">
-					<h1 class="hero-title">Manajemen Tahun Ajaran</h1>
+					<h1 class="hero-title">Manajemen Periode Komunitas</h1>
 					<span class="badge badge-primary">
 						{data.stats?.totalTahunAjaran ?? 0} Periode
 					</span>
 				</div>
 				<p class="hero-subtitle">
-					Kelola master data tahun ajaran, set status aktif periode pembelajaran, dan pantau statistik kelas.
+					Kelola periode komunitas aktif, jadwalkan pergantian periode, dan jalankan proses kenaikan kelas rombel otomatis.
 				</p>
 			</div>
-			<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-				</svg>
-				<span>Tambah Tahun Ajaran</span>
-			</button>
+			<div class="hero-actions-group">
+				<button
+					type="button"
+					class="btn-secondary-action"
+					onclick={() => (isPromotionPreviewOpen = true)}
+				>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/>
+					</svg>
+					<span>Preview & Kenaikan Kelas</span>
+				</button>
+
+				<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Periode Baru</span>
+				</button>
+			</div>
 		</div>
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID (.stats-grid)
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="stats-grid" aria-label="Statistik Tahun Ajaran">
+	<section class="stats-grid" aria-label="Statistik Periode Komunitas">
 		<div class="stat-card">
 			<div class="stat-icon-box icon-ta">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -244,7 +285,7 @@
 			</div>
 			<div class="stat-info">
 				<span class="stat-value">{data.stats?.totalTahunAjaran ?? 0}</span>
-				<span class="stat-label">Total Tahun Ajaran</span>
+				<span class="stat-label">Total Periode Komunitas</span>
 			</div>
 		</div>
 
@@ -256,7 +297,7 @@
 			</div>
 			<div class="stat-info">
 				<span class="stat-value text-ellipsis">{data.stats?.activeTahunAjaranName ?? '-'}</span>
-				<span class="stat-label">Tahun Ajaran Aktif</span>
+				<span class="stat-label">Periode Aktif</span>
 			</div>
 		</div>
 
@@ -327,9 +368,9 @@
 	<div class="card card-table">
 		<div class="card-header-flex">
 			<div>
-				<h2 class="card-title">Daftar Tahun Ajaran</h2>
+				<h2 class="card-title">Daftar Periode Komunitas</h2>
 				<p class="card-subtitle">
-					Menampilkan {filteredItems.length} dari total {data.items?.length ?? 0} tahun ajaran terdaftar.
+					Menampilkan {filteredItems.length} dari total {data.items?.length ?? 0} periode terdaftar.
 				</p>
 			</div>
 		</div>
@@ -339,8 +380,8 @@
 				<table class="data-table">
 					<thead>
 						<tr>
-							<th>TAHUN AJARAN</th>
-							<th>PERIODE AKADEMIK</th>
+							<th>NAMA PERIODE</th>
+							<th>RENTANG TANGGAL</th>
 							<th>KELAS TERHUBUNG</th>
 							<th>SISWA AKTIF</th>
 							<th>STATUS AKTIFAKAN</th>
@@ -452,8 +493,9 @@
 	     ══════════════════════════════════════════════════════════ -->
 	<FormDrawer
 		bind:open={isFormDrawerOpen}
-		title={editingTa ? 'Edit Tahun Ajaran' : 'Tambah Tahun Ajaran Baru'}
-		subtitle={editingTa ? `Perbarui informasi periode ${editingTa.name}` : 'Buat periode akademik baru untuk Nesaga Learning Community.'}
+		title={editingTa ? 'Edit Periode' : 'Tambah Periode Baru'}
+		subtitle={editingTa ? `Perbarui informasi periode ${editingTa.name}` : 'Buat periode komunitas baru untuk Nesaga Learning Community.'}
+		size="lg"
 		onclose={closeFormDrawer}
 	>
 		{#snippet children()}
@@ -481,17 +523,17 @@
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 						</div>
 						<div>
-							<h4 class="drawer-card__title">Informasi Periode Akademik</h4>
+							<h4 class="drawer-card__title">Informasi Periode Komunitas</h4>
 							<p class="drawer-card__desc">Nama dan rentang tanggal berjalannya tahun ajaran</p>
 						</div>
 					</div>
-					<div class="drawer-card__body space-y-4">
+					<div class="drawer-card__body">
 						<!-- Auto-format & Stepper Input Row -->
 						<div class="name-stepper-wrap">
 							<div class="flex-1">
 								<TextInput
 									name="name"
-									label="Nama Tahun Ajaran"
+									label="Nama Periode"
 									required
 									bind:value={formName}
 									placeholder="Contoh: 2026/2027"
@@ -684,6 +726,218 @@
 			<input type="hidden" name="id" value={targetDeleteTa.id} />
 		</form>
 	{/if}
+
+	<!-- ══════════════════════════════════════════════════════════
+	     7. PROMOTION PREVIEW FORM DRAWER
+	     ══════════════════════════════════════════════════════════ -->
+	<FormDrawer
+		bind:open={isPromotionPreviewOpen}
+		title="Preview Kenaikan Kelas (Rombel) Massal"
+		subtitle="Tinjau pemetaan kenaikan label kelas seluruh siswa sebelum diproses secara permanen."
+		size="xl"
+		onclose={() => (isPromotionPreviewOpen = false)}
+	>
+		{#snippet children()}
+			<div class="drawer-preview-content py-1">
+				{#if data.promotionPreview?.canPromote === false}
+					<div class="drawer-preview-banner p-4 bg-amber-50/90 border border-amber-200/90 rounded-xl text-amber-900 text-xs flex items-start gap-3 shadow-xs mb-6">
+						<div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+								<line x1="12" y1="9" x2="12" y2="13"/>
+								<line x1="12" y1="17" x2="12.01" y2="17"/>
+							</svg>
+						</div>
+						<div class="flex-1 min-w-0 pt-0.5">
+							<h5 class="font-bold text-amber-950 text-xs uppercase tracking-wider mb-1">
+								Kenaikan Kelas Dikunci (Kriteria Rentang Waktu Periode)
+							</h5>
+							<p class="text-amber-800 leading-relaxed font-medium">
+								{data.promotionPreview.timeframeNotice}
+							</p>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Section 1: Stat Cards -->
+				<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+					<div class="stat-card">
+						<div class="stat-icon-box icon-ta">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+							</svg>
+						</div>
+						<div class="stat-info">
+							<span class="stat-value">{data.promotionPreview?.summary.totalStudents ?? 0}</span>
+							<span class="stat-label">Total Evaluasi</span>
+						</div>
+					</div>
+
+					<div class="stat-card">
+						<div class="stat-icon-box icon-active">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/>
+							</svg>
+						</div>
+						<div class="stat-info">
+							<span class="stat-value">{data.promotionPreview?.summary.willPromoteCount ?? 0}</span>
+							<span class="stat-label">Naik Tingkat</span>
+						</div>
+					</div>
+
+					<div class="stat-card">
+						<div class="stat-icon-box icon-classes">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+							</svg>
+						</div>
+						<div class="stat-info">
+							<span class="stat-value">{data.promotionPreview?.summary.willGraduateCount ?? 0}</span>
+							<span class="stat-label">Lulus Alumni</span>
+						</div>
+					</div>
+
+					<div class="stat-card">
+						<div class="stat-icon-box icon-students">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+							</svg>
+						</div>
+						<div class="stat-info">
+							<span class="stat-value">{data.promotionPreview?.summary.unchangedCount ?? 0}</span>
+							<span class="stat-label">Tetap / Manual</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Section 2: Standard FilterBar with TextInput & CustomSelect -->
+				<div class="mb-6">
+					<FilterBar>
+						{#snippet search()}
+							<TextInput
+								name="previewSearch"
+								placeholder="Cari nama siswa, angkatan, atau rombel…"
+								bind:value={previewSearchQuery}
+								clearable
+							/>
+						{/snippet}
+
+						{#snippet filters()}
+							<CustomSelect
+								name="previewFilterStatus"
+								bind:value={previewFilterStatus}
+								options={[
+									{ value: 'all', label: `Semua (${data.promotionPreview?.summary.totalStudents ?? 0})` },
+									{ value: 'promote', label: `Naik Kelas (${data.promotionPreview?.summary.willPromoteCount ?? 0})` },
+									{ value: 'graduate', label: `Lulus Alumni (${data.promotionPreview?.summary.willGraduateCount ?? 0})` },
+									{ value: 'unchanged', label: `Tetap (${data.promotionPreview?.summary.unchangedCount ?? 0})` }
+								]}
+							/>
+						{/snippet}
+					</FilterBar>
+				</div>
+
+				<!-- Section 3: Standard Data Table (.card-table & .data-table) -->
+				<div class="card card-table overflow-hidden">
+					<div class="table-responsive max-h-[460px] overflow-y-auto">
+						<table class="data-table">
+							<thead class="sticky top-0 z-10 bg-slate-100">
+								<tr>
+									<th>NAMA SISWA</th>
+									<th>ANGKATAN</th>
+									<th>ROMBEL SAAT INI</th>
+									<th class="text-center"></th>
+									<th>ROMBEL PROYEKSI BARU</th>
+									<th class="text-right">STATUS</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each filteredPreviewItems as item}
+									<tr>
+										<td>
+											<div class="font-bold text-slate-800">{item.fullName}</div>
+											<div class="text-xs text-slate-400 font-mono">@{item.username}</div>
+										</td>
+										<td>
+											<span class="badge badge-neutral">
+												{item.angkatan ? `Angkatan ${item.angkatan}` : '-'}
+											</span>
+										</td>
+										<td>
+											<span class="font-semibold text-slate-700">{item.currentRombel || '-'}</span>
+										</td>
+										<td class="text-center text-slate-400">
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto">
+												<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+											</svg>
+										</td>
+										<td>
+											<span class="font-bold text-slate-900">{item.nextRombel}</span>
+										</td>
+										<td class="text-right">
+											{#if item.status === 'promote'}
+												<span class="badge badge-success">NAIK KELAS</span>
+											{:else if item.status === 'graduate'}
+												<span class="badge badge-primary">LULUS ALUMNI</span>
+											{:else}
+												<span class="badge badge-neutral">TETAP</span>
+											{/if}
+										</td>
+									</tr>
+								{:else}
+									<tr>
+										<td colspan="6" class="text-center text-slate-400 py-8 italic">
+											Tidak ditemukan siswa yang cocok dengan kriteria pencarian.
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		{/snippet}
+
+		{#snippet footer()}
+			<div class="flex items-center justify-between gap-3 w-full">
+				<button
+					type="button"
+					class="btn-secondary-action"
+					onclick={() => (isPromotionPreviewOpen = false)}
+				>
+					Batal
+				</button>
+
+				<form
+					method="POST"
+					action="?/bulkPromote"
+					use:enhance={() => {
+						isSubmittingPromotion = true;
+						return async ({ result, update }) => {
+							isSubmittingPromotion = false;
+							await update();
+							if (result.type === 'success') {
+								isPromotionPreviewOpen = false;
+							}
+						};
+					}}
+				>
+					<button
+						type="submit"
+						disabled={isSubmittingPromotion || data.promotionPreview?.canPromote === false || (data.promotionPreview?.summary.willPromoteCount === 0 && data.promotionPreview?.summary.willGraduateCount === 0)}
+						class="btn-primary-action"
+					>
+						{#if isSubmittingPromotion}
+							<span>Memproses...</span>
+						{:else}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+							<span>Konfirmasi & Eksekusi Kenaikan Kelas</span>
+						{/if}
+					</button>
+				</form>
+			</div>
+		{/snippet}
+	</FormDrawer>
 </div>
 
 <style>
@@ -740,26 +994,62 @@
 		margin-top: 4px;
 	}
 
-	.btn-primary-action {
+	.hero-actions-group {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: nowrap;
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 640px) {
+		.hero-actions-group {
+			width: 100%;
+			flex-wrap: wrap;
+			gap: 8px;
+		}
+	}
+
+	.btn-primary-action,
+	.btn-secondary-action {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 8px;
-		padding: 10px 18px;
-		background: var(--primary);
-		color: #ffffff;
-		border: 1px solid transparent;
+		height: 40px;
+		padding: 0 16px;
 		border-radius: var(--radius-md, 8px);
 		font-family: var(--font-macro);
 		font-size: 13.5px;
 		font-weight: 700;
+		line-height: 1;
 		cursor: pointer;
 		white-space: nowrap;
 		box-shadow: var(--shadow-sm);
 		transition: all 150ms ease;
+		box-sizing: border-box;
+	}
+
+	.btn-primary-action {
+		background: var(--primary);
+		color: #ffffff;
+		border: 1px solid transparent;
 	}
 
 	.btn-primary-action:hover {
 		background: var(--primary-hover, #4338ca);
+	}
+
+	.btn-secondary-action {
+		background: #ffffff;
+		color: #334155;
+		border: 1px solid var(--border-hard, #cbd5e1);
+	}
+
+	.btn-secondary-action:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
 
@@ -993,11 +1283,18 @@
 	}
 
 	.badge {
-		padding: 3px 9px;
-		font-family: var(--font-mono);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 26px;
+		padding: 0 10px;
+		font-family: var(--font-mono, monospace);
 		font-size: 10.5px;
 		font-weight: 700;
+		line-height: 1;
 		border-radius: 9999px;
+		white-space: nowrap;
+		box-sizing: border-box;
 	}
 
 	.badge-primary {
@@ -1010,6 +1307,30 @@
 		background: #dcfce7;
 		color: #15803d;
 		border: 1px solid #bbf7d0;
+	}
+
+	.badge-warning {
+		background: #fef3c7;
+		color: #92400e;
+		border: 1px solid #fde68a;
+	}
+
+	.badge-neutral {
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+	}
+
+	.badge-danger {
+		background: #ffe4e6;
+		color: #be123c;
+		border: 1px solid #fecdd3;
+	}
+
+	.badge-info {
+		background: #e0f2fe;
+		color: #0369a1;
+		border: 1px solid #bae6fd;
 	}
 
 	.text-right { text-align: right; }
@@ -1122,7 +1443,10 @@
 	}
 
 	.drawer-card__body {
-		padding: 16px;
+		padding: 20px 22px;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
 		overflow: visible;
 	}
 

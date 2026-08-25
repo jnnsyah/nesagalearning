@@ -46,8 +46,12 @@ export const actions: Actions = {
 			const formData = await request.formData();
 			const name = (formData.get('name') as string) || '';
 			const tahunAjaranId = Number(formData.get('tahunAjaranId'));
-			const tingkatId = Number(formData.get('tingkatId'));
-			const curriculumTrackId = Number(formData.get('curriculumTrackId'));
+			const targetAngkatanRaw = formData.get('targetAngkatan');
+			const targetAngkatan = targetAngkatanRaw ? Number(targetAngkatanRaw) : null;
+			const tingkatIdRaw = formData.get('tingkatId');
+			const tingkatId = tingkatIdRaw ? Number(tingkatIdRaw) : null;
+			const curriculumTrackIdRaw = formData.get('curriculumTrackId');
+			const curriculumTrackId = curriculumTrackIdRaw ? Number(curriculumTrackIdRaw) : null;
 			const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on';
 
 			const mentorIdsRaw = formData.getAll('mentorIds');
@@ -56,6 +60,7 @@ export const actions: Actions = {
 			const parseResult = createKelasSchema.safeParse({
 				name,
 				tahunAjaranId,
+				targetAngkatan,
 				tingkatId,
 				curriculumTrackId,
 				mentorIds,
@@ -93,8 +98,12 @@ export const actions: Actions = {
 			const id = Number(formData.get('id'));
 			const name = (formData.get('name') as string) || '';
 			const tahunAjaranId = Number(formData.get('tahunAjaranId'));
-			const tingkatId = Number(formData.get('tingkatId'));
-			const curriculumTrackId = Number(formData.get('curriculumTrackId'));
+			const targetAngkatanRaw = formData.get('targetAngkatan');
+			const targetAngkatan = targetAngkatanRaw ? Number(targetAngkatanRaw) : null;
+			const tingkatIdRaw = formData.get('tingkatId');
+			const tingkatId = tingkatIdRaw ? Number(tingkatIdRaw) : null;
+			const curriculumTrackIdRaw = formData.get('curriculumTrackId');
+			const curriculumTrackId = curriculumTrackIdRaw ? Number(curriculumTrackIdRaw) : null;
 			const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on';
 
 			const mentorIdsRaw = formData.getAll('mentorIds');
@@ -104,6 +113,7 @@ export const actions: Actions = {
 				id,
 				name,
 				tahunAjaranId,
+				targetAngkatan,
 				tingkatId,
 				curriculumTrackId,
 				mentorIds,

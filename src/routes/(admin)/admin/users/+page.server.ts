@@ -2,6 +2,9 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { UserAdminService } from '$lib/server/services/user-admin.service';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
+import { db } from '$lib/server/db';
+import { masterAngkatan, masterRombel } from '$lib/server/db/schema/academic';
+import { desc } from 'drizzle-orm';
 import {
 	createUserSchema,
 	updateUserSchema,
@@ -26,9 +29,23 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			limit: 500
 		});
 
+		const angkatanList = await db
+			.select({ id: masterAngkatan.id, year: masterAngkatan.year, name: masterAngkatan.name })
+			.from(masterAngkatan)
+			.orderBy(desc(masterAngkatan.year));
+
+		const rombelList = await db
+			.select({ id: masterRombel.id, name: masterRombel.name })
+			.from(masterRombel)
+			.orderBy(masterRombel.levelOrder, masterRombel.name);
+
 		return {
 			user: locals.user,
-			usersResult
+			usersResult,
+			options: {
+				angkatanList,
+				rombelList
+			}
 		};
 	} catch (err: any) {
 		console.error('Error loading admin users list:', err);
@@ -50,6 +67,9 @@ export const actions: Actions = {
 		const role = String(formData.get('role') || 'siswa');
 		const password = String(formData.get('password') || '');
 		const isActive = formData.get('isActive') === 'on' || formData.get('isActive') === 'true';
+		const angkatanRaw = formData.get('angkatan');
+		const angkatan = angkatanRaw ? Number(angkatanRaw) : null;
+		const rombelLabel = String(formData.get('rombelLabel') || '');
 
 		const parseResult = createUserSchema.safeParse({
 			username,
@@ -67,7 +87,11 @@ export const actions: Actions = {
 		}
 
 		try {
-			await UserAdminService.createUser(parseResult.data);
+			await UserAdminService.createUser({
+				...parseResult.data,
+				angkatan,
+				rombelLabel: rombelLabel || null
+			});
 			return {
 				success: true,
 				message: `User '${parseResult.data.username}' berhasil ditambahkan!`
@@ -92,6 +116,9 @@ export const actions: Actions = {
 		const role = String(formData.get('role') || 'siswa');
 		const password = String(formData.get('password') || '');
 		const isActive = formData.get('isActive') === 'on' || formData.get('isActive') === 'true';
+		const angkatanRaw = formData.get('angkatan');
+		const angkatan = angkatanRaw ? Number(angkatanRaw) : null;
+		const rombelLabel = String(formData.get('rombelLabel') || '');
 
 		const parseResult = updateUserSchema.safeParse({
 			id,
@@ -110,7 +137,11 @@ export const actions: Actions = {
 		}
 
 		try {
-			await UserAdminService.updateUser(parseResult.data);
+			await UserAdminService.updateUser({
+				...parseResult.data,
+				angkatan,
+				rombelLabel: rombelLabel || null
+			});
 			return {
 				success: true,
 				message: `Data user '${parseResult.data.username}' berhasil diperbarui!`

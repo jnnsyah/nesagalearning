@@ -4,7 +4,9 @@ import {
 	tingkat,
 	kelasInstance,
 	keanggotaan,
-	mentorAssignment
+	mentorAssignment,
+	masterAngkatan,
+	masterRombel
 } from '../db/schema/academic';
 import { curriculumTrack } from '../db/schema/curriculum';
 import { user } from '../db/schema/auth';
@@ -20,14 +22,15 @@ export interface MentorInfo {
 export interface KelasItem {
 	id: number;
 	name: string;
+	targetAngkatan?: number | null;
 	tahunAjaranId: number;
 	tahunAjaranName: string;
 	isTahunAjaranActive: boolean;
-	tingkatId: number;
-	tingkatName: string;
-	levelOrder: number;
-	curriculumTrackId: number;
-	curriculumTrackTitle: string;
+	tingkatId?: number | null;
+	tingkatName?: string | null;
+	levelOrder?: number | null;
+	curriculumTrackId?: number | null;
+	curriculumTrackTitle?: string | null;
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -111,6 +114,7 @@ export const MasterAdminService = {
 			.select({
 				id: kelasInstance.id,
 				name: kelasInstance.name,
+				targetAngkatan: kelasInstance.targetAngkatan,
 				isActive: kelasInstance.isActive,
 				createdAt: kelasInstance.createdAt,
 				updatedAt: kelasInstance.updatedAt,
@@ -125,8 +129,8 @@ export const MasterAdminService = {
 			})
 			.from(kelasInstance)
 			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
-			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
-			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id));
+			.leftJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
+			.leftJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id));
 
 		if (searchQuery && searchQuery.trim() !== '') {
 			const term = `%${searchQuery.trim()}%`;
@@ -203,12 +207,15 @@ export const MasterAdminService = {
 	 */
 	async getOptionsData(): Promise<{
 		tahunAjaranList: Array<{ id: number; name: string; isActive: boolean }>;
+		angkatanList: Array<{ id: number; year: number; name: string; isActive: boolean }>;
 		tingkatList: Array<{ id: number; name: string; levelOrder: number }>;
-		trackList: Array<{ id: number; title: string; tingkatId: number }>;
+		trackList: Array<{ id: number; title: string; tingkatId: number | null }>;
 		mentorsList: Array<{ id: number; fullName: string; username: string }>;
 		studentsList: Array<{ id: number; fullName: string; username: string; nisn: string | null }>;
 	}> {
 		await this.ensureDefaultMasterData();
+
+		const angList = await this.getAllAngkatan();
 
 		const taList = await db
 			.select({ id: tahunAjaran.id, name: tahunAjaran.name, isActive: tahunAjaran.isActive })
@@ -238,6 +245,7 @@ export const MasterAdminService = {
 			.orderBy(user.fullName);
 
 		return {
+			angkatanList: angList,
 			tahunAjaranList: taList,
 			tingkatList: tList,
 			trackList: trList,
@@ -259,15 +267,41 @@ export const MasterAdminService = {
 			.where(and(eq(kelasInstance.tahunAjaranId, input.tahunAjaranId), eq(kelasInstance.name, nameTrimmed)));
 
 		if (existing) {
-			return { success: false, message: `Kelas '${nameTrimmed}' sudah ada pada tahun ajaran yang dipilih.` };
+			return { success: false, message: `Kelas '${nameTrimmed}' sudah ada pada periode yang dipilih.` };
+		}
+
+		// Auto-resolve non-null foreign keys tingkatId & curriculumTrackId if not provided in UI form
+		let finalTingkatId = input.tingkatId;
+		if (!finalTingkatId) {
+			const existingTingkatIdsInTa = (
+				await db
+					.select({ tingkatId: kelasInstance.tingkatId })
+					.from(kelasInstance)
+					.where(eq(kelasInstance.tahunAjaranId, input.tahunAjaranId))
+			).map((k) => k.tingkatId);
+
+			const allTingkat = await db.select({ id: tingkat.id }).from(tingkat).orderBy(tingkat.levelOrder);
+			const unusedTingkat = allTingkat.find((t) => !existingTingkatIdsInTa.includes(t.id));
+			finalTingkatId = unusedTingkat ? unusedTingkat.id : allTingkat[0]?.id;
+		}
+
+		let finalTrackId = input.curriculumTrackId;
+		if (!finalTrackId) {
+			const [firstTrack] = await db.select({ id: curriculumTrack.id }).from(curriculumTrack).orderBy(curriculumTrack.id).limit(1);
+			finalTrackId = firstTrack?.id;
+		}
+
+		if (!finalTingkatId || !finalTrackId) {
+			return { success: false, message: 'Gagal membuat kelas: Data Tingkat atau Track Pembelajaran master belum diatur di sistem.' };
 		}
 
 		const [inserted] = await db
 			.insert(kelasInstance)
 			.values({
 				tahunAjaranId: input.tahunAjaranId,
-				tingkatId: input.tingkatId,
-				curriculumTrackId: input.curriculumTrackId,
+				targetAngkatan: input.targetAngkatan || null,
+				tingkatId: finalTingkatId,
+				curriculumTrackId: finalTrackId,
 				name: nameTrimmed,
 				isActive: Boolean(input.isActive),
 				createdAt: new Date(),
@@ -286,7 +320,7 @@ export const MasterAdminService = {
 			}
 		}
 
-		return { success: true, message: `Kelas '${nameTrimmed}' berhasil dibuat.` };
+		return { success: true, message: `Kelompok / Kelas '${nameTrimmed}' berhasil dibuat.` };
 	},
 
 	/**
@@ -296,7 +330,11 @@ export const MasterAdminService = {
 		const nameTrimmed = input.name.trim();
 
 		const [target] = await db
-			.select({ id: kelasInstance.id })
+			.select({
+				id: kelasInstance.id,
+				tingkatId: kelasInstance.tingkatId,
+				curriculumTrackId: kelasInstance.curriculumTrackId
+			})
 			.from(kelasInstance)
 			.where(eq(kelasInstance.id, input.id));
 
@@ -317,15 +355,28 @@ export const MasterAdminService = {
 			);
 
 		if (nameCheck) {
-			return { success: false, message: `Nama kelas '${nameTrimmed}' sudah digunakan pada tahun ajaran tersebut.` };
+			return { success: false, message: `Nama kelas '${nameTrimmed}' sudah digunakan pada periode tersebut.` };
+		}
+
+		let finalTingkatId = input.tingkatId || target.tingkatId;
+		if (!finalTingkatId) {
+			const [firstTingkat] = await db.select({ id: tingkat.id }).from(tingkat).limit(1);
+			finalTingkatId = firstTingkat?.id || 1;
+		}
+
+		let finalTrackId = input.curriculumTrackId || target.curriculumTrackId;
+		if (!finalTrackId) {
+			const [firstTrack] = await db.select({ id: curriculumTrack.id }).from(curriculumTrack).limit(1);
+			finalTrackId = firstTrack?.id || 1;
 		}
 
 		await db
 			.update(kelasInstance)
 			.set({
 				tahunAjaranId: input.tahunAjaranId,
-				tingkatId: input.tingkatId,
-				curriculumTrackId: input.curriculumTrackId,
+				targetAngkatan: input.targetAngkatan || null,
+				tingkatId: finalTingkatId,
+				curriculumTrackId: finalTrackId,
 				name: nameTrimmed,
 				isActive: Boolean(input.isActive),
 				updatedAt: new Date()
@@ -589,7 +640,7 @@ export const MasterAdminService = {
 		}>;
 	}): Promise<{ success: boolean; message?: string }> {
 		if (input.sourceTaId === input.targetTaId) {
-			return { success: false, message: 'Tahun ajaran tujuan tidak boleh sama dengan tahun ajaran asal.' };
+			return { success: false, message: 'Periode tujuan tidak boleh sama dengan periode asal.' };
 		}
 
 		let totalPromoted = 0;
@@ -680,7 +731,7 @@ export const MasterAdminService = {
 
 		return {
 			success: true,
-			message: `Kenaikan Kelas Tahun Ajaran berhasil diproses! ${totalPromoted} siswa naik kelas, ${totalGraduated} siswa lulus${totalRepeated > 0 ? `, ${totalRepeated} tinggal` : ''}${totalExited > 0 ? `, ${totalExited} keluar` : ''}. Kelas-kelas lama otomatis dinonaktifkan.`
+			message: `Kenaikan Kelas Periode berhasil diproses! ${totalPromoted} siswa naik kelas, ${totalGraduated} siswa lulus${totalRepeated > 0 ? `, ${totalRepeated} tinggal` : ''}${totalExited > 0 ? `, ${totalExited} keluar` : ''}. Kelas-kelas lama otomatis dinonaktifkan.`
 		};
 	},
 
@@ -1018,5 +1069,82 @@ export const MasterAdminService = {
 			members,
 			availableStudents
 		};
+	},
+
+	/**
+	 * Master Angkatan CRUD
+	 */
+	async getAllAngkatan() {
+		return db.select().from(masterAngkatan).orderBy(desc(masterAngkatan.year));
+	},
+
+	async createAngkatan(year: number, name?: string) {
+		const finalName = name && name.trim() ? name.trim() : `Angkatan ${year}`;
+		const [created] = await db
+			.insert(masterAngkatan)
+			.values({ year, name: finalName, isActive: true })
+			.returning();
+		return created;
+	},
+
+	async toggleAngkatan(id: number, isActive: boolean) {
+		const [updated] = await db
+			.update(masterAngkatan)
+			.set({ isActive })
+			.where(eq(masterAngkatan.id, id))
+			.returning();
+		return updated;
+	},
+
+	async deleteAngkatan(id: number): Promise<{ success: boolean; message: string }> {
+		const [target] = await db.select().from(masterAngkatan).where(eq(masterAngkatan.id, id)).limit(1);
+		if (!target) {
+			return { success: false, message: 'Angkatan tidak ditemukan.' };
+		}
+
+		const [userRef] = await db
+			.select({ total: count(user.id) })
+			.from(user)
+			.where(eq(user.angkatan, target.year));
+
+		const countConnected = Number(userRef?.total ?? 0);
+		if (countConnected > 0) {
+			return {
+				success: false,
+				message: `Angkatan '${target.name}' tidak dapat dihapus karena masih terhubung dengan ${countConnected} siswa.`
+			};
+		}
+
+		await db.delete(masterAngkatan).where(eq(masterAngkatan.id, id));
+		return { success: true, message: `Angkatan '${target.name}' berhasil dihapus.` };
+	},
+
+	/**
+	 * Master Rombel CRUD
+	 */
+	async getAllRombel() {
+		return db.select().from(masterRombel).orderBy(masterRombel.levelOrder, masterRombel.name);
+	},
+
+	async createRombel(name: string, levelOrder: number, nextRombelId?: number | null) {
+		const [created] = await db
+			.insert(masterRombel)
+			.values({ name, levelOrder, nextRombelId: nextRombelId || null })
+			.returning();
+		return created;
+	},
+
+	async updateRombel(id: number, name: string, levelOrder: number, nextRombelId?: number | null) {
+		const [updated] = await db
+			.update(masterRombel)
+			.set({ name, levelOrder, nextRombelId: nextRombelId || null })
+			.where(eq(masterRombel.id, id))
+			.returning();
+		return updated;
+	},
+
+	async deleteRombel(id: number) {
+		await db.delete(masterRombel).where(eq(masterRombel.id, id));
+		return { success: true };
 	}
 };

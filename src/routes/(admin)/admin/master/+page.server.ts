@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { OperationalMasterAdminService } from '$lib/server/services/operational-master-admin.service';
+import { MasterAdminService } from '$lib/server/services/master-admin.service';
 import { formatErrorMessage } from '$lib/server/utils/error-formatter';
 import { uploadFile } from '$lib/server/storage/r2';
 
@@ -10,23 +11,31 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	try {
-		const data = await OperationalMasterAdminService.getOperationalMasterData();
+		const [operationalData, angkatanList, rombelList] = await Promise.all([
+			OperationalMasterAdminService.getOperationalMasterData(),
+			MasterAdminService.getAllAngkatan(),
+			MasterAdminService.getAllRombel()
+		]);
 
 		return {
-			rooms: data.rooms,
-			avatars: data.avatars,
-			badges: data.badges,
-			activityTypes: data.activityTypes,
-			stats: data.stats
+			rooms: operationalData.rooms,
+			avatars: operationalData.avatars,
+			badges: operationalData.badges,
+			activityTypes: operationalData.activityTypes,
+			stats: operationalData.stats,
+			angkatanList,
+			rombelList
 		};
 	} catch (err: any) {
-		console.error('[Admin Master Operasional Load Error]:', err);
+		console.error('[Admin Master Load Error]:', err);
 		return {
 			rooms: [],
 			avatars: [],
 			badges: [],
 			activityTypes: [],
-			stats: { totalRooms: 0, totalAvatars: 0, totalBadges: 0, totalActivityTypes: 0 }
+			stats: { totalRooms: 0, totalAvatars: 0, totalBadges: 0, totalActivityTypes: 0 },
+			angkatanList: [],
+			rombelList: []
 		};
 	}
 };
@@ -283,6 +292,111 @@ export const actions: Actions = {
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal memperbarui badge.') });
+		}
+	},
+
+	createAngkatan: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const year = Number(formData.get('year'));
+			const name = (formData.get('name') as string) || `Angkatan ${year}`;
+			if (!year || isNaN(year)) {
+				return fail(400, { success: false, message: 'Tahun angkatan harus diisi (contoh: 2025).' });
+			}
+			await MasterAdminService.createAngkatan(year, name.trim());
+			return { success: true, message: `Angkatan ${year} berhasil ditambahkan.` };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal menambahkan angkatan.') });
+		}
+	},
+
+	toggleAngkatan: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const id = Number(formData.get('id'));
+			const isActive = formData.get('isActive') === 'true';
+			await MasterAdminService.toggleAngkatan(id, isActive);
+			return { success: true, message: 'Status angkatan berhasil diperbarui.' };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal menginstal status angkatan.') });
+		}
+	},
+
+	deleteAngkatan: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const id = Number(formData.get('id'));
+			const res = await MasterAdminService.deleteAngkatan(id);
+			if (!res.success) {
+				return fail(400, { success: false, message: res.message });
+			}
+			return { success: true, message: res.message };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal menghapus angkatan.') });
+		}
+	},
+
+	createRombel: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const name = (formData.get('name') as string) || '';
+			const levelOrder = Number(formData.get('levelOrder') || 1);
+			const nextRombelIdRaw = formData.get('nextRombelId');
+			const nextRombelId = nextRombelIdRaw ? Number(nextRombelIdRaw) : null;
+			if (!name.trim()) {
+				return fail(400, { success: false, message: 'Nama rombel tidak boleh kosong.' });
+			}
+			await MasterAdminService.createRombel(name.trim(), levelOrder, nextRombelId);
+			return { success: true, message: `Master Rombel '${name}' berhasil ditambahkan.` };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal menambahkan master rombel.') });
+		}
+	},
+
+	updateRombel: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const id = Number(formData.get('id'));
+			const name = (formData.get('name') as string) || '';
+			const levelOrder = Number(formData.get('levelOrder') || 1);
+			const nextRombelIdRaw = formData.get('nextRombelId');
+			const nextRombelId = nextRombelIdRaw ? Number(nextRombelIdRaw) : null;
+			if (!id || !name.trim()) {
+				return fail(400, { success: false, message: 'ID dan Nama rombel tidak boleh kosong.' });
+			}
+			await MasterAdminService.updateRombel(id, name.trim(), levelOrder, nextRombelId);
+			return { success: true, message: `Master Rombel '${name}' berhasil diperbarui.` };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal memperbarui master rombel.') });
+		}
+	},
+
+	deleteRombel: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+		try {
+			const formData = await request.formData();
+			const id = Number(formData.get('id'));
+			await MasterAdminService.deleteRombel(id);
+			return { success: true, message: 'Master Rombel berhasil dihapus.' };
+		} catch (err: any) {
+			return fail(400, { success: false, message: formatErrorMessage(err, 'Gagal menghapus master rombel.') });
 		}
 	}
 };

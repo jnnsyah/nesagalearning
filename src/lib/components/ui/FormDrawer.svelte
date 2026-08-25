@@ -5,6 +5,7 @@
 		open = $bindable(false),
 		title = '',
 		subtitle = '',
+		size = 'md',
 		onclose = () => {},
 		children,
 		footer
@@ -12,6 +13,7 @@
 		open: boolean;
 		title?: string;
 		subtitle?: string;
+		size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 		onclose?: () => void;
 		children?: Snippet;
 		footer?: Snippet;
@@ -49,7 +51,7 @@
 		role="presentation"
 	>
 		<aside
-			class="form-drawer"
+			class="form-drawer form-drawer--{size}"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -112,6 +114,12 @@
 		animation: slideInRight 250ms cubic-bezier(0.16, 1, 0.3, 1);
 		position: relative;
 	}
+
+	.form-drawer--sm { max-width: 440px; }
+	.form-drawer--md { max-width: 580px; }
+	.form-drawer--lg { max-width: 780px; }
+	.form-drawer--xl { max-width: 960px; }
+	.form-drawer--full { max-width: 100vw; }
 
 	.drawer-handle-bar {
 		display: none;

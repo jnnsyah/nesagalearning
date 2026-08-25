@@ -11,6 +11,8 @@ export async function seed() {
 		TRUNCATE TABLE 
 			"user",
 			"tahun_ajaran",
+			"master_angkatan",
+			"master_rombel",
 			"tingkat",
 			"curriculum_track",
 			"room",
@@ -22,6 +24,26 @@ export async function seed() {
 	`);
 
 	console.log('🌱 Starting fresh database seeding...');
+
+	// Master Angkatan
+	console.log('Seeding master_angkatan...');
+	await db.insert(schema.masterAngkatan).values([
+		{ year: 2024, name: 'Angkatan 2024', isActive: true },
+		{ year: 2025, name: 'Angkatan 2025', isActive: true },
+		{ year: 2026, name: 'Angkatan 2026', isActive: true }
+	]).onConflictDoNothing();
+
+	// Master Rombel
+	console.log('Seeding master_rombel...');
+	await db.insert(schema.masterRombel).values([
+		{ name: 'X TKJ 1', levelOrder: 1 },
+		{ name: 'X TKJ 2', levelOrder: 1 },
+		{ name: 'XI TKJ 1', levelOrder: 2 },
+		{ name: 'XI TKJ 2', levelOrder: 2 },
+		{ name: 'XII TKJ 1', levelOrder: 3 },
+		{ name: 'XII TKJ 2', levelOrder: 3 },
+		{ name: 'Alumni', levelOrder: 4 }
+	]).onConflictDoNothing();
 
 	const passwordHash = await bcrypt.hash('password123', 10);
 
@@ -63,6 +85,8 @@ export async function seed() {
 			passwordHash,
 			fullName: 'Kak Mentor Alumnus',
 			role: 'mentor',
+			angkatan: 2024,
+			rombelLabel: 'Alumni',
 			isEmailVerified: true,
 			isActive: true
 		})
@@ -77,6 +101,8 @@ export async function seed() {
 			passwordHash,
 			fullName: 'Budi Santoso',
 			role: 'siswa',
+			angkatan: 2025,
+			rombelLabel: 'XI TKJ 1',
 			isEmailVerified: true,
 			isActive: true
 		})
@@ -91,6 +117,8 @@ export async function seed() {
 			passwordHash,
 			fullName: 'Siti Rahma',
 			role: 'siswa',
+			angkatan: 2026,
+			rombelLabel: 'X TKJ 2',
 			isEmailVerified: true,
 			isActive: true
 		})

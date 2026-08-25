@@ -20,6 +20,8 @@ export interface UserAdminItem {
 	role: string;
 	avatarUrl: string | null;
 	isActive: boolean;
+	angkatan: number | null;
+	rombelLabel: string | null;
 	createdAt: Date;
 }
 
@@ -94,6 +96,8 @@ export class UserAdminService {
 				role: userTable.role,
 				avatarUrl: userTable.avatarUrl,
 				isActive: userTable.isActive,
+				angkatan: userTable.angkatan,
+				rombelLabel: userTable.rombelLabel,
 				createdAt: userTable.createdAt
 			})
 			.from(userTable)
@@ -153,6 +157,8 @@ export class UserAdminService {
 		role: string;
 		password: string;
 		isActive?: boolean;
+		angkatan?: number | null;
+		rombelLabel?: string | null;
 	}) {
 		const cleanUsername = input.username.trim().toLowerCase();
 		const cleanNisn = input.nisn && input.nisn.trim() !== '' ? input.nisn.trim() : null;
@@ -180,10 +186,6 @@ export class UserAdminService {
 			}
 		}
 
-		if (existingUser) {
-			throw new Error(`Username '${cleanUsername}' sudah digunakan.`);
-		}
-
 		// Check email collision if email provided
 		if (cleanEmail) {
 			const [existingEmail] = await db
@@ -207,7 +209,9 @@ export class UserAdminService {
 				email: cleanEmail,
 				role: input.role,
 				passwordHash,
-				isActive: input.isActive ?? true
+				isActive: input.isActive ?? true,
+				angkatan: input.angkatan ? Number(input.angkatan) : null,
+				rombelLabel: input.rombelLabel ? input.rombelLabel.trim() : null
 			})
 			.returning();
 
@@ -226,6 +230,8 @@ export class UserAdminService {
 		role: string;
 		password?: string | null;
 		isActive?: boolean;
+		angkatan?: number | null;
+		rombelLabel?: string | null;
 	}) {
 		const cleanUsername = input.username.trim().toLowerCase();
 		const cleanNisn = input.nisn && input.nisn.trim() !== '' ? input.nisn.trim() : null;
@@ -272,6 +278,8 @@ export class UserAdminService {
 			email: cleanEmail,
 			role: input.role,
 			isActive: input.isActive ?? true,
+			angkatan: input.angkatan ? Number(input.angkatan) : null,
+			rombelLabel: input.rombelLabel ? input.rombelLabel.trim() : null,
 			updatedAt: new Date()
 		};
 

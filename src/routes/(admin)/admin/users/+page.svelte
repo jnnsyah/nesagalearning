@@ -47,6 +47,8 @@
 	let formRole = $state('siswa');
 	let formPassword = $state('');
 	let formIsActive = $state(true);
+	let formAngkatan = $state('');
+	let formRombelLabel = $state('');
 
 	// Reset Password Modal state
 	let isResetModalOpen = $state(false);
@@ -90,6 +92,8 @@
 		formRole = 'siswa';
 		formPassword = '';
 		formIsActive = true;
+		formAngkatan = '';
+		formRombelLabel = '';
 		isFormDrawerOpen = true;
 	}
 
@@ -102,6 +106,8 @@
 		formRole = userItem.role;
 		formPassword = '';
 		formIsActive = userItem.isActive;
+		formAngkatan = userItem.angkatan ? userItem.angkatan.toString() : '';
+		formRombelLabel = userItem.rombelLabel || '';
 		isFormDrawerOpen = true;
 	}
 
@@ -638,6 +644,7 @@
 		open={isFormDrawerOpen}
 		title={editingUser ? `Edit User: @${editingUser.username}` : 'Tambah Pengguna Baru'}
 		subtitle={editingUser ? 'Perbarui informasi profil, role, atau ubah password akun.' : 'Daftarkan akun pengguna baru ke dalam platform NLC.'}
+		size="lg"
 		onclose={closeFormDrawer}
 	>
 		{#snippet children()}
@@ -660,18 +667,18 @@
 					<input type="hidden" name="username" value={formUsername} />
 				{/if}
 
-				<!-- Section 1: Hak Akses & Peran -->
+				<!-- Card 1: Identitas & Peran Pengguna -->
 				<div class="drawer-card">
 					<div class="drawer-card__header">
-						<div class="drawer-card__icon text-amber-600 bg-amber-50">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+						<div class="drawer-card__icon text-indigo-600 bg-indigo-50">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 						</div>
 						<div>
-							<h4 class="drawer-card__title">1. Hak Akses &amp; Peran</h4>
-							<p class="drawer-card__desc">Tentukan level izin sistem pengguna</p>
+							<h4 class="drawer-card__title">1. Identitas &amp; Peran Pengguna</h4>
+							<p class="drawer-card__desc">Pilih role, username, NISN, dan detail profil akun</p>
 						</div>
 					</div>
-					<div class="drawer-card__body space-y-3.5">
+					<div class="drawer-card__body flex flex-col gap-3.5 p-4">
 						<CustomSelect
 							name="role"
 							label="Pilih Role Pengguna"
@@ -683,21 +690,7 @@
 								{ value: 'admin', label: 'Admin (System Administrator)', description: 'Akses penuh seluruh pengaturan dan manajemen data' }
 							]}
 						/>
-					</div>
-				</div>
 
-				<!-- Section 2: Data Profil & Akun -->
-				<div class="drawer-card">
-					<div class="drawer-card__header">
-						<div class="drawer-card__icon text-indigo-600 bg-indigo-50">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-						</div>
-						<div>
-							<h4 class="drawer-card__title">2. Identitas Pengguna</h4>
-							<p class="drawer-card__desc">Informasi dasar akun dan nama lengkap</p>
-						</div>
-					</div>
-					<div class="drawer-card__body space-y-3.5">
 						<TextInput
 							name="username"
 							label="Username"
@@ -737,21 +730,43 @@
 							clearable
 							hint="Opsional, digunakan untuk notifikasi akun."
 						/>
+
+						{#if formRole === 'siswa' || formRole === 'mentor'}
+							<CustomSelect
+								name="angkatan"
+								label="Tahun Angkatan (Cohort)"
+								bind:value={formAngkatan}
+								options={(data.options?.angkatanList || []).map((a) => ({
+									value: String(a.year),
+									label: `Angkatan ${a.year}`
+								}))}
+							/>
+
+							<CustomSelect
+								name="rombelLabel"
+								label="Label Kelas Formal (Rombel Sekolah)"
+								bind:value={formRombelLabel}
+								options={(data.options?.rombelList || []).map((r) => ({
+									value: r.name,
+									label: r.name
+								}))}
+							/>
+						{/if}
 					</div>
 				</div>
 
-				<!-- Section 3: Keamanan & Status -->
+				<!-- Card 2: Keamanan & Status Akun -->
 				<div class="drawer-card">
 					<div class="drawer-card__header">
 						<div class="drawer-card__icon text-emerald-600 bg-emerald-50">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 						</div>
 						<div>
-							<h4 class="drawer-card__title">3. Keamanan &amp; Status Akun</h4>
+							<h4 class="drawer-card__title">2. Keamanan &amp; Status Akun</h4>
 							<p class="drawer-card__desc">Password dan izin login sistem</p>
 						</div>
 					</div>
-					<div class="drawer-card__body space-y-3.5">
+					<div class="drawer-card__body flex flex-col gap-3.5 p-4">
 						<TextInput
 							name="password"
 							label={editingUser ? 'Ubah Password (Opsional)' : 'Password Akun'}

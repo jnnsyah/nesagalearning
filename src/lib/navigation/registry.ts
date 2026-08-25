@@ -17,11 +17,11 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	],
 	mentor: [
 		{ label: 'Dashboard', href: '/mentor', icon: 'dashboard' },
-		{ label: 'Pertemuan Sesi', href: '/mentor/pertemuan', icon: 'calendar' },
-		{ label: 'Kelola Presensi', href: '/mentor/presensi', icon: 'users' },
-		{ label: 'Track Pembelajaran', href: '/mentor/kurikulum', icon: 'book' },
+		{ label: 'Progress Pembelajaran', href: '/mentor/progress', icon: 'activity' },
 		{ label: 'Data Siswa', href: '/mentor/siswa', icon: 'users' },
-		{ label: 'Grading Tugas', href: '/mentor/grading', icon: 'task', badge: 'PENDING' },
+		{ label: 'Track Pembelajaran', href: '/mentor/kurikulum', icon: 'book' },
+		{ label: 'Pertemuan Sesi', href: '/mentor/pertemuan', icon: 'calendar' },
+		{ label: 'Grading Tugas', href: '/mentor/tugas', icon: 'task' },
 		{ label: 'Profil Saya', href: '/mentor/profile', icon: 'user' }
 	],
 	guru: [
@@ -35,8 +35,11 @@ export const ROLE_NAV_ITEMS: Record<Role, NavItem[]> = {
 	],
 	admin: [
 		{ label: 'Control Center', href: '/admin', icon: 'dashboard' },
-		{ label: 'Kelola User', href: '/admin/users', icon: 'users' },
-		{ label: 'Master Operasional', href: '/admin/master', icon: 'database' },
+		{ label: 'Manajemen User', href: '/admin/users', icon: 'users' },
+		{ label: 'Manajemen Roster & Kelas', href: '/admin/kelas', icon: 'home' },
+		{ label: 'Periode Komunitas', href: '/admin/tahun-ajaran', icon: 'calendar' },
+		{ label: 'Master Data Operasional', href: '/admin/master', icon: 'database' },
+		{ label: 'Konfigurasi Poin', href: '/admin/konfigurasi', icon: 'settings' },
 		{ label: 'Manajemen Email', href: '/admin/email', icon: 'mail' },
 		{ label: 'Audit Log System', href: '/admin/audit-logs', icon: 'activity' },
 		{ label: 'Profil Saya', href: '/admin/profile', icon: 'user' }

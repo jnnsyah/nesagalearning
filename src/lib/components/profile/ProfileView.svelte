@@ -601,7 +601,7 @@
 				</div>
 				<div class="stat-info">
 					<span class="stat-value">{stats.activeTahunAjaranName ?? '-'}</span>
-					<span class="stat-label">Tahun Ajaran Aktif</span>
+					<span class="stat-label">Periode Aktif</span>
 				</div>
 			</div>
 
@@ -839,7 +839,7 @@
 								</div>
 
 								<div class="detail-row">
-									<span class="detail-label">Tahun Ajaran</span>
+									<span class="detail-label">Periode Komunitas</span>
 									<span class="detail-value">{stats.tahunAjaranName || '-'}</span>
 								</div>
 
@@ -898,7 +898,7 @@
 							{/if}
 						{:else if user.role === 'guru'}
 							<div class="card-header">
-								<h2 class="card-title">Cakupan Supervisi Akademik</h2>
+								<h2 class="card-title">Cakupan Supervisi Komunitas</h2>
 								<span class="badge badge--success">GURU SUPERVISOR</span>
 							</div>
 

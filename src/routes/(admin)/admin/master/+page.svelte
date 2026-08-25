@@ -9,13 +9,15 @@
 
 	let { data, form } = $props();
 
-	// Tab selection state: 'rooms' | 'activities' | 'avatars' | 'badges'
-	let activeTab = $state<'rooms' | 'activities' | 'avatars' | 'badges'>('rooms');
+	// Tab selection state: 'rooms' | 'activities' | 'avatars' | 'badges' | 'angkatan' | 'rombel'
+	let activeTab = $state<'rooms' | 'activities' | 'avatars' | 'badges' | 'angkatan' | 'rombel'>('angkatan');
 
 	// Search queries per tab
 	let roomSearch = $state('');
 	let badgeSearch = $state('');
 	let activitySearch = $state('');
+	let angkatanSearch = $state('');
+	let rombelSearch = $state('');
 
 	// Drawer modal states
 	let isRoomDrawerOpen = $state(false);
@@ -25,6 +27,37 @@
 	let isAvatarDrawerOpen = $state(false);
 	let isBadgeDrawerOpen = $state(false);
 	let isEditBadgeDrawerOpen = $state(false);
+	let isAngkatanDrawerOpen = $state(false);
+	let isRombelDrawerOpen = $state(false);
+	let isEditRombelDrawerOpen = $state(false);
+
+	let newAngkatanYear = $state(new Date().getFullYear().toString());
+	let newAngkatanName = $derived(newAngkatanYear ? `Angkatan ${newAngkatanYear.trim()}` : '');
+
+	function incrementAngkatanYear() {
+		const yr = parseInt(newAngkatanYear, 10) || new Date().getFullYear();
+		newAngkatanYear = (yr + 1).toString();
+	}
+
+	function decrementAngkatanYear() {
+		const yr = parseInt(newAngkatanYear, 10) || new Date().getFullYear();
+		newAngkatanYear = (yr - 1).toString();
+	}
+
+	let newRombelName = $state('');
+	let newRombelLevelOrder = $state('1');
+	let newRombelNextId = $state('');
+
+	let targetEditRombel = $state<{ id: number; name: string; levelOrder: number } | null>(null);
+	let editRombelName = $state('');
+	let editRombelLevelOrder = $state('1');
+
+	function openEditRombelDrawer(r: { id: number; name: string; levelOrder: number }) {
+		targetEditRombel = r;
+		editRombelName = r.name;
+		editRombelLevelOrder = r.levelOrder.toString();
+		isEditRombelDrawerOpen = true;
+	}
 
 	// Form input states
 	let targetEditRoom = $state<{ id: number; name: string; description: string | null } | null>(null);
@@ -86,6 +119,9 @@
 	});
 
 	function closeDrawers() {
+		isAngkatanDrawerOpen = false;
+		isRombelDrawerOpen = false;
+		isEditRombelDrawerOpen = false;
 		isRoomDrawerOpen = false;
 		isEditRoomDrawerOpen = false;
 		isActivityDrawerOpen = false;
@@ -93,9 +129,12 @@
 		isAvatarDrawerOpen = false;
 		isBadgeDrawerOpen = false;
 		isEditBadgeDrawerOpen = false;
+		targetEditRombel = null;
 		targetEditRoom = null;
 		targetEditActivity = null;
 		targetEditBadge = null;
+		newRombelName = '';
+		editRombelName = '';
 		roomName = '';
 		roomDescription = '';
 		activityCode = '';
@@ -109,6 +148,15 @@
 		badgeIconUrl = '';
 		badgeTriggerType = 'manual_award';
 		badgeTriggerThreshold = '0';
+	}
+
+	function handleFormEnhance() {
+		return async ({ result, update }: { result: any; update: () => Promise<void> }) => {
+			await update();
+			if (result.type === 'success') {
+				closeDrawers();
+			}
+		};
 	}
 
 	function openEditRoomDrawer(r: any) {
@@ -169,6 +217,24 @@
 		}
 		return list;
 	});
+
+	let filteredAngkatan = $derived.by(() => {
+		let list = [...(data.angkatanList || [])];
+		if (angkatanSearch.trim() !== '') {
+			const term = angkatanSearch.toLowerCase().trim();
+			list = list.filter((a) => a.name.toLowerCase().includes(term) || a.year.toString().includes(term));
+		}
+		return list;
+	});
+
+	let filteredRombel = $derived.by(() => {
+		let list = [...(data.rombelList || [])];
+		if (rombelSearch.trim() !== '') {
+			const term = rombelSearch.toLowerCase().trim();
+			list = list.filter((r) => r.name.toLowerCase().includes(term) || r.levelOrder.toString().includes(term));
+		}
+		return list;
+	});
 </script>
 
 <div class="page-container">
@@ -217,12 +283,50 @@
 						</svg>
 						<span>Tambah Badge</span>
 					</button>
+				{:else if activeTab === 'angkatan'}
+					<button type="button" class="btn-primary-action" onclick={() => (isAngkatanDrawerOpen = true)}>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+						</svg>
+						<span>Tambah Angkatan</span>
+					</button>
+				{:else if activeTab === 'rombel'}
+					<button type="button" class="btn-primary-action" onclick={() => (isRombelDrawerOpen = true)}>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+						</svg>
+						<span>Tambah Rombel</span>
+					</button>
 				{/if}
 			</div>
 		</div>
 
 		<!-- TAB STRIP NAVIGATION -->
 		<div class="tab-strip-container mt-6">
+			<button
+				type="button"
+				class="tab-btn"
+				class:tab-btn--active={activeTab === 'angkatan'}
+				onclick={() => (activeTab = 'angkatan')}
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+				</svg>
+				<span>Master Angkatan ({data.angkatanList?.length ?? 0})</span>
+			</button>
+
+			<button
+				type="button"
+				class="tab-btn"
+				class:tab-btn--active={activeTab === 'rombel'}
+				onclick={() => (activeTab = 'rombel')}
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+				</svg>
+				<span>Master Rombel Kelas ({data.rombelList?.length ?? 0})</span>
+			</button>
+
 			<button
 				type="button"
 				class="tab-btn"
@@ -274,9 +378,174 @@
 	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     2. TAB CONTENT 1: RUANGAN KELAS (ROOMS)
+	     TAB CONTENT: MASTER ANGKATAN
 	     ══════════════════════════════════════════════════════════ -->
-	{#if activeTab === 'rooms'}
+	{#if activeTab === 'angkatan'}
+		<section class="card card-table">
+			<div class="card-header-flex">
+				<div>
+					<h2 class="card-title">Daftar Master Angkatan ({filteredAngkatan.length})</h2>
+					<p class="card-subtitle">Master angkatan (cohort) komunitas untuk siswa Nesaga Learning Community</p>
+				</div>
+			</div>
+
+			<div class="mb-4">
+				<TextInput
+					name="angkatanSearch"
+					placeholder="Cari angkatan (Tahun / Nama cohort)…"
+					bind:value={angkatanSearch}
+					clearable
+				/>
+			</div>
+
+			{#if filteredAngkatan.length > 0}
+				<div class="table-responsive">
+					<table class="data-table text-xs">
+						<thead>
+							<tr>
+								<th>TAHUN ANGKATAN</th>
+								<th>NAMA ANGKATAN (COHORT)</th>
+								<th>STATUS ANGKATAN</th>
+								<th class="text-right">AKSI</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each filteredAngkatan as a}
+								<tr>
+									<td>
+										<span class="font-bold text-slate-900 text-sm block">{a.year}</span>
+									</td>
+									<td>
+										<span class="font-semibold text-slate-700">{a.name}</span>
+									</td>
+									<td>
+										<span class="text-slate-600 font-semibold">{a.isActive ? 'Aktif' : 'Non-Aktif'}</span>
+									</td>
+									<td class="text-right">
+										<div class="inline-flex items-center gap-1">
+											<form method="POST" action="?/toggleAngkatan" use:enhance class="inline-block">
+												<input type="hidden" name="id" value={a.id} />
+												<input type="hidden" name="isActive" value={(!a.isActive).toString()} />
+												<button
+													type="submit"
+													class={a.isActive ? 'btn-row-secondary' : 'btn-row-primary'}
+													title={a.isActive ? 'Nonaktifkan Angkatan' : 'Aktifkan Angkatan'}
+												>
+													<span class="text-xs font-bold">{a.isActive ? 'Nonaktifkan' : 'Aktifkan'}</span>
+												</button>
+											</form>
+											<form method="POST" action="?/deleteAngkatan" use:enhance class="inline-block" onsubmit={(e) => { if (!confirm(`Hapus master angkatan '${a.name}'?`)) e.preventDefault(); }}>
+												<input type="hidden" name="id" value={a.id} />
+												<button
+													type="submit"
+													class="btn-row-danger"
+													title="Hapus Angkatan"
+												>
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+														<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+													</svg>
+												</button>
+											</form>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
+				<div class="empty-state-box py-12 text-center">
+					<p class="text-xs text-slate-500 italic">
+						{angkatanSearch ? `Tidak ada angkatan cocok dengan kata kunci "${angkatanSearch}".` : 'Belum ada data master angkatan terdaftar.'}
+					</p>
+				</div>
+			{/if}
+		</section>
+
+	<!-- ══════════════════════════════════════════════════════════
+	     TAB CONTENT: MASTER ROMBEL KELAS
+	     ══════════════════════════════════════════════════════════ -->
+	{:else if activeTab === 'rombel'}
+		<section class="card card-table">
+			<div class="card-header-flex">
+				<div>
+					<h2 class="card-title">Daftar Master Rombel Kelas ({filteredRombel.length})</h2>
+					<p class="card-subtitle">Master opsi label kelas formal sekolah untuk sinkronisasi rombel fisik</p>
+				</div>
+			</div>
+
+			<div class="mb-4">
+				<TextInput
+					name="rombelSearch"
+					placeholder="Cari rombel label (Nama / Tingkat)…"
+					bind:value={rombelSearch}
+					clearable
+				/>
+			</div>
+
+			{#if filteredRombel.length > 0}
+				<div class="table-responsive">
+					<table class="data-table text-xs">
+						<thead>
+							<tr>
+								<th>NAMA ROMBEL KELAS</th>
+								<th>TINGKAT LEVEL SEKOAH</th>
+								<th class="text-right">AKSI</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each filteredRombel as r}
+								<tr>
+									<td>
+										<span class="font-bold text-slate-900 text-sm block">{r.name}</span>
+									</td>
+									<td>
+										<span class="text-slate-600 font-semibold">Tingkat {r.levelOrder}</span>
+									</td>
+									<td class="text-right">
+										<div class="inline-flex items-center gap-1">
+											<button
+												type="button"
+												onclick={() => openEditRombelDrawer(r)}
+												class="btn-row-secondary"
+												title="Edit Rombel"
+											>
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+												</svg>
+											</button>
+											<form method="POST" action="?/deleteRombel" use:enhance class="inline-block" onsubmit={(e) => { if (!confirm(`Hapus master rombel '${r.name}'?`)) e.preventDefault(); }}>
+												<input type="hidden" name="id" value={r.id} />
+												<button
+													type="submit"
+													class="btn-row-danger"
+													title="Hapus Rombel"
+												>
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+														<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+													</svg>
+												</button>
+											</form>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
+				<div class="empty-state-box py-12 text-center">
+					<p class="text-xs text-slate-500 italic">
+						{rombelSearch ? `Tidak ada rombel cocok dengan kata kunci "${rombelSearch}".` : 'Belum ada data master rombel terdaftar.'}
+					</p>
+				</div>
+			{/if}
+		</section>
+
+	<!-- ══════════════════════════════════════════════════════════
+	     TAB CONTENT: RUANGAN KELAS (ROOMS)
+	     ══════════════════════════════════════════════════════════ -->
+	{:else if activeTab === 'rooms'}
 		<section class="card card-table">
 			<div class="card-header-flex">
 				<div>
@@ -550,9 +819,115 @@
 		</section>
 	{/if}
 
-	<!-- ══════════════════════════════════════════════════════════
-	     6. DRAWERS (ADD / EDIT ROOM, ACTIVITY TYPE, AVATAR, BADGE)
-	     ══════════════════════════════════════════════════════════ -->
+	<!-- DRAWERS (ADD ANGKATAN & ROMBEL) -->
+	{#if isAngkatanDrawerOpen}
+		<FormDrawer
+			bind:open={isAngkatanDrawerOpen}
+			title="Tambah Angkatan Baru"
+			subtitle="Masukkan tahun angkatan cohort komunitas (contoh: 2025)"
+			onclose={closeDrawers}
+		>
+			{#snippet children()}
+				<form id="angkatan-form" action="?/createAngkatan" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
+					<div class="flex flex-col gap-1.5">
+						<label for="angkatan-year-input" class="text-xs font-bold text-slate-700">Tahun Angkatan</label>
+						<div class="flex items-center gap-2">
+							<button
+								type="button"
+								onclick={decrementAngkatanYear}
+								class="h-10 w-11 flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition text-lg cursor-pointer"
+								title="Kurangi Tahun"
+							>
+								-
+							</button>
+							<input
+								id="angkatan-year-input"
+								name="year"
+								type="number"
+								required
+								bind:value={newAngkatanYear}
+								class="h-10 flex-1 px-3 text-center text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+								placeholder="Contoh: 2026"
+							/>
+							<button
+								type="button"
+								onclick={incrementAngkatanYear}
+								class="h-10 w-11 flex items-center justify-center rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition text-lg cursor-pointer"
+								title="Tambah Tahun"
+							>
+								+
+							</button>
+						</div>
+						<p class="text-[11px] text-slate-500">Tahun angkatan cohort komunitas (default: tahun saat ini).</p>
+					</div>
+
+					<TextInput
+						name="name"
+						label="Nama Angkatan (Otomatis)"
+						readonly
+						value={newAngkatanName}
+						placeholder="Contoh: Angkatan 2026"
+						hint="Nama angkatan otomatis disesuaikan berdasarkan tahun angkatan."
+					/>
+				</form>
+			{/snippet}
+
+			{#snippet footer()}
+				<div class="drawer-footer-row">
+					<button type="button" onclick={closeDrawers} class="btn-drawer-secondary">Batal</button>
+					<button type="submit" form="angkatan-form" class="btn-drawer-primary">Simpan Angkatan</button>
+				</div>
+			{/snippet}
+		</FormDrawer>
+	{/if}
+
+	{#if isRombelDrawerOpen}
+		<FormDrawer
+			bind:open={isRombelDrawerOpen}
+			title="Tambah Master Rombel Kelas"
+			subtitle="Masukkan nama label kelas formal sekolah"
+			onclose={closeDrawers}
+		>
+			{#snippet children()}
+				<form id="rombel-form" action="?/createRombel" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
+					<TextInput name="name" label="Nama Label Rombel" required bind:value={newRombelName} placeholder="Contoh: X TKJ 1, XI TKJ 2" />
+					<TextInput name="levelOrder" label="Tingkat Level (1=X, 2=XI, 3=XII, 4=Alumni)" type="number" required bind:value={newRombelLevelOrder} />
+				</form>
+			{/snippet}
+
+			{#snippet footer()}
+				<div class="drawer-footer-row">
+					<button type="button" onclick={closeDrawers} class="btn-drawer-secondary">Batal</button>
+					<button type="submit" form="rombel-form" class="btn-drawer-primary">Simpan Rombel</button>
+				</div>
+			{/snippet}
+		</FormDrawer>
+	{/if}
+
+	{#if isEditRombelDrawerOpen && targetEditRombel}
+		<FormDrawer
+			bind:open={isEditRombelDrawerOpen}
+			title="Edit Master Rombel Kelas"
+			subtitle="Perbarui nama label rombel & tingkat level"
+			onclose={closeDrawers}
+		>
+			{#snippet children()}
+				<form id="edit-rombel-form" action="?/updateRombel" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
+					<input type="hidden" name="id" value={targetEditRombel.id} />
+					<TextInput name="name" label="Nama Label Rombel" required bind:value={editRombelName} placeholder="Contoh: X TKJ 1, XI TKJ 2" />
+					<TextInput name="levelOrder" label="Tingkat Level (1=X, 2=XI, 3=XII, 4=Alumni)" type="number" required bind:value={editRombelLevelOrder} />
+				</form>
+			{/snippet}
+
+			{#snippet footer()}
+				<div class="drawer-footer-row">
+					<button type="button" onclick={closeDrawers} class="btn-drawer-secondary">Batal</button>
+					<button type="submit" form="edit-rombel-form" class="btn-drawer-primary">Simpan Perubahan</button>
+				</div>
+			{/snippet}
+		</FormDrawer>
+	{/if}
+
 	{#if isRoomDrawerOpen}
 		<FormDrawer
 			bind:open={isRoomDrawerOpen}
@@ -561,7 +936,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="room-form" action="?/createRoom" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="room-form" action="?/createRoom" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<TextInput name="name" label="Nama Ruangan" required bind:value={roomName} placeholder="Contoh: Lab Komputer 1, Ruang Teori A" />
 					<TextArea name="description" label="Deskripsi / Catatan Lokasi" bind:value={roomDescription} placeholder="Keterangan gedung / lantai" rows={3} />
 				</form>
@@ -594,7 +969,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="edit-room-form" action="?/updateRoom" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="edit-room-form" action="?/updateRoom" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<input type="hidden" name="id" value={targetEditRoom?.id} />
 					<TextInput name="name" label="Nama Ruangan" required bind:value={roomName} placeholder="Contoh: Lab Komputer 1, Ruang Teori A" />
 					<TextArea name="description" label="Deskripsi / Catatan Lokasi" bind:value={roomDescription} placeholder="Keterangan gedung / lantai" rows={3} />
@@ -628,7 +1003,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="activity-form" action="?/createActivityType" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="activity-form" action="?/createActivityType" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<TextInput name="code" label="Kode Aktivitas (Unik)" required bind:value={activityCode} placeholder="Contoh: workshop, teori, quiz" hint="Kode huruf kecil tanpa spasi (contoh: 'workshop')" />
 					<TextInput name="name" label="Nama Tipe Aktivitas" required bind:value={activityName} placeholder="Contoh: Workshop & Coding Lab" />
 					<TextArea name="description" label="Deskripsi Sesi" bind:value={activityDescription} placeholder="Keterangan singkat jenis aktivitas..." rows={3} />
@@ -662,7 +1037,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="edit-activity-form" action="?/updateActivityType" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="edit-activity-form" action="?/updateActivityType" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<input type="hidden" name="id" value={targetEditActivity?.id} />
 					<TextInput name="code" label="Kode Aktivitas (Unik)" required bind:value={activityCode} placeholder="Contoh: workshop, teori, quiz" hint="Kode huruf kecil tanpa spasi" />
 					<TextInput name="name" label="Nama Tipe Aktivitas" required bind:value={activityName} placeholder="Contoh: Workshop & Coding Lab" />
@@ -697,7 +1072,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="avatar-form" action="?/createAvatar" method="POST" enctype="multipart/form-data" use:enhance class="flex flex-col gap-4">
+				<form id="avatar-form" action="?/createAvatar" method="POST" enctype="multipart/form-data" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<TextInput name="name" label="Nama Avatar" required bind:value={avatarName} placeholder="Contoh: Cyber Explorer, Pixel Wizard" />
 					
 					<div class="flex flex-col gap-1.5">
@@ -748,7 +1123,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="badge-form" action="?/createBadgeType" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="badge-form" action="?/createBadgeType" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<TextInput name="name" label="Nama Badge" required bind:value={badgeName} placeholder="Contoh: Streak Warrior, Code Ninja" />
 					
 					<CustomSelect
@@ -801,7 +1176,7 @@
 			onclose={closeDrawers}
 		>
 			{#snippet children()}
-				<form id="edit-badge-form" action="?/updateBadgeType" method="POST" use:enhance class="flex flex-col gap-4">
+				<form id="edit-badge-form" action="?/updateBadgeType" method="POST" use:enhance={handleFormEnhance} class="flex flex-col gap-4">
 					<input type="hidden" name="id" value={targetEditBadge?.id} />
 					<TextInput name="name" label="Nama Badge" required bind:value={badgeName} placeholder="Contoh: Streak Warrior, Code Ninja" />
 
@@ -1026,6 +1401,24 @@
 
 	.btn-primary-action:hover {
 		background: var(--primary-hover, #4338ca);
+	}
+
+	.btn-row-primary {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 8px;
+		background: #4f46e5;
+		color: #ffffff;
+		border: 1px solid #4338ca;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-row-primary:hover {
+		background: #4338ca;
+		border-color: #3730a3;
 	}
 
 	.btn-row-secondary {

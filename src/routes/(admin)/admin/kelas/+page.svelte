@@ -25,6 +25,7 @@
 	// Form inputs
 	let formName = $state('');
 	let formTahunAjaranId = $state<string>('');
+	let formTargetAngkatan = $state<string>('');
 	let formTingkatId = $state<string>('');
 	let formTrackId = $state<string>('');
 	let selectedMentorIds = $state<number[]>([]);
@@ -121,7 +122,7 @@
 
 	// Options data formatted for CustomSelect
 	let taOptions = $derived([
-		{ value: '0', label: 'Semua Tahun Ajaran' },
+		{ value: '0', label: 'Semua Periode' },
 		...(data.options?.tahunAjaranList || []).map((ta: any) => ({
 			value: String(ta.id),
 			label: `${ta.name} ${ta.isActive ? '(Aktif)' : ''}`
@@ -296,6 +297,7 @@
 	function openCreateDrawer() {
 		editingKelas = null;
 		formName = '';
+		formTargetAngkatan = data.options?.angkatanList?.[0] ? String(data.options.angkatanList[0].year) : '';
 
 		const activeTa = data.options?.tahunAjaranList?.find((ta: any) => ta.isActive);
 		formTahunAjaranId = activeTa ? String(activeTa.id) : (data.options?.tahunAjaranList?.[0] ? String(data.options.tahunAjaranList[0].id) : '');
@@ -310,9 +312,10 @@
 	function openEditDrawer(kelasItem: any) {
 		editingKelas = kelasItem;
 		formName = kelasItem.name;
+		formTargetAngkatan = kelasItem.targetAngkatan ? String(kelasItem.targetAngkatan) : (data.options?.angkatanList?.[0] ? String(data.options.angkatanList[0].year) : '');
 		formTahunAjaranId = String(kelasItem.tahunAjaranId);
-		formTingkatId = String(kelasItem.tingkatId);
-		formTrackId = String(kelasItem.curriculumTrackId);
+		formTingkatId = kelasItem.tingkatId ? String(kelasItem.tingkatId) : '';
+		formTrackId = kelasItem.curriculumTrackId ? String(kelasItem.curriculumTrackId) : '';
 		selectedMentorIds = (kelasItem.mentors || []).map((m: any) => m.id);
 		formIsActive = kelasItem.isActive;
 		isFormDrawerOpen = true;
@@ -464,28 +467,21 @@
 		<div class="hero-content-row">
 			<div>
 				<div class="hero-title-group">
-					<h1 class="hero-title">Manajemen Kelas & Master Data</h1>
+					<h1 class="hero-title">Manajemen Roster & Kelompok Angkatan</h1>
 					<span class="badge badge-primary">
-						{data.stats?.totalKelas ?? 0} Kelas
+						{data.stats?.totalKelas ?? 0} Kelompok
 					</span>
 				</div>
 				<p class="hero-subtitle">
-					Kelola rombongan belajar (kelas), tingkat/jenjang, penugasan mentor, serta proses kenaikan kelas.
+					Kelola plotting anggota siswa per angkatan & penugasan mentor pembimbing utama di periode berjalan.
 				</p>
 			</div>
 			<div class="hero-actions-group">
-				<button type="button" class="btn-secondary-action" onclick={openPromoteDrawer}>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/>
-					</svg>
-					<span>Kenaikan Kelas (Bulk TA)</span>
-				</button>
-
 				<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
 					</svg>
-					<span>Tambah Kelas Baru</span>
+					<span>Tambah Kelompok Angkatan</span>
 				</button>
 			</div>
 	</header>
@@ -544,19 +540,21 @@
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     3. FILTER BAR ($lib/components/ui/FilterBar.svelte)
+	     3. FILTER PANEL (2-ROW LAYOUT: SEARCH FULL WIDTH & FILTERS GRID)
 	     ══════════════════════════════════════════════════════════ -->
-	<FilterBar>
-		{#snippet search()}
+	<div class="filter-panel">
+		<!-- Row 1: Search Input (Full Width) -->
+		<div class="w-full">
 			<TextInput
 				name="search"
-				placeholder="Cari nama kelas (contoh: X TKJ 1, XI RPL)…"
+				placeholder="Cari nama kelompok kelas, angkatan, atau mentor…"
 				bind:value={searchQuery}
 				clearable
 			/>
-		{/snippet}
+		</div>
 
-		{#snippet filters()}
+		<!-- Row 2: Filter Selects (4 Columns Grid) -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 			<CustomSelect
 				name="filterTa"
 				bind:value={filterTa}
@@ -588,8 +586,8 @@
 					{ value: 'nama-asc', label: 'Urutan: Nama (A-Z)' }
 				]}
 			/>
-		{/snippet}
-	</FilterBar>
+		</div>
+	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4. DATA TABLE / LIST VIEW
@@ -609,9 +607,9 @@
 				<table class="data-table">
 					<thead>
 						<tr>
-							<th>NAMA KELAS</th>
-							<th>TAHUN AJARAN</th>
-							<th>TINGKAT &amp; TRACK PEMBELAJARAN</th>
+							<th>NAMA KELOMPOK</th>
+							<th>PERIODE KOMUNITAS</th>
+							<th>TARGET ANGKATAN</th>
 							<th>MENTOR PENANGGUNG JAWAB</th>
 							<th>SISWA AKTIF</th>
 							<th>STATUS</th>
@@ -632,10 +630,13 @@
 									</span>
 								</td>
 								<td>
-									<div class="flex flex-col gap-0.5">
-										<span class="font-bold text-xs text-slate-800">{item.tingkatName}</span>
-										<span class="text-xs text-slate-500">{item.curriculumTrackTitle}</span>
-									</div>
+									{#if item.targetAngkatan}
+										<span class="badge badge-neutral font-semibold">
+											Angkatan {item.targetAngkatan}
+										</span>
+									{:else}
+										<span class="text-slate-400 text-xs italic">Semua Angkatan</span>
+									{/if}
 								</td>
 								<td>
 									{#if item.mentors && item.mentors.length > 0}
@@ -735,6 +736,7 @@
 		bind:open={isFormDrawerOpen}
 		title={editingKelas ? 'Edit Data Kelas' : 'Tambah Kelas Baru'}
 		subtitle={editingKelas ? `Perbarui rombel ${editingKelas.name}` : 'Buat rombongan belajar (kelas) baru untuk Nesaga Learning Community.'}
+		size="lg"
 		onclose={closeFormDrawer}
 	>
 		{#snippet children()}
@@ -756,49 +758,42 @@
 					<input type="hidden" name="id" value={editingKelas.id} />
 				{/if}
 
-				<!-- Card 1: Struktur Akademik Kelas -->
+				<!-- Card 1: Target Angkatan & Periode -->
 				<div class="drawer-card">
 					<div class="drawer-card__header">
 						<div class="drawer-card__icon text-indigo-600 bg-indigo-50">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
 						</div>
 						<div>
-							<h4 class="drawer-card__title">1. Struktur Akademik Kelas</h4>
-							<p class="drawer-card__desc">Tentukan tahun ajaran, tingkat, dan track pembelajaran</p>
+							<h4 class="drawer-card__title">1. Target Angkatan & Periode Komunitas</h4>
+							<p class="drawer-card__desc">Pilih angkatan siswa dan periode komunitas kelompok ini</p>
 						</div>
 					</div>
-					<div class="drawer-card__body space-y-3.5">
+					<div class="drawer-card__body flex flex-col gap-3.5 p-4">
+						<CustomSelect
+							name="targetAngkatan"
+							label="Target Angkatan Siswa"
+							bind:value={formTargetAngkatan}
+							options={(data.options?.angkatanList || []).map((a: any) => ({
+								value: String(a.year),
+								label: `Angkatan ${a.year}${a.isActive ? ' (Aktif)' : ''}`
+							}))}
+						/>
+
 						<CustomSelect
 							name="tahunAjaranId"
-							label="Tahun Ajaran"
+							label="Periode Komunitas"
 							required
 							bind:value={formTahunAjaranId}
 							options={formTaOptions}
 						/>
 
-						<CustomSelect
-							name="tingkatId"
-							label="Tingkat / Jenjang Kelas"
-							required
-							bind:value={formTingkatId}
-							options={formTingkatOptions}
-						/>
-
-						<CustomSelect
-							name="curriculumTrackId"
-							label="Track Pembelajaran"
-							required
-							bind:value={formTrackId}
-							options={formTrackOptions}
-						/>
-
 						<TextInput
 							name="name"
-							label="Nama Kelas"
+							label="Nama Kelompok / Roster Angkatan"
 							required
 							bind:value={formName}
-							placeholder="Contoh: X TKJ 1, XI RPL 2"
-							hint="Sertakan jenjang dan urutan rombel (misal X TKJ 1)."
+							placeholder="Contoh: Kelompok Angkatan 2025 Utama"
 						/>
 					</div>
 				</div>
@@ -1698,6 +1693,18 @@
 		background: #f1f5f9;
 		color: #64748b;
 		border: 1px solid #cbd5e1;
+	}
+
+	.filter-panel {
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-lg, 12px);
+		padding: 20px 22px;
+		margin-bottom: 24px;
+		box-shadow: var(--shadow-sm);
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 	}
 
 	.badge {

@@ -9,7 +9,7 @@ import {
 	index
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
-import { kelasInstance } from './academic';
+import { kelasInstance, tahunAjaran } from './academic';
 import { quiz } from './curriculum';
 
 export const pointLog = pgTable(
@@ -22,6 +22,8 @@ export const pointLog = pgTable(
 		kelasInstanceId: bigint('kelas_instance_id', { mode: 'number' })
 			.notNull()
 			.references(() => kelasInstance.id),
+		periodeId: bigint('periode_id', { mode: 'number' })
+			.references(() => tahunAjaran.id),
 		source: text('source').notNull(),
 		amount: integer('amount').notNull(),
 		referenceId: bigint('reference_id', { mode: 'number' }),
@@ -31,7 +33,8 @@ export const pointLog = pgTable(
 	},
 	(table) => [
 		index('idx_point_log_user_kelas').on(table.userId, table.kelasInstanceId),
-		index('idx_point_log_kelas').on(table.kelasInstanceId)
+		index('idx_point_log_kelas').on(table.kelasInstanceId),
+		index('idx_point_log_user_periode').on(table.userId, table.periodeId)
 	]
 );
 

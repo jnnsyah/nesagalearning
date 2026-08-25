@@ -12,10 +12,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	try {
 		const query = url.searchParams.get('q') || '';
 		const data = await AcademicAdminService.getTahunAjaranList(query);
+		const promotionPreview = await AcademicAdminService.getPromotionPreview();
 
 		return {
 			items: data.items,
 			stats: data.stats,
+			promotionPreview,
 			query
 		};
 	} catch (err: any) {
@@ -23,6 +25,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		return {
 			items: [],
 			stats: { totalTahunAjaran: 0, activeTahunAjaranName: null, totalClassesAcrossAll: 0, totalStudentsAcrossAll: 0 },
+			promotionPreview: {
+				summary: { totalStudents: 0, willPromoteCount: 0, willGraduateCount: 0, unchangedCount: 0 },
+				items: []
+			},
 			query: ''
 		};
 	}
@@ -163,6 +169,26 @@ export const actions: Actions = {
 			return fail(400, {
 				success: false,
 				message: formatErrorMessage(err, 'Gagal menghapus tahun ajaran.')
+			});
+		}
+	},
+
+	bulkPromote: async ({ locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(401, { success: false, message: 'Akses ditolak.' });
+		}
+
+		try {
+			const res = await AcademicAdminService.bulkPromoteRombels();
+			if (!res.success) {
+				return fail(400, { success: false, message: res.message });
+			}
+			return { success: true, message: res.message };
+		} catch (err: any) {
+			console.error('[bulkPromote Error]:', err);
+			return fail(400, {
+				success: false,
+				message: formatErrorMessage(err, 'Gagal memproses kenaikan kelas rombel.')
 			});
 		}
 	}

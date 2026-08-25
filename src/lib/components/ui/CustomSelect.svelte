@@ -78,31 +78,28 @@
 		}
 	}
 
-	function handleClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			isOpen = false;
-		}
-	}
-
-	// Single active popover enforcement: close when any other popover is opened
+	// Capture-phase document click listener to ensure popover closes when clicking anywhere outside (including inside drawers/modals)
 	$effect(() => {
-		function handleClosePopovers(e: Event) {
-			const customEvt = e as CustomEvent;
-			if (customEvt.detail?.source !== containerEl) {
+		if (!isOpen) return;
+
+		function handleOutsideClick(e: Event) {
+			if (containerEl && !containerEl.contains(e.target as Node)) {
 				isOpen = false;
 			}
 		}
 
 		if (typeof window !== 'undefined') {
-			window.addEventListener('nlc:close-popovers', handleClosePopovers);
+			document.addEventListener('pointerdown', handleOutsideClick, true);
+			document.addEventListener('click', handleOutsideClick, true);
 			return () => {
-				window.removeEventListener('nlc:close-popovers', handleClosePopovers);
+				document.removeEventListener('pointerdown', handleOutsideClick, true);
+				document.removeEventListener('click', handleOutsideClick, true);
 			};
 		}
 	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} onclick={handleClickOutside} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="select-field" bind:this={containerEl}>
 	{#if label}

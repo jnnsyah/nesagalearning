@@ -1,5 +1,6 @@
 import { db } from '../db';
-import { tahunAjaran, kelasInstance, keanggotaan } from '../db/schema/academic';
+import { tahunAjaran, kelasInstance, keanggotaan, masterRombel } from '../db/schema/academic';
+import { user } from '../db/schema/auth';
 import { eq, ne, and, count, desc, like } from 'drizzle-orm';
 import type { CreateTahunAjaranInput, UpdateTahunAjaranInput } from '$lib/validators/academic';
 
@@ -182,7 +183,7 @@ export const AcademicAdminService = {
 			.where(eq(tahunAjaran.name, nameTrimmed));
 
 		if (existing) {
-			return { success: false, message: `Tahun ajaran '${nameTrimmed}' sudah ada.` };
+			return { success: false, message: `Periode '${nameTrimmed}' sudah ada.` };
 		}
 
 		const startDate = input.startedAt && input.startedAt.trim() !== '' ? new Date(input.startedAt) : null;
@@ -194,7 +195,7 @@ export const AcademicAdminService = {
 		if (shouldBeActive && startDate && isFutureDate(startDate)) {
 			return {
 				success: false,
-				message: `Tahun ajaran '${nameTrimmed}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(startDate)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
+				message: `Periode '${nameTrimmed}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(startDate)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
 			};
 		}
 
@@ -212,7 +213,7 @@ export const AcademicAdminService = {
 			updatedAt: new Date()
 		});
 
-		return { success: true, message: `Tahun ajaran '${nameTrimmed}' berhasil ditambahkan.` };
+		return { success: true, message: `Periode '${nameTrimmed}' berhasil ditambahkan.` };
 	},
 
 	/**
@@ -227,7 +228,7 @@ export const AcademicAdminService = {
 			.where(eq(tahunAjaran.id, input.id));
 
 		if (!target) {
-			return { success: false, message: 'Tahun ajaran tidak ditemukan.' };
+			return { success: false, message: 'Periode tidak ditemukan.' };
 		}
 
 		// Check name collision with other records
@@ -237,7 +238,7 @@ export const AcademicAdminService = {
 			.where(and(eq(tahunAjaran.name, nameTrimmed), ne(tahunAjaran.id, input.id)));
 
 		if (nameCheck) {
-			return { success: false, message: `Tahun ajaran '${nameTrimmed}' sudah digunakan oleh data lain.` };
+			return { success: false, message: `Periode '${nameTrimmed}' sudah digunakan oleh data lain.` };
 		}
 
 		const startDate = input.startedAt && input.startedAt.trim() !== '' ? new Date(input.startedAt) : null;
@@ -249,7 +250,7 @@ export const AcademicAdminService = {
 		if (shouldBeActive && startDate && isFutureDate(startDate)) {
 			return {
 				success: false,
-				message: `Tahun ajaran '${nameTrimmed}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(startDate)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
+				message: `Periode '${nameTrimmed}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(startDate)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
 			};
 		}
 
@@ -269,7 +270,7 @@ export const AcademicAdminService = {
 			})
 			.where(eq(tahunAjaran.id, input.id));
 
-		return { success: true, message: `Tahun ajaran '${nameTrimmed}' berhasil diperbarui.` };
+		return { success: true, message: `Periode '${nameTrimmed}' berhasil diperbarui.` };
 	},
 
 	/**
@@ -287,18 +288,18 @@ export const AcademicAdminService = {
 			.where(eq(tahunAjaran.id, id));
 
 		if (!target) {
-			return { success: false, message: 'Tahun ajaran tidak ditemukan.' };
+			return { success: false, message: 'Periode tidak ditemukan.' };
 		}
 
 		if (target.isActive) {
-			return { success: true, message: `Tahun ajaran '${target.name}' sudah dalam status aktif.` };
+			return { success: true, message: `Periode '${target.name}' sudah dalam status aktif.` };
 		}
 
 		// BUSINESS GUARD: Cannot activate if start date is in the future
 		if (target.startedAt && isFutureDate(target.startedAt)) {
 			return {
 				success: false,
-				message: `Tahun ajaran '${target.name}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(target.startedAt)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
+				message: `Periode '${target.name}' belum dapat diaktifkan karena tanggal mulai (${formatDateIndo(target.startedAt)}) belum tiba. Sistem akan mengaktifkannya secara otomatis saat waktunya tiba.`
 			};
 		}
 
@@ -309,7 +310,7 @@ export const AcademicAdminService = {
 			.set({ isActive: true, updatedAt: new Date() })
 			.where(eq(tahunAjaran.id, id));
 
-		return { success: true, message: `Tahun ajaran '${target.name}' sekarang aktif.` };
+		return { success: true, message: `Periode '${target.name}' sekarang aktif.` };
 	},
 
 	/**
@@ -322,7 +323,7 @@ export const AcademicAdminService = {
 			.where(eq(tahunAjaran.id, id));
 
 		if (!target) {
-			return { success: false, message: 'Tahun ajaran tidak ditemukan.' };
+			return { success: false, message: 'Periode tidak ditemukan.' };
 		}
 
 		// Check foreign key reference in kelasInstance
@@ -336,12 +337,198 @@ export const AcademicAdminService = {
 		if (connectedClasses > 0) {
 			return {
 				success: false,
-				message: `Tahun ajaran '${target.name}' tidak dapat dihapus karena masih terhubung dengan ${connectedClasses} kelas.`
+				message: `Periode '${target.name}' tidak dapat dihapus karena masih terhubung dengan ${connectedClasses} kelas.`
 			};
 		}
 
 		await db.delete(tahunAjaran).where(eq(tahunAjaran.id, id));
 
-		return { success: true, message: `Tahun ajaran '${target.name}' berhasil dihapus.` };
+		return { success: true, message: `Periode '${target.name}' berhasil dihapus.` };
+	},
+
+	/**
+	 * Bulk promotes student rombelLabels to next level upon active Periode switch
+	 */
+	async bulkPromoteRombels(): Promise<{ success: boolean; promotedCount: number; message: string }> {
+		const [activeTa] = await db
+			.select()
+			.from(tahunAjaran)
+			.where(eq(tahunAjaran.isActive, true));
+
+		if (!activeTa) {
+			return {
+				success: false,
+				promotedCount: 0,
+				message: 'Kenaikan kelas ditolak: Belum ada Periode Komunitas yang aktif saat ini.'
+			};
+		}
+
+		const now = new Date();
+		if (activeTa.endedAt && new Date(activeTa.endedAt) > now) {
+			return {
+				success: false,
+				promotedCount: 0,
+				message: `Kenaikan kelas ditolak: Periode Komunitas aktif '${activeTa.name}' masih berlangsung hingga ${formatDateIndo(activeTa.endedAt)}. Kenaikan kelas baru dapat dieksekusi setelah rentang waktu periode ini resmi berakhir.`
+			};
+		}
+
+		const allRombels = await db.select().from(masterRombel).orderBy(masterRombel.levelOrder);
+		if (allRombels.length === 0) {
+			return { success: false, promotedCount: 0, message: 'Belum ada data Master Rombel.' };
+		}
+
+		const rombelMap = new Map<string, string>();
+		for (const r of allRombels) {
+			if (r.nextRombelId) {
+				const nextR = allRombels.find((item) => item.id === r.nextRombelId);
+				if (nextR) rombelMap.set(r.name, nextR.name);
+			} else {
+				if (r.name.startsWith('X ')) {
+					rombelMap.set(r.name, r.name.replace(/^X /, 'XI '));
+				} else if (r.name.startsWith('XI ')) {
+					rombelMap.set(r.name, r.name.replace(/^XI /, 'XII '));
+				} else if (r.name.startsWith('XII ')) {
+					rombelMap.set(r.name, 'Alumni');
+				}
+			}
+		}
+
+		const students = await db
+			.select({ id: user.id, rombelLabel: user.rombelLabel })
+			.from(user)
+			.where(eq(user.role, 'siswa'));
+
+		let promotedCount = 0;
+		for (const s of students) {
+			if (s.rombelLabel && rombelMap.has(s.rombelLabel)) {
+				const nextLabel = rombelMap.get(s.rombelLabel)!;
+				await db
+					.update(user)
+					.set({ rombelLabel: nextLabel, updatedAt: new Date() })
+					.where(eq(user.id, s.id));
+				promotedCount++;
+			}
+		}
+
+		return {
+			success: true,
+			promotedCount,
+			message: `Berhasil memperbarui ${promotedCount} label kelas siswa ke tingkat berikutnya.`
+		};
+	},
+
+	/**
+	 * Returns preview items and summary stats for bulk promotion
+	 */
+	async getPromotionPreview(): Promise<{
+		canPromote: boolean;
+		timeframeNotice?: string;
+		summary: {
+			totalStudents: number;
+			willPromoteCount: number;
+			willGraduateCount: number;
+			unchangedCount: number;
+		};
+		items: Array<{
+			id: number;
+			fullName: string;
+			username: string;
+			angkatan: number | null;
+			currentRombel: string | null;
+			nextRombel: string;
+			status: 'promote' | 'graduate' | 'unchanged';
+		}>;
+	}> {
+		const [activeTa] = await db
+			.select()
+			.from(tahunAjaran)
+			.where(eq(tahunAjaran.isActive, true));
+
+		const now = new Date();
+		let canPromote = true;
+		let timeframeNotice: string | undefined = undefined;
+
+		if (!activeTa) {
+			canPromote = false;
+			timeframeNotice = 'Belum ada Periode Komunitas yang aktif saat ini.';
+		} else if (activeTa.endedAt && new Date(activeTa.endedAt) > now) {
+			canPromote = false;
+			timeframeNotice = `Periode aktif '${activeTa.name}' masih berlangsung hingga ${formatDateIndo(activeTa.endedAt)}. Tombol eksekusi kenaikan kelas dikunci hingga rentang waktu periode berakhir.`;
+		}
+
+		const allRombels = await db.select().from(masterRombel).orderBy(masterRombel.levelOrder);
+		const rombelMap = new Map<string, string>();
+
+		for (const r of allRombels) {
+			if (r.nextRombelId) {
+				const nextR = allRombels.find((item) => item.id === r.nextRombelId);
+				if (nextR) rombelMap.set(r.name, nextR.name);
+			} else {
+				if (r.name.startsWith('X ')) {
+					rombelMap.set(r.name, r.name.replace(/^X /, 'XI '));
+				} else if (r.name.startsWith('XI ')) {
+					rombelMap.set(r.name, r.name.replace(/^XI /, 'XII '));
+				} else if (r.name.startsWith('XII ')) {
+					rombelMap.set(r.name, 'Alumni');
+				}
+			}
+		}
+
+		const students = await db
+			.select({
+				id: user.id,
+				fullName: user.fullName,
+				username: user.username,
+				angkatan: user.angkatan,
+				rombelLabel: user.rombelLabel
+			})
+			.from(user)
+			.where(eq(user.role, 'siswa'))
+			.orderBy(user.rombelLabel, user.fullName);
+
+		let willPromoteCount = 0;
+		let willGraduateCount = 0;
+		let unchangedCount = 0;
+
+		const items = students.map((s) => {
+			const current = s.rombelLabel || 'Belum Diatur';
+			let next = current;
+			let status: 'promote' | 'graduate' | 'unchanged' = 'unchanged';
+
+			if (s.rombelLabel && rombelMap.has(s.rombelLabel)) {
+				next = rombelMap.get(s.rombelLabel)!;
+				if (next === 'Alumni') {
+					status = 'graduate';
+					willGraduateCount++;
+				} else {
+					status = 'promote';
+					willPromoteCount++;
+				}
+			} else {
+				unchangedCount++;
+			}
+
+			return {
+				id: s.id,
+				fullName: s.fullName,
+				username: s.username,
+				angkatan: s.angkatan,
+				currentRombel: s.rombelLabel,
+				nextRombel: next,
+				status
+			};
+		});
+
+		return {
+			canPromote,
+			timeframeNotice,
+			summary: {
+				totalStudents: students.length,
+				willPromoteCount,
+				willGraduateCount,
+				unchangedCount
+			},
+			items
+		};
 	}
 };

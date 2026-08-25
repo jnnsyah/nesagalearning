@@ -1,28 +1,30 @@
 import { z } from 'zod';
 
 export const createKelasSchema = z.object({
-	tahunAjaranId: z.number().positive('Tahun ajaran harus dipilih.'),
-	tingkatId: z.number().positive('Tingkat harus dipilih.'),
-	curriculumTrackId: z.number().positive('Track pembelajaran harus dipilih.'),
+	tahunAjaranId: z.number().positive('Tahun ajaran/periode harus dipilih.'),
+	targetAngkatan: z.number().optional().nullable(),
+	tingkatId: z.number().optional().nullable(),
+	curriculumTrackId: z.number().optional().nullable(),
 	name: z
 		.string()
 		.trim()
-		.min(2, 'Nama kelas minimal 2 karakter.')
-		.max(50, 'Nama kelas maksimal 50 karakter.'),
+		.min(2, 'Nama kelompok minimal 2 karakter.')
+		.max(50, 'Nama kelompok maksimal 50 karakter.'),
 	mentorIds: z.array(z.number().positive()).optional().default([]),
 	isActive: z.boolean().default(true)
 });
 
 export const updateKelasSchema = z.object({
 	id: z.number().positive('ID kelas tidak valid.'),
-	tahunAjaranId: z.number().positive('Tahun ajaran harus dipilih.'),
-	tingkatId: z.number().positive('Tingkat harus dipilih.'),
-	curriculumTrackId: z.number().positive('Track pembelajaran harus dipilih.'),
+	tahunAjaranId: z.number().positive('Tahun ajaran/periode harus dipilih.'),
+	targetAngkatan: z.number().optional().nullable(),
+	tingkatId: z.number().optional().nullable(),
+	curriculumTrackId: z.number().optional().nullable(),
 	name: z
 		.string()
 		.trim()
-		.min(2, 'Nama kelas minimal 2 karakter.')
-		.max(50, 'Nama kelas maksimal 50 karakter.'),
+		.min(2, 'Nama kelompok minimal 2 karakter.')
+		.max(50, 'Nama kelompok maksimal 50 karakter.'),
 	mentorIds: z.array(z.number().positive()).optional().default([]),
 	isActive: z.boolean().default(true)
 });
@@ -47,8 +49,8 @@ export const bulkPromoteSchema = z.object({
 });
 
 export const taBulkPromoteSchema = z.object({
-	sourceTaId: z.number().positive('Tahun ajaran asal harus dipilih.'),
-	targetTaId: z.number().positive('Tahun ajaran tujuan harus dipilih.'),
+	sourceTaId: z.number().positive('Periode asal harus dipilih.'),
+	targetTaId: z.number().positive('Periode tujuan harus dipilih.'),
 	mappings: z
 		.array(
 			z.object({

@@ -1,4 +1,4 @@
-import { pgTable, bigint, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, bigint, text, boolean, timestamp, index, integer } from 'drizzle-orm/pg-core';
 
 export const user = pgTable(
 	'user',
@@ -14,12 +14,15 @@ export const user = pgTable(
 		googleId: text('google_id').unique(),
 		isEmailVerified: boolean('is_email_verified').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
+		angkatan: integer('angkatan'),
+		rombelLabel: text('rombel_label'),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(table) => [
 		index('idx_user_role').on(table.role),
-		index('idx_user_nisn').on(table.nisn)
+		index('idx_user_nisn').on(table.nisn),
+		index('idx_user_angkatan').on(table.angkatan)
 	]
 );
 

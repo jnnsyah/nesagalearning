@@ -18,7 +18,6 @@ export const curriculumTrack = pgTable(
 	{
 		id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
 		tingkatId: bigint('tingkat_id', { mode: 'number' })
-			.notNull()
 			.references(() => tingkat.id),
 		title: text('title').notNull(),
 		description: text('description'),
