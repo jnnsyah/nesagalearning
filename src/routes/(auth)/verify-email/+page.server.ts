@@ -177,5 +177,81 @@ export const actions: Actions = {
 			resendSuccess: true,
 			message: `Kode verifikasi baru telah dikirim ke ${targetUser.email}`
 		};
+	},
+
+	updateEmail: async ({ request }) => {
+		const formData = await request.formData();
+		const userId = parseInt(formData.get('userId') as string);
+		const newEmail = (formData.get('newEmail') as string)?.trim().toLowerCase();
+
+		if (!userId || !newEmail) {
+			return fail(400, { emailError: 'Alamat email baru wajib diisi.' });
+		}
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+			return fail(400, { emailError: 'Format alamat email tidak valid.' });
+		}
+
+		const users = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
+		const targetUser = users[0];
+		if (!targetUser) {
+			return fail(400, { emailError: 'Pengguna tidak ditemukan. Silakan mendaftar kembali.' });
+		}
+
+		if (targetUser.email === newEmail) {
+			return fail(400, { emailError: 'Alamat email baru sama dengan alamat email saat ini.' });
+		}
+
+		const existingWithEmail = await db
+			.select()
+			.from(userTable)
+			.where(eq(userTable.email, newEmail))
+			.limit(1);
+
+		if (existingWithEmail.length > 0) {
+			return fail(400, { emailError: 'Alamat email tersebut sudah terdaftar pada akun lain.' });
+		}
+
+		// Update email pengguna di database
+		await db
+			.update(userTable)
+			.set({
+				email: newEmail,
+				updatedAt: new Date()
+			})
+			.where(eq(userTable.id, userId));
+
+		// Hapus kode OTP lama
+		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
+
+		// Buat kode OTP baru
+		const newCode = generateVerificationCode();
+		const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 menit
+
+		await db.insert(emailVerificationCode).values({
+			userId,
+			email: newEmail,
+			code: newCode,
+			attempts: 0,
+			expiresAt
+		});
+
+		// Kirim email verifikasi ke email yang baru diperbarui
+		await sendMail({
+			to: newEmail,
+			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',
+			html: buildVerificationEmail({
+				fullName: targetUser.fullName,
+				code: newCode,
+				expiresInMinutes: 15
+			}),
+			text: `Halo ${targetUser.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 15 menit.`
+		});
+
+		return {
+			emailSuccess: true,
+			updatedEmail: newEmail,
+			message: `Alamat email berhasil diperbarui ke ${newEmail}! Kode OTP baru telah dikirimkan.`
+		};
 	}
 };

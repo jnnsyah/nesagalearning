@@ -9,6 +9,9 @@
 
 	let isSubmitting = $state(false);
 	let isResending = $state(false);
+	let isUpdatingEmail = $state(false);
+	let showEditEmailModal = $state(false);
+	let newEmailInput = $state('');
 	let cooldownSeconds = $state(0);
 	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -118,8 +121,22 @@
 			<p>
 				Kami telah mengirimkan <strong>6 digit kode verifikasi</strong> ke alamat email:
 				<br />
-				<strong class="email-highlight">{data.email}</strong>
+				<strong class="email-highlight">{form?.updatedEmail || data.email}</strong>
 			</p>
+			<button
+				type="button"
+				onclick={() => {
+					newEmailInput = form?.updatedEmail || data.email;
+					showEditEmailModal = true;
+				}}
+				class="btn-edit-email-trigger"
+			>
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+					<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+				</svg>
+				<span>Salah ketik email? Ubah Email Disini</span>
+			</button>
 		</div>
 
 		{#if form?.error}
@@ -130,6 +147,16 @@
 					<line x1="12" y1="16" x2="12.01" y2="16"/>
 				</svg>
 				<span>{form.error}</span>
+			</div>
+		{/if}
+
+		{#if form?.emailSuccess && form?.message}
+			<div class="alert-form-success">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+					<polyline points="22 4 12 14.01 9 11.01"/>
+				</svg>
+				<span>{form.message}</span>
 			</div>
 		{/if}
 
@@ -220,17 +247,114 @@
 			<div class="wrong-email-wrapper mt-4 pt-3 border-t border-slate-200/60 text-center">
 				<span class="text-xs text-slate-500">Salah memasukkan alamat email?</span>
 				<div class="mt-1">
-					<a href="/register" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline inline-flex items-center gap-1">
-						<span>Kembali ke Pendaftaran & Ubah Email</span>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<polyline points="9 18 15 12 9 6" />
+					<button
+						type="button"
+						onclick={() => {
+							newEmailInput = form?.updatedEmail || data.email;
+							showEditEmailModal = true;
+						}}
+						class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline inline-flex items-center gap-1 bg-transparent border-none cursor-pointer"
+					>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+							<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
 						</svg>
-					</a>
+						<span>Ubah Email Disini (Tanpa Ngulang Isi Form)</span>
+					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
+<!-- Edit Email Modal -->
+{#if showEditEmailModal}
+	<div
+		class="modal-backdrop"
+		onclick={() => (showEditEmailModal = false)}
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="modal-card"
+			onclick={(e) => e.stopPropagation()}
+			role="region"
+		>
+			<div class="modal-header">
+				<div>
+					<h3 class="modal-title">Ubah Alamat Email Pendaftaran</h3>
+					<p class="modal-sub">Perbarui email tanpa perlu mengisi ulang data registrasi.</p>
+				</div>
+				<button type="button" onclick={() => (showEditEmailModal = false)} class="btn-modal-close">&times;</button>
+			</div>
+
+			{#if form?.emailError}
+				<div class="alert-form-error mx-5 mt-4">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10"/>
+						<line x1="12" y1="8" x2="12" y2="12"/>
+						<line x1="12" y1="16" x2="12.01" y2="16"/>
+					</svg>
+					<span>{form.emailError}</span>
+				</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/updateEmail"
+				use:enhance={() => {
+					isUpdatingEmail = true;
+					return async ({ update, result }) => {
+						isUpdatingEmail = false;
+						await update();
+						if (result.type === 'success' && result.data && !(result.data as any).emailError) {
+							showEditEmailModal = false;
+						}
+					};
+				}}
+				class="modal-body p-5 space-y-4"
+			>
+				<input type="hidden" name="userId" value={data.userId} />
+
+				<div class="field-group">
+					<label for="newEmailInput" class="field-label-clean">Alamat Email Baru</label>
+					<div class="input-wrap">
+						<svg class="input-prefix-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+							<polyline points="22,6 12,13 2,6"/>
+						</svg>
+						<input
+							id="newEmailInput"
+							name="newEmail"
+							type="email"
+							required
+							bind:value={newEmailInput}
+							placeholder="contoh: email_benar@gmail.com"
+							class="clean-input"
+						/>
+					</div>
+					<p class="text-[11.5px] text-slate-500 mt-1.5 leading-normal">
+						Kode verifikasi OTP 6-digit baru akan otomatis dikirimkan ke alamat email baru ini.
+					</p>
+				</div>
+
+				<div class="modal-footer flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+					<button type="button" onclick={() => (showEditEmailModal = false)} class="btn-cancel-sm">
+						Batal
+					</button>
+					<button type="submit" class="btn-save-sm" disabled={isUpdatingEmail || !newEmailInput}>
+						{#if isUpdatingEmail}
+							<span class="spinner-sm"></span>
+							<span>Memperbarui Email...</span>
+						{:else}
+							<span>Simpan &amp; Kirim OTP Baru</span>
+						{/if}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.auth-root {
@@ -560,4 +684,138 @@
 	}
 
 	@keyframes spin { to { transform: rotate(360deg); } }
+
+	.btn-edit-email-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		margin-top: 8px;
+		padding: 4px 10px;
+		background: #eef2ff;
+		color: #4338ca;
+		border: 1px solid #c7d2fe;
+		border-radius: 9999px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 11.5px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-edit-email-trigger:hover {
+		background: #e0e7ff;
+		color: #3730a3;
+		border-color: #a5b4fc;
+		transform: translateY(-1px);
+	}
+
+	/* Modal Dialog Styles */
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		background: rgba(15, 23, 42, 0.6);
+		backdrop-filter: blur(6px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 16px;
+	}
+
+	.modal-card {
+		background: #ffffff;
+		border-radius: 20px;
+		max-width: 440px;
+		width: 100%;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+		overflow: hidden;
+		border: 1px solid #e2e8f0;
+	}
+
+	.modal-header {
+		padding: 18px 20px;
+		border-bottom: 1px solid #f1f5f9;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		background: #f8fafc;
+	}
+
+	.modal-title {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 15px;
+		font-weight: 800;
+		color: #0f172a;
+		margin: 0;
+	}
+
+	.modal-sub {
+		font-size: 12px;
+		color: #64748b;
+		margin-top: 2px;
+	}
+
+	.btn-modal-close {
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		border: 1px solid #cbd5e1;
+		background: #ffffff;
+		color: #64748b;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	.btn-modal-close:hover {
+		background: #f1f5f9;
+		color: #0f172a;
+	}
+
+	.btn-cancel-sm {
+		padding: 8px 14px;
+		background: #f1f5f9;
+		color: #475569;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		border: 1px solid #cbd5e1;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-cancel-sm:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+	}
+
+	.btn-save-sm {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 16px;
+		background: linear-gradient(135deg, #4f46e5, #6366f1);
+		color: #ffffff;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+		transition: all 150ms ease;
+	}
+
+	.btn-save-sm:hover:not(:disabled) {
+		background: linear-gradient(135deg, #4338ca, #4f46e5);
+		transform: translateY(-1px);
+	}
+
+	.btn-save-sm:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
 </style>
