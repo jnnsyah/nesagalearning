@@ -1032,19 +1032,19 @@
 				{/if}
 
 				<div class="form-drawer__body">
-					<!-- Section 1: Informasi Sesi & Kelas -->
+					<!-- Section 1: Informasi Sesi & Kelompok -->
 					<div class="drawer-section">
-						<h4 class="section-title">1. Informasi Kelas & Sesi</h4>
+						<h4 class="section-title">1. Informasi Kelompok & Sesi</h4>
 
-						<!-- Row 1: Pilih Kelas (Dedicated Row) -->
+						<!-- Row 1: Pilih Kelompok (Dedicated Row) -->
 						<div class="mb-4">
 							<CustomSelect
 								name="kelasInstanceId"
-								label="Pilih Kelas Rombel *"
+								label="Pilih Kelompok Kelas *"
 								required
 								bind:value={formKelasInstanceId}
 								options={formKelasOptions}
-								placeholder="-- Pilih Kelas Rombel --"
+								placeholder="-- Pilih Kelompok Kelas --"
 							/>
 						</div>
 
