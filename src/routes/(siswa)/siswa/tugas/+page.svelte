@@ -18,6 +18,16 @@
 	let isSubmitting = $state(false);
 	let hasHandledInitialUrl = false;
 
+	// Pagination state
+	let currentPage = $state(1);
+	let itemsPerPage = $state(6);
+
+	// Reset page when filter changes
+	$effect(() => {
+		selectedStatusFilter;
+		currentPage = 1;
+	});
+
 	// Auto-open drawer if navigated with ?taskId=... query param (one-time upon load)
 	$effect(() => {
 		if (typeof window === 'undefined') return;
@@ -84,6 +94,17 @@
 			return true;
 		})
 	);
+
+	// Derived pagination properties
+	let totalFilteredCount = $derived(filteredTasks.length);
+	let totalPages = $derived(Math.max(1, Math.ceil(totalFilteredCount / itemsPerPage)));
+
+	let paginatedTasks = $derived(
+		filteredTasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+	);
+
+	let startIndex = $derived(totalFilteredCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1);
+	let endIndex = $derived(Math.min(currentPage * itemsPerPage, totalFilteredCount));
 
 	function openSubmitModal(task: TaskItem) {
 		activeSubmitTask = task;
@@ -302,7 +323,7 @@
 	</div>
 
 	<!-- Tasks List Grid -->
-	{#if filteredTasks.length === 0}
+	{#if paginatedTasks.length === 0}
 		<div class="empty-card">
 			<div class="empty-icon">
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -315,7 +336,7 @@
 		</div>
 	{:else}
 		<div class="tasks-grid">
-			{#each filteredTasks as t (t.taskId)}
+			{#each paginatedTasks as t (t.taskId)}
 				<div
 					class="task-card {t.submission
 						? t.submission.status === 'approved'
@@ -458,6 +479,55 @@
 				</div>
 			{/each}
 		</div>
+
+		<!-- Pagination Footer Bar -->
+		{#if totalFilteredCount > 0}
+			<div class="pagination-bar">
+				<div class="pagination-info">
+					Menampilkan <strong>{startIndex}</strong> - <strong>{endIndex}</strong> dari <strong>{totalFilteredCount}</strong> Tugas
+				</div>
+
+				{#if totalPages > 1}
+					<div class="pagination-controls">
+						<button
+							type="button"
+							class="btn-page"
+							disabled={currentPage === 1}
+							onclick={() => currentPage--}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<polyline points="15 18 9 12 15 6" />
+							</svg>
+							<span>Sebelumnya</span>
+						</button>
+
+						<div class="page-numbers">
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
+								<button
+									type="button"
+									class="btn-page-num {currentPage === p ? 'btn-page-num--active' : ''}"
+									onclick={() => (currentPage = p)}
+								>
+									{p}
+								</button>
+							{/each}
+						</div>
+
+						<button
+							type="button"
+							class="btn-page"
+							disabled={currentPage === totalPages}
+							onclick={() => currentPage++}
+						>
+							<span>Selanjutnya</span>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<polyline points="9 18 15 12 9 6" />
+							</svg>
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1248,6 +1318,103 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
+	}
+
+	/* Pagination Bar */
+	.pagination-bar {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 12px;
+		padding: 12px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+		flex-wrap: wrap;
+
+	}
+
+	.pagination-info {
+		font-size: 12.5px;
+		color: var(--text-secondary, #475569);
+	}
+
+	.pagination-controls {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-page {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 34px;
+		padding: 0 12px;
+		border-radius: 8px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		background: #ffffff;
+		color: var(--text-primary, #0f172a);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+	.btn-page:hover:not(:disabled) {
+		background: var(--bg-hover, #f1f5f9);
+		border-color: #cbd5e1;
+	}
+	.btn-page:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.page-numbers {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.btn-page-num {
+		min-width: 34px;
+		height: 34px;
+		padding: 0 8px;
+		border-radius: 8px;
+		font-family: var(--font-mono, monospace);
+		font-size: 12px;
+		font-weight: 800;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		background: #ffffff;
+		color: var(--text-secondary, #64748b);
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 150ms ease;
+	}
+	.btn-page-num:hover {
+		background: var(--bg-hover, #f1f5f9);
+		color: var(--text-primary, #0f172a);
+	}
+	.btn-page-num--active {
+		background: var(--primary, #2563eb);
+		color: #ffffff;
+		border-color: var(--primary, #2563eb);
+	}
+
+	@media (max-width: 640px) {
+		.pagination-bar {
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			gap: 12px;
+		}
+		.pagination-controls {
+			width: 100%;
+			justify-content: space-between;
+		}
 	}
 
 	/* Drawer Layout Customization */
