@@ -249,13 +249,13 @@ export function buildVerificationEmail(opts: {
         <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;max-width:100%;">
           <tr>
             <td style="background:linear-gradient(135deg,#059669,#10b981);padding:28px 32px;text-align:center;">
-              <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:800;">✉️ Verifikasi Email</h1>
+              <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:800;">Verifikasi Email</h1>
               <p style="color:#d1fae5;margin:6px 0 0;font-size:13px;">Kode Konfirmasi Pendaftaran Akun NLC</p>
             </td>
           </tr>
           <tr>
             <td style="padding:32px;">
-              <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Halo, <strong>${opts.fullName}</strong> 👋</p>
+              <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Halo, <strong>${opts.fullName}</strong></p>
               <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
                 Terima kasih telah mendaftar di Nesaga Learning Community. Masukkan kode verifikasi 6 digit berikut untuk mengaktifkan email akun Anda:
               </p>
@@ -267,7 +267,7 @@ export function buildVerificationEmail(opts: {
                 </div>
                 <div style="margin:12px 0 0;">
                   <span style="display:inline-block;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #bae6fd;">
-                    📋 Salin Kode: Ketuk / Tekan Lama Kode Di Atas
+                    Salin Kode: Ketuk / Tekan Lama Kode Di Atas
                   </span>
                 </div>
               </div>
@@ -276,8 +276,8 @@ export function buildVerificationEmail(opts: {
 								opts.verificationLink
 									? `
               <div style="text-align:center;margin:24px 0 28px;">
-                <a href="${opts.verificationLink}" style="display:inline-block;background:linear-gradient(135deg,#059669,#047857);color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:800;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
-                  🚀 Lanjutkan Verifikasi Otomatis (1-Klik) &rarr;
+                <a href="${opts.verificationLink}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:8px;font-size:14px;font-weight:700;">
+                  Verifikasi Otomatis
                 </a>
               </div>
               `

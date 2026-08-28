@@ -283,7 +283,7 @@ export const actions: Actions = {
 		const verificationLink = `${url.origin}/verify-email?token=${token}&auto=1`;
 		const mailResult = await sendMail({
 			to: pending.email,
-			subject: '✉️ Kode Verifikasi Email Baru — NLC',
+			subject: 'Kode Verifikasi Email Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: pending.fullName,
 				code: newCode,
@@ -368,7 +368,7 @@ export const actions: Actions = {
 		const verificationLink = `${url.origin}/verify-email?token=${token}&auto=1`;
 		const mailResult = await sendMail({
 			to: newEmail,
-			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',
+			subject: 'Kode Verifikasi Email Pendaftaran Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: pending.fullName,
 				code: newCode,
