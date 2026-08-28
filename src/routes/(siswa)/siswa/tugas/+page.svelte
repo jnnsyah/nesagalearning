@@ -155,7 +155,6 @@
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
 		title="Daftar Tugas Praktikum"
-		subtitle="Kirimkan tautan lembar kerja tugas (GitHub, Google Drive, Figma, dsb) untuk diperiksa oleh mentor dan kumpulkan poin keaktifan."
 		breadcrumbs={[
 			{ label: 'Beranda', href: '/siswa' },
 			{ label: 'Tugas Saya' }

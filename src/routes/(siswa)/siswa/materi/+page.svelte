@@ -168,7 +168,6 @@
 		<!-- Page Header Card (Single Source of Truth Blueprint) -->
 		<PageHeaderCard
 			title="Pilihan Track Pembelajaran"
-			subtitle="Pilih alur spesialisasi yang ingin Anda pelajari untuk mengakses seluruh modul & materi interaktifnya."
 			breadcrumbs={[
 				{ label: 'Beranda', href: '/siswa' },
 				{ label: 'Track Pembelajaran' }
@@ -285,7 +284,6 @@
 		<!-- Page Header Card (Single Source of Truth Blueprint) -->
 		<PageHeaderCard
 			title={data.selectedTrack?.title ?? 'Modul Pembelajaran'}
-			subtitle={data.selectedTrack?.description || 'Jelajahi alur modul materi pembelajaran pada track ini.'}
 			breadcrumbs={[
 				{ label: 'Pilihan Track', href: '/siswa/materi' },
 				{ label: data.selectedTrack?.title ?? 'Detail Track' }

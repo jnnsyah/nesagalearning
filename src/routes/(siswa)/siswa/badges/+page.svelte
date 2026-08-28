@@ -38,7 +38,6 @@
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
 		title="Galeri Badge & Lencana Belajar"
-		subtitle="Kumpulkan lencana pencapaian, kembangkan keterampilan, dan tingkatkan perolehan poin Anda."
 		breadcrumbs={[
 			{ label: 'Beranda', href: '/siswa' },
 			{ label: 'Galeri Badge' }

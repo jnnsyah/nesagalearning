@@ -8,13 +8,12 @@
 
 	interface Props {
 		title: string;
-		subtitle?: string;
 		breadcrumbs?: BreadcrumbItem[];
 		badges?: Snippet;
 		actions?: Snippet;
 	}
 
-	let { title, subtitle, breadcrumbs = [], badges, actions }: Props = $props();
+	let { title, breadcrumbs = [], badges, actions }: Props = $props();
 </script>
 
 <div class="page-header-card">
@@ -44,13 +43,10 @@
 		{/if}
 	</div>
 
-	<!-- Row 2: Main Content (Title + Subtitle on Left, Actions on Right) -->
+	<!-- Row 2: Main Content (Title on Left, Actions on Right) -->
 	<div class="header-main-content">
 		<div class="header-title-block">
 			<h1 class="page-header-title">{title}</h1>
-			{#if subtitle}
-				<p class="page-header-subtitle">{subtitle}</p>
-			{/if}
 		</div>
 
 		{#if actions}

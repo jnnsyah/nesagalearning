@@ -83,7 +83,6 @@
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
 		title="Arsip Belajar Siswa"
-		subtitle="Tinjau riwayat presensi, pencapaian track pembelajaran, dan tugas yang telah diselesaikan pada kelas / periode sebelumnya."
 		breadcrumbs={[
 			{ label: 'Profil Saya', href: '/siswa/profile' },
 			{ label: 'Arsip Belajar' }

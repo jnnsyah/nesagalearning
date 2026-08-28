@@ -104,7 +104,6 @@
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
 		title="Progress Belajar Saya"
-		subtitle="Pantau tingkat kesehatan belajar, capaian Track Pembelajaran, histori presensi, dan catatan pendampingan dari Guru Pembimbing."
 		breadcrumbs={[
 			{ label: 'Beranda', href: '/siswa' },
 			{ label: 'Progress Belajar Saya' }

@@ -639,7 +639,6 @@
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
 		title="Jadwal & Sesi Pertemuan"
-		subtitle="Lihat daftar sesi kelas komunitas, slide materi PPT, tugas terlampir, dan lakukan scan presensi QR secara mudah."
 		breadcrumbs={[
 			{ label: 'Beranda', href: '/siswa' },
 			{ label: 'Jadwal & Sesi Pertemuan' }
