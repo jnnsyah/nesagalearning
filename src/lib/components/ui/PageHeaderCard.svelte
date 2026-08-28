@@ -17,7 +17,7 @@
 </script>
 
 <div class="page-header-card">
-	<!-- Row 1: Header Top Row (Breadcrumbs on Left, Badges on Right) -->
+	<!-- Row 1: Header Top Row (Breadcrumbs on Left, Badges on Right on Desktop) -->
 	<div class="header-top-row">
 		{#if breadcrumbs.length > 0}
 			<nav class="header-breadcrumb" aria-label="Breadcrumb">
@@ -37,16 +37,21 @@
 		{/if}
 
 		{#if badges}
-			<div class="header-badges">
+			<div class="header-badges header-badges--desktop">
 				{@render badges()}
 			</div>
 		{/if}
 	</div>
 
-	<!-- Row 2: Main Content (Title on Left, Actions on Right) -->
+	<!-- Row 2: Main Content (Title on Left, Badges under Title on Mobile, Actions on Right) -->
 	<div class="header-main-content">
 		<div class="header-title-block">
 			<h1 class="page-header-title">{title}</h1>
+			{#if badges}
+				<div class="header-badges header-badges--mobile">
+					{@render badges()}
+				</div>
+			{/if}
 		</div>
 
 		{#if actions}
@@ -121,6 +126,28 @@
 		flex-wrap: wrap;
 	}
 
+	.header-badges--desktop {
+		display: flex;
+	}
+
+	.header-badges--mobile {
+		display: none;
+	}
+
+	@media (max-width: 640px) {
+		.header-badges--desktop {
+			display: none;
+		}
+
+		.header-badges--mobile {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			flex-wrap: wrap;
+			margin-top: 4px;
+		}
+	}
+
 	.header-main-content {
 		display: flex;
 		align-items: flex-start;
@@ -156,20 +183,6 @@
 	@media (max-width: 640px) {
 		.page-header-title {
 			font-size: 1.25rem;
-		}
-	}
-
-	.page-header-subtitle {
-		font-size: 13.5px;
-		color: var(--text-secondary, #475569);
-		line-height: 1.5;
-		margin: 0;
-		max-width: 720px;
-	}
-
-	@media (max-width: 640px) {
-		.page-header-subtitle {
-			font-size: 12.5px;
 		}
 	}
 

@@ -34,6 +34,7 @@
 					</div>
 
 					<div class="user-details">
+						<h1 class="welcome-title">Halo, {firstName}!</h1>
 						<div class="meta-pills-row">
 							<span class="badge-role">{role.toUpperCase()}</span>
 							{#if data.user?.angkatan}
@@ -45,7 +46,6 @@
 								<span class="badge-ta">{kelasName}</span>
 							{/if}
 						</div>
-						<h1 class="welcome-title">Halo, {firstName}!</h1>
 						<p class="user-sub">@{data.user?.username} &bull; {data.user?.nisn ? `NISN: ${data.user.nisn}` : (data.user?.email ?? 'Siswa Active')}</p>
 					</div>
 				</div>
