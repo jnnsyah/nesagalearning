@@ -5,6 +5,7 @@ import {
 	emailVerificationCode,
 	passwordResetToken,
 	keanggotaan as keanggotaanTable,
+	mentorAssignment as mentorAssignmentTable,
 	materiCompletion,
 	submission as submissionTable,
 	attendance as attendanceTable,
@@ -13,7 +14,8 @@ import {
 	streakCounter as streakCounterTable,
 	notification as notificationTable,
 	quizAttempt as quizAttemptTable,
-	advisorNote as advisorNoteTable
+	advisorNote as advisorNoteTable,
+	auditLog as auditLogTable
 } from '../db/schema';
 import { eq, and, like, or, sql, count, desc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
@@ -461,12 +463,14 @@ export class UserAdminService {
 		}
 
 		// Clean up dependent records before deleting user
-		await db.delete(sessionTable).where(eq(sessionTable.userId, String(userId)));
+		await db.delete(sessionTable).where(eq(sessionTable.userId, userId));
 		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
 		await db.delete(passwordResetToken).where(eq(passwordResetToken.userId, userId));
 		await db.delete(keanggotaanTable).where(eq(keanggotaanTable.userId, userId));
+		await db.delete(mentorAssignmentTable).where(eq(mentorAssignmentTable.userId, userId));
 		await db.delete(materiCompletion).where(eq(materiCompletion.userId, userId));
 		await db.delete(submissionTable).where(eq(submissionTable.userId, userId));
+		await db.update(submissionTable).set({ reviewedBy: null }).where(eq(submissionTable.reviewedBy, userId));
 		await db.delete(attendanceTable).where(eq(attendanceTable.userId, userId));
 		await db.delete(badgeTable).where(eq(badgeTable.userId, userId));
 		await db.delete(pointLogTable).where(eq(pointLogTable.userId, userId));
@@ -474,6 +478,7 @@ export class UserAdminService {
 		await db.delete(notificationTable).where(eq(notificationTable.userId, userId));
 		await db.delete(quizAttemptTable).where(eq(quizAttemptTable.userId, userId));
 		await db.delete(advisorNoteTable).where(or(eq(advisorNoteTable.studentId, userId), eq(advisorNoteTable.advisorId, userId)));
+		await db.update(auditLogTable).set({ actorId: null }).where(eq(auditLogTable.actorId, userId));
 
 		// Delete user record permanently
 		await db.delete(userTable).where(eq(userTable.id, userId));
