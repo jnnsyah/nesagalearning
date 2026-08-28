@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -79,27 +80,18 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Header Card -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/siswa/profile" class="bc-link">Profil Saya</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Arsip Belajar</span>
-		</nav>
-
-		<div class="flex items-start justify-between gap-4 flex-wrap">
-			<div class="flex-1 min-w-[240px]">
-				<h1 class="page-title">Arsip Belajar Siswa</h1>
-				<p class="page-sub">
-					Tinjau riwayat presensi, pencapaian track pembelajaran, dan tugas yang telah diselesaikan pada kelas / periode sebelumnya.
-				</p>
-			</div>
-
-			<!-- Class Selector Dropdown -->
+	<!-- Page Header Card (Single Source of Truth Blueprint) -->
+	<PageHeaderCard
+		title="Arsip Belajar Siswa"
+		subtitle="Tinjau riwayat presensi, pencapaian track pembelajaran, dan tugas yang telah diselesaikan pada kelas / periode sebelumnya."
+		breadcrumbs={[
+			{ label: 'Profil Saya', href: '/siswa/profile' },
+			{ label: 'Arsip Belajar' }
+		]}
+	>
+		{#snippet actions()}
 			{#if data.memberships && data.memberships.length > 0}
-				<div class="selector-box">
+				<div class="w-64 max-w-full">
 					<CustomSelect
 						label="Pilih Kelas / Periode Akademik"
 						options={classSelectOptions}
@@ -111,8 +103,8 @@
 					/>
 				</div>
 			{/if}
-		</div>
-
+		{/snippet}
+	</PageHeaderCard>
 		{#if selectedMembership}
 			<div class="class-summary-bar mt-4">
 				<div class="summary-tag">

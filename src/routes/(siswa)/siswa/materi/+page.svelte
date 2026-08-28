@@ -3,6 +3,7 @@
 	import { slide } from 'svelte/transition';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -164,30 +165,21 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     STAGE 1: DAFTAR / PILIHAN TRACK PEMBELAJARAN
 		     ══════════════════════════════════════════════════════════ -->
-		<div class="header-card">
-			<div class="header-top-row">
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/siswa" class="bc-link">Dashboard</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Track Pembelajaran</span>
-				</nav>
-
-				<div class="header-badges-row">
-					{#if data.membership}
-						<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
-					{/if}
-				</div>
-			</div>
-
-			<div class="header-main-content">
-				<h1 class="page-title">Pilihan Track Pembelajaran</h1>
-				<p class="page-sub">
-					Pilih alur spesialisasi yang ingin Anda pelajari untuk mengakses seluruh modul &amp; materi interaktifnya.
-				</p>
-			</div>
-		</div>
+		<!-- Page Header Card (Single Source of Truth Blueprint) -->
+		<PageHeaderCard
+			title="Pilihan Track Pembelajaran"
+			subtitle="Pilih alur spesialisasi yang ingin Anda pelajari untuk mengakses seluruh modul & materi interaktifnya."
+			breadcrumbs={[
+				{ label: 'Beranda', href: '/siswa' },
+				{ label: 'Track Pembelajaran' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.membership}
+					<span class="badge badge-active-class">Kelas: {data.membership.kelasName}</span>
+				{/if}
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- Tingkat / Jenjang Filter Pills (if multiple tingkats exist) -->
 		{#if distinctTingkats.length > 1}
@@ -290,40 +282,27 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     STAGE 2: DETAIL TRACK PEMBELAJARAN (MODUL LIST)
 		     ══════════════════════════════════════════════════════════ -->
-		<div class="header-card">
-			<div class="header-top-row">
-				<a href="/siswa/materi" class="btn-back-track-pill">
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<polyline points="15 18 9 12 15 6" />
-					</svg>
-					<span>Pilihan Track</span>
-				</a>
-
-				<div class="header-badges-row">
-					{#if data.membership}
-						<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
-					{/if}
-					{#if data.selectedTrack?.tingkatName}
-						<span class="track-tingkat-badge">{data.selectedTrack.tingkatName}</span>
-					{/if}
-					{#if data.selectedTrack?.isMyClassTrack}
-						<span class="track-role-pill track-role-pill--active">
-							<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-								<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-							</svg>
-							<span>Track Kelas Anda</span>
-						</span>
-					{/if}
-				</div>
-			</div>
-
-			<div class="header-main-content">
-				<h1 class="page-title">{data.selectedTrack?.title}</h1>
-				<p class="page-sub">
-					{data.selectedTrack?.description || 'Jelajahi alur modul materi pembelajaran pada track ini.'}
-				</p>
-			</div>
-		</div>
+		<!-- Page Header Card (Single Source of Truth Blueprint) -->
+		<PageHeaderCard
+			title={data.selectedTrack?.title ?? 'Modul Pembelajaran'}
+			subtitle={data.selectedTrack?.description || 'Jelajahi alur modul materi pembelajaran pada track ini.'}
+			breadcrumbs={[
+				{ label: 'Pilihan Track', href: '/siswa/materi' },
+				{ label: data.selectedTrack?.title ?? 'Detail Track' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.membership}
+					<span class="badge badge-active-class">Kelas: {data.membership.kelasName}</span>
+				{/if}
+				{#if data.selectedTrack?.tingkatName}
+					<span class="badge badge-grade">Tingkat {data.selectedTrack.tingkatName}</span>
+				{/if}
+				{#if data.selectedTrack?.isMyClassTrack}
+					<span class="badge badge-active-class">⭐ Track Kelas Anda</span>
+				{/if}
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- 2. WIDGET RINGKASAN PROGRES BELAJAR & RESUME CTA -->
 		{#if totalMateriCount > 0}

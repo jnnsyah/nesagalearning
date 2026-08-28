@@ -3,6 +3,7 @@
 	import { toast } from '$lib/stores/toast';
 	import { formatFileSize } from '$lib/utils/sanitizer';
 	import { fade, fly } from 'svelte/transition';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -205,26 +206,19 @@
 <div class="reader-outer-wrapper">
 	<!-- Main Center/Left Reading Container -->
 	<div class="viewer-container {isFocusMode ? 'focus-mode' : ''}">
-		<!-- 1. Minimalist Header Card (Gold Standard 2-Tier Hierarchy) -->
-		<div class="reader-header-card">
-			<div class="header-top-row">
-				<a href={`/siswa/materi?track=${data.materi.trackId}`} class="btn-back-track-pill">
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<polyline points="15 18 9 12 15 6" />
-					</svg>
-					<span>Kembali ke Track</span>
-				</a>
-
-				<div class="header-badges-row">
-					<span class="track-tingkat-badge">{data.materi.trackTitle}</span>
-					<span class="phase-badge">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
-				</div>
-			</div>
-
-			<div class="header-main-content">
-				<h1 class="reader-title">{data.materi.title}</h1>
-			</div>
-		</div>
+		<!-- Page Header Card (Single Source of Truth Blueprint) -->
+		<PageHeaderCard
+			title={data.materi.title}
+			breadcrumbs={[
+				{ label: 'Track Pembelajaran', href: `/siswa/materi?track=${data.materi.trackId}` },
+				{ label: data.materi.title }
+			]}
+		>
+			{#snippet badges()}
+				<span class="badge badge-active-class">{data.materi.trackTitle}</span>
+				<span class="badge badge-grade">{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}</span>
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- 2. Slide Presentasi PPT Attachment Card (If Available) -->
 		{#if data.sessionSlide?.materialUrl}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data } = $props();
 
@@ -100,33 +101,24 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page Header Card (Matches /siswa/tugas and /siswa/pertemuan) -->
-	<div class="header-card">
-		<div class="page-header-row">
-			<div>
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/siswa" class="bc-link">Beranda</a>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Progress Belajar Saya</span>
-				</nav>
-				<h1 class="page-title">Progress Belajar Saya</h1>
-				<p class="page-sub">
-					Pantau tingkat kesehatan belajar, capaian Track Pembelajaran, histori presensi, dan catatan pendampingan dari Guru Pembimbing.
-				</p>
-			</div>
-
-			<div class="header-badges-row">
-				{#if student.tingkatName}
-					<span class="badge badge-grade">Tingkat {student.tingkatName}</span>
-				{/if}
-				{#if student.kelasName}
-					<span class="badge badge-active-class">Track Kelas Anda ({student.kelasName})</span>
-				{/if}
-			</div>
-		</div>
-	</div>
+	<!-- Page Header Card (Single Source of Truth Blueprint) -->
+	<PageHeaderCard
+		title="Progress Belajar Saya"
+		subtitle="Pantau tingkat kesehatan belajar, capaian Track Pembelajaran, histori presensi, dan catatan pendampingan dari Guru Pembimbing."
+		breadcrumbs={[
+			{ label: 'Beranda', href: '/siswa' },
+			{ label: 'Progress Belajar Saya' }
+		]}
+	>
+		{#snippet badges()}
+			{#if student.tingkatName}
+				<span class="badge badge-grade">Tingkat {student.tingkatName}</span>
+			{/if}
+			{#if student.kelasName}
+				<span class="badge badge-active-class">Track Kelas Anda ({student.kelasName})</span>
+			{/if}
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Alert Warning Banner (If Any Attention Reason) -->
 	{#if summary.alertReasons && summary.alertReasons.length > 0}

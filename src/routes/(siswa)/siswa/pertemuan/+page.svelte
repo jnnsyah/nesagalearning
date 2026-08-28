@@ -8,6 +8,7 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -635,31 +636,21 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Standard Header Banner Card (Uniform with Materi/Tugas/Mentor pages) -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/siswa" class="bc-link">Dashboard</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Jadwal &amp; Sesi Pertemuan</span>
-		</nav>
-
-		<div class="header-card-content flex items-start justify-between gap-4 flex-wrap">
-			<div class="min-w-0 flex-1">
-				<h1 class="page-title">Jadwal &amp; Sesi Pertemuan</h1>
-				<p class="page-sub">
-					Lihat daftar sesi kelas komunitas, slide materi PPT, tugas terlampir, dan lakukan scan presensi QR secara mudah.
-				</p>
-			</div>
-
+	<!-- Page Header Card (Single Source of Truth Blueprint) -->
+	<PageHeaderCard
+		title="Jadwal & Sesi Pertemuan"
+		subtitle="Lihat daftar sesi kelas komunitas, slide materi PPT, tugas terlampir, dan lakukan scan presensi QR secara mudah."
+		breadcrumbs={[
+			{ label: 'Beranda', href: '/siswa' },
+			{ label: 'Jadwal & Sesi Pertemuan' }
+		]}
+	>
+		{#snippet badges()}
 			{#if data.membership}
-				<div class="header-card-actions flex items-center gap-2.5 flex-wrap shrink-0">
-					<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
-				</div>
+				<span class="badge badge-active-class">Kelas: {data.membership.kelasName}</span>
 			{/if}
-		</div>
-	</div>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Celebration / Scan Result Notification if active -->
 	{#if scanSuccessResult}

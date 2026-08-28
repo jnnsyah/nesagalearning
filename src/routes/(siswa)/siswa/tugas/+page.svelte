@@ -4,6 +4,7 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
@@ -151,24 +152,15 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page Header Card (Gold Standard Blueprint) -->
-	<div class="header-card">
-		<div class="page-header-row">
-			<div>
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/siswa" class="bc-link">Beranda</a>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Tugas Saya</span>
-				</nav>
-				<h1 class="page-title">Daftar Tugas Praktikum</h1>
-				<p class="page-sub">
-					Kirimkan tautan lembar kerja tugas (GitHub, Google Drive, Figma, dsb) untuk diperiksa oleh mentor dan kumpulkan poin keaktifan.
-				</p>
-			</div>
-		</div>
-	</div>
+	<!-- Page Header Card (Single Source of Truth Blueprint) -->
+	<PageHeaderCard
+		title="Daftar Tugas Praktikum"
+		subtitle="Kirimkan tautan lembar kerja tugas (GitHub, Google Drive, Figma, dsb) untuk diperiksa oleh mentor dan kumpulkan poin keaktifan."
+		breadcrumbs={[
+			{ label: 'Beranda', href: '/siswa' },
+			{ label: 'Tugas Saya' }
+		]}
+	/>
 
 	<!-- 4 Key Metrics Stat Cards (Matches /siswa/pertemuan and /siswa/progress) -->
 	<div class="stats-grid">

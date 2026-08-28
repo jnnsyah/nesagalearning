@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,28 +35,21 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Header Card -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/siswa" class="bc-link">Beranda</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Galeri Badge</span>
-		</nav>
-
-		<div class="flex items-start justify-between gap-4 flex-wrap">
-			<div>
-				<h1 class="page-title">Galeri Badge &amp; Lencana Belajar</h1>
-				<p class="page-sub">
-					Kumpulkan lencana pencapaian, kembangkan keterampilan, dan tingkatkan perolehan poin Anda.
-				</p>
-			</div>
+	<!-- Page Header Card (Single Source of Truth Blueprint) -->
+	<PageHeaderCard
+		title="Galeri Badge & Lencana Belajar"
+		subtitle="Kumpulkan lencana pencapaian, kembangkan keterampilan, dan tingkatkan perolehan poin Anda."
+		breadcrumbs={[
+			{ label: 'Beranda', href: '/siswa' },
+			{ label: 'Galeri Badge' }
+		]}
+	>
+		{#snippet badges()}
 			{#if data.membership}
-				<span class="kelas-badge">Kelas: {data.membership.kelasName}</span>
+				<span class="badge badge-active-class">Kelas: {data.membership.kelasName}</span>
 			{/if}
-		</div>
-	</div>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Overview Stats Grid -->
 	<div class="stats-grid mb-6">
