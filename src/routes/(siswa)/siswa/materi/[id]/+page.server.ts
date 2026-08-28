@@ -4,7 +4,7 @@ import { db } from '$lib/server/db';
 import { materi, subPhase, phase, curriculumTrack, materiCompletion } from '$lib/server/db/schema/curriculum';
 import { keanggotaan, kelasInstance } from '$lib/server/db/schema/academic';
 import { pertemuan } from '$lib/server/db/schema/session';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql, inArray } from 'drizzle-orm';
 
 let isTableInitialized = false;
 
@@ -138,7 +138,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				sortOrder: subPhase.sortOrder
 			})
 			.from(subPhase)
-			.where(sql`${subPhase.phaseId} IN ${phaseIds}`)
+			.where(inArray(subPhase.phaseId, phaseIds))
 			.orderBy(asc(subPhase.sortOrder));
 	}
 
@@ -160,7 +160,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				sortOrder: materi.sortOrder
 			})
 			.from(materi)
-			.where(sql`${materi.subPhaseId} IN ${subPhaseIds}`)
+			.where(inArray(materi.subPhaseId, subPhaseIds))
 			.orderBy(asc(materi.sortOrder));
 	}
 
