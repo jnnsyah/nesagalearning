@@ -1425,22 +1425,22 @@
 						</div>
 					</div>
 
-					<!-- 4. Slide PPT & Modul Pembelajaran Card -->
-					<div class="drawer-section-card">
-						<div class="drawer-section-head">
-							<div class="flex items-center gap-2">
-								<div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-										<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-									</svg>
+					<!-- 4. Slide PPT & Modul Pembelajaran Card (hanya ditampilkan jika ada file slide terlampir) -->
+					{#if meeting.materialUrl}
+						<div class="drawer-section-card">
+							<div class="drawer-section-head">
+								<div class="flex items-center gap-2">
+									<div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+											<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+										</svg>
+									</div>
+									<h3 class="drawer-section-title">Slide PPT &amp; Modul Sesi</h3>
 								</div>
-								<h3 class="drawer-section-title">Slide PPT &amp; Modul Sesi</h3>
 							</div>
-						</div>
 
-						<div class="drawer-section-body">
-							{#if meeting.materialUrl}
+							<div class="drawer-section-body">
 								<div class="drawer-file-card">
 									<div class="flex items-center gap-3 min-w-0">
 										<div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-mono font-extrabold text-xs shrink-0 shadow-xs">
@@ -1466,18 +1466,9 @@
 										<span>Buka Slide</span>
 									</a>
 								</div>
-							{:else}
-								<div class="py-5 px-4 text-center bg-slate-50/70 border border-dashed border-slate-200 rounded-xl">
-									<svg class="mx-auto text-slate-400 mb-1.5" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-										<polyline points="14 2 14 8 20 8" />
-									</svg>
-									<p class="text-xs font-bold text-slate-700">Belum Ada File Slide</p>
-									<p class="text-[11px] text-slate-500 mt-0.5">Materi slide belum dilampirkan untuk pertemuan ini.</p>
-								</div>
-							{/if}
+							</div>
 						</div>
-					</div>
+					{/if}
 
 					<!-- 5. Penugasan Praktikum Section -->
 					<div class="drawer-section-card">
