@@ -16,5 +16,5 @@ jobs:
           cd /home/jian/web-nesagalearn
           git fetch origin main
           git reset --hard origin/main
-          docker compose build app
-          docker compose up -d --force-recreate
+          docker compose -p app down 2>/dev/null || true
+          docker compose -p app up -d --build --remove-orphans
