@@ -109,20 +109,120 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.where(eq(pertemuan.subPhaseId, materiDetail.subPhaseId))
 		.limit(1);
 
-	// 4. Fetch all materi in the same subPhase for navigation
-	const siblings = await db
+	// 4. Fetch all phases and sub-phases in this track for the Dicoding-style syllabus sidebar
+	const trackPhasesRaw = await db
 		.select({
-			id: materi.id,
-			title: materi.title,
-			sortOrder: materi.sortOrder
+			id: phase.id,
+			title: phase.title,
+			sortOrder: phase.sortOrder
 		})
-		.from(materi)
-		.where(eq(materi.subPhaseId, materiDetail.subPhaseId))
-		.orderBy(asc(materi.sortOrder));
+		.from(phase)
+		.where(eq(phase.curriculumTrackId, materiDetail.trackId))
+		.orderBy(asc(phase.sortOrder));
 
-	const currentIndex = siblings.findIndex((s) => s.id === materiId);
-	const prevMateri = currentIndex > 0 ? siblings[currentIndex - 1] : null;
-	const nextMateri = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+	const phaseIds = trackPhasesRaw.map((p) => p.id);
+
+	let trackSubPhasesRaw: Array<{
+		id: number;
+		phaseId: number;
+		title: string;
+		sortOrder: number;
+	}> = [];
+
+	if (phaseIds.length > 0) {
+		trackSubPhasesRaw = await db
+			.select({
+				id: subPhase.id,
+				phaseId: subPhase.phaseId,
+				title: subPhase.title,
+				sortOrder: subPhase.sortOrder
+			})
+			.from(subPhase)
+			.where(sql`${subPhase.phaseId} IN ${phaseIds}`)
+			.orderBy(asc(subPhase.sortOrder));
+	}
+
+	const subPhaseIds = trackSubPhasesRaw.map((sp) => sp.id);
+
+	let trackMateriRaw: Array<{
+		id: number;
+		subPhaseId: number;
+		title: string;
+		sortOrder: number;
+	}> = [];
+
+	if (subPhaseIds.length > 0) {
+		trackMateriRaw = await db
+			.select({
+				id: materi.id,
+				subPhaseId: materi.subPhaseId,
+				title: materi.title,
+				sortOrder: materi.sortOrder
+			})
+			.from(materi)
+			.where(sql`${materi.subPhaseId} IN ${subPhaseIds}`)
+			.orderBy(asc(materi.sortOrder));
+	}
+
+	// 5. Fetch all completed materi IDs for this user in this track
+	const userCompletions = await db
+		.select({
+			materiId: materiCompletion.materiId
+		})
+		.from(materiCompletion)
+		.where(eq(materiCompletion.userId, userId));
+
+	const completedSet = new Set(userCompletions.map((c) => Number(c.materiId)));
+
+	// Flatten all materi in track order to compute global prev & next across sub-phases
+	const allOrderedMateri: Array<{
+		id: number;
+		subPhaseId: number;
+		title: string;
+		isCompleted: boolean;
+	}> = [];
+
+	const syllabus = trackPhasesRaw.map((p) => {
+		const subs = trackSubPhasesRaw
+			.filter((sp) => sp.phaseId === p.id)
+			.map((sp) => {
+				const matList = trackMateriRaw
+					.filter((m) => m.subPhaseId === sp.id)
+					.map((m) => {
+						const isDone = completedSet.has(m.id);
+						const item = {
+							id: m.id,
+							subPhaseId: m.subPhaseId,
+							title: m.title,
+							isCompleted: isDone
+						};
+						allOrderedMateri.push(item);
+						return item;
+					});
+				return {
+					id: sp.id,
+					title: sp.title,
+					materiList: matList
+				};
+			});
+		return {
+			id: p.id,
+			title: p.title,
+			subPhases: subs
+		};
+	});
+
+	const currentIndex = allOrderedMateri.findIndex((m) => m.id === materiId);
+	const prevMateri = currentIndex > 0 ? allOrderedMateri[currentIndex - 1] : null;
+	const nextMateri =
+		currentIndex >= 0 && currentIndex < allOrderedMateri.length - 1
+			? allOrderedMateri[currentIndex + 1]
+			: null;
+
+	const totalTrackModules = allOrderedMateri.length;
+	const completedTrackModules = allOrderedMateri.filter((m) => m.isCompleted).length;
+	const trackProgressPercentage =
+		totalTrackModules > 0 ? Math.round((completedTrackModules / totalTrackModules) * 100) : 0;
 
 	return {
 		user: locals.user,
@@ -134,6 +234,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		isCompleted: !!completionRecord,
 		completedAt: completionRecord?.completedAt || null,
 		sessionSlide,
+		syllabus,
+		trackStats: {
+			totalModules: totalTrackModules,
+			completedModules: completedTrackModules,
+			progressPercentage: trackProgressPercentage
+		},
 		prevMateri,
 		nextMateri
 	};
