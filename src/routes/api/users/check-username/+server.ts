@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { user as userTable, pendingRegistration } from '$lib/server/db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { user as userTable } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const username = url.searchParams.get('username')?.trim().toLowerCase() || '';
@@ -28,15 +28,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		if (existingUser && existingUser.id !== currentUserId) {
 			return json({ available: false, message: 'Username sudah digunakan oleh akun lain' });
-		}
-
-		const [existingPending] = await db
-			.select({ id: pendingRegistration.id })
-			.from(pendingRegistration)
-			.where(and(eq(pendingRegistration.username, username), gt(pendingRegistration.expiresAt, new Date())));
-
-		if (existingPending) {
-			return json({ available: false, message: 'Username sedang dalam proses verifikasi oleh orang lain' });
 		}
 
 		return json({ available: true, message: 'Username tersedia!' });
