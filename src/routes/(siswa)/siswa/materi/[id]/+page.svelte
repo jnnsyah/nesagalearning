@@ -223,7 +223,31 @@
 			if (copyBtn) {
 				copyBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					const codeText = pre.textContent || '';
+					
+					// Extract multiline code text preserving newlines
+					let codeText = '';
+					const codeEl = pre.querySelector('code');
+					const targetEl = codeEl || pre;
+
+					// 1. innerText preserves rendered line breaks in standard DOM
+					codeText = targetEl.innerText || '';
+
+					// 2. Fallback if innerText collapsed newlines but HTML has <br>/<p>/<div>
+					if ((!codeText || !codeText.includes('\n')) && targetEl.innerHTML) {
+						const temp = document.createElement('div');
+						temp.innerHTML = targetEl.innerHTML
+							.replace(/<br\s*\/?>/gi, '\n')
+							.replace(/<\/p>/gi, '\n')
+							.replace(/<\/div>/gi, '\n');
+						codeText = temp.textContent || '';
+					}
+
+					if (!codeText) {
+						codeText = targetEl.textContent || '';
+					}
+
+					codeText = codeText.replace(/\r\n/g, '\n').trim();
+
 					navigator.clipboard.writeText(codeText);
 					copyBtn.classList.add('code-copy-btn--copied');
 					const textSpan = copyBtn.querySelector('span');
@@ -713,7 +737,7 @@
 									<p class="attachments-subheading">Unduh berkas pendukung dan slide materi pembelajaran ini</p>
 								</div>
 							</div>
-							<span class="badge badge-indigo text-[10px] h-[22px] px-2">
+							<span class="attachments-count-badge">
 								{(data.materi?.attachments?.length || 0) + (data.sessionSlide?.materialUrl ? 1 : 0)} Berkas
 							</span>
 						</div>
@@ -1998,6 +2022,7 @@
 
 	/* ══════════════════════════════════════════════════════════
 	   DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
+	   Fully responsive to Theme (Light, Sepia, Dark)
 	   ══════════════════════════════════════════════════════════ */
 	.materi-attachments-section {
 		margin-top: 48px;
@@ -2006,6 +2031,7 @@
 		background: var(--r-card-bg);
 		border: 1px solid var(--r-border);
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+		transition: background-color 180ms ease, border-color 180ms ease;
 	}
 
 	.attachments-header {
@@ -2028,8 +2054,9 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 10px;
-		background: #e0e7ff;
-		color: #4338ca;
+		background: var(--r-active-bg);
+		color: var(--r-active-text);
+		border: 1px solid var(--r-code-border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -2049,6 +2076,17 @@
 		font-size: 11.5px;
 		color: var(--r-text-muted);
 		margin: 2px 0 0 0;
+	}
+
+	.attachments-count-badge {
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		font-weight: 700;
+		padding: 3px 8px;
+		border-radius: 6px;
+		background: var(--r-code-bg);
+		color: var(--r-code-text);
+		border: 1px solid var(--r-code-border);
 	}
 
 	.attachments-grid {
@@ -2073,20 +2111,20 @@
 	}
 
 	.attachment-card:hover {
-		border-color: #818cf8;
+		border-color: var(--r-code-border);
 		background: var(--r-hover-bg);
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 	}
 
 	.attachment-card--slide {
-		background: #f5f3ff;
-		border-color: #ddd6fe;
+		background: var(--r-code-bg);
+		border-color: var(--r-code-border);
 	}
 
 	.attachment-card--slide:hover {
-		border-color: #a78bfa;
-		background: #ede9fe;
+		border-color: var(--r-active-text);
+		background: var(--r-active-bg);
 	}
 
 	.attachment-card-icon {
@@ -2100,8 +2138,9 @@
 		width: 32px;
 		height: 32px;
 		border-radius: 8px;
-		background: #ddd6fe;
-		color: #6d28d9;
+		background: var(--r-active-bg);
+		color: var(--r-active-text);
+		border: 1px solid var(--r-code-border);
 	}
 
 	.attachment-card-info {
@@ -2129,17 +2168,19 @@
 		gap: 4px;
 		padding: 5px 10px;
 		border-radius: 6px;
-		background: #4f46e5;
-		color: #ffffff;
+		background: var(--r-active-bg);
+		color: var(--r-active-text);
+		border: 1px solid var(--r-code-border);
 		font-family: var(--font-macro, sans-serif);
 		font-size: 10.5px;
 		font-weight: 700;
 		flex-shrink: 0;
-		transition: background 140ms ease;
+		transition: all 140ms ease;
 	}
 
 	.attachment-card:hover .attachment-card-action {
-		background: #4338ca;
+		background: var(--r-code-border);
+		color: var(--r-text-primary);
 	}
 
 	.att-file-ext {
@@ -2148,7 +2189,9 @@
 		font-weight: 800;
 		padding: 3px 6px;
 		border-radius: 6px;
-		border: 1px solid;
+		border: 1px solid var(--r-code-border);
+		background: var(--r-code-bg);
+		color: var(--r-code-text);
 		text-transform: uppercase;
 		flex-shrink: 0;
 	}

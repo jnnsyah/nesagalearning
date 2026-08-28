@@ -336,7 +336,18 @@
 				btn.addEventListener('click', (e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					const text = preEl.querySelector('code')?.textContent || preEl.textContent || '';
+					const targetEl = preEl.querySelector('code') || preEl;
+					let text = targetEl.innerText || '';
+					if ((!text || !text.includes('\n')) && targetEl.innerHTML) {
+						const temp = document.createElement('div');
+						temp.innerHTML = targetEl.innerHTML
+							.replace(/<br\s*\/?>/gi, '\n')
+							.replace(/<\/p>/gi, '\n')
+							.replace(/<\/div>/gi, '\n');
+						text = temp.textContent || '';
+					}
+					if (!text) text = targetEl.textContent || '';
+					text = text.replace(/\r\n/g, '\n').trim();
 					if (!text) return;
 					navigator.clipboard.writeText(text).then(() => {
 						btn.classList.add('code-copy-btn--copied');
