@@ -828,56 +828,78 @@
 		</div>
 	{/if}
 
-	<!-- Overview Key Metrics (3 Stat Cards) -->
+	<!-- Overview Key Metrics (4 Stat Cards matching /siswa/tugas and /siswa/progress) -->
 	<div class="stats-grid">
+		<!-- Card 1: Total Sesi Pertemuan -->
 		<div class="stat-card">
-			<div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="4" width="18" height="18" rx="2" />
-					<line x1="16" y1="2" x2="16" y2="6" />
-					<line x1="8" y1="2" x2="8" y2="6" />
-					<line x1="3" y1="10" x2="21" y2="10" />
-				</svg>
+			<div class="stat-card-top">
+				<div class="stat-icon icon-total">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="4" width="18" height="18" rx="2" />
+						<line x1="16" y1="2" x2="16" y2="6" />
+						<line x1="8" y1="2" x2="8" y2="6" />
+						<line x1="3" y1="10" x2="21" y2="10" />
+					</svg>
+				</div>
+				<span class="stat-pill">{stats.totalSessions} Total</span>
 			</div>
-			<div>
+			<div class="stat-info">
+				<div class="stat-value">{stats.totalSessions}</div>
+				<div class="stat-label">Sesi Pertemuan</div>
+				<div class="stat-subtext">Total Sesi Terjadwal</div>
+			</div>
+		</div>
+
+		<!-- Card 2: Persentase Kehadiran -->
+		<div class="stat-card">
+			<div class="stat-card-top">
+				<div class="stat-icon icon-approved">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+						<polyline points="22 4 12 14.01 9 11.01" />
+					</svg>
+				</div>
+				<span class="stat-pill">{stats.attendancePercentage}%</span>
+			</div>
+			<div class="stat-info">
+				<div class="stat-value">{stats.attendancePercentage}%</div>
 				<div class="stat-label">Persentase Kehadiran</div>
-				<div class="stat-value" style="color: #4f46e5;">{stats.attendancePercentage}%</div>
-				<div class="stat-meta">{stats.totalHadir} dari {stats.totalSessions} Sesi Hadir</div>
+				<div class="stat-subtext">{stats.totalHadir} dari {stats.totalSessions} Sesi Hadir</div>
 			</div>
 		</div>
 
+		<!-- Card 3: Total Hadir & Izin -->
 		<div class="stat-card">
-			<div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="9 11 12 14 22 4" />
-					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-				</svg>
+			<div class="stat-card-top">
+				<div class="stat-icon icon-pending">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="9 11 12 14 22 4" />
+						<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+					</svg>
+				</div>
+				<span class="stat-pill">{stats.totalHadir + stats.totalExcused} Sesi</span>
 			</div>
-			<div>
+			<div class="stat-info">
+				<div class="stat-value">{stats.totalHadir + stats.totalExcused}</div>
 				<div class="stat-label">Total Hadir &amp; Izin</div>
-				<div class="stat-value" style="color: #16a34a;">{stats.totalHadir + stats.totalExcused}</div>
-				<div class="stat-meta">Hadir: {stats.totalHadir} | Izin: {stats.totalExcused}</div>
+				<div class="stat-subtext">Hadir: {stats.totalHadir} | Izin: {stats.totalExcused}</div>
 			</div>
 		</div>
 
+		<!-- Card 4: Streak Pertemuan -->
 		<div class="stat-card">
-			<div class="stat-icon" style="background: #fffbeb; color: #d97706;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-				</svg>
+			<div class="stat-card-top">
+				<div class="stat-icon icon-streak">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+						<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+					</svg>
+				</div>
+				<span class="stat-pill">+{nextMilestone.bonus} Pts</span>
 			</div>
-			<div class="w-full min-w-0">
-				<div class="flex items-center justify-between">
-					<div class="stat-label">Streak Pertemuan</div>
-					<span class="text-[11px] font-extrabold text-indigo-600">+{nextMilestone.bonus} Poin</span>
-				</div>
-				<div class="stat-value" style="color: #d97706;">
-					{currentStreak} <span class="text-xs font-normal text-slate-500">Sesi</span>
-				</div>
-				<div class="streak-bar-wrap mt-1">
-					<div class="streak-bar" style="width: {milestoneProgressPercent}%;"></div>
-				</div>
-				<div class="stat-meta mt-1">Next Milestone: {nextMilestone.streak} Sesi</div>
+			<div class="stat-info">
+				<div class="stat-value">{currentStreak} <span class="text-xs font-normal text-slate-500">Sesi</span></div>
+				<div class="stat-label">Streak Kehadiran</div>
+				<div class="stat-subtext">Next: {nextMilestone.streak} Sesi</div>
 			</div>
 		</div>
 	</div>
@@ -2346,26 +2368,46 @@
 		color: #064e3b;
 	}
 
-	/* Overview Stats Grid */
+	/* Overview Key Metrics Stats Grid (Matches /siswa/tugas and /siswa/progress) */
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 12px;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 16px;
 		width: 100%;
 		box-sizing: border-box;
 	}
 
+	@media (max-width: 1023px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+		}
+	}
+
 	.stat-card {
 		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 12px;
-		padding: 12px 16px;
-		display: flex;
-		align-items: center;
-		gap: 12px;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 14px 16px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+
+	.stat-card-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 
 	.stat-icon {
@@ -2377,42 +2419,46 @@
 		justify-content: center;
 		flex-shrink: 0;
 	}
+	.icon-total { background: #e0f2fe; color: #0284c7; }
+	.icon-approved { background: #dcfce7; color: #16a34a; }
+	.icon-pending { background: #fef3c7; color: #d97706; }
+	.icon-revisi { background: #ffe4e6; color: #be123c; }
+	.icon-streak { background: #e0e7ff; color: #6366f1; }
 
-	.stat-label {
-		font-size: 11.5px;
+	.stat-pill {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
 		font-weight: 700;
-		color: #64748b;
+		color: var(--text-muted, #64748b);
+		background: var(--bg-cell, #f1f5f9);
+		padding: 2px 8px;
+		border-radius: 9999px;
+	}
+
+	.stat-info {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.stat-value {
-		font-family: var(--font-macro, sans-serif);
+		font-family: var(--font-macro, system-ui, sans-serif);
 		font-size: 1.45rem;
 		font-weight: 800;
-		color: #0f172a;
-		line-height: 1.1;
-		margin-top: 1px;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.2;
 	}
 
-	.stat-meta {
-		font-family: var(--font-mono, monospace);
-		font-size: 10.5px;
-		color: #94a3b8;
+	.stat-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--text-muted, #64748b);
 		margin-top: 2px;
 	}
 
-	.streak-bar-wrap {
-		width: 100%;
-		height: 5px;
-		background: #f1f5f9;
-		border-radius: 999px;
-		overflow: hidden;
-	}
-
-	.streak-bar {
-		height: 100%;
-		background: linear-gradient(90deg, #f59e0b, #d97706);
-		border-radius: 999px;
-		transition: width 300ms ease;
+	.stat-subtext {
+		font-size: 11px;
+		color: var(--text-sub, #94a3b8);
+		margin-top: 2px;
 	}
 
 	/* Page Filter Card Layout */
