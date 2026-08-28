@@ -221,33 +221,61 @@
 	<!-- Status Tabs Bar (Filter Panel matching /siswa/tugas) -->
 	<div class="filter-panel">
 		<div class="tabs-row">
+			<!-- Tab 1: Track Pembelajaran -->
 			<button
 				type="button"
 				onclick={() => selectTab('track')}
-				class="tab-btn {activeTab === 'track' ? 'tab-btn--active' : ''}"
+				class="tab-btn {activeTab === 'track' ? 'tab-btn--all-active' : ''}"
 			>
-				Track Pembelajaran
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+					<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+				</svg>
+				<span>Track Pembelajaran</span>
+				<span class="tab-counter">{overallTrackProgress}%</span>
 			</button>
+
+			<!-- Tab 2: Histori Presensi -->
 			<button
 				type="button"
 				onclick={() => selectTab('attendance')}
-				class="tab-btn {activeTab === 'attendance' ? 'tab-btn--active' : ''}"
+				class="tab-btn {activeTab === 'attendance' ? 'tab-btn--approved-active' : ''}"
 			>
-				Histori Presensi ({attendanceLogs.length})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="4" width="18" height="18" rx="2" />
+					<line x1="16" y1="2" x2="16" y2="6" />
+					<line x1="8" y1="2" x2="8" y2="6" />
+					<line x1="3" y1="10" x2="21" y2="10" />
+				</svg>
+				<span>Histori Presensi</span>
+				<span class="tab-counter">{attendanceLogs.length}</span>
 			</button>
+
+			<!-- Tab 3: Performa Tugas -->
 			<button
 				type="button"
 				onclick={() => selectTab('tasks')}
-				class="tab-btn {activeTab === 'tasks' ? 'tab-btn--active' : ''}"
+				class="tab-btn {activeTab === 'tasks' ? 'tab-btn--pending-active' : ''}"
 			>
-				Performa Tugas ({submissionLogs.length})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+					<polyline points="14 2 14 8 20 8" />
+				</svg>
+				<span>Performa Tugas</span>
+				<span class="tab-counter">{submissionLogs.length}</span>
 			</button>
+
+			<!-- Tab 4: Catatan Guru -->
 			<button
 				type="button"
 				onclick={() => selectTab('notes')}
-				class="tab-btn {activeTab === 'notes' ? 'tab-btn--active' : ''}"
+				class="tab-btn {activeTab === 'notes' ? 'tab-btn--revisi-active' : ''}"
 			>
-				Catatan Guru ({notes.length})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+				</svg>
+				<span>Catatan Guru</span>
+				<span class="tab-counter">{notes.length}</span>
 			</button>
 		</div>
 	</div>
@@ -916,50 +944,104 @@
 		margin-top: 2px;
 	}
 
-	/* Filter Bar Tabs (Matches /siswa/tugas style) */
+	/* Filter Panel Tabs Bar (Single Line with Color Accent & Micro Badges matching /siswa/tugas) */
 	.filter-panel {
 		background: #ffffff;
 		border: 1px solid var(--border-hard, #e2e8f0);
 		border-radius: 12px;
-		padding: 10px 12px;
+		padding: 8px 10px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 		margin-bottom: 0;
 	}
 
 	.tabs-row {
 		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
 		overflow-x: auto;
 		white-space: nowrap;
+		flex-wrap: nowrap;
+		scrollbar-width: none;
 		-webkit-overflow-scrolling: touch;
+	}
+	.tabs-row::-webkit-scrollbar {
+		display: none;
 	}
 
 	.tab-btn {
-		padding: 6px 14px;
-		font-family: var(--font-macro, system-ui, sans-serif);
-		font-size: 12.5px;
-		font-weight: 700;
-		border-radius: 8px;
-		border: 1px solid transparent;
-		background: transparent;
-		color: var(--text-secondary, #64748b);
-		cursor: pointer;
-		transition: all 150ms ease;
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+		height: 34px;
+		padding: 0 12px;
+		border-radius: 8px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		background: var(--bg-inset, #f8fafc);
+		color: var(--text-secondary, #64748b);
+		cursor: pointer;
+		transition: all 150ms ease;
+		flex-shrink: 0;
 	}
 
 	.tab-btn:hover {
 		background: var(--bg-hover, #f1f5f9);
 		color: var(--text-primary, #0f172a);
+		border-color: #cbd5e1;
 	}
 
-	.tab-btn--active {
-		background: var(--primary-light, #eff6ff);
-		color: var(--primary, #2563eb);
-		border-color: var(--primary-border, #bfdbfe);
+	.tab-counter {
+		font-family: var(--font-mono, monospace);
+		font-size: 10px;
+		font-weight: 800;
+		padding: 1px 6px;
+		border-radius: 9999px;
+		background: #e2e8f0;
+		color: #475569;
+		line-height: 1;
+	}
+
+	/* Active Color Accents Per Status */
+	.tab-btn--all-active {
+		background: #eff6ff;
+		color: #1d4ed8;
+		border-color: #bfdbfe;
+	}
+	.tab-btn--all-active .tab-counter {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+
+	.tab-btn--approved-active {
+		background: #f0fdf4;
+		color: #15803d;
+		border-color: #bbf7d0;
+	}
+	.tab-btn--approved-active .tab-counter {
+		background: #dcfce7;
+		color: #166534;
+	}
+
+	.tab-btn--pending-active {
+		background: #fffbeb;
+		color: #b45309;
+		border-color: #fde68a;
+	}
+	.tab-btn--pending-active .tab-counter {
+		background: #fef3c7;
+		color: #92400e;
+	}
+
+	.tab-btn--revisi-active {
+		background: #fff1f2;
+		color: #be123c;
+		border-color: #fecdd3;
+	}
+	.tab-btn--revisi-active .tab-counter {
+		background: #ffe4e6;
+		color: #9f1239;
 	}
 
 	/* Content Panel & Sections */
