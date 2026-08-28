@@ -123,53 +123,96 @@ export async function uploadFile(
 	const safeName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${finalExt}`;
 	const key = `${safeFolder}/${safeName}`;
 
-	// 1. Primary: Supabase Storage
-	const supabaseUrl =
-		publicEnv.PUBLIC_SUPABASE_URL ||
-		privateEnv.PUBLIC_SUPABASE_URL ||
-		process.env.PUBLIC_SUPABASE_URL ||
-		process.env.VITE_SUPABASE_URL;
+	const provider = (
+		privateEnv.STORAGE_PROVIDER ||
+		process.env.STORAGE_PROVIDER ||
+		'local'
+	).toLowerCase();
 
-	const supabaseKey =
-		privateEnv.SUPABASE_SERVICE_ROLE_KEY ||
-		publicEnv.PUBLIC_SUPABASE_ANON_KEY ||
-		privateEnv.PUBLIC_SUPABASE_ANON_KEY ||
-		process.env.SUPABASE_SERVICE_ROLE_KEY ||
-		process.env.PUBLIC_SUPABASE_ANON_KEY;
-
-	if (supabaseUrl && supabaseKey) {
+	// 1. Primary Driver: Local Filesystem Storage (Default)
+	if (provider === 'local') {
 		try {
-			const supabase = createClient(supabaseUrl, supabaseKey);
-			const { error } = await supabase.storage
-				.from(safeFolder)
-				.upload(safeName, buffer, {
-					contentType: mimeType || file.type || 'application/octet-stream',
-					upsert: true
-				});
+			const staticUploads = path.join(process.cwd(), 'static', 'uploads', safeFolder);
+			const localUploads = path.join(process.cwd(), 'uploads', safeFolder);
+			const targetDirs = [staticUploads, localUploads];
 
-			if (!error) {
-				const { data: publicUrlData } = supabase.storage
-					.from(safeFolder)
-					.getPublicUrl(safeName);
-
-				return {
-					url: publicUrlData.publicUrl,
-					key,
-					storageType: 'supabase',
-					originalSize: compressionResult.originalSize,
-					compressedSize: compressionResult.compressedSize,
-					savedPercentage: compressionResult.savedPercentage
-				};
-			} else {
-				console.error('Supabase storage upload error, falling back:', error);
+			if (process.env.NODE_ENV === 'production' || fs.existsSync(path.join(process.cwd(), 'build'))) {
+				targetDirs.push(path.join(process.cwd(), 'build', 'client', 'uploads', safeFolder));
 			}
-		} catch (err) {
-			console.error('Supabase storage exception, falling back:', err);
+
+			for (const dir of targetDirs) {
+				if (!fs.existsSync(dir)) {
+					fs.mkdirSync(dir, { recursive: true });
+				}
+				const filePath = path.join(dir, safeName);
+				fs.writeFileSync(filePath, buffer);
+			}
+
+			const localUrl = `/uploads/${safeFolder}/${safeName}`;
+			return {
+				url: localUrl,
+				key,
+				storageType: 'local',
+				originalSize: compressionResult.originalSize,
+				compressedSize: compressionResult.compressedSize,
+				savedPercentage: compressionResult.savedPercentage
+			};
+		} catch (fsErr: any) {
+			console.error('Local filesystem upload failed:', fsErr);
+			throw new Error(`Gagal menyimpan file: ${fsErr?.message || 'Gagal menyimpan ke penyimpanan lokal'}`);
 		}
 	}
 
-	// 2. Secondary: Cloudflare R2
+	// 2. Secondary Driver: Supabase Storage (if STORAGE_PROVIDER=supabase)
+	if (provider === 'supabase') {
+		const supabaseUrl =
+			publicEnv.PUBLIC_SUPABASE_URL ||
+			privateEnv.PUBLIC_SUPABASE_URL ||
+			process.env.PUBLIC_SUPABASE_URL ||
+			process.env.VITE_SUPABASE_URL;
+
+		const supabaseKey =
+			privateEnv.SUPABASE_SERVICE_ROLE_KEY ||
+			publicEnv.PUBLIC_SUPABASE_ANON_KEY ||
+			privateEnv.PUBLIC_SUPABASE_ANON_KEY ||
+			process.env.SUPABASE_SERVICE_ROLE_KEY ||
+			process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+		if (supabaseUrl && supabaseKey) {
+			try {
+				const supabase = createClient(supabaseUrl, supabaseKey);
+				const { error } = await supabase.storage
+					.from(safeFolder)
+					.upload(safeName, buffer, {
+						contentType: mimeType || file.type || 'application/octet-stream',
+						upsert: true
+					});
+
+				if (!error) {
+					const { data: publicUrlData } = supabase.storage
+						.from(safeFolder)
+						.getPublicUrl(safeName);
+
+					return {
+						url: publicUrlData.publicUrl,
+						key,
+						storageType: 'supabase',
+						originalSize: compressionResult.originalSize,
+						compressedSize: compressionResult.compressedSize,
+						savedPercentage: compressionResult.savedPercentage
+					};
+				} else {
+					console.error('Supabase storage upload error:', error);
+				}
+			} catch (err) {
+				console.error('Supabase storage exception:', err);
+			}
+		}
+	}
+
+	// 3. Tertiary Driver: Cloudflare R2 (if STORAGE_PROVIDER=r2)
 	if (
+		provider === 'r2' &&
 		privateEnv.R2_ACCOUNT_ID &&
 		privateEnv.R2_ACCESS_KEY_ID &&
 		privateEnv.R2_SECRET_ACCESS_KEY &&
@@ -198,20 +241,23 @@ export async function uploadFile(
 				};
 			}
 		} catch (err) {
-			console.warn('R2 upload network fallback to local:', err);
+			console.warn('R2 upload network error:', err);
 		}
 	}
 
-	// 3. Fallback: save to local uploads directory
+	// Fallback to local storage if remote providers failed
 	try {
-		const baseDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'static', 'uploads');
-		const targetDir = path.join(baseDir, safeFolder);
-		if (!fs.existsSync(targetDir)) {
-			fs.mkdirSync(targetDir, { recursive: true });
-		}
+		const staticUploads = path.join(process.cwd(), 'static', 'uploads', safeFolder);
+		const localUploads = path.join(process.cwd(), 'uploads', safeFolder);
+		const targetDirs = [staticUploads, localUploads];
 
-		const filePath = path.join(targetDir, safeName);
-		fs.writeFileSync(filePath, buffer);
+		for (const dir of targetDirs) {
+			if (!fs.existsSync(dir)) {
+				fs.mkdirSync(dir, { recursive: true });
+			}
+			const filePath = path.join(dir, safeName);
+			fs.writeFileSync(filePath, buffer);
+		}
 
 		const localUrl = `/uploads/${safeFolder}/${safeName}`;
 		return {
@@ -223,7 +269,7 @@ export async function uploadFile(
 			savedPercentage: compressionResult.savedPercentage
 		};
 	} catch (fsErr: any) {
-		console.error('Local filesystem upload failed:', fsErr);
+		console.error('Local filesystem upload fallback failed:', fsErr);
 		throw new Error(`Gagal menyimpan file: ${fsErr?.message || 'Gagal menyimpan ke penyimpanan lokal'}`);
 	}
 }
