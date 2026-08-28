@@ -124,15 +124,7 @@ let rosterSortOptions = [
 		}
 	});
 
-	// Handle Form Action Toast & Auto-advance to Next Student
-	$effect(() => {
-		if (form?.success) {
-			toast.success(form.message || 'Penilaian berhasil disimpan');
-			advanceToNextStudent();
-		} else if (form?.message) {
-			toast.error(form.message);
-		}
-	});
+
 
 	function advanceToNextStudent() {
 		if (!activeSubmission || sortedRosterSubmissions.length <= 1) return;

@@ -10,9 +10,12 @@ export interface SubPhaseProgressStatus {
 	subPhaseId: number;
 	subPhaseTitle: string;
 	phaseId: number;
+	sortOrder: number;
 	isCompleted: boolean;
 	totalSessions: number;
 	completedSessions: number;
+	totalTasks: number;
+	approvedTasks: number;
 }
 
 export interface PhaseProgressSummary {
@@ -21,6 +24,7 @@ export interface PhaseProgressSummary {
 	totalSubPhases: number;
 	completedSubPhases: number;
 	progressPercentage: number;
+	subPhases: SubPhaseProgressStatus[];
 }
 
 export interface HistoricalClassProgress {
@@ -170,7 +174,12 @@ export class ProgressService {
 
 		const phaseIds = phasesList.map((p) => p.id);
 		const subPhasesList = await db
-			.select({ id: subPhase.id, phaseId: subPhase.phaseId })
+			.select({
+				id: subPhase.id,
+				title: subPhase.title,
+				phaseId: subPhase.phaseId,
+				sortOrder: subPhase.sortOrder
+			})
 			.from(subPhase)
 			.where(inArray(subPhase.phaseId, phaseIds))
 			.orderBy(asc(subPhase.sortOrder));
@@ -181,7 +190,8 @@ export class ProgressService {
 				phaseTitle: p.title,
 				totalSubPhases: 0,
 				completedSubPhases: 0,
-				progressPercentage: 0
+				progressPercentage: 0,
+				subPhases: []
 			}));
 		}
 
@@ -206,7 +216,18 @@ export class ProgressService {
 					phaseTitle: p.title,
 					totalSubPhases: subs.length,
 					completedSubPhases: 0,
-					progressPercentage: 0
+					progressPercentage: 0,
+					subPhases: subs.map((sp) => ({
+						subPhaseId: sp.id,
+						subPhaseTitle: sp.title,
+						phaseId: sp.phaseId,
+						sortOrder: sp.sortOrder,
+						isCompleted: false,
+						totalSessions: 0,
+						completedSessions: 0,
+						totalTasks: 0,
+						approvedTasks: 0
+					}))
 				};
 			});
 		}
@@ -288,12 +309,32 @@ export class ProgressService {
 			const progressPercentage =
 				totalSubPhases > 0 ? Math.round((completedCount / totalSubPhases) * 100) : 0;
 
+			const subPhasesDetail: SubPhaseProgressStatus[] = subsInPhase.map((sp) => {
+				const sList = subPhaseSessionsMap.get(sp.id) || [];
+				const completedSessions = sList.filter((sid) => validAttendanceSet.has(sid)).length;
+				const spTasks = tasks.filter((t) => sList.includes(t.pertemuanId));
+				const approvedTasks = spTasks.filter((t) => approvedTaskSet.has(t.id)).length;
+
+				return {
+					subPhaseId: sp.id,
+					subPhaseTitle: sp.title,
+					phaseId: sp.phaseId,
+					sortOrder: sp.sortOrder,
+					isCompleted: completedSubPhaseSet.has(sp.id),
+					totalSessions: sList.length,
+					completedSessions,
+					totalTasks: spTasks.length,
+					approvedTasks
+				};
+			});
+
 			return {
 				phaseId: p.id,
 				phaseTitle: p.title,
 				totalSubPhases,
 				completedSubPhases: completedCount,
-				progressPercentage
+				progressPercentage,
+				subPhases: subPhasesDetail
 			};
 		});
 	}
