@@ -1,5 +1,20 @@
 import { db } from '../db';
-import { user as userTable } from '../db/schema/auth';
+import {
+	user as userTable,
+	session as sessionTable,
+	emailVerificationCode,
+	passwordResetToken,
+	keanggotaan as keanggotaanTable,
+	materiCompletion,
+	submission as submissionTable,
+	attendance as attendanceTable,
+	badge as badgeTable,
+	pointLog as pointLogTable,
+	streakCounter as streakCounterTable,
+	notification as notificationTable,
+	quizAttempt as quizAttemptTable,
+	advisorNote as advisorNoteTable
+} from '../db/schema';
 import { eq, and, like, or, sql, count, desc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -426,5 +441,43 @@ export class UserAdminService {
 			skippedCount,
 			errors
 		};
+	}
+
+	/**
+	 * Delete a user account permanently (excluding self-deletion)
+	 */
+	static async deleteUser(userId: number, currentAdminId: number): Promise<{ id: number; username: string; role: string }> {
+		if (userId === currentAdminId) {
+			throw new Error('Anda tidak dapat menghapus akun Anda sendiri.');
+		}
+
+		const [userToDelete] = await db
+			.select({ id: userTable.id, username: userTable.username, role: userTable.role })
+			.from(userTable)
+			.where(eq(userTable.id, userId));
+
+		if (!userToDelete) {
+			throw new Error('User yang ingin dihapus tidak ditemukan.');
+		}
+
+		// Clean up dependent records before deleting user
+		await db.delete(sessionTable).where(eq(sessionTable.userId, String(userId)));
+		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
+		await db.delete(passwordResetToken).where(eq(passwordResetToken.userId, userId));
+		await db.delete(keanggotaanTable).where(eq(keanggotaanTable.userId, userId));
+		await db.delete(materiCompletion).where(eq(materiCompletion.userId, userId));
+		await db.delete(submissionTable).where(eq(submissionTable.userId, userId));
+		await db.delete(attendanceTable).where(eq(attendanceTable.userId, userId));
+		await db.delete(badgeTable).where(eq(badgeTable.userId, userId));
+		await db.delete(pointLogTable).where(eq(pointLogTable.userId, userId));
+		await db.delete(streakCounterTable).where(eq(streakCounterTable.userId, userId));
+		await db.delete(notificationTable).where(eq(notificationTable.userId, userId));
+		await db.delete(quizAttemptTable).where(eq(quizAttemptTable.userId, userId));
+		await db.delete(advisorNoteTable).where(or(eq(advisorNoteTable.studentId, userId), eq(advisorNoteTable.advisorId, userId)));
+
+		// Delete user record permanently
+		await db.delete(userTable).where(eq(userTable.id, userId));
+
+		return userToDelete;
 	}
 }
