@@ -224,43 +224,79 @@
 		</div>
 	</div>
 
-	<!-- Status Tabs Bar (Filter Panel matching Blueprint) -->
+	<!-- Status Tabs Bar (Single-Line Filter Panel with SVG Icons & Color Accent) -->
 	<div class="filter-panel">
 		<div class="tabs-row">
+			<!-- Tab 1: Semua -->
 			<button
 				type="button"
 				onclick={() => (selectedStatusFilter = 'all')}
-				class="tab-btn {selectedStatusFilter === 'all' ? 'tab-btn--active' : ''}"
+				class="tab-btn {selectedStatusFilter === 'all' ? 'tab-btn--all-active' : ''}"
 			>
-				Semua Tugas ({totalTasksCount})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="3" width="7" height="7"/>
+					<rect x="14" y="3" width="7" height="7"/>
+					<rect x="14" y="14" width="7" height="7"/>
+					<rect x="3" y="14" width="7" height="7"/>
+				</svg>
+				<span>Semua</span>
+				<span class="tab-counter">{totalTasksCount}</span>
 			</button>
+
+			<!-- Tab 2: Belum Submit -->
 			<button
 				type="button"
 				onclick={() => (selectedStatusFilter = 'unsubmitted')}
-				class="tab-btn {selectedStatusFilter === 'unsubmitted' ? 'tab-btn--active' : ''}"
+				class="tab-btn {selectedStatusFilter === 'unsubmitted' ? 'tab-btn--unsubmitted-active' : ''}"
 			>
-				Belum Submit ({unsubmittedCount})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+					<polyline points="14 2 14 8 20 8" />
+				</svg>
+				<span>Belum Submit</span>
+				<span class="tab-counter">{unsubmittedCount}</span>
 			</button>
+
+			<!-- Tab 3: Pending Review -->
 			<button
 				type="button"
 				onclick={() => (selectedStatusFilter = 'pending')}
-				class="tab-btn {selectedStatusFilter === 'pending' ? 'tab-btn--active' : ''}"
+				class="tab-btn {selectedStatusFilter === 'pending' ? 'tab-btn--pending-active' : ''}"
 			>
-				Pending Review ({pendingCount})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+				<span>Pending</span>
+				<span class="tab-counter">{pendingCount}</span>
 			</button>
+
+			<!-- Tab 4: Perlu Revisi -->
 			<button
 				type="button"
 				onclick={() => (selectedStatusFilter = 'revisi')}
-				class="tab-btn {selectedStatusFilter === 'revisi' ? 'tab-btn--active' : ''}"
+				class="tab-btn {selectedStatusFilter === 'revisi' ? 'tab-btn--revisi-active' : ''}"
 			>
-				Perlu Revisi ({revisiCount})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<line x1="12" y1="8" x2="12" y2="12" />
+					<line x1="12" y1="16" x2="12.01" y2="16" />
+				</svg>
+				<span>Revisi</span>
+				<span class="tab-counter">{revisiCount}</span>
 			</button>
+
+			<!-- Tab 5: Disetujui -->
 			<button
 				type="button"
 				onclick={() => (selectedStatusFilter = 'approved')}
-				class="tab-btn {selectedStatusFilter === 'approved' ? 'tab-btn--active' : ''}"
+				class="tab-btn {selectedStatusFilter === 'approved' ? 'tab-btn--approved-active' : ''}"
 			>
-				Disetujui ({approvedCount})
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<polyline points="20 6 9 17 4 12" />
+				</svg>
+				<span>Disetujui</span>
+				<span class="tab-counter">{approvedCount}</span>
 			</button>
 		</div>
 	</div>
@@ -583,7 +619,7 @@
 				</div>
 			{/if}
 		{/snippet}
-	</FormDrawer>
+	FormDrawer
 {/if}
 
 <style>
@@ -799,50 +835,114 @@
 		margin-top: 2px;
 	}
 
-	/* Filter Panel Tabs Bar */
+	/* Filter Panel Tabs Bar (Single Line with Color Accent & Micro Badges) */
 	.filter-panel {
 		background: #ffffff;
 		border: 1px solid var(--border-hard, #e2e8f0);
 		border-radius: 12px;
-		padding: 10px 12px;
+		padding: 8px 10px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 		margin-bottom: 0;
 	}
 
 	.tabs-row {
 		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
 		overflow-x: auto;
 		white-space: nowrap;
+		flex-wrap: nowrap;
+		scrollbar-width: none;
 		-webkit-overflow-scrolling: touch;
+	}
+	.tabs-row::-webkit-scrollbar {
+		display: none;
 	}
 
 	.tab-btn {
-		padding: 6px 14px;
-		font-family: var(--font-macro, system-ui, sans-serif);
-		font-size: 12.5px;
-		font-weight: 700;
-		border-radius: 8px;
-		border: 1px solid transparent;
-		background: transparent;
-		color: var(--text-secondary, #64748b);
-		cursor: pointer;
-		transition: all 150ms ease;
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+		height: 34px;
+		padding: 0 12px;
+		border-radius: 8px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		background: var(--bg-inset, #f8fafc);
+		color: var(--text-secondary, #64748b);
+		cursor: pointer;
+		transition: all 150ms ease;
+		flex-shrink: 0;
 	}
 
 	.tab-btn:hover {
 		background: var(--bg-hover, #f1f5f9);
 		color: var(--text-primary, #0f172a);
+		border-color: #cbd5e1;
 	}
 
-	.tab-btn--active {
-		background: var(--primary-light, #eff6ff);
-		color: var(--primary, #2563eb);
-		border-color: var(--primary-border, #bfdbfe);
+	.tab-counter {
+		font-family: var(--font-mono, monospace);
+		font-size: 10px;
+		font-weight: 800;
+		padding: 1px 6px;
+		border-radius: 9999px;
+		background: #e2e8f0;
+		color: #475569;
+		line-height: 1;
+	}
+
+	/* Active Color Accents Per Status */
+	.tab-btn--all-active {
+		background: #eff6ff;
+		color: #1d4ed8;
+		border-color: #bfdbfe;
+	}
+	.tab-btn--all-active .tab-counter {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+
+	.tab-btn--unsubmitted-active {
+		background: #f1f5f9;
+		color: #334155;
+		border-color: #cbd5e1;
+	}
+	.tab-btn--unsubmitted-active .tab-counter {
+		background: #e2e8f0;
+		color: #475569;
+	}
+
+	.tab-btn--pending-active {
+		background: #fffbeb;
+		color: #b45309;
+		border-color: #fde68a;
+	}
+	.tab-btn--pending-active .tab-counter {
+		background: #fef3c7;
+		color: #92400e;
+	}
+
+	.tab-btn--revisi-active {
+		background: #fff1f2;
+		color: #be123c;
+		border-color: #fecdd3;
+	}
+	.tab-btn--revisi-active .tab-counter {
+		background: #ffe4e6;
+		color: #9f1239;
+	}
+
+	.tab-btn--approved-active {
+		background: #f0fdf4;
+		color: #15803d;
+		border-color: #bbf7d0;
+	}
+	.tab-btn--approved-active .tab-counter {
+		background: #dcfce7;
+		color: #166534;
 	}
 
 	/* Empty State Card */
