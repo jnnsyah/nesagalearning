@@ -32,6 +32,9 @@
 	// Logout confirmation modal state
 	let showLogoutModal = $state(false);
 
+	// Mobile More navigation drawer sheet state
+	let showMoreDrawer = $state(false);
+
 	// Keyboard shortcut '[' to toggle sidebar collapse
 	function handleKeyDown(e: KeyboardEvent) {
 		const tgt = e.target;
@@ -242,11 +245,187 @@
 		];
 	});
 
-	// Mobile Bottom Navigation Items
-	let mobileNavItems = $derived(() => {
-		if (role === 'mentor' || role === 'guru' || role === 'admin') {
-			return desktopNavItems();
+	// Items for Mobile Bottom Sheet "Lainnya" Drawer (Mentor & Admin)
+	let moreNavItems = $derived(() => {
+		if (role === 'mentor') {
+			return [
+				{
+					href: '/mentor/kurikulum',
+					label: 'Track Pembelajaran',
+					desc: 'Pantau modul & bab pembelajaran siswa',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
+				},
+				{
+					href: '/mentor/jadwal',
+					label: 'Kalender Jadwal',
+					desc: 'Lihat & atur jadwal pertemuan mentor',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>`
+				},
+				{
+					href: '/mentor/tugas',
+					label: 'Penilaian Tugas',
+					desc: 'Review & beri nilai kiriman tugas siswa',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`
+				},
+				{
+					href: '/mentor/profile',
+					label: 'Profil Saya',
+					desc: 'Kelola akun & detail profil mentor',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+				}
+			];
 		}
+
+		if (role === 'admin') {
+			return [
+				{
+					href: '/admin/tahun-ajaran',
+					label: 'Periode Komunitas',
+					desc: 'Kelola tahun ajaran & periode aktif',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+				},
+				{
+					href: '/admin/konfigurasi',
+					label: 'Konfigurasi Poin',
+					desc: 'Pengaturan XP, streak, & poin presensi',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 1 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`
+				},
+				{
+					href: '/admin/email',
+					label: 'Manajemen Email',
+					desc: 'Template & Log pengiriman email sistem',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`
+				},
+				{
+					href: '/admin/audit-logs',
+					label: 'Audit Log Stream',
+					desc: 'Monitor aktivitas & histori aksi sistem',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+				},
+				{
+					href: '/admin/profile',
+					label: 'Profil Saya',
+					desc: 'Kelola kredensial & akun admin',
+					icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+				}
+			];
+		}
+
+		return [];
+	});
+
+	// Mobile Bottom Navigation Items (Unified Sweet Spot 5-Item Architecture)
+	let mobileNavItems = $derived(() => {
+		if (role === 'mentor') {
+			return [
+				{
+					href: '/mentor/progress',
+					label: 'Progress',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`
+				},
+				{
+					href: '/mentor/siswa',
+					label: 'Siswa',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+				},
+				{
+					href: '/mentor',
+					label: 'Dashboard',
+					exact: true,
+					isCenter: true,
+					icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`
+				},
+				{
+					href: '/mentor/pertemuan',
+					label: 'Pertemuan',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+				},
+				{
+					href: '#more',
+					label: 'Lainnya',
+					exact: false,
+					isMore: true,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`
+				}
+			];
+		}
+
+		if (role === 'admin') {
+			return [
+				{
+					href: '/admin/users',
+					label: 'User',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+				},
+				{
+					href: '/admin/kelas',
+					label: 'Kelas',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+				},
+				{
+					href: '/admin',
+					label: 'Overview',
+					exact: true,
+					isCenter: true,
+					icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`
+				},
+				{
+					href: '/admin/master',
+					label: 'Master',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M21 19c0 1.66-4 3-9 3s-9-1.34-9-3"/></svg>`
+				},
+				{
+					href: '#more',
+					label: 'Lainnya',
+					exact: false,
+					isMore: true,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`
+				}
+			];
+		}
+
+		if (role === 'guru') {
+			return [
+				{
+					href: '/guru/monitoring',
+					label: 'Monitoring',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`
+				},
+				{
+					href: '/guru/kurikulum',
+					label: 'Kurikulum',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`
+				},
+				{
+					href: '/guru',
+					label: 'Dashboard',
+					exact: true,
+					isCenter: true,
+					icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`
+				},
+				{
+					href: '/guru/presensi',
+					label: 'Presensi',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+				},
+				{
+					href: '/guru/profile',
+					label: 'Profil',
+					exact: false,
+					icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+				}
+			];
+		}
+
 		// Siswa Mobile Bottom Nav: Beranda is 3rd item in the center (floating)
 		return [
 			{
@@ -283,7 +462,10 @@
 		];
 	});
 
-	function isItemActive(item: { href: string; exact: boolean }) {
+	function isItemActive(item: { href: string; exact: boolean; isMore?: boolean }) {
+		if (item.isMore) {
+			return moreNavItems().some((sub) => pathname.startsWith(sub.href));
+		}
 		if (item.exact) return pathname === item.href;
 		return pathname.startsWith(item.href);
 	}
@@ -448,12 +630,92 @@
 				class="bottom-nav-item {item.isCenter ? 'bottom-nav-item--center' : ''}"
 				class:bottom-nav-item--active={active}
 				aria-current={active ? 'page' : undefined}
+				onclick={(e) => {
+					if (item.isMore) {
+						e.preventDefault();
+						showMoreDrawer = true;
+					}
+				}}
 			>
 				<span class="bottom-nav-icon">{@html item.icon}</span>
 				<span class="bottom-nav-label">{item.label}</span>
 			</a>
 		{/each}
 	</nav>
+
+	<!-- ══════════════════════════════════════════════════════════
+	     MOBILE BOTTOM SHEET DRAWER (MENU LAINNYA)
+	     ══════════════════════════════════════════════════════════ -->
+	{#if showMoreDrawer}
+		<div
+			class="more-drawer-overlay hide-desktop"
+			onclick={() => (showMoreDrawer = false)}
+			role="presentation"
+		>
+			<div
+				class="more-drawer-sheet"
+				onclick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="more-drawer-title"
+			>
+				<div class="more-drawer-handle" aria-hidden="true"></div>
+
+				<div class="more-drawer-header">
+					<div class="more-drawer-header-info">
+						<h3 id="more-drawer-title" class="more-drawer-title">Menu Lainnya</h3>
+						<span
+							class="more-drawer-role-badge"
+							style="color: {currentRoleMeta.color}; background: {currentRoleMeta.bg};"
+						>
+							{currentRoleMeta.badge}
+						</span>
+					</div>
+					<button
+						type="button"
+						class="btn-close-more-drawer"
+						onclick={() => (showMoreDrawer = false)}
+						aria-label="Tutup menu"
+					>
+						&times;
+					</button>
+				</div>
+
+				<div class="more-drawer-body">
+					<div class="more-drawer-grid">
+						{#each moreNavItems() as subItem}
+							{@const subActive = pathname.startsWith(subItem.href)}
+							<a
+								href={subItem.href}
+								class="more-drawer-item"
+								class:more-drawer-item--active={subActive}
+								onclick={() => (showMoreDrawer = false)}
+							>
+								<div class="more-drawer-icon">{@html subItem.icon}</div>
+								<div class="more-drawer-text">
+									<div class="more-drawer-label">{subItem.label}</div>
+									{#if subItem.desc}
+										<div class="more-drawer-desc">{subItem.desc}</div>
+									{/if}
+								</div>
+								<svg
+									class="more-drawer-arrow"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<polyline points="9 18 15 12 9 6" />
+								</svg>
+							</a>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Confirm Modal Logout -->
 	<ConfirmModal
@@ -1010,5 +1272,183 @@
 		max-width: 68px;
 		font-size: 10px;
 		line-height: 1;
+	}
+
+	/* ── Mobile Bottom Sheet Drawer (Menu Lainnya) ── */
+	.more-drawer-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.5);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		z-index: 1000;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		animation: fadeInDrawerOverlay 200ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@keyframes fadeInDrawerOverlay {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.more-drawer-sheet {
+		width: 100%;
+		max-width: 540px;
+		background: #ffffff;
+		border-radius: 20px 20px 0 0;
+		padding: 12px 18px 24px 18px;
+		box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.18);
+		max-height: 85vh;
+		display: flex;
+		flex-direction: column;
+		animation: slideUpDrawerSheet 250ms cubic-bezier(0.16, 1, 0.3, 1);
+		position: relative;
+	}
+
+	@keyframes slideUpDrawerSheet {
+		from { transform: translateY(100%); }
+		to { transform: translateY(0); }
+	}
+
+	.more-drawer-handle {
+		width: 38px;
+		height: 4px;
+		background: #cbd5e1;
+		border-radius: 9999px;
+		margin: 0 auto 12px auto;
+	}
+
+	.more-drawer-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-bottom: 12px;
+		margin-bottom: 12px;
+		border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+	}
+
+	.more-drawer-header-info {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.more-drawer-title {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--text-main, #0f172a);
+	}
+
+	.more-drawer-role-badge {
+		font-size: 10px;
+		font-weight: 800;
+		padding: 2px 8px;
+		border-radius: 9999px;
+		letter-spacing: 0.5px;
+	}
+
+	.btn-close-more-drawer {
+		background: #f1f5f9;
+		border: none;
+		color: #64748b;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		font-size: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: background 150ms ease;
+	}
+
+	.btn-close-more-drawer:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+	}
+
+	.more-drawer-body {
+		overflow-y: auto;
+		max-height: 60vh;
+	}
+
+	.more-drawer-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.more-drawer-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 12px 14px;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		text-decoration: none;
+		color: var(--text-main, #0f172a);
+		transition: all 150ms ease;
+	}
+
+	.more-drawer-item:hover,
+	.more-drawer-item--active {
+		background: #eef2ff;
+		border-color: #c7d2fe;
+		color: #4f46e5;
+	}
+
+	.more-drawer-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		background: #ffffff;
+		color: #4f46e5;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		border: 1px solid #e0e7ff;
+		flex-shrink: 0;
+	}
+
+	.more-drawer-item--active .more-drawer-icon {
+		background: #4f46e5;
+		color: #ffffff;
+		border-color: #4f46e5;
+	}
+
+	.more-drawer-text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.more-drawer-label {
+		font-size: 13.5px;
+		font-weight: 700;
+		line-height: 1.3;
+	}
+
+	.more-drawer-desc {
+		font-size: 11px;
+		color: #64748b;
+		margin-top: 1px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.more-drawer-arrow {
+		color: #94a3b8;
+		flex-shrink: 0;
+		transition: transform 150ms ease;
+	}
+
+	.more-drawer-item:hover .more-drawer-arrow {
+		transform: translateX(2px);
+		color: #4f46e5;
 	}
 </style>
