@@ -3,6 +3,7 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
@@ -18,9 +19,14 @@
 	let isSubmitting = $state(false);
 	let hasHandledInitialUrl = false;
 
-	// Pagination state
+	// ── Pagination State (Identical to /siswa/pertemuan) ─────────────────
 	let currentPage = $state(1);
 	let itemsPerPage = $state(6);
+	const pageSizeOptions = [
+		{ value: 6, label: '6 Per Halaman' },
+		{ value: 12, label: '12 Per Halaman' },
+		{ value: 24, label: '24 Per Halaman' }
+	];
 
 	// Reset page when filter changes
 	$effect(() => {
@@ -95,16 +101,12 @@
 		})
 	);
 
-	// Derived pagination properties
-	let totalFilteredCount = $derived(filteredTasks.length);
-	let totalPages = $derived(Math.max(1, Math.ceil(totalFilteredCount / itemsPerPage)));
+	// Derived pagination properties matching /siswa/pertemuan
+	let totalPages = $derived(Math.max(1, Math.ceil(filteredTasks.length / itemsPerPage)));
 
 	let paginatedTasks = $derived(
 		filteredTasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 	);
-
-	let startIndex = $derived(totalFilteredCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1);
-	let endIndex = $derived(Math.min(currentPage * itemsPerPage, totalFilteredCount));
 
 	function openSubmitModal(task: TaskItem) {
 		activeSubmitTask = task;
@@ -480,54 +482,50 @@
 			{/each}
 		</div>
 
-		<!-- Pagination Footer Bar -->
-		{#if totalFilteredCount > 0}
-			<div class="pagination-bar">
-				<div class="pagination-info">
-					Menampilkan <strong>{startIndex}</strong> - <strong>{endIndex}</strong> dari <strong>{totalFilteredCount}</strong> Tugas
+		<!-- Pagination Footer Bar Standard (Identical to /siswa/pertemuan) -->
+		<div class="pagination-footer-bar">
+			<div class="pagination-info text-xs text-slate-500 font-medium">
+				Menampilkan <strong>{paginatedTasks.length}</strong> dari <strong>{filteredTasks.length}</strong> tugas
+			</div>
+
+			<div class="flex items-center gap-3 flex-wrap">
+				<div class="w-44 mobile-page-size-wrap">
+					<CustomSelect
+						id="page-size-select"
+						label=""
+						bind:value={itemsPerPage}
+						options={pageSizeOptions}
+						searchable={false}
+					/>
 				</div>
 
-				{#if totalPages > 1}
-					<div class="pagination-controls">
-						<button
-							type="button"
-							class="btn-page"
-							disabled={currentPage === 1}
-							onclick={() => currentPage--}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<polyline points="15 18 9 12 15 6" />
-							</svg>
-							<span>Sebelumnya</span>
-						</button>
+				<div class="pagination-nav-group">
+					<button
+						type="button"
+						disabled={currentPage === 1}
+						onclick={() => (currentPage = Math.max(1, currentPage - 1))}
+						class="btn-pagination-nav"
+						aria-label="Halaman Sebelumnya"
+					>
+						&lsaquo; Prev
+					</button>
 
-						<div class="page-numbers">
-							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
-								<button
-									type="button"
-									class="btn-page-num {currentPage === p ? 'btn-page-num--active' : ''}"
-									onclick={() => (currentPage = p)}
-								>
-									{p}
-								</button>
-							{/each}
-						</div>
+					<span class="pagination-page-indicator">
+						{currentPage} / {totalPages}
+					</span>
 
-						<button
-							type="button"
-							class="btn-page"
-							disabled={currentPage === totalPages}
-							onclick={() => currentPage++}
-						>
-							<span>Selanjutnya</span>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<polyline points="9 18 15 12 9 6" />
-							</svg>
-						</button>
-					</div>
-				{/if}
+					<button
+						type="button"
+						disabled={currentPage === totalPages}
+						onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
+						class="btn-pagination-nav"
+						aria-label="Halaman Selanjutnya"
+					>
+						Next &rsaquo;
+					</button>
+				</div>
 			</div>
-		{/if}
+		</div>
 	{/if}
 </div>
 
@@ -1320,100 +1318,77 @@
 		gap: 6px;
 	}
 
-	/* Pagination Bar */
-	.pagination-bar {
+	/* Pagination Footer Bar (Standard /siswa/pertemuan Blueprint) */
+	.pagination-footer-bar {
 		background: #ffffff;
-		border: 1px solid var(--border-hard, #e2e8f0);
-		border-radius: 12px;
-		padding: 12px 16px;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 12px 18px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 		flex-wrap: wrap;
-
+		box-sizing: border-box;
 	}
 
-	.pagination-info {
-		font-size: 12.5px;
-		color: var(--text-secondary, #475569);
-	}
-
-	.pagination-controls {
+	.pagination-nav-group {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
 	}
 
-	.btn-page {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		height: 34px;
-		padding: 0 12px;
-		border-radius: 8px;
-		font-family: var(--font-macro, system-ui, sans-serif);
+	.btn-pagination-nav {
+		padding: 6px 12px;
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		border-radius: 6px;
 		font-size: 12px;
 		font-weight: 700;
-		border: 1px solid var(--border-hard, #e2e8f0);
-		background: #ffffff;
-		color: var(--text-primary, #0f172a);
+		color: #334155;
 		cursor: pointer;
 		transition: all 150ms ease;
 	}
-	.btn-page:hover:not(:disabled) {
-		background: var(--bg-hover, #f1f5f9);
-		border-color: #cbd5e1;
+
+	.btn-pagination-nav:hover:not(:disabled) {
+		background: #f8fafc;
+		border-color: #94a3b8;
+		color: #0f172a;
 	}
-	.btn-page:disabled {
+
+	.btn-pagination-nav:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
 
-	.page-numbers {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-
-	.btn-page-num {
-		min-width: 34px;
-		height: 34px;
-		padding: 0 8px;
-		border-radius: 8px;
+	.pagination-page-indicator {
 		font-family: var(--font-mono, monospace);
-		font-size: 12px;
-		font-weight: 800;
-		border: 1px solid var(--border-hard, #e2e8f0);
-		background: #ffffff;
-		color: var(--text-secondary, #64748b);
-		cursor: pointer;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		transition: all 150ms ease;
-	}
-	.btn-page-num:hover {
-		background: var(--bg-hover, #f1f5f9);
-		color: var(--text-primary, #0f172a);
-	}
-	.btn-page-num--active {
-		background: var(--primary, #2563eb);
-		color: #ffffff;
-		border-color: var(--primary, #2563eb);
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #475569;
+		padding: 0 4px;
 	}
 
 	@media (max-width: 640px) {
-		.pagination-bar {
+		.pagination-footer-bar {
 			flex-direction: column;
-			align-items: center;
+			align-items: stretch;
+			gap: 10px;
 			text-align: center;
-			gap: 12px;
+			padding: 12px 14px;
 		}
-		.pagination-controls {
+
+		.pagination-info {
+			text-align: center;
+		}
+
+		.mobile-page-size-wrap {
 			width: 100%;
-			justify-content: space-between;
+		}
+
+		.pagination-nav-group {
+			justify-content: center;
+			width: 100%;
 		}
 	}
 
