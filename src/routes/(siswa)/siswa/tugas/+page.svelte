@@ -21,11 +21,12 @@
 
 	// ── Pagination State (Identical to /siswa/pertemuan) ─────────────────
 	let currentPage = $state(1);
-	let itemsPerPage = $state(6);
+	let itemsPerPage = $state<number>(10);
 	const pageSizeOptions = [
-		{ value: 6, label: '6 Per Halaman' },
-		{ value: 12, label: '12 Per Halaman' },
-		{ value: 24, label: '24 Per Halaman' }
+		{ value: 5, label: '5 Data / Halaman' },
+		{ value: 10, label: '10 Data / Halaman' },
+		{ value: 25, label: '25 Data / Halaman' },
+		{ value: 50, label: '50 Data / Halaman' }
 	];
 
 	// Reset page when filter changes
