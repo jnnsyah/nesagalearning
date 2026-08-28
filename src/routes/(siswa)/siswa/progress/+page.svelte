@@ -118,14 +118,6 @@
 			</div>
 
 			<div class="header-badges-row">
-				{#if summary.riskLevel === 'KRITIS'}
-					<span class="badge badge-kritis">STATUS: KRITIS</span>
-				{:else if summary.riskLevel === 'WASPADA'}
-					<span class="badge badge-waspada">STATUS: WASPADA</span>
-				{:else}
-					<span class="badge badge-sehat">STATUS: SEHAT</span>
-				{/if}
-
 				{#if student.tingkatName}
 					<span class="badge badge-grade">Tingkat {student.tingkatName}</span>
 				{/if}
