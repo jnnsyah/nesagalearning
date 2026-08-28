@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, getClientAddress }) => {
+	default: async ({ request, url, getClientAddress }) => {
 		const ipAddress = getClientAddress() || request.headers.get('x-forwarded-for') || '127.0.0.1';
 		const rateLimit = authRateLimiter.check(`register_${ipAddress}`, 5, 60000);
 		if (!rateLimit.allowed) {

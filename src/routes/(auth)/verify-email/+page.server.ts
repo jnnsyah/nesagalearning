@@ -162,7 +162,7 @@ export const actions: Actions = {
 		throw redirect(303, '/siswa?verified=success');
 	},
 
-	resend: async ({ request, getClientAddress }) => {
+	resend: async ({ request, url, getClientAddress }) => {
 		const ipAddress = getClientAddress() || request.headers.get('x-forwarded-for') || '127.0.0.1';
 		const rateLimit = authRateLimiter.check(`resend_otp_${ipAddress}`, 5, 60000);
 		if (!rateLimit.allowed) {
@@ -256,7 +256,7 @@ export const actions: Actions = {
 		};
 	},
 
-	updateEmail: async ({ request }) => {
+	updateEmail: async ({ request, url }) => {
 		const formData = await request.formData();
 		const token = (formData.get('token') as string)?.trim();
 		const newEmail = (formData.get('newEmail') as string)?.trim().toLowerCase();
