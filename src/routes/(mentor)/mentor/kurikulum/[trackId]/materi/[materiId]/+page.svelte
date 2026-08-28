@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
+	import { browser } from '$app/environment';
 	import { enhance, deserialize } from '$app/forms';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
@@ -24,9 +25,30 @@
 	let isDraggingGlobal = $state(false);
 	let globalUploadError = $state('');
 
-	let originalTitle = data.materi?.title || '';
-	let originalContent = data.materi?.content || '';
-	let originalAttachmentsJson = JSON.stringify(data.materi?.attachments || []);
+	let originalTitle = $state(data.materi?.title || '');
+	let originalContent = $state(data.materi?.content || '');
+	let originalAttachmentsJson = $state(JSON.stringify(data.materi?.attachments || []));
+	let isInitialized = $state(false);
+
+	// Sync originalContent once Tiptap formats initial HTML on mount
+	$effect(() => {
+		if (!isInitialized && content) {
+			untrack(() => {
+				originalContent = content;
+				isInitialized = true;
+			});
+		}
+	});
+
+	// Auto-activate Clear View / Focus Mode (hides topbar & sidebar)
+	$effect(() => {
+		if (browser) {
+			document.body.classList.add('focus-mode-active');
+			return () => {
+				document.body.classList.remove('focus-mode-active');
+			};
+		}
+	});
 
 	let isDirty = $derived(
 		title !== originalTitle ||
@@ -190,20 +212,26 @@
 		const currTitle = title;
 		const currContent = content;
 
-		if (currTitle !== originalTitle || currContent !== originalContent) {
-			if (saveStatus !== 'saving') {
-				saveStatus = 'unsaved';
+		untrack(() => {
+			if (currTitle !== originalTitle || currContent !== originalContent) {
+				if (currTitle.trim().length < 3) return;
+
+				if (saveStatus !== 'saving' && saveStatus !== 'error') {
+					saveStatus = 'unsaved';
+				}
+				if (saveStatus !== 'error') {
+					if (autosaveTimer) clearTimeout(autosaveTimer);
+					autosaveTimer = setTimeout(() => {
+						performAutosave();
+					}, DEBOUNCE_MS);
+				}
+			} else {
+				if (autosaveTimer) clearTimeout(autosaveTimer);
+				if (saveStatus !== 'saving' && saveStatus !== 'error') {
+					saveStatus = 'saved';
+				}
 			}
-			if (autosaveTimer) clearTimeout(autosaveTimer);
-			autosaveTimer = setTimeout(() => {
-				performAutosave();
-			}, DEBOUNCE_MS);
-		} else {
-			if (autosaveTimer) clearTimeout(autosaveTimer);
-			if (saveStatus !== 'saving') {
-				saveStatus = 'saved';
-			}
-		}
+		});
 	});
 
 	onDestroy(() => {
@@ -342,7 +370,9 @@
 		const c = content;
 		const tab = activeTab;
 		if (tab === 'preview' || tab === 'split') {
-			enhancePreviewCodeBlocks();
+			untrack(() => {
+				enhancePreviewCodeBlocks();
+			});
 		}
 	});
 
@@ -397,7 +427,7 @@
 			isSaving = true;
 			saveStatus = 'saving';
 			return async ({ result, update }) => {
-				await update();
+				await update({ reset: false });
 				isSaving = false;
 				if (result.type === 'success') {
 					originalTitle = title;
@@ -426,7 +456,7 @@
 
 				<div class="topbar-title-row">
 					<h1 class="topbar-title">
-						<span class="materi-order">M-{data.materi.sortOrder}</span>
+						<span class="materi-order">M-{data.materi?.sortOrder || 1}</span>
 						{title || 'Untitled Materi'}
 					</h1>
 					<span class="autosave-pill autosave-pill--{saveStatus}">
@@ -533,7 +563,7 @@
 						</div>
 						<div class="info-row">
 							<dt class="info-label">Urutan</dt>
-							<dd class="info-value info-value--badge">M-{data.materi.sortOrder}</dd>
+							<dd class="info-value info-value--badge">M-{data.materi?.sortOrder || 1}</dd>
 						</div>
 					</dl>
 				</div>
@@ -619,17 +649,19 @@
 				{#if activeTab === 'edit'}
 					<!-- Global Materi Attachments Block (Edit Mode) -->
 					<div class="content-block materi-global-attachments-card">
-						<div class="content-block__label-row bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-							<span class="content-block__label text-slate-800 font-bold text-xs flex items-center gap-2">
-								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+						<div class="content-block__label-row bg-slate-50/80 px-5 py-4 border-b border-slate-200/90 flex items-center justify-between">
+							<span class="content-block__label text-slate-800 font-bold text-xs flex items-center gap-2.5">
+								<div class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs">
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+								</div>
 								Lampiran Berkas Modul (Global)
 							</span>
-							<span class="badge-count text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold">
+							<span class="badge-count text-indigo-700 bg-indigo-50/80 border border-indigo-200/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold shadow-2xs">
 								{globalAttachments.length} Berkas
 							</span>
 						</div>
 
-						<div class="p-4 space-y-4">
+						<div class="p-6 sm:p-7 space-y-6">
 							{#if globalUploadError}
 								<div class="inline-alert inline-alert--error mb-2 text-xs">
 									{globalUploadError}
@@ -637,24 +669,24 @@
 							{/if}
 
 							{#if globalAttachments.length > 0}
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
 									{#each globalAttachments as att, i}
-										<div class="materi-attachment-item-card group">
+										<div class="materi-attachment-item-card p-3.5 sm:p-4 rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white hover:border-indigo-300 hover:shadow-sm transition-all duration-200 flex items-center justify-between gap-3 group">
 											<div class="flex items-center gap-3 min-w-0">
-												<div class="px-2 py-1 text-[10px] font-mono font-bold rounded-md border uppercase flex-shrink-0 {getFileBadgeClass(att.name)}">
+												<div class="px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border uppercase tracking-wider flex-shrink-0 shadow-2xs {getFileBadgeClass(att.name)}">
 													{getFileExt(att.name)}
 												</div>
 												<div class="min-w-0 flex-1">
 													<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>
 														{att.name}
 													</div>
-													<div class="text-[10px] font-mono text-slate-500 font-medium">
+													<div class="text-[10px] font-mono text-slate-500 font-medium mt-0.5">
 														{formatFileSize(att.size)} · Lampiran Modul
 													</div>
 												</div>
 											</div>
 											<div class="flex items-center gap-1.5 flex-shrink-0">
-												<a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" class="attachment-box-dl text-xs font-bold px-2.5 py-1" title="Unduh Berkas">
+												<a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all flex items-center gap-1.5 shadow-2xs" title="Unduh Berkas">
 													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 													<span>Unduh</span>
 												</a>
@@ -669,7 +701,7 @@
 
 							<!-- Drag and Drop Dropzone -->
 							<div
-								class="upload-dropzone {isDraggingGlobal ? 'upload-dropzone--dragging' : ''}"
+								class="upload-dropzone relative border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/40 hover:bg-indigo-50/30 rounded-2xl p-8 sm:p-10 text-center transition-all duration-200 cursor-pointer group {isDraggingGlobal ? 'border-indigo-500 bg-indigo-50/80 ring-4 ring-indigo-500/10 scale-[1.005]' : ''}"
 								ondragover={handleDragOver}
 								ondragleave={handleDragLeave}
 								ondrop={handleDrop}
@@ -679,25 +711,32 @@
 								<input id="global-att-input" type="file" class="sr-only" onchange={handleGlobalAttachmentUpload} disabled={isUploadingGlobal} />
 								<label for="global-att-input" class="cursor-pointer block">
 									{#if isUploadingGlobal}
-										<div class="flex flex-col items-center justify-center py-2 space-y-2">
-											<svg class="animate-spin text-indigo-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-											<span class="text-xs font-bold text-indigo-700">Mengunggah berkas lampiran...</span>
+										<div class="flex flex-col items-center justify-center py-6 space-y-3">
+											<div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+												<svg class="animate-spin text-indigo-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+											</div>
+											<span class="text-xs font-bold text-indigo-700 tracking-wide">Mengunggah berkas lampiran...</span>
 										</div>
 									{:else}
-										<div class="flex flex-col items-center justify-center space-y-2">
-											<div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+										<div class="flex flex-col items-center justify-center space-y-3.5">
+											<div class="w-14 h-14 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center text-indigo-600 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-200">
+												<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
 											</div>
-											<div class="text-xs font-bold text-slate-800">
-												Tarik &amp; lepas berkas ke sini, atau <span class="text-indigo-600 underline">pilih dari komputer</span>
+											<div class="space-y-1">
+												<div class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+													Tarik &amp; lepas berkas ke sini, atau <span class="text-indigo-600 underline underline-offset-4 decoration-indigo-300 font-semibold">pilih dari komputer</span>
+												</div>
+												<p class="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+													Mendukung berkas praktikum, slide PDF, paket lab Cisco Packet Tracer, atau arsip ZIP.
+												</p>
 											</div>
-											<div class="flex items-center gap-1.5 flex-wrap justify-center text-[10px] text-slate-500 font-mono">
-												<span class="px-1.5 py-0.5 bg-slate-100 rounded">PDF</span>
-												<span class="px-1.5 py-0.5 bg-slate-100 rounded">PKT</span>
-												<span class="px-1.5 py-0.5 bg-slate-100 rounded">GNS3</span>
-												<span class="px-1.5 py-0.5 bg-slate-100 rounded">ZIP</span>
-												<span class="px-1.5 py-0.5 bg-slate-100 rounded">DOCX</span>
-												<span>• Max 20MB</span>
+											<div class="flex items-center gap-2 flex-wrap justify-center pt-1.5 text-[11px] font-mono text-slate-500">
+												<span class="px-2.5 py-1 bg-white border border-slate-200/80 rounded-md font-semibold text-slate-600 shadow-2xs">PDF</span>
+												<span class="px-2.5 py-1 bg-white border border-slate-200/80 rounded-md font-semibold text-slate-600 shadow-2xs">PKT</span>
+												<span class="px-2.5 py-1 bg-white border border-slate-200/80 rounded-md font-semibold text-slate-600 shadow-2xs">GNS3</span>
+												<span class="px-2.5 py-1 bg-white border border-slate-200/80 rounded-md font-semibold text-slate-600 shadow-2xs">ZIP</span>
+												<span class="px-2.5 py-1 bg-white border border-slate-200/80 rounded-md font-semibold text-slate-600 shadow-2xs">DOCX</span>
+												<span class="px-2.5 py-1 bg-amber-50 border border-amber-200/80 rounded-md font-semibold text-amber-700 shadow-2xs">Maksimal 20MB</span>
 											</div>
 										</div>
 									{/if}
@@ -810,6 +849,7 @@
 				{/if}
 			</main>
 		</div>
+	</form>
 	<!-- Leave Confirmation Modal -->
 	<ConfirmModal
 		bind:open={showLeaveModal}
@@ -839,7 +879,7 @@
 	.builder-topbar {
 		position: sticky;
 		top: 0;
-		z-index: 80;
+		z-index: 40;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;

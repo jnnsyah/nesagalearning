@@ -13,15 +13,21 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(400, 'ID Materi tidak valid');
 	}
 
-	const materi = await CurriculumService.getMateriWithDetails(materiId);
-	if (!materi) {
-		throw error(404, 'Modul Materi tidak ditemukan');
-	}
+	try {
+		const materi = await CurriculumService.getMateriWithDetails(materiId);
+		if (!materi) {
+			throw error(404, 'Modul Materi tidak ditemukan');
+		}
 
-	return {
-		materi,
-		trackId: params.trackId
-	};
+		return {
+			materi,
+			trackId: params.trackId
+		};
+	} catch (err: any) {
+		console.error('Error loading materi in Modul Builder:', err);
+		if (err?.status) throw err;
+		throw error(500, err?.message || 'Gagal memuat modul materi');
+	}
 };
 
 export const actions: Actions = {

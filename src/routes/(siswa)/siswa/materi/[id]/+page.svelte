@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { toast } from '$lib/stores/toast';
 	import { formatFileSize } from '$lib/utils/sanitizer';
@@ -56,14 +57,16 @@
 	// Initialize open phases (keep the phase containing current materi open)
 	$effect(() => {
 		if (data.syllabus && data.syllabus.length > 0) {
-			const initial: Record<number, boolean> = {};
-			data.syllabus.forEach((p) => {
-				const containsCurrent = p.subPhases.some((sp) =>
-					sp.materiList.some((m) => m.id === data.materi?.id)
-				);
-				initial[p.id] = containsCurrent || Object.keys(openPhases).length === 0;
+			untrack(() => {
+				const initial: Record<number, boolean> = {};
+				data.syllabus.forEach((p) => {
+					const containsCurrent = p.subPhases.some((sp) =>
+						sp.materiList.some((m) => m.id === data.materi?.id)
+					);
+					initial[p.id] = containsCurrent || Object.keys(openPhases).length === 0;
+				});
+				openPhases = initial;
 			});
-			openPhases = initial;
 		}
 	});
 
@@ -680,51 +683,6 @@
 					</div>
 				</header>
 
-				<!-- Compact Resources Strip (PPT Slide & Attachments) -->
-				{#if data.sessionSlide?.materialUrl || (data.materi?.attachments && data.materi.attachments.length > 0)}
-					<div class="compact-resources-strip mb-6">
-						{#if data.sessionSlide?.materialUrl}
-							<a
-								href={data.sessionSlide.materialUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="resource-chip-btn resource-chip-btn--slide"
-							>
-								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-									<polyline points="14 2 14 8 20 8" />
-								</svg>
-								<span class="resource-chip-label">Slide Pertemuan: {data.sessionSlide.pertemuanTitle}</span>
-								<span class="resource-chip-action">Unduh PPT</span>
-							</a>
-						{/if}
-
-						{#if data.materi?.attachments && data.materi.attachments.length > 0}
-							<div class="attachments-list-strip">
-								{#each data.materi.attachments as att}
-									<a
-										href={att.url}
-										download={att.name}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="resource-chip-btn resource-chip-btn--file"
-										title={`Unduh ${att.name}`}
-									>
-										<span class="att-file-ext {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
-										<span class="resource-chip-label truncate">{att.name}</span>
-										<span class="resource-chip-size">({formatFileSize(att.size)})</span>
-										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-											<polyline points="7 10 12 15 17 10" />
-											<line x1="12" y1="15" x2="12" y2="3" />
-										</svg>
-									</a>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/if}
-
 				<!-- Article Body Content -->
 				{#if data.materi?.content}
 					<article class="prose-reading">
@@ -738,6 +696,89 @@
 					/>
 				{/if}
 
+				<!-- ══════════════════════════════════════════════════════════
+				     DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
+				     ══════════════════════════════════════════════════════════ -->
+				{#if (data.materi?.attachments && data.materi.attachments.length > 0) || data.sessionSlide?.materialUrl}
+					<section class="materi-attachments-section">
+						<div class="attachments-header">
+							<div class="attachments-title-group">
+								<div class="attachments-icon-badge">
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+										<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+									</svg>
+								</div>
+								<div>
+									<h3 class="attachments-heading">Lampiran & Berkas Materi</h3>
+									<p class="attachments-subheading">Unduh berkas pendukung dan slide materi pembelajaran ini</p>
+								</div>
+							</div>
+							<span class="badge badge-indigo text-[10px] h-[22px] px-2">
+								{(data.materi?.attachments?.length || 0) + (data.sessionSlide?.materialUrl ? 1 : 0)} Berkas
+							</span>
+						</div>
+
+						<div class="attachments-grid">
+							{#if data.sessionSlide?.materialUrl}
+								<a
+									href={data.sessionSlide.materialUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="attachment-card attachment-card--slide"
+								>
+									<div class="attachment-card-icon attachment-card-icon--ppt">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+											<polyline points="14 2 14 8 20 8" />
+										</svg>
+									</div>
+									<div class="attachment-card-info min-w-0">
+										<div class="attachment-card-title truncate">Slide Pertemuan: {data.sessionSlide.pertemuanTitle}</div>
+										<div class="attachment-card-meta">Presentasi PPT/PDF Pembelajaran</div>
+									</div>
+									<div class="attachment-card-action">
+										<span>Unduh Slide</span>
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+											<polyline points="7 10 12 15 17 10" />
+											<line x1="12" y1="15" x2="12" y2="3" />
+										</svg>
+									</div>
+								</a>
+							{/if}
+
+							{#if data.materi?.attachments && data.materi.attachments.length > 0}
+								{#each data.materi.attachments as att}
+									<a
+										href={att.url}
+										download={att.name}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="attachment-card"
+										title={`Unduh ${att.name}`}
+									>
+										<div class="attachment-card-icon">
+											<span class="att-file-ext {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
+										</div>
+										<div class="attachment-card-info min-w-0">
+											<div class="attachment-card-title truncate">{att.name}</div>
+											<div class="attachment-card-meta">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
+										</div>
+										<div class="attachment-card-action">
+											<span>Unduh</span>
+											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+												<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+												<polyline points="7 10 12 15 17 10" />
+												<line x1="12" y1="15" x2="12" y2="3" />
+											</svg>
+										</div>
+									</a>
+								{/each}
+							{/if}
+						</div>
+					</section>
+				{/if}
+
 			</div>
 		</main>
 	</div>
@@ -745,66 +786,72 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     3. STICKY READER BOTTOM ACTION BAR
 	     ══════════════════════════════════════════════════════════ -->
-	<footer class="course-bottom-bar">
-		<!-- Left: Previous Module Button -->
-		{#if data.prevMateri}
-			<a
-				href={`/siswa/materi/${data.prevMateri.id}`}
-				class="bottom-bar-nav-btn prev-btn"
-				title={`Modul Sebelumnya: ${data.prevMateri.title}`}
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="15 18 9 12 15 6" />
-				</svg>
-				<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-left">
-					<span class="nav-btn-label">Modul Sebelumnya</span>
-					<span class="nav-btn-title truncate">{data.prevMateri.title}</span>
-				</div>
-				<span class="sm:hidden text-xs font-semibold">Sebelumnya</span>
-			</a>
-		{:else}
-			<div class="bottom-bar-placeholder"></div>
-		{/if}
+	<footer class="course-bottom-bar {isSlidebarOpen ? 'course-bottom-bar--sidebar-open' : ''}">
+		<!-- Left Slot: Previous Module Button or Placeholder -->
+		<div class="bottom-bar-side-slot left-slot">
+			{#if data.prevMateri}
+				<a
+					href={`/siswa/materi/${data.prevMateri.id}`}
+					class="bottom-bar-nav-btn prev-btn"
+					title={`Modul Sebelumnya: ${data.prevMateri.title}`}
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-left">
+						<span class="nav-btn-label">Modul Sebelumnya</span>
+						<span class="nav-btn-title truncate">{data.prevMateri.title}</span>
+					</div>
+					<span class="sm:hidden text-xs font-semibold truncate">Sebelumnya</span>
+				</a>
+			{:else}
+				<div class="bottom-bar-placeholder"></div>
+			{/if}
+		</div>
 
-		<!-- Center: Menu & Syllabus Toggle -->
-		<button
-			type="button"
-			onclick={() => (isSlidebarOpen = !isSlidebarOpen)}
-			class="bottom-bar-menu-btn {isSlidebarOpen ? 'bottom-bar-menu-btn--active' : ''}"
-			title={isSlidebarOpen ? 'Tutup Menu' : 'Buka Silabus, Daftar Isi & Tampilan'}
-		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-				{#if isSlidebarOpen}
-					<line x1="18" y1="6" x2="6" y2="18" />
-					<line x1="6" y1="6" x2="18" y2="18" />
-				{:else}
-					<line x1="3" y1="12" x2="21" y2="12" />
-					<line x1="3" y1="6" x2="21" y2="6" />
-					<line x1="3" y1="18" x2="21" y2="18" />
-				{/if}
-			</svg>
-			<span>{isSlidebarOpen ? 'Tutup' : 'Silabus & Menu'}</span>
-		</button>
-
-		<!-- Right: Next Module Button -->
-		{#if data.nextMateri}
-			<a
-				href={`/siswa/materi/${data.nextMateri.id}`}
-				class="bottom-bar-nav-btn next-btn"
-				title={`Modul Selanjutnya: ${data.nextMateri.title}`}
+		<!-- Center Slot: Menu & Syllabus Toggle -->
+		<div class="bottom-bar-center-slot">
+			<button
+				type="button"
+				onclick={() => (isSlidebarOpen = !isSlidebarOpen)}
+				class="bottom-bar-menu-btn {isSlidebarOpen ? 'bottom-bar-menu-btn--active' : ''}"
+				title={isSlidebarOpen ? 'Tutup Menu' : 'Buka Silabus, Daftar Isi & Tampilan'}
 			>
-				<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-right">
-					<span class="nav-btn-label">Modul Selanjutnya</span>
-					<span class="nav-btn-title truncate">{data.nextMateri.title}</span>
-				</div>
-				<span class="sm:hidden text-xs font-semibold">Selanjutnya</span>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="9 18 15 12 9 6" />
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
+					{#if isSlidebarOpen}
+						<line x1="18" y1="6" x2="6" y2="18" />
+						<line x1="6" y1="6" x2="18" y2="18" />
+					{:else}
+						<line x1="3" y1="12" x2="21" y2="12" />
+						<line x1="3" y1="6" x2="21" y2="6" />
+						<line x1="3" y1="18" x2="21" y2="18" />
+					{/if}
 				</svg>
-			</a>
-		{:else}
-			<div class="bottom-bar-placeholder"></div>
-		{/if}
+				<span class="menu-btn-label">{isSlidebarOpen ? 'Tutup' : 'Silabus & Menu'}</span>
+			</button>
+		</div>
+
+		<!-- Right Slot: Next Module Button or Placeholder -->
+		<div class="bottom-bar-side-slot right-slot">
+			{#if data.nextMateri}
+				<a
+					href={`/siswa/materi/${data.nextMateri.id}`}
+					class="bottom-bar-nav-btn next-btn"
+					title={`Modul Selanjutnya: ${data.nextMateri.title}`}
+				>
+					<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-right">
+						<span class="nav-btn-label">Modul Selanjutnya</span>
+						<span class="nav-btn-title truncate">{data.nextMateri.title}</span>
+					</div>
+					<span class="sm:hidden text-xs font-semibold truncate">Selanjutnya</span>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+				</a>
+			{:else}
+				<div class="bottom-bar-placeholder"></div>
+			{/if}
+		</div>
 	</footer>
 
 	<!-- ══════════════════════════════════════════════════════════
@@ -1949,75 +1996,162 @@
 		transition: all 140ms ease;
 	}
 
-	/* Resources Strip */
-	.compact-resources-strip {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.attachments-list-strip {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.resource-chip-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 7px 12px;
-		border-radius: 8px;
-		text-decoration: none;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 11.5px;
-		font-weight: 700;
-		box-sizing: border-box;
-		border: 1px solid var(--r-border);
+	/* ══════════════════════════════════════════════════════════
+	   DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
+	   ══════════════════════════════════════════════════════════ */
+	.materi-attachments-section {
+		margin-top: 48px;
+		padding: 20px;
+		border-radius: 14px;
 		background: var(--r-card-bg);
-		color: var(--r-text-primary);
-		transition: all 140ms ease;
+		border: 1px solid var(--r-border);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 	}
 
-	.resource-chip-btn--slide {
+	.attachments-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid var(--r-border);
+		margin-bottom: 16px;
+	}
+
+	.attachments-title-group {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.attachments-icon-badge {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		background: #e0e7ff;
+		color: #4338ca;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.attachments-heading {
+		font-family: var(--font-macro, sans-serif);
+		font-size: 14px;
+		font-weight: 800;
+		color: var(--r-text-primary);
+		margin: 0;
+		line-height: 1.25;
+	}
+
+	.attachments-subheading {
+		font-size: 11.5px;
+		color: var(--r-text-muted);
+		margin: 2px 0 0 0;
+	}
+
+	.attachments-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 10px;
+	}
+
+	.attachment-card {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 14px;
+		border-radius: 10px;
+		border: 1px solid var(--r-border);
+		background: var(--r-bg);
+		text-decoration: none;
+		color: var(--r-text-primary);
+		transition: all 160ms ease;
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.attachment-card:hover {
+		border-color: #818cf8;
+		background: var(--r-hover-bg);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+	}
+
+	.attachment-card--slide {
 		background: #f5f3ff;
 		border-color: #ddd6fe;
-		color: #5b21b6;
-		justify-content: space-between;
 	}
 
-	.resource-chip-action {
+	.attachment-card--slide:hover {
+		border-color: #a78bfa;
+		background: #ede9fe;
+	}
+
+	.attachment-card-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.attachment-card-icon--ppt {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		background: #ddd6fe;
+		color: #6d28d9;
+	}
+
+	.attachment-card-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.attachment-card-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--r-text-primary);
+		line-height: 1.3;
+	}
+
+	.attachment-card-meta {
 		font-size: 10.5px;
-		background: #6d28d9;
+		color: var(--r-text-muted);
+		margin-top: 1px;
+	}
+
+	.attachment-card-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 5px 10px;
+		border-radius: 6px;
+		background: #4f46e5;
 		color: #ffffff;
-		padding: 2px 8px;
-		border-radius: 4px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 10.5px;
+		font-weight: 700;
+		flex-shrink: 0;
+		transition: background 140ms ease;
 	}
 
-	.resource-chip-btn--file {
-		flex: 1 1 calc(50% - 4px);
-		min-width: 220px;
-		justify-content: space-between;
-	}
-
-	.resource-chip-btn--file:hover {
-		border-color: #818cf8;
-		color: #4338ca;
+	.attachment-card:hover .attachment-card-action {
+		background: #4338ca;
 	}
 
 	.att-file-ext {
 		font-family: var(--font-mono, monospace);
-		font-size: 9.5px;
+		font-size: 10px;
 		font-weight: 800;
-		padding: 1px 5px;
-		border-radius: 4px;
+		padding: 3px 6px;
+		border-radius: 6px;
 		border: 1px solid;
 		text-transform: uppercase;
 		flex-shrink: 0;
 	}
-
-	.resource-chip-label { flex: 1; min-width: 0; font-size: 11px; }
-	.resource-chip-size { font-family: var(--font-mono, monospace); font-size: 10px; color: var(--r-text-muted); flex-shrink: 0; }
 
 	/* ══════════════════════════════════════════════════════════
 	   3. STICKY READER BOTTOM ACTION BAR
@@ -2027,8 +2161,10 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
+		width: auto;
+		max-width: 100vw;
 		z-index: 90;
-		height: 54px;
+		height: 56px;
 		background: var(--r-topbar-bg);
 		border-top: 1px solid var(--r-border);
 		display: flex;
@@ -2038,11 +2174,41 @@
 		gap: 12px;
 		box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
 		box-sizing: border-box;
+		overflow: hidden;
+		transition: left 180ms ease, width 180ms ease;
+	}
+
+	@media (min-width: 1024px) {
+		.course-bottom-bar--sidebar-open {
+			left: 350px !important;
+			width: calc(100vw - 350px) !important;
+		}
+	}
+
+	.bottom-bar-side-slot {
+		flex: 1 1 0px;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+	}
+
+	.left-slot {
+		justify-content: flex-start;
+	}
+
+	.right-slot {
+		justify-content: flex-end;
+	}
+
+	.bottom-bar-center-slot {
+		flex-shrink: 0;
+		display: flex;
+		justify-content: center;
 	}
 
 	.bottom-bar-placeholder {
-		width: 120px;
-		flex-shrink: 0;
+		width: 100%;
+		height: 1px;
 	}
 
 	.bottom-bar-nav-btn {
@@ -2056,8 +2222,11 @@
 		border: 1px solid var(--r-border);
 		color: var(--r-text-primary);
 		text-decoration: none;
-		max-width: 280px;
+		max-width: 260px;
+		width: auto;
+		min-width: 0;
 		flex-shrink: 1;
+		box-sizing: border-box;
 		transition: all 140ms ease;
 	}
 
@@ -2065,6 +2234,11 @@
 		border-color: #818cf8;
 		color: #4338ca;
 		background: var(--r-hover-bg);
+	}
+
+	.nav-btn-text {
+		min-width: 0;
+		flex: 1;
 	}
 
 	.nav-btn-label {
@@ -2081,13 +2255,16 @@
 		font-size: 11.5px;
 		font-weight: 700;
 		line-height: 1.2;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.bottom-bar-menu-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		height: 36px;
+		height: 38px;
 		padding: 0 16px;
 		border-radius: 9999px;
 		background: #4f46e5;
@@ -2416,10 +2593,13 @@
 	/* Responsive Tweaks */
 	@media (max-width: 640px) {
 		.btn-back-label { display: none; }
-		.floating-menu-btn { bottom: 20px; right: 16px; padding: 8px 14px; height: 40px; font-size: 11.5px; }
 		.course-main-canvas { padding: 20px 14px 100px; }
-		.resource-chip-btn--file { flex: 1 1 100%; min-width: 100%; }
-		.lesson-nav-footer { flex-direction: column; gap: 10px; }
-		.btn-lesson-nav { max-width: 100%; width: 100%; }
+		.materi-attachments-section { margin-top: 32px; padding: 14px; }
+		.attachments-grid { grid-template-columns: 1fr; }
+		.attachment-card { width: 100%; padding: 8px 10px; }
+		.course-bottom-bar { padding: 0 8px calc(0px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+		.bottom-bar-nav-btn { padding: 0 8px; height: 36px; max-width: 100%; }
+		.bottom-bar-menu-btn { height: 36px; padding: 0 10px; font-size: 11px; }
+		.menu-btn-label { font-size: 11px; }
 	}
 </style>

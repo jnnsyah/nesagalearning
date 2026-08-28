@@ -3,6 +3,7 @@
 	import { browser } from '$app/environment';
 	import { Editor } from '@tiptap/core';
 	import StarterKit from '@tiptap/starter-kit';
+	import Link from '@tiptap/extension-link';
 	import { ResizableImage } from '$lib/tiptap/ResizableImage';
 
 import { CustomCodeBlock } from '$lib/tiptap/CustomCodeBlock';
@@ -46,8 +47,17 @@ import { toast } from '$lib/stores/toast';
 	let isOrderedList = $state(false);
 	let isBlockquote  = $state(false);
 	let isImage       = $state(false);
+	let isLink        = $state(false);
 	let canUndo       = $state(false);
 	let canRedo       = $state(false);
+
+	// ── Link Floating Box State ──
+	let showLinkBox    = $state(false);
+	let linkUrl        = $state('');
+	let linkText       = $state('');
+	let linkBoxX       = $state(0);
+	let linkBoxY       = $state(0);
+	let linkBoxInputEl = $state<HTMLInputElement | null>(null);
 
 	// ── Stats ──
 	let charCount = $state(0);
@@ -91,6 +101,7 @@ import { toast } from '$lib/stores/toast';
 		isOrderedList = editor.isActive('orderedList');
 		isBlockquote  = editor.isActive('blockquote');
 		isImage       = editor.isActive('resizableImage');
+		isLink        = editor.isActive('link');
 		canUndo       = editor.can().undo();
 		canRedo       = editor.can().redo();
 
@@ -148,7 +159,17 @@ import { toast } from '$lib/stores/toast';
 			extensions: [
 				StarterKit.configure({ code: false, codeBlock: false }),
 				CustomCodeBlock,
-				ResizableImage
+				ResizableImage,
+				Link.configure({
+					openOnClick: false,
+					autolink: true,
+					defaultProtocol: 'https',
+					HTMLAttributes: {
+						target: '_blank',
+						rel: 'noopener noreferrer',
+						class: 'tiptap-link'
+					}
+				})
 			],
 			content: value,
 			editable: !disabled,
@@ -200,7 +221,7 @@ import { toast } from '$lib/stores/toast';
 		};
 		element.addEventListener('click', onEditorClick);
 
-		// ── Outside click closes both menus ──
+		// ── Outside click closes floating menus & link popover ──
 		const onOutside = (e: MouseEvent) => {
 			const t = e.target as HTMLElement;
 			if (!t.closest('.editor-float-menu') && !t.closest('.tiptap-image-wrapper')) {
@@ -208,6 +229,9 @@ import { toast } from '$lib/stores/toast';
 			}
 			if (!t.closest('.editor-float-menu') && !t.closest('.editor-content')) {
 				bubbleVisible = false;
+			}
+			if (showLinkBox && !t.closest('.link-floating-box') && !t.closest('.tb-btn') && !t.closest('.float-btn')) {
+				closeLinkBox();
 			}
 		};
 		document.addEventListener('mousedown', onOutside);
@@ -268,6 +292,85 @@ import { toast } from '$lib/stores/toast';
 		if (!url || !editor) return;
 		editor.chain().focus().updateAttributes('resizableImage', { src: url, alt: editAlt }).run();
 		closeEditDialog();
+	}
+
+	// ── Link Floating Box Handlers ──
+	function openLinkBox() {
+		if (!editor) return;
+		const { from, to } = editor.state.selection;
+		const selectedText = editor.state.doc.textBetween(from, to, ' ');
+		const isCurrentlyLink = editor.isActive('link');
+
+		if (isCurrentlyLink) {
+			const attrs = editor.getAttributes('link');
+			linkUrl = attrs.href || '';
+		} else {
+			linkUrl = '';
+		}
+
+		linkText = selectedText || '';
+
+		const sel = window.getSelection();
+		if (sel && sel.rangeCount > 0) {
+			const range = sel.getRangeAt(0);
+			const rect = range.getBoundingClientRect();
+			if (rect.width > 0 || rect.height > 0) {
+				linkBoxX = Math.max(16, Math.min(window.innerWidth - 380, rect.left + rect.width / 2 - 180));
+				linkBoxY = Math.min(window.innerHeight - 220, rect.bottom + 8);
+			} else if (editorRoot) {
+				const rootRect = editorRoot.getBoundingClientRect();
+				linkBoxX = Math.max(16, Math.min(window.innerWidth - 380, rootRect.left + 40));
+				linkBoxY = Math.min(window.innerHeight - 220, rootRect.top + 60);
+			}
+		} else {
+			linkBoxX = Math.max(16, window.innerWidth / 2 - 180);
+			linkBoxY = 160;
+		}
+
+		showLinkBox = true;
+		setTimeout(() => linkBoxInputEl?.focus(), 50);
+	}
+
+	function closeLinkBox() {
+		showLinkBox = false;
+		linkUrl = '';
+		linkText = '';
+	}
+
+	function applyLinkFromBox() {
+		if (!editor) return;
+		let url = linkUrl.trim();
+
+		if (!url) {
+			editor.chain().focus().extendMarkRange('link').unsetLink().run();
+			closeLinkBox();
+			return;
+		}
+
+		if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url) && !/^\//.test(url)) {
+			url = 'https://' + url;
+		}
+
+		const sanitized = sanitizeUrl(url);
+		if (!sanitized) {
+			toast.error('URL link tidak valid');
+			return;
+		}
+
+		const { from, to } = editor.state.selection;
+		if (from === to && linkText.trim()) {
+			editor.chain().focus().insertContent(`<a href="${sanitized}" target="_blank" rel="noopener noreferrer">${linkText.trim()}</a>`).run();
+		} else {
+			editor.chain().focus().extendMarkRange('link').setLink({ href: sanitized }).run();
+		}
+
+		closeLinkBox();
+	}
+
+	function removeLinkFromBox() {
+		if (!editor) return;
+		editor.chain().focus().extendMarkRange('link').unsetLink().run();
+		closeLinkBox();
 	}
 
 	// ── Image INSERT dialog ──
@@ -375,6 +478,78 @@ import { toast } from '$lib/stores/toast';
 	}
 </script>
 
+<!-- ══════════════ FLOATING LINK POPOVER BOX (Balanced & Clean) ══════════════ -->
+{#if showLinkBox}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		class="link-floating-box"
+		style="left: {linkBoxX}px; top: {linkBoxY}px;"
+		onkeydown={(e) => { if (e.key === 'Enter') applyLinkFromBox(); if (e.key === 'Escape') closeLinkBox(); }}
+	>
+		<!-- Form Container with Generous Space / Inset Padding -->
+		<div class="p-4 space-y-3">
+			<!-- URL Field -->
+			<div class="space-y-1">
+				<label for="popover-url-input" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">URL Tautan <span class="text-rose-500">*</span></label>
+				<div class="relative flex items-center">
+					<span class="absolute left-3 text-slate-400 pointer-events-none z-10">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+					</span>
+					<input
+						id="popover-url-input"
+						type="url"
+						class="link-box-input"
+						bind:this={linkBoxInputEl}
+						bind:value={linkUrl}
+						placeholder="https://contoh-website.com"
+						required
+					/>
+				</div>
+			</div>
+
+			<!-- Teks Tautan Field -->
+			<div class="space-y-1">
+				<label for="popover-text-input" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">Teks Tautan <span class="text-slate-400 font-normal lowercase">(opsional)</span></label>
+				<input
+					id="popover-text-input"
+					type="text"
+					class="link-box-input-sub"
+					bind:value={linkText}
+					placeholder="Teks yang akan ditampilkan"
+				/>
+			</div>
+
+			<!-- Bottom Actions Row -->
+			<div class="flex items-center justify-between pt-1">
+				{#if isLink}
+					<div class="flex items-center gap-2">
+						<button type="button" class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1 rounded-md transition-colors" onclick={removeLinkFromBox}>
+							Hapus
+						</button>
+						{#if linkUrl.trim()}
+							<a href={linkUrl} target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+								Buka
+							</a>
+						{/if}
+					</div>
+				{:else}
+					<div></div>
+				{/if}
+
+				<div class="flex items-center gap-2">
+					<button type="button" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-md transition-colors" onclick={closeLinkBox}>
+						Batal
+					</button>
+					<button type="button" class="link-box-btn-apply" onclick={applyLinkFromBox} disabled={!linkUrl.trim()}>
+						Terapkan
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <!-- ══════════════ INSERT DIALOG ══════════════ -->
 {#if showInsertDialog}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -474,43 +649,72 @@ import { toast } from '$lib/stores/toast';
 			onkeydown={(e) => { if (e.key === 'Enter' && attachmentUrl) insertAttachment(); if (e.key === 'Escape') closeAttachmentDialog(); }}>
 			<div class="dialog-header">
 				<div class="dialog-title">
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
 					Sisipkan Lampiran File
 				</div>
 				<button type="button" class="dialog-close" onclick={closeAttachmentDialog} aria-label="Tutup">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 				</button>
 			</div>
-			<div class="dialog-body">
+
+			<div class="dialog-body space-y-4">
 				{#if attachmentError}
-					<div class="inline-alert inline-alert--error" style="margin-bottom: 8px;">
-						{attachmentError}
+					<div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium flex items-center gap-2">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+						<span>{attachmentError}</span>
 					</div>
 				{/if}
+
+				<!-- Dropzone Upload Area -->
 				<div class="upload-zone">
-					<label for="att-file" class="upload-label">
+					<label for="att-file" class="upload-dropzone">
 						{#if isUploadingAttachment}
-							<svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-							<span>Mengunggah file lampiran...</span>
+							<div class="flex flex-col items-center justify-center gap-2 py-3 text-indigo-600">
+								<svg class="spin-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+								<span class="text-xs font-bold text-slate-700">Mengunggah file lampiran...</span>
+							</div>
 						{:else}
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-							<span>Pilih Berkas Lampiran (PDF, PKT, ZIP, DOCX, dll.)</span>
+							<div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-2 shadow-2xs">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+							</div>
+							<span class="text-xs font-bold text-slate-800 mb-2">Klik atau Seret Berkas Lampiran di Sini</span>
+							<div class="flex items-center justify-center flex-wrap gap-1.5 mt-1">
+								<span class="badge-pill-tag">PDF</span>
+								<span class="badge-pill-tag">DOCX</span>
+								<span class="badge-pill-tag">ZIP</span>
+								<span class="badge-pill-tag">XLSX</span>
+								<span class="badge-pill-tag">PPTX</span>
+								<span class="badge-pill-tag badge-pill-tag--info">Maks 20MB</span>
+							</div>
 						{/if}
 					</label>
 					<input id="att-file" type="file" class="sr-only" onchange={handleAttachmentFileUpload} disabled={isUploadingAttachment} />
 				</div>
+
+				<!-- Uploaded File Preview Card (Spacious Space below dropzone) -->
 				{#if attachmentUrl}
-					<div class="attachment-preview-box">
-						<div class="flex items-center gap-2">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
-								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-							</svg>
-							<span class="font-bold text-xs text-slate-800 truncate">{attachmentName}</span>
+					<div class="mt-4 p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
+						<div class="flex items-center gap-3 min-w-0">
+							<div class="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 flex-shrink-0 shadow-2xs">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+							</div>
+							<div class="min-w-0 flex flex-col">
+								<span class="font-bold text-xs text-slate-800 truncate" title={attachmentName}>{attachmentName}</span>
+								<span class="text-[11px] font-medium text-slate-500 font-mono mt-0.5">{formatFileSize(attachmentSize)}</span>
+							</div>
 						</div>
-						<span class="text-xs text-slate-500 font-mono">{formatFileSize(attachmentSize)}</span>
+
+						<button
+							type="button"
+							class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200/60 transition-colors flex-shrink-0"
+							onclick={() => { attachmentUrl = ''; attachmentName = ''; attachmentSize = 0; }}
+						>
+							Hapus File
+						</button>
 					</div>
 				{/if}
 			</div>
+
 			<div class="dialog-footer">
 				<button type="button" class="btn-ghost-sm" onclick={closeAttachmentDialog}>Batal</button>
 				<button type="button" class="btn-primary-sm" onclick={insertAttachment} disabled={!attachmentUrl || isUploadingAttachment}>
@@ -585,6 +789,10 @@ import { toast } from '$lib/stores/toast';
 			<div class="toolbar-sep"></div>
 
 			<div class="toolbar-group">
+				<button type="button" class="tb-btn" class:tb-btn--on={isLink}
+					onclick={openLinkBox} aria-label="Sisipkan Link" aria-pressed={isLink} data-tooltip="Sisipkan Link ⌘K">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+				</button>
 				<button type="button" class="tb-btn tb-btn--img"
 					onclick={openInsertDialog} aria-label="Insert image" data-tooltip="Insert image">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -666,6 +874,11 @@ import { toast } from '$lib/stores/toast';
 				onmousedown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCodeBlock().run(); }}
 				aria-label="Code Block Terminal Box" title="Code Block (Box Terminal)">
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 8 5 12 9 16"/><polyline points="15 8 19 12 15 16"/></svg>
+			</button>
+			<button type="button" class="float-btn" class:float-btn--on={isLink}
+				onmousedown={(e) => { e.preventDefault(); openLinkBox(); }}
+				aria-label="Sisipkan Link" title="Sisipkan Link ⌘K">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
 			</button>
 		</div>
 
@@ -1002,6 +1215,21 @@ import { toast } from '$lib/stores/toast';
 	:global(.editor-content .ProseMirror h2) { font-family: var(--font-macro); font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; padding-bottom: 6px; border-bottom: 1px solid var(--border-hard); }
 	:global(.editor-content .ProseMirror h3) { font-family: var(--font-macro); font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
 	:global(.editor-content .ProseMirror code) { font-family: var(--font-mono); background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 5px; padding: 1px 5px; color: #4338ca; font-size: 0.88em; font-weight: 600; }
+	:global(.editor-content .ProseMirror a),
+	:global(.tiptap-link) {
+		color: #4f46e5;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		font-weight: 600;
+		transition: color 140ms ease;
+		cursor: pointer;
+	}
+	:global(.editor-content .ProseMirror a:hover),
+	:global(.tiptap-link:hover) {
+		color: #3730a3;
+		background: rgba(99, 102, 241, 0.08);
+		border-radius: 3px;
+	}
 	/* ══════════════════════════════════════════
 	   PRO CODE BLOCK BOX (UI-UX-Pro-Max)
 	══════════════════════════════════════════ */
@@ -1106,9 +1334,94 @@ import { toast } from '$lib/stores/toast';
 	══════════════════════════════════════════ */
 	.dialog-backdrop {
 		position: fixed; inset: 0; background: rgba(15,23,42,0.5);
-		backdrop-filter: blur(8px); z-index: 30;
+		backdrop-filter: blur(8px); z-index: 99990;
 		display: flex; align-items: center; justify-content: center; padding: 20px;
 		animation: fadeIn 150ms ease both;
+	}
+	.dialog-backdrop--transparent {
+		background: transparent !important;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+
+	.link-floating-box {
+		position: fixed;
+		z-index: 100000;
+		width: 360px;
+		max-width: calc(100vw - 32px);
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-xl);
+		box-shadow: 0 14px 38px -4px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
+		animation: popIn 130ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+
+	@keyframes popIn {
+		from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+		to   { opacity: 1; transform: scale(1) translateY(0); }
+	}
+
+	.link-box-input {
+		width: 100%;
+		height: 36px;
+		padding: 0 12px 0 36px !important;
+		font-size: 12.5px;
+		font-weight: 500;
+		color: #0f172a;
+		background: #f8fafc;
+		border: 1.5px solid #e2e8f0;
+		border-radius: var(--radius-md);
+		outline: none;
+		transition: all 140ms ease;
+	}
+	.link-box-input:focus {
+		background: #ffffff;
+		border-color: #6366f1;
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+	}
+
+	.link-box-input-sub {
+		width: 100%;
+		height: 36px;
+		padding: 0 12px !important;
+		font-size: 12.5px;
+		font-weight: 500;
+		color: #334155;
+		background: #f8fafc;
+		border: 1.5px solid #e2e8f0;
+		border-radius: var(--radius-md);
+		outline: none;
+		transition: all 140ms ease;
+	}
+	.link-box-input-sub:focus {
+		background: #ffffff;
+		border-color: #6366f1;
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+	}
+
+	.link-box-btn-apply {
+		height: 34px;
+		padding: 0 14px;
+		font-size: 12.5px;
+		font-weight: 700;
+		color: #ffffff;
+		background: #4f46e5;
+		border: none;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		transition: all 140ms ease;
+		white-space: nowrap;
+	}
+	.link-box-btn-apply:hover:not(:disabled) {
+		background: #4338ca;
+	}
+	.link-box-btn-apply:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 	@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 	.dialog-panel {
@@ -1137,10 +1450,46 @@ import { toast } from '$lib/stores/toast';
 	.or-line { flex: 1; border: none; border-top: 1px solid var(--border-hard); }
 	.or-text { font-family: var(--font-mono); font-size: 10px; color: var(--text-ghost); font-weight: 600; white-space: nowrap; }
 
-	.upload-zone { display: flex; }
-	.upload-label { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; background: var(--bg-inset); border: 1.5px dashed var(--border-hard); border-radius: var(--radius-md); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 150ms ease; }
-	.upload-label:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
-	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+	.upload-zone { display: flex; width: 100%; }
+	.upload-dropzone {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		padding: 20px 16px;
+		background: #f8fafc;
+		border: 2px dashed #cbd5e1;
+		border-radius: var(--radius-xl);
+		cursor: pointer;
+		transition: all 160ms ease;
+		text-align: center;
+	}
+	.upload-dropzone:hover {
+		border-color: #6366f1;
+		background: #f5f3ff;
+	}
+	.badge-pill-tag {
+		display: inline-flex;
+		align-items: center;
+		height: 22px;
+		line-height: 1;
+		font-family: var(--font-mono, monospace);
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		padding: 0 8px;
+		border-radius: var(--radius-full, 9999px);
+		background: #f1f5f9;
+		border: 1px solid #e2e8f0;
+		color: #475569;
+		white-space: nowrap;
+	}
+	.badge-pill-tag--info {
+		background: #eef2ff;
+		border-color: #c7d2fe;
+		color: #4338ca;
+	}
 
 	.img-preview { background: var(--bg-inset); border: 1px solid var(--border-hard); border-radius: var(--radius-md); padding: 8px; display: flex; align-items: center; justify-content: center; max-height: 150px; overflow: hidden; }
 	.img-preview__thumb { max-width: 100%; max-height: 134px; border-radius: 8px; object-fit: contain; }

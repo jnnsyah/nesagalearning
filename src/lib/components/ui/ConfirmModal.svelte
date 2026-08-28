@@ -137,7 +137,7 @@
 	.modal-scrim {
 		position: fixed;
 		inset: 0;
-		z-index: 99980;
+		z-index: 100000;
 		background: rgba(15, 23, 42, 0.45);
 		backdrop-filter: blur(6px);
 		-webkit-backdrop-filter: blur(6px);
