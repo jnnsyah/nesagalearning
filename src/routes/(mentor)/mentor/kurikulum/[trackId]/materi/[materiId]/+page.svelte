@@ -15,18 +15,18 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	let title = $state(data.materi.title);
-	let content = $state(data.materi.content || '');
+	let title = $state(data.materi?.title || '');
+	let content = $state(data.materi?.content || '');
 	type AttachmentItem = { name: string; url: string; size: number };
-	let globalAttachments = $state<AttachmentItem[]>(data.materi.attachments || []);
+	let globalAttachments = $state<AttachmentItem[]>(data.materi?.attachments || []);
 	let isSaving = $state(false);
 	let isUploadingGlobal = $state(false);
 	let isDraggingGlobal = $state(false);
 	let globalUploadError = $state('');
 
-	let originalTitle = data.materi.title;
-	let originalContent = data.materi.content || '';
-	let originalAttachmentsJson = JSON.stringify(data.materi.attachments || []);
+	let originalTitle = data.materi?.title || '';
+	let originalContent = data.materi?.content || '';
+	let originalAttachmentsJson = JSON.stringify(data.materi?.attachments || []);
 
 	let isDirty = $derived(
 		title !== originalTitle ||
@@ -51,9 +51,9 @@
 	let wordCount = $derived(plainText ? plainText.split(' ').length : 0);
 	let readingTimeMin = $derived(Math.max(1, Math.ceil(wordCount / 200)));
 
-	let subPhaseTitle = $derived(data.materi.subPhase?.title || '');
-	let phaseTitle = $derived(data.materi.subPhase?.phase?.title || '');
-	let trackTitle = $derived(data.materi.subPhase?.phase?.curriculumTrack?.title || '');
+	let subPhaseTitle = $derived(data.materi?.subPhase?.title || '');
+	let phaseTitle = $derived(data.materi?.subPhase?.phase?.title || '');
+	let trackTitle = $derived(data.materi?.subPhase?.phase?.curriculumTrack?.title || '');
 
 	// Debounced autosave implementation
 	let autosaveTimer: ReturnType<typeof setTimeout> | null = null;

@@ -59,7 +59,7 @@
 			const initial: Record<number, boolean> = {};
 			data.syllabus.forEach((p) => {
 				const containsCurrent = p.subPhases.some((sp) =>
-					sp.materiList.some((m) => m.id === data.materi.id)
+					sp.materiList.some((m) => m.id === data.materi?.id)
 				);
 				initial[p.id] = containsCurrent || Object.keys(openPhases).length === 0;
 			});
@@ -306,7 +306,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
-	<title>{data.materi.title} — Ruang Belajar Siswa</title>
+	<title>{data.materi?.title || 'Modul Materi'} — Ruang Belajar Siswa</title>
 </svelte:head>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -325,7 +325,7 @@
 		<div class="topbar-left">
 			<!-- Back Button to Track -->
 			<a
-				href={`/siswa/materi?track=${data.materi.trackId}`}
+				href={`/siswa/materi?track=${data.materi?.trackId || ''}`}
 				class="btn-back-track"
 				title="Kembali ke Ringkasan Track Pembelajaran"
 			>
@@ -339,9 +339,9 @@
 
 			<!-- Course Hierarchy Breadcrumb -->
 			<div class="course-breadcrumb-block min-w-0">
-				<div class="course-track-name truncate">{data.materi.trackTitle}</div>
+				<div class="course-track-name truncate">{data.materi?.trackTitle || ''}</div>
 				<div class="course-phase-sub truncate">
-					{data.materi.phaseTitle} &rsaquo; {data.materi.subPhaseTitle}
+					{data.materi?.phaseTitle || ''} &rsaquo; {data.materi?.subPhaseTitle || ''}
 				</div>
 			</div>
 		</div>
@@ -647,11 +647,11 @@
 				<!-- Article Header (Clean Editorial Header, Medium/Substack Style) -->
 				<header class="article-title-header">
 					<div class="article-kicker-text">
-						{data.materi.trackTitle}
+						{data.materi?.trackTitle || ''}
 					</div>
 
 					<h1 class="article-main-title">
-						{data.materi.title}
+						{data.materi?.title || ''}
 					</h1>
 
 					<div class="article-meta-strip">
@@ -663,7 +663,7 @@
 							<span>{contentStats.minutes} Menit Baca</span>
 						</span>
 
-						{#if data.materi.phaseTitle}
+						{#if data.materi?.phaseTitle}
 							<span class="meta-dot">&bull;</span>
 							<span class="meta-item meta-item--subtle">{data.materi.phaseTitle}</span>
 						{/if}
@@ -681,7 +681,7 @@
 				</header>
 
 				<!-- Compact Resources Strip (PPT Slide & Attachments) -->
-				{#if data.sessionSlide?.materialUrl || (data.materi.attachments && data.materi.attachments.length > 0)}
+				{#if data.sessionSlide?.materialUrl || (data.materi?.attachments && data.materi.attachments.length > 0)}
 					<div class="compact-resources-strip mb-6">
 						{#if data.sessionSlide?.materialUrl}
 							<a
@@ -699,7 +699,7 @@
 							</a>
 						{/if}
 
-						{#if data.materi.attachments && data.materi.attachments.length > 0}
+						{#if data.materi?.attachments && data.materi.attachments.length > 0}
 							<div class="attachments-list-strip">
 								{#each data.materi.attachments as att}
 									<a
@@ -726,7 +726,7 @@
 				{/if}
 
 				<!-- Article Body Content -->
-				{#if data.materi.content}
+				{#if data.materi?.content}
 					<article class="prose-reading">
 						{@html data.materi.content}
 					</article>
