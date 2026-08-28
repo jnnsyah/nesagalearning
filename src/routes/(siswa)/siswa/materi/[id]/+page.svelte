@@ -738,59 +738,74 @@
 					/>
 				{/if}
 
-				<!-- Lesson Navigation Footer (Previous & Next Modules) -->
-				<nav class="lesson-nav-footer mt-10">
-					{#if data.prevMateri}
-						<a href={`/siswa/materi/${data.prevMateri.id}`} class="btn-lesson-nav prev-lesson">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<polyline points="15 18 9 12 15 6" />
-							</svg>
-							<div class="text-left min-w-0">
-								<span class="lesson-nav-dir">Modul Sebelumnya</span>
-								<div class="lesson-nav-title truncate">{data.prevMateri.title}</div>
-							</div>
-						</a>
-					{:else}
-						<div></div>
-					{/if}
-
-					{#if data.nextMateri}
-						<a href={`/siswa/materi/${data.nextMateri.id}`} class="btn-lesson-nav next-lesson">
-							<div class="text-right min-w-0">
-								<span class="lesson-nav-dir">Modul Selanjutnya</span>
-								<div class="lesson-nav-title truncate">{data.nextMateri.title}</div>
-							</div>
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<polyline points="9 18 15 12 9 6" />
-							</svg>
-						</a>
-					{/if}
-				</nav>
 			</div>
 		</main>
 	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     3. FLOATING ACTION BUTTON (FAB) FOR MENU ACCESS
+	     3. STICKY READER BOTTOM ACTION BAR
 	     ══════════════════════════════════════════════════════════ -->
-	<button
-		type="button"
-		onclick={() => (isSlidebarOpen = !isSlidebarOpen)}
-		class="floating-menu-btn {isSlidebarOpen ? 'floating-menu-btn--active' : ''}"
-		title={isSlidebarOpen ? 'Tutup Menu' : 'Buka Silabus, Daftar Isi & Pengaturan'}
-	>
-		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-			{#if isSlidebarOpen}
-				<line x1="18" y1="6" x2="6" y2="18" />
-				<line x1="6" y1="6" x2="18" y2="18" />
-			{:else}
-				<line x1="3" y1="12" x2="21" y2="12" />
-				<line x1="3" y1="6" x2="21" y2="6" />
-				<line x1="3" y1="18" x2="21" y2="18" />
-			{/if}
-		</svg>
-		<span class="floating-menu-label">{isSlidebarOpen ? 'Tutup' : 'Silabus & Menu'}</span>
-	</button>
+	<footer class="course-bottom-bar">
+		<!-- Left: Previous Module Button -->
+		{#if data.prevMateri}
+			<a
+				href={`/siswa/materi/${data.prevMateri.id}`}
+				class="bottom-bar-nav-btn prev-btn"
+				title={`Modul Sebelumnya: ${data.prevMateri.title}`}
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<polyline points="15 18 9 12 15 6" />
+				</svg>
+				<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-left">
+					<span class="nav-btn-label">Modul Sebelumnya</span>
+					<span class="nav-btn-title truncate">{data.prevMateri.title}</span>
+				</div>
+				<span class="sm:hidden text-xs font-semibold">Sebelumnya</span>
+			</a>
+		{:else}
+			<div class="bottom-bar-placeholder"></div>
+		{/if}
+
+		<!-- Center: Menu & Syllabus Toggle -->
+		<button
+			type="button"
+			onclick={() => (isSlidebarOpen = !isSlidebarOpen)}
+			class="bottom-bar-menu-btn {isSlidebarOpen ? 'bottom-bar-menu-btn--active' : ''}"
+			title={isSlidebarOpen ? 'Tutup Menu' : 'Buka Silabus, Daftar Isi & Tampilan'}
+		>
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				{#if isSlidebarOpen}
+					<line x1="18" y1="6" x2="6" y2="18" />
+					<line x1="6" y1="6" x2="18" y2="18" />
+				{:else}
+					<line x1="3" y1="12" x2="21" y2="12" />
+					<line x1="3" y1="6" x2="21" y2="6" />
+					<line x1="3" y1="18" x2="21" y2="18" />
+				{/if}
+			</svg>
+			<span>{isSlidebarOpen ? 'Tutup' : 'Silabus & Menu'}</span>
+		</button>
+
+		<!-- Right: Next Module Button -->
+		{#if data.nextMateri}
+			<a
+				href={`/siswa/materi/${data.nextMateri.id}`}
+				class="bottom-bar-nav-btn next-btn"
+				title={`Modul Selanjutnya: ${data.nextMateri.title}`}
+			>
+				<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-right">
+					<span class="nav-btn-label">Modul Selanjutnya</span>
+					<span class="nav-btn-title truncate">{data.nextMateri.title}</span>
+				</div>
+				<span class="sm:hidden text-xs font-semibold">Selanjutnya</span>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
+			</a>
+		{:else}
+			<div class="bottom-bar-placeholder"></div>
+		{/if}
+	</footer>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4. MOBILE BOTTOM SHEET SLIDER DRAWER (< 1024px)
@@ -2004,91 +2019,98 @@
 	.resource-chip-label { flex: 1; min-width: 0; font-size: 11px; }
 	.resource-chip-size { font-family: var(--font-mono, monospace); font-size: 10px; color: var(--r-text-muted); flex-shrink: 0; }
 
-	/* Lesson Navigation Footer */
-	.lesson-nav-footer {
+	/* ══════════════════════════════════════════════════════════
+	   3. STICKY READER BOTTOM ACTION BAR
+	   ══════════════════════════════════════════════════════════ */
+	.course-bottom-bar {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 90;
+		height: 54px;
+		background: var(--r-topbar-bg);
+		border-top: 1px solid var(--r-border);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
-	}
-
-	.btn-lesson-nav {
-		display: inline-flex;
-		align-items: center;
+		padding: 0 16px calc(0px + env(safe-area-inset-bottom, 0px));
 		gap: 12px;
-		padding: 14px 18px;
-		background: var(--r-card-bg);
-		border: 1px solid var(--r-border);
-		border-radius: 12px;
-		text-decoration: none;
-		color: var(--r-text-primary);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-		transition: all 150ms ease;
-		max-width: 48%;
-		flex: 1;
-		min-height: 48px;
+		box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
 		box-sizing: border-box;
 	}
 
-	.btn-lesson-nav:hover {
-		border-color: #818cf8;
-		transform: translateY(-1px);
+	.bottom-bar-placeholder {
+		width: 120px;
+		flex-shrink: 0;
 	}
 
-	.lesson-nav-dir {
-		font-family: var(--font-mono, monospace);
-		font-size: 10px;
-		font-weight: 700;
-		color: var(--r-text-muted);
-		display: block;
-	}
-
-	.lesson-nav-title {
-		font-family: var(--font-macro, sans-serif);
-		font-size: 13px;
-		font-weight: 800;
-	}
-
-	/* ══════════════════════════════════════════════════════════
-	   3. FLOATING ACTION BUTTON (FAB)
-	   ══════════════════════════════════════════════════════════ */
-	.floating-menu-btn {
-		position: fixed;
-		bottom: 24px;
-		right: 24px;
-		z-index: 1001;
+	.bottom-bar-nav-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 18px;
-		height: 44px;
+		height: 38px;
+		padding: 0 14px;
+		border-radius: 8px;
+		background: var(--r-card-bg);
+		border: 1px solid var(--r-border);
+		color: var(--r-text-primary);
+		text-decoration: none;
+		max-width: 280px;
+		flex-shrink: 1;
+		transition: all 140ms ease;
+	}
+
+	.bottom-bar-nav-btn:hover {
+		border-color: #818cf8;
+		color: #4338ca;
+		background: var(--r-hover-bg);
+	}
+
+	.nav-btn-label {
+		font-family: var(--font-mono, monospace);
+		font-size: 9.5px;
+		font-weight: 700;
+		color: var(--r-text-muted);
+		text-transform: uppercase;
+		line-height: 1.1;
+	}
+
+	.nav-btn-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11.5px;
+		font-weight: 700;
+		line-height: 1.2;
+	}
+
+	.bottom-bar-menu-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 36px;
+		padding: 0 16px;
 		border-radius: 9999px;
 		background: #4f46e5;
 		color: #ffffff;
 		border: 1px solid #4338ca;
 		font-family: var(--font-macro, sans-serif);
-		font-size: 12.5px;
+		font-size: 11.5px;
 		font-weight: 700;
 		cursor: pointer;
-		box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
-		transition: all 180ms ease;
-		user-select: none;
+		transition: all 150ms ease;
+		white-space: nowrap;
+		flex-shrink: 0;
+		box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 	}
 
-	.floating-menu-btn:hover {
+	.bottom-bar-menu-btn:hover {
 		background: #4338ca;
-		transform: translateY(-2px);
-		box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+		transform: translateY(-1px);
 	}
 
-	.floating-menu-btn:active {
-		transform: scale(0.96);
-	}
-
-	.floating-menu-btn--active {
+	.bottom-bar-menu-btn--active {
 		background: #334155;
 		border-color: #1e293b;
-		box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
 	}
 
 	/* Settings Pills */
