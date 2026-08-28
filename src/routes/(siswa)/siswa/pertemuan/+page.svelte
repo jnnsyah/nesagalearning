@@ -3600,7 +3600,8 @@
 		}
 
 		.stats-grid {
-			grid-template-columns: 1fr;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
 		}
 
 		.filter-row-bottom {
@@ -3670,9 +3671,8 @@
 			min-width: 0;
 		}
 
-		/* Stat Cards Mobile Stack */
 		.stats-grid {
-			grid-template-columns: 1fr;
+			grid-template-columns: repeat(2, 1fr);
 			gap: 10px;
 		}
 
