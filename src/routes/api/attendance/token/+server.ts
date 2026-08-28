@@ -51,6 +51,16 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		return json({ success: false, message: 'Silakan login terlebih dahulu.' }, { status: 401 });
 	}
 
+	// [Security] Only mentor and admin can retrieve active QR tokens.
+	// Without this guard a siswa could grab any active token and scan attendance
+	// for a class they don't belong to, earning illegitimate points (IDOR).
+	if (locals.user.role !== 'mentor' && locals.user.role !== 'admin') {
+		return json(
+			{ success: false, message: 'Hanya Mentor dan Admin yang dapat melihat token QR presensi.' },
+			{ status: 403 }
+		);
+	}
+
 	const pertemuanIdParam = url.searchParams.get('pertemuanId');
 	if (!pertemuanIdParam || isNaN(Number(pertemuanIdParam))) {
 		return json({ success: false, message: 'Query parameter pertemuanId tidak valid.' }, { status: 400 });

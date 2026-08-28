@@ -77,6 +77,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(404, 'Materi pembelajaran tidak ditemukan.');
 	}
 
+	// [Security] Verify the materi belongs to a published track.
+	// A siswa should never be able to access materi from an unpublished/draft track.
+	const [trackRecord] = await db
+		.select({ isPublished: curriculumTrack.isPublished })
+		.from(curriculumTrack)
+		.where(eq(curriculumTrack.id, materiDetail.trackId))
+		.limit(1);
+
+	if (!trackRecord?.isPublished) {
+		throw error(403, 'Materi ini berasal dari kurikulum yang belum dipublikasikan.');
+	}
+
 	// 2. Check if logged-in student has completed reading this materi
 	const [completionRecord] = await db
 		.select({
@@ -139,6 +151,25 @@ export const actions: Actions = {
 		const materiId = Number(params.id);
 		if (isNaN(materiId)) {
 			return fail(400, { message: 'ID Materi tidak valid.' });
+		}
+
+		// [Security] Verify the materi exists and belongs to a published track
+		// before allowing the completion toggle (prevents marking arbitrary materiIds).
+		const [materiRecord] = await db
+			.select({ id: materi.id, trackIsPublished: curriculumTrack.isPublished })
+			.from(materi)
+			.innerJoin(subPhase, eq(materi.subPhaseId, subPhase.id))
+			.innerJoin(phase, eq(subPhase.phaseId, phase.id))
+			.innerJoin(curriculumTrack, eq(phase.curriculumTrackId, curriculumTrack.id))
+			.where(eq(materi.id, materiId))
+			.limit(1);
+
+		if (!materiRecord) {
+			return fail(404, { message: 'Materi tidak ditemukan.' });
+		}
+
+		if (!materiRecord.trackIsPublished) {
+			return fail(403, { message: 'Materi ini berasal dari kurikulum yang belum dipublikasikan.' });
 		}
 
 		const [existing] = await db

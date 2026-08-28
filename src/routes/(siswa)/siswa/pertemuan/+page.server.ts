@@ -122,7 +122,10 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 				description: task.description,
 				taskSize: task.taskSize
 			})
-			.from(task);
+			.from(task)
+			// [Security] Scope to only meetings that belong to this student's class.
+			// Without this filter, ALL tasks from ALL classes are returned (data leak).
+			.where(inArray(task.pertemuanId, meetingIds));
 
 		const taskIds = taskRecords.map((t) => t.id);
 		if (taskIds.length > 0) {

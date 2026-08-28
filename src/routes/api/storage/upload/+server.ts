@@ -31,6 +31,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// 2. Folder Whitelist Validation
 		const folder = ALLOWED_FOLDERS.includes(folderInput) ? folderInput : 'materials';
 
+		// [Security] Siswa may only upload to 'submissions' and 'avatars'.
+		// Folders like 'materials' and 'attachments' are reserved for mentor/admin/guru.
+		const isSiswa = locals.user.role === 'siswa';
+		const SISWA_ALLOWED_FOLDERS = ['submissions', 'avatars'];
+		if (isSiswa && !SISWA_ALLOWED_FOLDERS.includes(folder)) {
+			return json(
+				{ error: 'Anda tidak memiliki izin untuk mengupload ke folder ini.' },
+				{ status: 403 }
+			);
+		}
+
 		// 3. File Size Validation (Avatars max 5MB, others max 20MB)
 		const maxSizeBytes = folder === 'avatars' ? 5 * 1024 * 1024 : 20 * 1024 * 1024;
 		if (file.size > maxSizeBytes) {
