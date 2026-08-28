@@ -730,9 +730,9 @@
 				{/if}
 
 				<!-- ══════════════════════════════════════════════════════════
-				     DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
+				     DEDICATED MATERIAL ATTACHMENTS SECTION
 				     ══════════════════════════════════════════════════════════ -->
-				{#if (data.materi?.attachments && data.materi.attachments.length > 0) || data.sessionSlide?.materialUrl}
+				{#if data.materi?.attachments && data.materi.attachments.length > 0}
 					<section class="materi-attachments-section">
 						<div class="attachments-header">
 							<div class="attachments-title-group">
@@ -743,34 +743,33 @@
 								</div>
 								<div>
 									<h3 class="attachments-heading">Lampiran & Berkas Materi</h3>
-									<p class="attachments-subheading">Unduh berkas pendukung dan slide materi pembelajaran ini</p>
+									<p class="attachments-subheading">Unduh berkas pendukung pembelajaran ini</p>
 								</div>
 							</div>
 							<span class="attachments-count-badge">
-								{(data.materi?.attachments?.length || 0) + (data.sessionSlide?.materialUrl ? 1 : 0)} Berkas
+								{data.materi.attachments.length} Berkas
 							</span>
 						</div>
 
 						<div class="attachments-grid">
-							{#if data.sessionSlide?.materialUrl}
+							{#each data.materi.attachments as att}
 								<a
-									href={data.sessionSlide.materialUrl}
+									href={att.url}
+									download={att.name}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="attachment-card attachment-card--slide"
+									class="attachment-card"
+									title={`Unduh ${att.name}`}
 								>
-									<div class="attachment-card-icon attachment-card-icon--ppt">
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-											<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-											<polyline points="14 2 14 8 20 8" />
-										</svg>
+									<div class="attachment-card-icon">
+										<span class="att-file-ext {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
 									</div>
 									<div class="attachment-card-info min-w-0">
-										<div class="attachment-card-title truncate">Slide Pertemuan: {data.sessionSlide.pertemuanTitle}</div>
-										<div class="attachment-card-meta">Presentasi PPT/PDF Pembelajaran</div>
+										<div class="attachment-card-title truncate">{att.name}</div>
+										<div class="attachment-card-meta">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
 									</div>
 									<div class="attachment-card-action">
-										<span>Unduh Slide</span>
+										<span>Unduh</span>
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 											<polyline points="7 10 12 15 17 10" />
@@ -778,36 +777,7 @@
 										</svg>
 									</div>
 								</a>
-							{/if}
-
-							{#if data.materi?.attachments && data.materi.attachments.length > 0}
-								{#each data.materi.attachments as att}
-									<a
-										href={att.url}
-										download={att.name}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="attachment-card"
-										title={`Unduh ${att.name}`}
-									>
-										<div class="attachment-card-icon">
-											<span class="att-file-ext {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
-										</div>
-										<div class="attachment-card-info min-w-0">
-											<div class="attachment-card-title truncate">{att.name}</div>
-											<div class="attachment-card-meta">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
-										</div>
-										<div class="attachment-card-action">
-											<span>Unduh</span>
-											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-												<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-												<polyline points="7 10 12 15 17 10" />
-												<line x1="12" y1="15" x2="12" y2="3" />
-											</svg>
-										</div>
-									</a>
-								{/each}
-							{/if}
+							{/each}
 						</div>
 					</section>
 				{/if}
