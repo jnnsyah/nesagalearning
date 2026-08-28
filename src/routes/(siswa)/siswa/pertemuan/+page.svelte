@@ -9,6 +9,9 @@
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -824,80 +827,72 @@
 		</div>
 	{/if}
 
-	<!-- Overview Key Metrics (4 Stat Cards matching /siswa/tugas and /siswa/progress) -->
+	<!-- Overview Key Metrics (4 Reusable StatCard Components) -->
 	<div class="stats-grid">
 		<!-- Card 1: Total Sesi Pertemuan -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-total">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="3" y="4" width="18" height="18" rx="2" />
-						<line x1="16" y1="2" x2="16" y2="6" />
-						<line x1="8" y1="2" x2="8" y2="6" />
-						<line x1="3" y1="10" x2="21" y2="10" />
-					</svg>
-				</div>
-				<span class="stat-pill">{stats.totalSessions} Total</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{stats.totalSessions}</div>
-				<div class="stat-label">Sesi Pertemuan</div>
-				<div class="stat-subtext">Total Sesi Terjadwal</div>
-			</div>
-		</div>
+		<StatCard
+			label="Sesi Pertemuan"
+			value={stats.totalSessions}
+			subtext="Total Sesi Terjadwal"
+			variant="total"
+			pillText="{stats.totalSessions} Total"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="4" width="18" height="18" rx="2" />
+					<line x1="16" y1="2" x2="16" y2="6" />
+					<line x1="8" y1="2" x2="8" y2="6" />
+					<line x1="3" y1="10" x2="21" y2="10" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 2: Persentase Kehadiran -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-approved">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-						<polyline points="22 4 12 14.01 9 11.01" />
-					</svg>
-				</div>
-				<span class="stat-pill">{stats.attendancePercentage}%</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{stats.attendancePercentage}%</div>
-				<div class="stat-label">Persentase Kehadiran</div>
-				<div class="stat-subtext">{stats.totalHadir} dari {stats.totalSessions} Sesi Hadir</div>
-			</div>
-		</div>
+		<StatCard
+			label="Persentase Kehadiran"
+			value="{stats.attendancePercentage}%"
+			subtext="{stats.totalHadir} dari {stats.totalSessions} Sesi Hadir"
+			variant="approved"
+			pillText="{stats.attendancePercentage}%"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 3: Total Hadir & Izin -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-pending">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<polyline points="9 11 12 14 22 4" />
-						<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-					</svg>
-				</div>
-				<span class="stat-pill">{stats.totalHadir + stats.totalExcused} Sesi</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{stats.totalHadir + stats.totalExcused}</div>
-				<div class="stat-label">Total Hadir &amp; Izin</div>
-				<div class="stat-subtext">Hadir: {stats.totalHadir} | Izin: {stats.totalExcused}</div>
-			</div>
-		</div>
+		<StatCard
+			label="Total Hadir & Izin"
+			value={stats.totalHadir + stats.totalExcused}
+			subtext="Hadir: {stats.totalHadir} | Izin: {stats.totalExcused}"
+			variant="pending"
+			pillText="{stats.totalHadir + stats.totalExcused} Sesi"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="9 11 12 14 22 4" />
+					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 4: Streak Pertemuan -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-streak">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-						<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-					</svg>
-				</div>
-				<span class="stat-pill">+{nextMilestone.bonus} Pts</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{currentStreak} <span class="text-xs font-normal text-slate-500">Sesi</span></div>
-				<div class="stat-label">Streak Kehadiran</div>
-				<div class="stat-subtext">Next: {nextMilestone.streak} Sesi</div>
-			</div>
-		</div>
+		<StatCard
+			label="Streak Kehadiran"
+			value="{currentStreak} Sesi"
+			subtext="Next: {nextMilestone.streak} Sesi"
+			variant="streak"
+			pillText="+{nextMilestone.bonus} Pts"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+					<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+				</svg>
+			{/snippet}
+		</StatCard>
 	</div>
 
 	<!-- Page Filter Card: 4 Complete Filters with Mobile Toggle -->
@@ -1018,26 +1013,18 @@
 
 	<!-- Card List Grid Container -->
 	{#if filteredMeetings.length === 0}
-		<div class="empty-card">
-			<div class="empty-icon">
-				<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="4" width="18" height="18" rx="2" />
-					<line x1="16" y1="2" x2="16" y2="6" />
-					<line x1="8" y1="2" x2="8" y2="6" />
-					<line x1="3" y1="10" x2="21" y2="10" />
-				</svg>
-			</div>
-			<h3 class="empty-title">Tidak ada sesi pertemuan ditemukan</h3>
-			<p class="empty-sub">Coba sesuaikan kata kunci pencarian atau kriteria filter di atas.</p>
-		</div>
+		<EmptyState
+			title="Tidak Ada Sesi Pertemuan Ditemukan"
+			description="Coba ubah kata kunci pencarian atau sesuaikan kombinasi filter di atas."
+			iconTheme="slate"
+		/>
 	{:else}
-		<!-- Mobile-Friendly Card Grid (1col on mobile, 2col on desktop) -->
 		<div class="meetings-card-grid">
 			{#each paginatedMeetings as m (m.id)}
-				<div class="pertemuan-card">
+				<div class="pertemuan-card {getMeetingStatus(m) === 'live' ? 'pertemuan-card--live' : ''}">
 					<div class="pertemuan-card-body">
-						<!-- Top Badges Row -->
-						<div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+						<!-- Card Top Info Row -->
+						<div class="card-top-row">
 							<div class="flex items-center gap-1.5 flex-wrap">
 								<span class="activity-badge {getActivityBadgeStyle(m.activityType).bg} {getActivityBadgeStyle(m.activityType).text} {getActivityBadgeStyle(m.activityType).border}">
 									{getActivityBadgeStyle(m.activityType).label}
@@ -1117,10 +1104,8 @@
 										</svg>
 										<span>IZIN / SAKIT</span>
 									</span>
-								{:else if getMeetingStatus(m) === 'completed'}
-									<span class="badge-status badge-absen font-bold">ABSEN</span>
 								{:else}
-									<span class="badge-status bg-slate-100 text-slate-600 border border-slate-200 font-medium">BELUM PRESENSI</span>
+									<span class="badge-status badge-absen font-bold">BELUM PRESENSI</span>
 								{/if}
 							</div>
 
@@ -1196,50 +1181,14 @@
 			{/each}
 		</div>
 
-		<!-- Pagination Footer Bar Standard -->
-		<div class="pagination-footer-bar">
-			<div class="pagination-info text-xs text-slate-500 font-medium">
-				Menampilkan <strong>{paginatedMeetings.length}</strong> dari <strong>{filteredMeetings.length}</strong> sesi pertemuan
-			</div>
-
-			<div class="flex items-center gap-3 flex-wrap">
-				<div class="w-44 mobile-page-size-wrap">
-					<CustomSelect
-						id="page-size-select"
-						label=""
-						bind:value={itemsPerPage}
-						options={pageSizeOptions}
-						searchable={false}
-					/>
-				</div>
-
-				<div class="pagination-nav-group">
-					<button
-						type="button"
-						disabled={currentPage === 1}
-						onclick={() => (currentPage = Math.max(1, currentPage - 1))}
-						class="btn-pagination-nav"
-						aria-label="Halaman Sebelumnya"
-					>
-						&lsaquo; Prev
-					</button>
-
-					<span class="pagination-page-indicator">
-						{currentPage} / {totalPages}
-					</span>
-
-					<button
-						type="button"
-						disabled={currentPage === totalPages}
-						onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
-						class="btn-pagination-nav"
-						aria-label="Halaman Selanjutnya"
-					>
-						Next &rsaquo;
-					</button>
-				</div>
-			</div>
-		</div>
+		<!-- Reusable Pagination Footer Component -->
+		<PaginationFooter
+			currentPage={currentPage}
+			totalPages={totalPages}
+			totalItems={filteredMeetings.length}
+			pageSize={itemsPerPage}
+			onPageChange={(page) => (currentPage = page)}
+		/>
 	{/if}
 </div>
 
@@ -2692,60 +2641,101 @@
 		box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
 	}
 
-	/* Activity Badges & Status Pills */
+	/* Card Top Info Row (AGENTS.md Blueprint) */
+	.card-top-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-bottom: 10px;
+		width: 100%;
+	}
+
+	/* Activity Badges & Status Pills (AGENTS.md Uniform Height 26px) */
 	.activity-badge {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		line-height: 1;
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 800;
-		padding: 2px 8px;
+		padding: 0 9px;
 		border-radius: 6px;
 		border: 1px solid transparent;
 		letter-spacing: 0.03em;
+		box-sizing: border-box;
+		white-space: nowrap;
 	}
 
 	.weekend-badge {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		line-height: 1;
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 800;
 		color: #b45309;
 		background: #fef3c7;
 		border: 1px solid #fde68a;
-		padding: 2px 8px;
+		padding: 0 9px;
 		border-radius: 6px;
+		box-sizing: border-box;
+		white-space: nowrap;
 	}
 
 	.status-pill-live {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		line-height: 1;
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 800;
 		color: #15803d;
 		background: #dcfce7;
 		border: 1px solid #86efac;
-		padding: 3px 10px;
-		border-radius: 999px;
+		padding: 0 10px;
+		border-radius: 9999px;
 		box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+		box-sizing: border-box;
+		white-space: nowrap;
 	}
 
 	.status-pill-upcoming {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		line-height: 1;
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 800;
 		color: #4338ca;
 		background: #e0e7ff;
 		border: 1px solid #c7d2fe;
-		padding: 3px 10px;
-		border-radius: 999px;
+		padding: 0 10px;
+		border-radius: 9999px;
+		box-sizing: border-box;
+		white-space: nowrap;
 	}
 
 	.status-pill-completed {
+		display: inline-flex;
+		align-items: center;
+		height: 26px;
+		line-height: 1;
 		font-family: var(--font-mono, monospace);
-		font-size: 10px;
+		font-size: 10.5px;
 		font-weight: 700;
 		color: #64748b;
 		background: #f1f5f9;
 		border: 1px solid #e2e8f0;
-		padding: 3px 10px;
-		border-radius: 999px;
+		padding: 0 10px;
+		border-radius: 9999px;
+		box-sizing: border-box;
+		white-space: nowrap;
 	}
 
 	.badge-status {

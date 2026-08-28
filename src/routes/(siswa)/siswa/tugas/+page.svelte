@@ -5,6 +5,10 @@
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import FilterTabGroup, { type TabItem } from '$lib/components/ui/FilterTabGroup.svelte';
+	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
@@ -164,170 +168,93 @@
 	<!-- 4 Key Metrics Stat Cards (Matches /siswa/pertemuan and /siswa/progress) -->
 	<div class="stats-grid">
 		<!-- Card 1: Total Tugas -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-total">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-						<line x1="16" y1="13" x2="8" y2="13" />
-						<line x1="16" y1="17" x2="8" y2="17" />
-					</svg>
-				</div>
-				<span class="stat-pill">{totalTasksCount} Total</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{totalTasksCount}</div>
-				<div class="stat-label">Tugas Praktikum</div>
-				<div class="stat-subtext">{unsubmittedCount} Belum Disubmit</div>
-			</div>
-		</div>
-
-		<!-- Card 2: Disetujui (Approved) -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-approved">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-						<polyline points="22 4 12 14.01 9 11.01" />
-					</svg>
-				</div>
-				<span class="stat-pill">{approvedPercentage}%</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{approvedCount}</div>
-				<div class="stat-label">Tugas Approved</div>
-				<div class="stat-subtext">{approvedCount}/{totalTasksCount} Selesai</div>
-			</div>
-		</div>
-
-		<!-- Card 3: Pending Review -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-pending">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="12" cy="12" r="10" />
-						<polyline points="12 6 12 12 16 14" />
-					</svg>
-				</div>
-				<span class="stat-pill">{pendingCount} Antrean</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{pendingCount}</div>
-				<div class="stat-label">Pending Review</div>
-				<div class="stat-subtext">Menunggu Penilaian</div>
-			</div>
-		</div>
-
-		<!-- Card 4: Perlu Revisi -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-revisi">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="12" cy="12" r="10" />
-						<line x1="12" y1="8" x2="12" y2="12" />
-						<line x1="12" y1="16" x2="12.01" y2="16" />
-					</svg>
-				</div>
-				<span class="stat-pill">{revisiCount} Tugas</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{revisiCount}</div>
-				<div class="stat-label">Perlu Revisi</div>
-				<div class="stat-subtext">{revisiCount > 0 ? 'Butuh Perbaikan' : 'Tidak Ada Revisi'}</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Status Tabs Bar (Single-Line Filter Panel with SVG Icons & Color Accent) -->
-	<div class="filter-panel">
-		<div class="tabs-row">
-			<!-- Tab 1: Semua -->
-			<button
-				type="button"
-				onclick={() => (selectedStatusFilter = 'all')}
-				class="tab-btn {selectedStatusFilter === 'all' ? 'tab-btn--all-active' : ''}"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="3" width="7" height="7"/>
-					<rect x="14" y="3" width="7" height="7"/>
-					<rect x="14" y="14" width="7" height="7"/>
-					<rect x="3" y="14" width="7" height="7"/>
-				</svg>
-				<span>Semua</span>
-				<span class="tab-counter">{totalTasksCount}</span>
-			</button>
-
-			<!-- Tab 2: Belum Submit -->
-			<button
-				type="button"
-				onclick={() => (selectedStatusFilter = 'unsubmitted')}
-				class="tab-btn {selectedStatusFilter === 'unsubmitted' ? 'tab-btn--unsubmitted-active' : ''}"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<StatCard
+			label="Tugas Praktikum"
+			value={totalTasksCount}
+			subtext="{unsubmittedCount} Belum Disubmit"
+			variant="total"
+			pillText="{totalTasksCount} Total"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 					<polyline points="14 2 14 8 20 8" />
+					<line x1="16" y1="13" x2="8" y2="13" />
+					<line x1="16" y1="17" x2="8" y2="17" />
 				</svg>
-				<span>Belum Submit</span>
-				<span class="tab-counter">{unsubmittedCount}</span>
-			</button>
+			{/snippet}
+		</StatCard>
 
-			<!-- Tab 3: Pending Review -->
-			<button
-				type="button"
-				onclick={() => (selectedStatusFilter = 'pending')}
-				class="tab-btn {selectedStatusFilter === 'pending' ? 'tab-btn--pending-active' : ''}"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<!-- Card 2: Disetujui (Approved) -->
+		<StatCard
+			label="Tugas Approved"
+			value={approvedCount}
+			subtext="{approvedCount}/{totalTasksCount} Selesai"
+			variant="approved"
+			pillText="{approvedPercentage}%"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
+			{/snippet}
+		</StatCard>
+
+		<!-- Card 3: Pending Review -->
+		<StatCard
+			label="Pending Review"
+			value={pendingCount}
+			subtext="Menunggu Penilaian"
+			variant="pending"
+			pillText="{pendingCount} Antrean"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<circle cx="12" cy="12" r="10" />
 					<polyline points="12 6 12 12 16 14" />
 				</svg>
-				<span>Pending</span>
-				<span class="tab-counter">{pendingCount}</span>
-			</button>
+			{/snippet}
+		</StatCard>
 
-			<!-- Tab 4: Perlu Revisi -->
-			<button
-				type="button"
-				onclick={() => (selectedStatusFilter = 'revisi')}
-				class="tab-btn {selectedStatusFilter === 'revisi' ? 'tab-btn--revisi-active' : ''}"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<!-- Card 4: Perlu Revisi -->
+		<StatCard
+			label="Perlu Revisi"
+			value={revisiCount}
+			subtext={revisiCount > 0 ? 'Butuh Perbaikan' : 'Tidak Ada Revisi'}
+			variant="revisi"
+			pillText="{revisiCount} Tugas"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<circle cx="12" cy="12" r="10" />
 					<line x1="12" y1="8" x2="12" y2="12" />
 					<line x1="12" y1="16" x2="12.01" y2="16" />
 				</svg>
-				<span>Revisi</span>
-				<span class="tab-counter">{revisiCount}</span>
-			</button>
-
-			<!-- Tab 5: Disetujui -->
-			<button
-				type="button"
-				onclick={() => (selectedStatusFilter = 'approved')}
-				class="tab-btn {selectedStatusFilter === 'approved' ? 'tab-btn--approved-active' : ''}"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="20 6 9 17 4 12" />
-				</svg>
-				<span>Disetujui</span>
-				<span class="tab-counter">{approvedCount}</span>
-			</button>
-		</div>
+			{/snippet}
+		</StatCard>
 	</div>
+
+	<!-- Status Tabs Bar (Reusable FilterTabGroup Component) -->
+	<FilterTabGroup
+		tabs={[
+			{ id: 'all', label: 'Semua', count: totalTasksCount, variant: 'all' },
+			{ id: 'unsubmitted', label: 'Belum Submit', count: unsubmittedCount, variant: 'unsubmitted' },
+			{ id: 'pending', label: 'Pending', count: pendingCount, variant: 'pending' },
+			{ id: 'revisi', label: 'Revisi', count: revisiCount, variant: 'revisi' },
+			{ id: 'approved', label: 'Disetujui', count: approvedCount, variant: 'approved' }
+		]}
+		activeTab={selectedStatusFilter}
+		onSelect={(tabId) => (selectedStatusFilter = tabId)}
+	/>
 
 	<!-- Tasks List Grid -->
 	{#if paginatedTasks.length === 0}
-		<div class="empty-card">
-			<div class="empty-icon">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-					<polyline points="14 2 14 8 20 8" />
-				</svg>
-			</div>
-			<div class="empty-title">Tidak Ada Tugas Ditemukan</div>
-			<div class="empty-sub">Semua tugas sudah sesuai dengan filter kategori yang kamu pilih.</div>
-		</div>
+		<EmptyState
+			title="Tidak Ada Tugas Ditemukan"
+			description="Semua tugas sudah sesuai dengan filter kategori yang kamu pilih."
+			iconTheme="slate"
+		/>
 	{:else}
 		<div class="tasks-grid">
 			{#each paginatedTasks as t (t.taskId)}
@@ -416,41 +343,24 @@
 						{/if}
 					</div>
 
-					<!-- Card Action Footer Buttons -->
-					<div class="task-card__footer">
+					<!-- Task Card Foot Actions -->
+					<div class="task-card__foot">
 						{#if !t.submission}
 							<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-action btn-card-submit">
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 									<line x1="22" y1="2" x2="11" y2="13" />
 									<polygon points="22 2 15 22 11 13 2 9 22 2" />
 								</svg>
-								<span>Submit Link Tugas</span>
+								<span>Submit Tugas</span>
 							</button>
-						{:else if t.submission.status === 'revisi'}
-							<div class="footer-btn-split">
-								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-action btn-card-revisi">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-										<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-									</svg>
-									<span>Perbaiki &amp; Kirim Ulang</span>
-								</button>
-								<button
-									type="button"
-									onclick={() => t.submission && promptCancelSubmission(t.submission.id, t.taskTitle)}
-									class="btn-card-action btn-card-cancel"
-									title="Batal Submit / Tarik Submisi"
-								>
-									Batal
-								</button>
-							</div>
 						{:else if t.submission.status === 'pending'}
-							<div class="footer-btn-split">
+							<div class="flex items-center gap-2 flex-wrap w-full">
 								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-action btn-card-edit">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
 										<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
 									</svg>
-									<span>Edit Link</span>
+									<span>Edit Submisi</span>
 								</button>
 								<button
 									type="button"
@@ -459,6 +369,23 @@
 									title="Batal Submit / Tarik Submisi"
 								>
 									Batal Submit
+								</button>
+							</div>
+						{:else if t.submission.status === 'revisi'}
+							<div class="flex items-center gap-2 flex-wrap w-full">
+								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-action btn-card-revisi">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<line x1="22" y1="2" x2="11" y2="13" />
+										<polygon points="22 2 15 22 11 13 2 9 22 2" />
+									</svg>
+									<span>Submit Ulang Revisi</span>
+								</button>
+								<button type="button" onclick={() => openSubmitModal(t)} class="btn-card-action btn-card-edit">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+										<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+									</svg>
+									<span>Edit Link</span>
 								</button>
 							</div>
 						{:else}
@@ -474,50 +401,14 @@
 			{/each}
 		</div>
 
-		<!-- Pagination Footer Bar Standard (Identical to /siswa/pertemuan) -->
-		<div class="pagination-footer-bar">
-			<div class="pagination-info text-xs text-slate-500 font-medium">
-				Menampilkan <strong>{paginatedTasks.length}</strong> dari <strong>{filteredTasks.length}</strong> tugas
-			</div>
-
-			<div class="flex items-center gap-3 flex-wrap">
-				<div class="w-44 mobile-page-size-wrap">
-					<CustomSelect
-						id="page-size-select"
-						label=""
-						bind:value={itemsPerPage}
-						options={pageSizeOptions}
-						searchable={false}
-					/>
-				</div>
-
-				<div class="pagination-nav-group">
-					<button
-						type="button"
-						disabled={currentPage === 1}
-						onclick={() => (currentPage = Math.max(1, currentPage - 1))}
-						class="btn-pagination-nav"
-						aria-label="Halaman Sebelumnya"
-					>
-						&lsaquo; Prev
-					</button>
-
-					<span class="pagination-page-indicator">
-						{currentPage} / {totalPages}
-					</span>
-
-					<button
-						type="button"
-						disabled={currentPage === totalPages}
-						onclick={() => (currentPage = Math.min(totalPages, currentPage + 1))}
-						class="btn-pagination-nav"
-						aria-label="Halaman Selanjutnya"
-					>
-						Next &rsaquo;
-					</button>
-				</div>
-			</div>
-		</div>
+		<!-- Pagination Footer Bar Reusable Component -->
+		<PaginationFooter
+			currentPage={currentPage}
+			totalPages={totalPages}
+			totalItems={filteredTasks.length}
+			pageSize={itemsPerPage}
+			onPageChange={(page) => (currentPage = page)}
+		/>
 	{/if}
 </div>
 
@@ -1232,7 +1123,7 @@
 	}
 
 	/* Footer Action Buttons */
-	.task-card__footer {
+	.task-card__foot {
 		padding: 12px 16px;
 		background: #ffffff;
 		border-top: 1px solid var(--border-hard, #f1f5f9);
@@ -1249,43 +1140,49 @@
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		padding: 8px 14px;
-		border-radius: 8px;
+		width: 100%;
+		padding: 9px 16px;
+		border-radius: var(--radius-sm, 6px);
 		font-family: var(--font-macro, system-ui, sans-serif);
 		font-size: 12.5px;
 		font-weight: 700;
 		cursor: pointer;
-		transition: all 150ms ease;
-		border: 1px solid transparent;
-		width: 100%;
-		min-height: 38px;
+		text-decoration: none;
+		transition: all 140ms ease;
+		box-sizing: border-box;
 	}
 
 	.btn-card-submit {
-		background: var(--primary, #2563eb);
+		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 		color: #ffffff;
+		border: none;
+		box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 	}
 	.btn-card-submit:hover {
-		background: #1d4ed8;
+		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+		transform: translateY(-1px);
 	}
 
 	.btn-card-revisi {
-		background: #be123c;
+		background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
 		color: #ffffff;
-		flex: 1;
+		border: none;
+		box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
 	}
 	.btn-card-revisi:hover {
-		background: #9f1239;
+		background: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
+		transform: translateY(-1px);
 	}
 
 	.btn-card-edit {
-		background: var(--bg-inset, #f8fafc);
-		color: var(--text-primary, #0f172a);
-		border-color: var(--border-hard, #cbd5e1);
-		flex: 1;
+		background: #ffffff;
+		color: #475569;
+		border: 1px solid #cbd5e1;
 	}
 	.btn-card-edit:hover {
-		background: #f1f5f9;
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
 	.btn-card-cancel {
@@ -1305,9 +1202,15 @@
 		font-size: 12px;
 		font-weight: 700;
 		color: #15803d;
-		display: flex;
+		background: #f0fdf4;
+		border: 1px solid #bbf7d0;
+		padding: 8px 12px;
+		border-radius: 8px;
+		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	/* Pagination Footer Bar (Standard /siswa/pertemuan Blueprint) */

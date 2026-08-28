@@ -1,4 +1,7 @@
 <script lang="ts">
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+
 	let { data } = $props();
 
 	let role = $derived(data.user?.role ?? 'siswa');
@@ -51,7 +54,7 @@
 				</div>
 
 				<div class="hero-actions">
-					<a href="/siswa/pertemuan?scan=true" class="btn-scan-hero">
+					<a href="/siswa/pertemuan?scan=true" class="btn-primary-gradient btn-scan-hero">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<rect x="3" y="3" width="7" height="7" rx="1.5" />
 							<rect x="14" y="3" width="7" height="7" rx="1.5" />
@@ -118,74 +121,66 @@
 	<!-- Key Metrics Stats Grid (4 Cards 2x2 Grid on Mobile) -->
 	<section class="stats-grid mt-5">
 		<!-- Card 1: Total Poin -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-streak">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-					</svg>
-				</div>
-				<span class="stat-pill">{totalPoints} Pts</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{totalPoints}</div>
-				<div class="stat-label">Total Poin</div>
-				<div class="stat-subtext truncate">{tahunAjaranName} &middot; {kelasName}</div>
-			</div>
-		</div>
+		<StatCard
+			label="Total Poin"
+			value={totalPoints}
+			subtext="{tahunAjaranName} · {kelasName}"
+			variant="streak"
+			pillText="{totalPoints} Pts"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 2: Streak Pertemuan -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-pending">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-						<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-					</svg>
-				</div>
-				<span class="stat-pill">{currentStreak} Sesi</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{currentStreak} <span class="text-xs font-normal text-slate-500">Hari</span></div>
-				<div class="stat-label">Streak Pertemuan</div>
-				<div class="stat-subtext">Berturut-turut</div>
-			</div>
-		</div>
+		<StatCard
+			label="Streak Pertemuan"
+			value="{currentStreak} Hari"
+			subtext="Berturut-turut"
+			variant="pending"
+			pillText="{currentStreak} Sesi"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+					<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 3: Kehadiran Presensi -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-approved">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-						<polyline points="22 4 12 14.01 9 11.01" />
-					</svg>
-				</div>
-				<span class="stat-pill">{attendanceCount} Hadir</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{attendanceCount}</div>
-				<div class="stat-label">Kehadiran Presensi</div>
-				<div class="stat-subtext">Total Sesi Diikuti</div>
-			</div>
-		</div>
+		<StatCard
+			label="Kehadiran Presensi"
+			value={attendanceCount}
+			subtext="Total Sesi Diikuti"
+			variant="approved"
+			pillText="{attendanceCount} Hadir"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
 		<!-- Card 4: Tugas Pending -->
-		<div class="stat-card">
-			<div class="stat-card-top">
-				<div class="stat-icon icon-revisi">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-					</svg>
-				</div>
-				<span class="stat-pill">{pendingTasksList.length} Pending</span>
-			</div>
-			<div class="stat-info">
-				<div class="stat-value">{pendingTasksList.length}</div>
-				<div class="stat-label">Tugas Pending</div>
-				<div class="stat-subtext">Perlu Dikerjakan</div>
-			</div>
-		</div>
+		<StatCard
+			label="Tugas Pending"
+			value={pendingTasksList.length}
+			subtext="Perlu Dikerjakan"
+			variant="revisi"
+			pillText="{pendingTasksList.length} Pending"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+					<polyline points="14 2 14 8 20 8" />
+				</svg>
+			{/snippet}
+		</StatCard>
 	</section>
 
 	<!-- Two-Col Grid for Tasks + Curriculum Progress -->
@@ -206,16 +201,11 @@
 			</div>
 
 			{#if pendingTasksList.length === 0}
-				<div class="empty-state">
-					<div class="empty-icon-wrap" style="background: #ecfdf5; color: #16a34a;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-							<polyline points="22 4 12 14.01 9 11.01" />
-						</svg>
-					</div>
-					<p class="empty-title">Semua Tugas Beres!</p>
-					<p class="empty-sub">Tidak ada tugas pending. Semua tugas telah diselesaikan dengan baik.</p>
-				</div>
+				<EmptyState
+					title="Semua Tugas Beres!"
+					description="Tidak ada tugas pending. Semua tugas telah diselesaikan dengan baik."
+					iconTheme="green"
+				/>
 			{:else}
 				<div class="task-list">
 					{#each pendingTasksList as t}

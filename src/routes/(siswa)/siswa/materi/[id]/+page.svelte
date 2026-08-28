@@ -4,6 +4,7 @@
 	import { formatFileSize } from '$lib/utils/sanitizer';
 	import { fade, fly } from 'svelte/transition';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -303,16 +304,11 @@
 					{@html data.materi.content}
 				</div>
 			{:else}
-				<div class="empty-reading-state">
-					<div class="empty-icon-wrap mb-3">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-							<polyline points="14 2 14 8 20 8" />
-						</svg>
-					</div>
-					<h3 class="empty-title">Modul Materi Dalam Penyusunan</h3>
-					<p class="empty-sub">Instruktur/Mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini.</p>
-				</div>
+				<EmptyState
+					title="Modul Materi Dalam Penyusunan"
+					description="Instruktur atau mentor sedang menyiapkan konten pembelajaran interaktif untuk modul ini."
+					iconTheme="indigo"
+				/>
 			{/if}
 		</main>
 
@@ -556,14 +552,15 @@
 				transition:fade={{ duration: 180 }}
 				role="presentation"
 			>
-				<div
-					class="mobile-toc-drawer"
-					onclick={(e) => e.stopPropagation()}
-					transition:fly={{ y: 320, duration: 240 }}
-					role="dialog"
-					aria-modal="true"
-					tabindex="-1"
-				>
+					<div
+						class="mobile-toc-drawer"
+						onkeydown={(e) => e.stopPropagation()}
+						onclick={(e) => e.stopPropagation()}
+						transition:fly={{ y: 320, duration: 240 }}
+						role="dialog"
+						aria-modal="true"
+						tabindex="-1"
+					>
 					<div class="drawer-handle-bar"></div>
 					<div class="drawer-header flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
 						<h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
@@ -655,8 +652,13 @@
 	/* Global Focus Mode body overrides */
 	:global(body.focus-mode-active .app-topbar),
 	:global(body.focus-mode-active .app-sidebar),
+	:global(body.focus-mode-active .app-bottom-nav),
 	:global(body.focus-mode-active .mobile-bottom-nav) {
 		display: none !important;
+	}
+
+	:global(body.focus-mode-active .mobile-toc-fab) {
+		bottom: 20px !important;
 	}
 
 	:global(body.focus-mode-active .app-main) {
@@ -1430,7 +1432,7 @@
 
 	@media (max-width: 640px) {
 		.reader-outer-wrapper {
-			padding: 16px 16px 84px;
+			padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px));
 		}
 		.reader-header-card {
 			padding: 12px 14px;

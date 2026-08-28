@@ -311,7 +311,7 @@
 				<div class="flex items-center justify-between gap-4 flex-wrap border-b border-slate-200 pb-4">
 					<div>
 						<h3 class="font-macro font-bold text-lg text-slate-900">{data.archiveData.kelas.trackTitle}</h3>
-						<p class="text-xs text-slate-500 mt-0.5">Struktur kurikulum & sub-materi yang dipelajari pada kelas ini.</p>
+						<p class="text-xs text-slate-500 mt-0.5">Struktur Track Pembelajaran &amp; sub-materi yang dipelajari pada kelas ini.</p>
 					</div>
 					<div class="text-right">
 						<span class="text-xs font-semibold text-slate-500">Poin Diperoleh:</span>

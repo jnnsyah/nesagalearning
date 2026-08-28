@@ -86,7 +86,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.limit(1);
 
 	if (!trackRecord?.isPublished) {
-		throw error(403, 'Materi ini berasal dari kurikulum yang belum dipublikasikan.');
+		throw error(403, 'Materi ini berasal dari Track Pembelajaran yang belum dipublikasikan.');
 	}
 
 	// 2. Check if logged-in student has completed reading this materi
@@ -169,7 +169,7 @@ export const actions: Actions = {
 		}
 
 		if (!materiRecord.trackIsPublished) {
-			return fail(403, { message: 'Materi ini berasal dari kurikulum yang belum dipublikasikan.' });
+			return fail(403, { message: 'Materi ini berasal dari Track Pembelajaran yang belum dipublikasikan.' });
 		}
 
 		const [existing] = await db
