@@ -43,20 +43,28 @@
 	// Accordion state for syllabus phases
 	let openPhases = $state<Record<number, boolean>>({});
 
-	// Manage focus mode body class lifecycle
+	// Manage focus mode body class lifecycle safely in SSR & Client
 	$effect(() => {
-		document.body.classList.add('focus-mode-active');
+		if (typeof document !== 'undefined') {
+			document.body.classList.add('focus-mode-active');
+		}
 		return () => {
-			document.body.classList.remove('focus-mode-active');
+			if (typeof document !== 'undefined') {
+				document.body.classList.remove('focus-mode-active');
+			}
 		};
 	});
 
 	beforeNavigate(() => {
-		document.body.classList.remove('focus-mode-active');
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('focus-mode-active');
+		}
 	});
 
 	onDestroy(() => {
-		document.body.classList.remove('focus-mode-active');
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('focus-mode-active');
+		}
 	});
 
 	$effect(() => {

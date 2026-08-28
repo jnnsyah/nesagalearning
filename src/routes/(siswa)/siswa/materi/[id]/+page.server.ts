@@ -224,17 +224,29 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const trackProgressPercentage =
 		totalTrackModules > 0 ? Math.round((completedTrackModules / totalTrackModules) * 100) : 0;
 
+	let safeAttachments: Array<{ name: string; url: string; size: number }> = [];
+	if (Array.isArray(materiDetail.attachments)) {
+		safeAttachments = materiDetail.attachments as any;
+	} else if (typeof materiDetail.attachments === 'string') {
+		try {
+			const parsed = JSON.parse(materiDetail.attachments);
+			if (Array.isArray(parsed)) safeAttachments = parsed;
+		} catch {
+			safeAttachments = [];
+		}
+	}
+
 	return {
 		user: locals.user,
-		membership,
+		membership: membership || null,
 		materi: {
 			...materiDetail,
-			attachments: (materiDetail.attachments as Array<{ name: string; url: string; size: number }>) || []
+			attachments: safeAttachments
 		},
 		isCompleted: !!completionRecord,
 		completedAt: completionRecord?.completedAt || null,
-		sessionSlide,
-		syllabus,
+		sessionSlide: sessionSlide || null,
+		syllabus: syllabus || [],
 		trackStats: {
 			totalModules: totalTrackModules,
 			completedModules: completedTrackModules,
