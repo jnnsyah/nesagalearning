@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { Html5Qrcode } from 'html5-qrcode';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
@@ -78,6 +78,7 @@
 
 	let isCameraOpen = $state(false);
 	let isCameraLoading = $state(false);
+	let openedFromDashboard = $state(false);
 	let cameraError = $state('');
 	let availableCameras = $state<CameraDevice[]>([]);
 	let selectedDeviceId = $state<string>('');
@@ -522,6 +523,10 @@
 		}
 		isCameraOpen = false;
 		isCameraLoading = false;
+
+		if (openedFromDashboard) {
+			goto('/siswa');
+		}
 	}
 
 	async function onCameraSelectChange(val: string | number | null) {
@@ -573,6 +578,7 @@
 
 		const params = new URLSearchParams(window.location.search);
 		if (params.get('scan') === 'true') {
+			openedFromDashboard = true;
 			if (window.history && window.history.replaceState) {
 				window.history.replaceState({}, '', window.location.pathname);
 			}
