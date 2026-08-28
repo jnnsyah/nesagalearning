@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { beforeNavigate } from '$app/navigation';
 	import { toast } from '$lib/stores/toast';
 	import { formatFileSize } from '$lib/utils/sanitizer';
 	import { fade, fly, slide } from 'svelte/transition';
@@ -48,6 +49,14 @@
 		return () => {
 			document.body.classList.remove('focus-mode-active');
 		};
+	});
+
+	beforeNavigate(() => {
+		document.body.classList.remove('focus-mode-active');
+	});
+
+	onDestroy(() => {
+		document.body.classList.remove('focus-mode-active');
 	});
 
 	$effect(() => {
@@ -1191,20 +1200,20 @@
 
 <style>
 	/* ══════════════════════════════════════════════════════════
-	   DICODING-STYLE FULL ISOLATION OVERRIDES
-	   Permanently hides app-topbar, app-sidebar, and app-bottom-nav
+	   DICODING-STYLE FULL ISOLATION OVERRIDES (SCOPED TO FOCUS MODE)
+	   Hides app-topbar, app-sidebar, and app-bottom-nav ONLY while reading materi
 	   ══════════════════════════════════════════════════════════ */
-	:global(.app-topbar),
-	:global(.app-sidebar),
-	:global(.app-bottom-nav),
-	:global(.mobile-bottom-nav) {
+	:global(body.focus-mode-active .app-topbar),
+	:global(body.focus-mode-active .app-sidebar),
+	:global(body.focus-mode-active .app-bottom-nav),
+	:global(body.focus-mode-active .mobile-bottom-nav) {
 		display: none !important;
 	}
 
-	:global(.app-content),
-	:global(.app-main),
-	:global(.app-main-area),
-	:global(.nlc-app-shell) {
+	:global(body.focus-mode-active .app-content),
+	:global(body.focus-mode-active .app-main),
+	:global(body.focus-mode-active .app-main-area),
+	:global(body.focus-mode-active .nlc-app-shell) {
 		padding: 0 !important;
 		margin: 0 !important;
 		max-width: 100vw !important;
