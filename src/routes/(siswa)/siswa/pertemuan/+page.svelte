@@ -803,7 +803,7 @@
 							<div class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
 								✓
 							</div>
-							<span>Presensi kamu telah diverifikasi (+100 Poin Kehadiran). Selamat belajar!</span>
+							<span>Presensi kamu telah diverifikasi (+{liveM.isWeekend ? 150 : 100} Poin Kehadiran). Selamat belajar!</span>
 						</div>
 
 						<div class="flex items-center gap-2 flex-wrap">
@@ -1379,8 +1379,8 @@
 											Kehadiran Anda telah diverifikasi oleh sistem.
 										</div>
 									</div>
-									<span class="font-mono text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 shrink-0">
-										+100 Poin Presensi
+									<span class="badge badge-approved shrink-0">
+										+{meeting.isWeekend ? 150 : 100} Poin Presensi
 									</span>
 								</div>
 							{/if}
