@@ -634,16 +634,6 @@
 										>
 											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
 										</button>
-										{#if u.id !== data.user.id}
-											<button
-												type="button"
-												onclick={() => promptDeleteUser(u)}
-												class="btn-ghost-icon text-rose-600 hover:bg-rose-50"
-												title="Hapus User Permanen"
-											>
-												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-											</button>
-										{/if}
 									</div>
 								</td>
 							</tr>
@@ -911,37 +901,7 @@
 	</div>
 {/if}
 
-<!-- Delete User Confirm Modal -->
-{#if isDeleteModalOpen && targetDeleteUser}
-	<ConfirmModal
-		open={isDeleteModalOpen}
-		title={`Hapus Permanen: @${targetDeleteUser.username}`}
-		message={`Apakah Anda yakin ingin MENGHAPUS PERMANEN user ${targetDeleteUser.fullName} (@${targetDeleteUser.username})? Seluruh riwayat, presensi, dan nilai user ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.`}
-		confirmText="Ya, Hapus Permanen"
-		cancelText="Batal"
-		variant="danger"
-		oncancel={closeDeleteModal}
-		onconfirm={() => {
-			const formEl = document.getElementById('delete-user-form') as HTMLFormElement;
-			if (formEl) formEl.requestSubmit();
-		}}
-	/>
-	<div class="hidden">
-		<form
-			id="delete-user-form"
-			action="?/delete"
-			method="POST"
-			use:enhance={() => {
-				return async ({ result, update }) => {
-					await update({ reset: false });
-					closeDeleteModal();
-				};
-			}}
-		>
-			<input type="hidden" name="userId" value={targetDeleteUser.id} />
-		</form>
-	</div>
-{/if}
+
 
 <!-- Bulk Import Siswa Drawer -->
 {#if isBulkDrawerOpen}

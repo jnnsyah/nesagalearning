@@ -253,36 +253,9 @@ export const actions: Actions = {
 		}
 	},
 
-	delete: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { message: 'Akses ditolak.' });
-		}
-
-		const formData = await request.formData();
-		const userId = Number(formData.get('userId'));
-
-		if (!userId || isNaN(userId)) {
-			return fail(400, { message: 'ID user tidak valid.' });
-		}
-
-		try {
-			const deleted = await UserAdminService.deleteUser(userId, Number(locals.user.id));
-
-			await AuditLogService.logAction({
-				actorId: Number(locals.user.id),
-				action: 'DELETE_USER',
-				entityType: 'user',
-				entityId: userId,
-				oldValues: { username: deleted.username, role: deleted.role }
-			});
-
-			return {
-				success: true,
-				message: `User '@${deleted.username}' telah dihapus secara permanen!`
-			};
-		} catch (err: any) {
-			console.error('Failed to delete user:', err);
-			return fail(400, { message: err.message || 'Gagal menghapus user.' });
-		}
+	delete: async () => {
+		return fail(400, {
+			message: 'Fitur hapus permanen user telah dinonaktifkan demi keamanan data. Gunakan status Nonaktifkan Akun.'
+		});
 	}
 };
