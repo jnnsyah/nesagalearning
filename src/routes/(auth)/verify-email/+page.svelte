@@ -16,6 +16,49 @@
 	let cooldownSeconds = $state(data.remainingCooldown ?? 0);
 	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
+	let toastMessage = $state<string | undefined>(undefined);
+	let toastType = $state<'success' | 'info' | 'error'>('success');
+
+	function showToast(msg: string, type: 'success' | 'info' | 'error' = 'success') {
+		toastMessage = msg;
+		toastType = type;
+		setTimeout(() => {
+			toastMessage = undefined;
+		}, 3000);
+	}
+
+	async function handlePasteClick() {
+		try {
+			const text = await navigator.clipboard.readText();
+			const numericDigits = text.replace(/\D/g, '').slice(0, 6).split('');
+			if (numericDigits.length > 0) {
+				digits = ['', '', '', '', '', ''];
+				numericDigits.forEach((d, i) => {
+					if (i < 6) digits[i] = d;
+				});
+				showToast('Kode OTP berhasil ditempel!', 'success');
+				const lastIdx = Math.min(numericDigits.length - 1, 5);
+				const nextInput = document.getElementById(`digit-${lastIdx}`) as HTMLInputElement;
+				if (nextInput) nextInput.focus();
+			} else {
+				showToast('Tidak ada 6 digit angka ditemukan di clipboard', 'info');
+			}
+		} catch {
+			showToast('Gagal membaca clipboard. Silakan tempel (Ctrl+V / Tap Lama) langsung di kolom.', 'info');
+		}
+	}
+
+	async function handleCopyClick() {
+		if (fullCode.length === 6) {
+			try {
+				await navigator.clipboard.writeText(fullCode);
+				showToast('Kode OTP berhasil disalin ke clipboard!', 'success');
+			} catch {
+				showToast('Gagal menyalin kode ke clipboard', 'error');
+			}
+		}
+	}
+
 	function startCooldown(seconds: number) {
 		if (seconds <= 0) return;
 		cooldownSeconds = seconds;
@@ -304,6 +347,46 @@
 					{/each}
 				</div>
 
+				<!-- Utility Bar: Tempel & Salin OTP -->
+				<div class="otp-actions-bar">
+					<button
+						type="button"
+						onclick={handlePasteClick}
+						class="btn-otp-action btn-otp-paste"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+							<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+						</svg>
+						<span>Tempel Kode OTP</span>
+					</button>
+
+					{#if fullCode.length === 6}
+						<button
+							type="button"
+							onclick={handleCopyClick}
+							class="btn-otp-action btn-otp-copy"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+								<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+							</svg>
+							<span>Salin Kode</span>
+						</button>
+					{/if}
+				</div>
+
+				{#if toastMessage}
+					<div class="otp-toast-alert {toastType}">
+						{#if toastType === 'success'}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+						{:else}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+						{/if}
+						<span>{toastMessage}</span>
+					</div>
+				{/if}
+
 				<button type="submit" class="submit-btn" disabled={isSubmitting || fullCode.length !== 6}>
 					{#if isSubmitting}
 						<span class="spinner"></span>
@@ -552,7 +635,83 @@
 		display: grid;
 		grid-template-columns: repeat(6, 1fr);
 		gap: 8px;
-		margin: 8px 0;
+		margin: 8px 0 4px;
+	}
+
+	.otp-actions-bar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		margin: 6px 0 14px;
+	}
+
+	.btn-otp-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		border-radius: 9999px;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-otp-paste {
+		background: #eef2ff;
+		color: #4f46e5;
+		border: 1px solid #c7d2fe;
+	}
+
+	.btn-otp-paste:hover {
+		background: #e0e7ff;
+		color: #3730a3;
+		border-color: #a5b4fc;
+		transform: translateY(-1px);
+	}
+
+	.btn-otp-copy {
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+	}
+
+	.btn-otp-copy:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+		transform: translateY(-1px);
+	}
+
+	.otp-toast-alert {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 8px 12px;
+		margin-bottom: 12px;
+		border-radius: 10px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.otp-toast-alert.success {
+		background: #ecfdf5;
+		color: #047857;
+		border: 1px solid #a7f3d0;
+	}
+
+	.otp-toast-alert.info {
+		background: #eff6ff;
+		color: #1d4ed8;
+		border: 1px solid #bfdbfe;
+	}
+
+	.otp-toast-alert.error {
+		background: #fff1f2;
+		color: #be123c;
+		border: 1px solid #fecdd3;
 	}
 
 	.otp-box {

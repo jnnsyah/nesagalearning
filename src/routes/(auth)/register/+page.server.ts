@@ -149,15 +149,17 @@ export const actions: Actions = {
 		});
 
 		// Kirim email kode verifikasi
+		const verificationLink = `${url.origin}/verify-email?token=${token}`;
 		const mailResult = await sendMail({
 			to: email,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran — NLC',
 			html: buildVerificationEmail({
 				fullName,
 				code,
-				expiresInMinutes: 5
+				expiresInMinutes: 5,
+				verificationLink
 			}),
-			text: `Halo ${fullName},\n\nKode verifikasi pendaftaran akun NLC Anda adalah: ${code}\nKode ini berlaku selama 5 menit.`
+			text: `Halo ${fullName},\n\nKode verifikasi pendaftaran akun NLC Anda adalah: ${code}\nAtau buka tautan verifikasi: ${verificationLink}\nKode ini berlaku selama 5 menit.`
 		});
 
 		if (!mailResult.success) {

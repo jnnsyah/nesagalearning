@@ -232,6 +232,7 @@ export function buildVerificationEmail(opts: {
 	fullName: string;
 	code: string;
 	expiresInMinutes: number;
+	verificationLink?: string;
 }): string {
 	return `
 <!DOCTYPE html>
@@ -258,11 +259,29 @@ export function buildVerificationEmail(opts: {
               <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
                 Terima kasih telah mendaftar di Nesaga Learning Community. Masukkan kode verifikasi 6 digit berikut untuk mengaktifkan email akun Anda:
               </p>
-              <div style="text-align:center;margin:28px 0;">
-                <div style="display:inline-block;background:#f0fdf4;border:2px dashed #059669;padding:14px 36px;border-radius:12px;">
-                  <span style="font-family:'Courier New',monospace;font-size:32px;font-weight:900;letter-spacing:10px;color:#047857;">${opts.code}</span>
+              
+              <!-- OTP Box dengan 1-Tap Auto Select & Copy styling -->
+              <div style="text-align:center;margin:28px 0 12px;">
+                <div style="display:inline-block;background:#f0fdf4;border:2px dashed #059669;padding:14px 36px;border-radius:12px;-webkit-user-select:all;-moz-user-select:all;user-select:all;">
+                  <span style="font-family:'Courier New',Consolas,monospace;font-size:34px;font-weight:900;letter-spacing:10px;color:#047857;-webkit-user-select:all;-moz-user-select:all;user-select:all;">${opts.code}</span>
                 </div>
+                <p style="margin:10px 0 0;color:#059669;font-size:12px;font-weight:600;">
+                  💡 Ketuk/tekan lama kode 6 digit di atas untuk menyalin cepat
+                </p>
               </div>
+
+              ${
+								opts.verificationLink
+									? `
+              <div style="text-align:center;margin:24px 0 28px;">
+                <a href="${opts.verificationLink}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:8px;font-size:14px;font-weight:700;">
+                  Lanjutkan Verifikasi Otomatis &rarr;
+                </a>
+              </div>
+              `
+									: ''
+							}
+
               <p style="margin:0;color:#94a3b8;font-size:12.5px;text-align:center;">
                 Kode ini hanya berlaku selama <strong>${opts.expiresInMinutes} menit</strong>. Jangan bagikan kode ini kepada siapa pun.
               </p>

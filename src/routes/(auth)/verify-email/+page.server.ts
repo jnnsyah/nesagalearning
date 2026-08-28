@@ -228,15 +228,17 @@ export const actions: Actions = {
 			})
 			.where(eq(pendingRegistration.id, pending.id));
 
+		const verificationLink = `${url.origin}/verify-email?token=${token}`;
 		const mailResult = await sendMail({
 			to: pending.email,
 			subject: '✉️ Kode Verifikasi Email Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: pending.fullName,
 				code: newCode,
-				expiresInMinutes: 5
+				expiresInMinutes: 5,
+				verificationLink
 			}),
-			text: `Kode verifikasi baru Anda adalah: ${newCode}`
+			text: `Kode verifikasi baru Anda adalah: ${newCode}\nAtau kunjungi: ${verificationLink}`
 		});
 
 		if (!mailResult.success) {
@@ -311,15 +313,17 @@ export const actions: Actions = {
 			})
 			.where(eq(pendingRegistration.id, pending.id));
 
+		const verificationLink = `${url.origin}/verify-email?token=${token}`;
 		const mailResult = await sendMail({
 			to: newEmail,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: pending.fullName,
 				code: newCode,
-				expiresInMinutes: 5
+				expiresInMinutes: 5,
+				verificationLink
 			}),
-			text: `Halo ${pending.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 5 menit.`
+			text: `Halo ${pending.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nAtau kunjungi: ${verificationLink}\nKode ini berlaku selama 5 menit.`
 		});
 
 		if (!mailResult.success) {
