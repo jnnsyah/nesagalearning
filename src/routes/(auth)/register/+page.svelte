@@ -3,11 +3,64 @@
 
 	let { data, form } = $props();
 
+	let username = $state(form?.username ?? '');
 	let password = $state('');
 	let confirmPassword = $state('');
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 	let isSubmitting = $state(false);
+
+	let isCheckingUsername = $state(false);
+	let usernameAvailabilityError = $state<string | undefined>(undefined);
+	let usernameAvailableSuccess = $state<string | undefined>(undefined);
+	let usernameDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	let usernameFormatError = $derived.by(() => {
+		const clean = username.trim().toLowerCase();
+		if (!clean) return undefined;
+		if (clean.length < 3) return 'Username minimal 3 karakter.';
+		if (clean.length > 20) return 'Username maksimal 20 karakter.';
+		if (!/^[a-z0-9_]+$/.test(clean)) return 'Username hanya boleh huruf kecil, angka, dan garis bawah (_).';
+		return undefined;
+	});
+
+	function handleUsernameInput() {
+		const cleanVal = username.trim().toLowerCase();
+
+		if (!cleanVal || usernameFormatError) {
+			usernameAvailabilityError = undefined;
+			usernameAvailableSuccess = undefined;
+			isCheckingUsername = false;
+			if (usernameDebounceTimer) clearTimeout(usernameDebounceTimer);
+			return;
+		}
+
+		isCheckingUsername = true;
+		usernameAvailabilityError = undefined;
+		usernameAvailableSuccess = undefined;
+
+		if (usernameDebounceTimer) clearTimeout(usernameDebounceTimer);
+
+		usernameDebounceTimer = setTimeout(async () => {
+			try {
+				const res = await fetch(`/api/users/check-username?username=${encodeURIComponent(cleanVal)}`);
+				const data = await res.json();
+
+				if (!data.available) {
+					usernameAvailabilityError = data.message || 'Username sudah digunakan oleh akun lain';
+					usernameAvailableSuccess = undefined;
+				} else {
+					usernameAvailabilityError = undefined;
+					usernameAvailableSuccess = 'Username tersedia!';
+				}
+			} catch {
+				usernameAvailabilityError = undefined;
+				usernameAvailableSuccess = undefined;
+			} finally {
+				isCheckingUsername = false;
+			}
+		}, 400);
+	}
 
 	let hasMinLength = $derived(password.length >= 8);
 	let hasNumber = $derived(/\d/.test(password));
@@ -123,11 +176,34 @@
 						name="username"
 						type="text"
 						required
-						value={form?.username ?? ''}
+						bind:value={username}
+						oninput={handleUsernameInput}
 						placeholder="contoh: bima_sakti"
-						class="clean-input"
+						class="clean-input {usernameFormatError || usernameAvailabilityError ? 'input-error' : (usernameAvailableSuccess ? 'input-success' : '')}"
 					/>
 				</div>
+
+				{#if isCheckingUsername}
+					<div class="text-xs text-indigo-600 font-medium flex items-center gap-1.5 mt-1.5">
+						<span class="inline-block size-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+						<span>Memeriksa ketersediaan username...</span>
+					</div>
+				{:else if usernameFormatError}
+					<p class="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1.5">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+						<span>{usernameFormatError}</span>
+					</p>
+				{:else if usernameAvailabilityError}
+					<p class="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1.5">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+						<span>{usernameAvailabilityError}</span>
+					</p>
+				{:else if usernameAvailableSuccess}
+					<p class="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1.5">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+						<span>{usernameAvailableSuccess}</span>
+					</p>
+				{/if}
 			</div>
 
 			<!-- Email -->
@@ -237,7 +313,7 @@
 				</div>
 			</div>
 
-			<button type="submit" class="submit-btn" disabled={isSubmitting || !hasMinLength || !isMatch}>
+			<button type="submit" class="submit-btn" disabled={isSubmitting || !hasMinLength || !isMatch || Boolean(usernameFormatError) || Boolean(usernameAvailabilityError) || isCheckingUsername}>
 				{#if isSubmitting}
 					<span class="spinner"></span>
 					<span>Memproses Pendaftaran...</span>

@@ -1,19 +1,19 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { user as userTable } from '$lib/server/db/schema/auth';
-import { eq } from 'drizzle-orm';
+import { user as userTable, pendingRegistration } from '$lib/server/db/schema';
+import { eq, and, gt } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-	if (!locals.user) {
-		return json({ available: false, message: 'Unauthorized' }, { status: 401 });
-	}
-
 	const username = url.searchParams.get('username')?.trim().toLowerCase() || '';
-	const currentUserId = Number(locals.user.id);
+	const currentUserId = locals.user ? Number(locals.user.id) : null;
 
 	if (!username || username.length < 3) {
 		return json({ available: false, message: 'Username minimal 3 karakter' });
+	}
+
+	if (username.length > 20) {
+		return json({ available: false, message: 'Username maksimal 20 karakter' });
 	}
 
 	if (!/^[a-z0-9_]+$/.test(username)) {
@@ -21,16 +21,25 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	}
 
 	try {
-		const [existing] = await db
+		const [existingUser] = await db
 			.select({ id: userTable.id })
 			.from(userTable)
 			.where(eq(userTable.username, username));
 
-		if (existing && existing.id !== currentUserId) {
+		if (existingUser && existingUser.id !== currentUserId) {
 			return json({ available: false, message: 'Username sudah digunakan oleh akun lain' });
 		}
 
-		return json({ available: true, message: 'Username tersedia' });
+		const [existingPending] = await db
+			.select({ id: pendingRegistration.id })
+			.from(pendingRegistration)
+			.where(and(eq(pendingRegistration.username, username), gt(pendingRegistration.expiresAt, new Date())));
+
+		if (existingPending) {
+			return json({ available: false, message: 'Username sedang dalam proses verifikasi oleh orang lain' });
+		}
+
+		return json({ available: true, message: 'Username tersedia!' });
 	} catch (err: any) {
 		return json({ available: false, message: 'Gagal memeriksa ketersediaan username' }, { status: 500 });
 	}
