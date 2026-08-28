@@ -1424,15 +1424,61 @@
 		font-weight: 800;
 	}
 
+	/* ══════════════════════════════════════════════════════════
+	   PROSE READING & MEDIA CONTAINMENT (ZERO HORIZONTAL BLOWOUT)
+	   ══════════════════════════════════════════════════════════ */
+	.reading-article-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 32px 36px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		margin-bottom: 24px;
+		box-sizing: border-box;
+		max-width: 100%;
+		overflow-x: hidden;
+	}
+
+	.prose-reading {
+		max-width: 100%;
+		box-sizing: border-box;
+		word-break: break-word;
+		overflow-wrap: anywhere;
+	}
+
+	.prose-reading :global(img),
+	.prose-reading :global(video),
+	.prose-reading :global(iframe) {
+		max-width: 100% !important;
+		height: auto !important;
+		border-radius: 8px;
+	}
+
+	.prose-reading :global(table) {
+		display: block;
+		width: 100% !important;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.prose-reading :global(pre) {
+		max-width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
 	@media (max-width: 1023px) {
 		.reader-outer-wrapper {
-			padding: 20px 24px 60px;
+			padding: 20px 20px 60px;
 		}
 	}
 
 	@media (max-width: 640px) {
 		.reader-outer-wrapper {
-			padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px));
+			padding: 12px 12px calc(108px + env(safe-area-inset-bottom, 0px));
+		}
+		.viewer-container {
+			padding: 0 0 24px;
 		}
 		.reader-header-card {
 			padding: 12px 14px;
@@ -1448,13 +1494,41 @@
 			font-size: 1.15rem;
 		}
 		.reading-article-card {
-			padding: 20px 14px;
+			padding: 16px 14px;
+			border-radius: 12px;
+		}
+
+		/* Mobile Attachment Card Stack */
+		.materi-attachment-item-card {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 10px;
+		}
+		.attachment-box-dl {
+			width: 100%;
+			justify-content: center;
+			padding: 8px 12px;
+		}
+
+		/* Mobile Completion Action Box Stack */
+		.completion-box {
+			padding: 14px;
+		}
+		.completion-box-inner {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.btn-mark-completion {
+			width: 100% !important;
+			justify-content: center;
 		}
 
 		/* Mobile Code Block Box Optimization */
 		.prose-reading :global(.tiptap-code-block-wrapper) {
-			margin: 1em -6px;
+			margin: 1em 0;
 			border-radius: 8px;
+			max-width: 100%;
+			overflow-x: auto;
 		}
 		.prose-reading :global(.code-block-header) {
 			padding: 6px 10px;
@@ -1476,17 +1550,14 @@
 		}
 		.prose-reading :global(pre) {
 			padding: 12px 12px !important;
-			font-size: 12px !important;
+			font-size: 11.5px !important;
 			line-height: 1.55 !important;
 			max-height: 360px;
 		}
 
-		.completion-box {
-			padding: 14px 14px;
-		}
-
 		.lesson-nav-footer {
 			flex-direction: column;
+			gap: 10px;
 		}
 		.btn-lesson-nav {
 			max-width: 100%;
