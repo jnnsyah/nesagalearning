@@ -260,22 +260,24 @@ export function buildVerificationEmail(opts: {
                 Terima kasih telah mendaftar di Nesaga Learning Community. Masukkan kode verifikasi 6 digit berikut untuk mengaktifkan email akun Anda:
               </p>
               
-              <!-- OTP Box dengan 1-Tap Auto Select & Copy styling -->
-              <div style="text-align:center;margin:28px 0 12px;">
-                <div style="display:inline-block;background:#f0fdf4;border:2px dashed #059669;padding:14px 36px;border-radius:12px;-webkit-user-select:all;-moz-user-select:all;user-select:all;">
-                  <span style="font-family:'Courier New',Consolas,monospace;font-size:34px;font-weight:900;letter-spacing:10px;color:#047857;-webkit-user-select:all;-moz-user-select:all;user-select:all;">${opts.code}</span>
+              <!-- OTP Box dengan 1-Tap Auto Select & Salin -->
+              <div style="text-align:center;margin:28px 0 16px;">
+                <div style="display:inline-block;background:#f0fdf4;border:2px dashed #059669;padding:16px 36px;border-radius:12px;-webkit-user-select:all;-moz-user-select:all;user-select:all;cursor:pointer;">
+                  <span style="font-family:'Courier New',Consolas,monospace;font-size:36px;font-weight:900;letter-spacing:12px;color:#047857;-webkit-user-select:all;-moz-user-select:all;user-select:all;">${opts.code}</span>
                 </div>
-                <p style="margin:10px 0 0;color:#059669;font-size:12px;font-weight:600;">
-                  💡 Ketuk/tekan lama kode 6 digit di atas untuk menyalin cepat
-                </p>
+                <div style="margin:12px 0 0;">
+                  <span style="display:inline-block;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #bae6fd;">
+                    📋 Salin Kode: Ketuk / Tekan Lama Kode Di Atas
+                  </span>
+                </div>
               </div>
 
               ${
 								opts.verificationLink
 									? `
               <div style="text-align:center;margin:24px 0 28px;">
-                <a href="${opts.verificationLink}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:8px;font-size:14px;font-weight:700;">
-                  Lanjutkan Verifikasi Otomatis &rarr;
+                <a href="${opts.verificationLink}" style="display:inline-block;background:linear-gradient(135deg,#059669,#047857);color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:800;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
+                  🚀 Lanjutkan Verifikasi Otomatis (1-Klik) &rarr;
                 </a>
               </div>
               `

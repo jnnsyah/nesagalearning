@@ -13,8 +13,9 @@ import {
 import { lucia, isMobileUserAgent } from '$lib/server/auth/lucia';
 import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ url, locals, cookies, request }) => {
 	const token = url.searchParams.get('token');
+	const isAuto = url.searchParams.has('auto') || url.searchParams.get('autoverify') === 'true';
 
 	if (locals.user && locals.user.isEmailVerified) {
 		throw redirect(302, '/siswa');
@@ -44,6 +45,57 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 			remainingCooldown: 0,
 			isExpiredOrInvalid: true
 		};
+	}
+
+	// JIKA VERIFIKASI OTOMATIS (Klik tombol "Lanjutkan Verifikasi Otomatis" dari email)
+	if (isAuto) {
+		const existingUserCheck = await db
+			.select()
+			.from(userTable)
+			.where(or(eq(userTable.username, pending.username), eq(userTable.email, pending.email)))
+			.limit(1);
+
+		let newUser = existingUserCheck[0];
+
+		if (!newUser) {
+			// DEFERRED CREATION: Insert akun resmi ke tabel `user`
+			const newUsers = await db
+				.insert(userTable)
+				.values({
+					username: pending.username,
+					email: pending.email,
+					fullName: pending.fullName,
+					passwordHash: pending.passwordHash,
+					role: 'siswa',
+					isEmailVerified: true,
+					isActive: true
+				})
+				.returning();
+
+			newUser = newUsers[0];
+		}
+
+		// Hapus data pendaftaran sementara
+		await db
+			.delete(pendingRegistration)
+			.where(or(eq(pendingRegistration.token, token), eq(pendingRegistration.email, pending.email)));
+
+		// Buat Lucia session untuk login otomatis
+		const userAgent = request.headers.get('user-agent');
+		const isMobile = isMobileUserAgent(userAgent);
+
+		const session = await lucia.createSession(String(newUser.id), {
+			uaIsMobile: isMobile,
+			rememberMe: true
+		});
+
+		const sessionCookie = lucia.createSessionCookie(session.id);
+		cookies.set(sessionCookie.name, sessionCookie.value, {
+			path: '/',
+			...sessionCookie.attributes
+		});
+
+		throw redirect(302, '/siswa?verified=success');
 	}
 
 	const elapsedSeconds = Math.floor((Date.now() - new Date(pending.createdAt).getTime()) / 1000);
@@ -228,7 +280,7 @@ export const actions: Actions = {
 			})
 			.where(eq(pendingRegistration.id, pending.id));
 
-		const verificationLink = `${url.origin}/verify-email?token=${token}`;
+		const verificationLink = `${url.origin}/verify-email?token=${token}&auto=1`;
 		const mailResult = await sendMail({
 			to: pending.email,
 			subject: '✉️ Kode Verifikasi Email Baru — NLC',
@@ -313,7 +365,7 @@ export const actions: Actions = {
 			})
 			.where(eq(pendingRegistration.id, pending.id));
 
-		const verificationLink = `${url.origin}/verify-email?token=${token}`;
+		const verificationLink = `${url.origin}/verify-email?token=${token}&auto=1`;
 		const mailResult = await sendMail({
 			to: newEmail,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',

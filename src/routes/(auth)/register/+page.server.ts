@@ -149,7 +149,7 @@ export const actions: Actions = {
 		});
 
 		// Kirim email kode verifikasi
-		const verificationLink = `${url.origin}/verify-email?token=${token}`;
+		const verificationLink = `${url.origin}/verify-email?token=${token}&auto=1`;
 		const mailResult = await sendMail({
 			to: email,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran — NLC',
