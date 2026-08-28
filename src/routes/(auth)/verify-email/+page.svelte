@@ -127,34 +127,48 @@
 			</div>
 		</div>
 
-		<!-- Form header -->
-		<div class="auth-heading">
-			{#if isEditingEmail}
-				<h1>Ubah Alamat Email</h1>
-				<p>Masukkan alamat email baru Anda. Kode verifikasi 6 digit baru akan dikirimkan ke email ini.</p>
-			{:else}
-				<h1>Masukkan Kode Verifikasi</h1>
-				<p>
-					Kami telah mengirimkan <strong>6 digit kode verifikasi</strong> ke alamat email:
-					<br />
-					<strong class="email-highlight">{form?.updatedEmail || data.email}</strong>
+		{#if data.isExpiredOrInvalid}
+			<div class="alert-form-error flex-col text-center py-6 gap-3">
+				<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto text-red-500">
+					<circle cx="12" cy="12" r="10"/>
+					<line x1="12" y1="8" x2="12" y2="12"/>
+					<line x1="12" y1="16" x2="12.01" y2="16"/>
+				</svg>
+				<h2 class="text-base font-extrabold text-slate-900 m-0">Sesi Verifikasi Telah Kedaluwarsa</h2>
+				<p class="text-xs text-slate-600 m-0 leading-relaxed">
+					Sesi verifikasi pendaftaran ini tidak ditemukan atau telah kedaluwarsa. Silakan mendaftar kembali dari awal.
 				</p>
-				<button
-					type="button"
-					onclick={() => {
-						newEmailInput = form?.updatedEmail || data.email;
-						isEditingEmail = true;
-					}}
-					class="btn-edit-email-trigger"
-				>
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-						<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-					</svg>
-					<span>Salah ketik email? Ubah Email</span>
-				</button>
-			{/if}
-		</div>
+				<a href="/register" class="submit-btn text-decoration-none mt-2">Daftar Ulang Sekarang</a>
+			</div>
+		{:else}
+			<!-- Form header -->
+			<div class="auth-heading">
+				{#if isEditingEmail}
+					<h1>Ubah Alamat Email</h1>
+					<p>Masukkan alamat email baru Anda. Kode verifikasi 6 digit baru akan dikirimkan ke email ini.</p>
+				{:else}
+					<h1>Masukkan Kode Verifikasi</h1>
+					<p>
+						Kami telah mengirimkan <strong>6 digit kode verifikasi</strong> ke alamat email:
+						<br />
+						<strong class="email-highlight">{form?.updatedEmail || data.email}</strong>
+					</p>
+					<button
+						type="button"
+						onclick={() => {
+							newEmailInput = form?.updatedEmail || data.email;
+							isEditingEmail = true;
+						}}
+						class="btn-edit-email-trigger"
+					>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+							<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+						</svg>
+						<span>Salah ketik email? Ubah Email</span>
+					</button>
+				{/if}
+			</div>
 
 		{#if form?.error}
 			<div class="alert-form-error">
@@ -204,7 +218,7 @@
 				}}
 				class="auth-form"
 			>
-				<input type="hidden" name="userId" value={data.userId} />
+				<input type="hidden" name="token" value={data.token} />
 
 				{#if form?.emailError}
 					<div class="alert-form-error">
@@ -269,7 +283,7 @@
 				}}
 				class="auth-form"
 			>
-				<input type="hidden" name="userId" value={data.userId} />
+				<input type="hidden" name="token" value={data.token} />
 				<input type="hidden" name="code" value={fullCode} />
 
 				<!-- 6 Digit OTP Inputs -->
@@ -318,7 +332,7 @@
 						};
 					}}
 				>
-					<input type="hidden" name="userId" value={data.userId} />
+					<input type="hidden" name="token" value={data.token} />
 					<button type="submit" class="btn-resend" disabled={isResending || cooldownSeconds > 0}>
 						{#if isResending}
 							<span class="spinner-sm"></span>
@@ -332,6 +346,7 @@
 				</form>
 			</div>
 		{/if}
+	{/if}
 	</div>
 </div>
 

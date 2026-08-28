@@ -97,11 +97,6 @@ export const actions: Actions = {
 		} catch (err: any) {
 			if (err?.status === 302 || err?.status === 303 || err?.location) throw err;
 
-			if (err?.message === 'EMAIL_NOT_VERIFIED') {
-				const emailQuery = err.email ? `&email=${encodeURIComponent(err.email)}` : '';
-				throw redirect(303, `/verify-email?userId=${err.userId}${emailQuery}`);
-			}
-
 			const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
 
 			// Known safe messages to expose to user

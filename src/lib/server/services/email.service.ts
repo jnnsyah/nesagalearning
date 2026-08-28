@@ -208,6 +208,11 @@ export function generateVerificationCode(): string {
 	return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/** Generate 64-character random hex token untuk verifikasi URL */
+export function generateSecureToken(): string {
+	return crypto.randomBytes(32).toString('hex');
+}
+
 /** Hash kode verifikasi 6 angka menggunakan SHA-256 */
 export function hashVerificationCode(code: string): string {
 	return crypto.createHash('sha256').update(code).digest('hex');

@@ -1,0 +1,1 @@
+ALTER TABLE "email_verification_code" ADD COLUMN "resend_count" integer DEFAULT 0 NOT NULL;

@@ -4,13 +4,15 @@ import * as schema from './schema';
 
 let databaseUrl = process.env.DATABASE_URL;
 
-try {
-	const { env } = await import('$env/dynamic/private');
-	if (env?.DATABASE_URL) {
-		databaseUrl = env.DATABASE_URL;
+if (!databaseUrl) {
+	try {
+		const { env } = await import('$env/dynamic/private');
+		if (env?.DATABASE_URL) {
+			databaseUrl = env.DATABASE_URL;
+		}
+	} catch {
+		// Running outside SvelteKit SSR environment (e.g. tsx node:test)
 	}
-} catch {
-	// Running outside SvelteKit SSR environment (e.g. tsx node:test)
 }
 
 if (!databaseUrl) {

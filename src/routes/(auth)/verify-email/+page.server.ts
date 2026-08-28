@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { user as userTable, emailVerificationCode } from '$lib/server/db/schema';
-import { eq, and, gt, lte, desc, sql } from 'drizzle-orm';
+import { user as userTable, pendingRegistration } from '$lib/server/db/schema';
+import { eq, and, gt, lte, or, desc, sql } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import {
 	sendMail,
@@ -14,131 +14,141 @@ import { lucia, isMobileUserAgent } from '$lib/server/auth/lucia';
 import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
-	const userId = url.searchParams.get('userId');
-	const email = url.searchParams.get('email');
+	const token = url.searchParams.get('token');
 
 	if (locals.user && locals.user.isEmailVerified) {
 		throw redirect(302, '/siswa');
 	}
 
-	if (!userId && !locals.user) {
-		throw redirect(302, '/login');
+	if (!token) {
+		throw redirect(302, '/register');
 	}
 
-	const targetUserId = userId ? parseInt(userId) : Number(locals.user?.id ?? 0);
+	// Bersihkan draf pendaftaran yang sudah expired
+	await db.delete(pendingRegistration).where(sql.raw('expires_at <= NOW()'));
 
-	const users = await db.select().from(userTable).where(eq(userTable.id, targetUserId)).limit(1);
-	const targetUser = users[0];
-
-	if (!targetUser) {
-		throw redirect(302, '/login');
-	}
-
-	if (targetUser.isEmailVerified) {
-		throw redirect(302, '/siswa');
-	}
-
-	// Clean up expired OTPs for this user
-	await db
-		.delete(emailVerificationCode)
-		.where(and(eq(emailVerificationCode.userId, targetUserId), lte(emailVerificationCode.expiresAt, new Date())));
-
-	// Calculate remaining cooldown for active/recent OTP
-	const activeCodes = await db
+	// Cari sesi pendaftaran sementara berdasarkan token acak
+	const pendingList = await db
 		.select()
-		.from(emailVerificationCode)
-		.where(eq(emailVerificationCode.userId, targetUserId))
-		.orderBy(desc(emailVerificationCode.createdAt))
+		.from(pendingRegistration)
+		.where(and(eq(pendingRegistration.token, token), gt(pendingRegistration.expiresAt, new Date())))
 		.limit(1);
 
-	let remainingCooldown = 0;
-	if (activeCodes.length > 0) {
-		const codeRecord = activeCodes[0];
-		const elapsedSeconds = Math.floor((Date.now() - new Date(codeRecord.createdAt).getTime()) / 1000);
-		const requiredCooldown = getCooldownForResend(codeRecord.resendCount ?? 0);
-		remainingCooldown = Math.max(0, requiredCooldown - elapsedSeconds);
+	const pending = pendingList[0];
+
+	if (!pending) {
+		return {
+			token: '',
+			email: '',
+			fullName: '',
+			remainingCooldown: 0,
+			isExpiredOrInvalid: true
+		};
 	}
 
+	const elapsedSeconds = Math.floor((Date.now() - new Date(pending.createdAt).getTime()) / 1000);
+	const requiredCooldown = getCooldownForResend(pending.resendCount ?? 0);
+	const remainingCooldown = Math.max(0, requiredCooldown - elapsedSeconds);
+
 	return {
-		userId: targetUser.id,
-		email: targetUser.email || email || '',
-		fullName: targetUser.fullName,
-		remainingCooldown
+		token: pending.token,
+		email: pending.email,
+		fullName: pending.fullName,
+		remainingCooldown,
+		isExpiredOrInvalid: false
 	};
 };
 
 export const actions: Actions = {
 	verify: async ({ request, cookies }) => {
 		const formData = await request.formData();
-		const userId = parseInt(formData.get('userId') as string);
+		const token = (formData.get('token') as string)?.trim();
 		const code = (formData.get('code') as string)?.trim();
 
-		if (!userId || !code || code.length !== 6) {
+		if (!token || !code || code.length !== 6) {
 			return fail(400, { error: 'Kode verifikasi 6 digit wajib diisi lengkap.' });
 		}
 
-		// Hash code untuk mencocokkan dengan hash di DB
+		// Hash input code untuk dicocokkan
 		const hashCode = hashVerificationCode(code);
 
-		// Clean up expired codes for user
-		await db
-			.delete(emailVerificationCode)
-			.where(and(eq(emailVerificationCode.userId, userId), lte(emailVerificationCode.expiresAt, new Date())));
+		// Bersihkan expired
+		await db.delete(pendingRegistration).where(sql.raw('expires_at <= NOW()'));
 
-		// Cari kode verifikasi aktif di DB
-		const codes = await db
+		// Cari pending registration
+		const pendingList = await db
 			.select()
-			.from(emailVerificationCode)
-			.where(and(eq(emailVerificationCode.userId, userId), gt(emailVerificationCode.expiresAt, new Date())))
-			.orderBy(desc(emailVerificationCode.createdAt))
+			.from(pendingRegistration)
+			.where(and(eq(pendingRegistration.token, token), gt(pendingRegistration.expiresAt, new Date())))
 			.limit(1);
 
-		const activeCodeRecord = codes[0];
+		const pending = pendingList[0];
 
-		if (!activeCodeRecord) {
-			return fail(400, { error: 'Kode verifikasi tidak ditemukan atau telah kadaluarsa. Silakan minta kode baru.' });
+		if (!pending) {
+			return fail(400, { error: 'Sesi verifikasi tidak ditemukan atau telah kadaluarsa. Silakan mendaftar kembali.' });
 		}
 
-		// Cek max 5x percobaan
-		if (activeCodeRecord.attempts >= 5) {
-			await db.delete(emailVerificationCode).where(eq(emailVerificationCode.id, activeCodeRecord.id));
-			return fail(400, { error: 'Kode verifikasi telah hangus karena salah mencoba 5 kali. Silakan minta kode baru.' });
+		// Cek max 5x salah tebak
+		if (pending.attempts >= 5) {
+			await db.delete(pendingRegistration).where(eq(pendingRegistration.id, pending.id));
+			return fail(400, { error: 'Kode verifikasi telah hangus karena salah mencoba 5 kali. Silakan mendaftar kembali.' });
 		}
 
 		// Bandingkan hash OTP
-		if (activeCodeRecord.code !== hashCode) {
-			const newAttempts = activeCodeRecord.attempts + 1;
+		if (pending.code !== hashCode) {
+			const newAttempts = pending.attempts + 1;
 			if (newAttempts >= 5) {
-				await db.delete(emailVerificationCode).where(eq(emailVerificationCode.id, activeCodeRecord.id));
-				return fail(400, { error: 'Kode verifikasi telah hangus karena salah mencoba 5 kali. Silakan minta kode baru.' });
+				await db.delete(pendingRegistration).where(eq(pendingRegistration.id, pending.id));
+				return fail(400, { error: 'Kode verifikasi telah hangus karena salah mencoba 5 kali. Silakan mendaftar kembali.' });
 			}
 
 			await db
-				.update(emailVerificationCode)
-				.set({ attempts: sql`${emailVerificationCode.attempts} + 1` })
-				.where(eq(emailVerificationCode.id, activeCodeRecord.id));
+				.update(pendingRegistration)
+				.set({ attempts: sql`${pendingRegistration.attempts} + 1` })
+				.where(eq(pendingRegistration.id, pending.id));
 
 			const sisa = 5 - newAttempts;
 			return fail(400, { error: `Kode verifikasi 6 digit salah. Sisa percobaan: ${sisa}x lagi.` });
 		}
 
-		// Update status email verified
-		await db
-			.update(userTable)
-			.set({
+		// KODE BENAR! Cek ketersediaan username/email di tabel `user` resmi
+		const existingUserCheck = await db
+			.select()
+			.from(userTable)
+			.where(or(eq(userTable.username, pending.username), eq(userTable.email, pending.email)))
+			.limit(1);
+
+		if (existingUserCheck.length > 0) {
+			await db.delete(pendingRegistration).where(eq(pendingRegistration.id, pending.id));
+			return fail(400, { error: 'Username atau Email tersebut telah terdaftar pada akun lain. Silakan mendaftar kembali.' });
+		}
+
+		// DEFERRED CREATION: Baru insert akun resmi ke tabel `user` sekarang!
+		const newUsers = await db
+			.insert(userTable)
+			.values({
+				username: pending.username,
+				email: pending.email,
+				fullName: pending.fullName,
+				passwordHash: pending.passwordHash,
+				role: 'siswa',
 				isEmailVerified: true,
-				updatedAt: new Date()
+				isActive: true
 			})
-			.where(eq(userTable.id, userId));
+			.returning();
 
-		// Hapus kode verifikasi bekas
-		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
+		const newUser = newUsers[0];
 
-		// Login otomatis (buat Lucia session)
+		// Hapus data pendaftaran sementara
+		await db
+			.delete(pendingRegistration)
+			.where(or(eq(pendingRegistration.token, token), eq(pendingRegistration.email, pending.email)));
+
+		// Buat Lucia session untuk login otomatis
 		const userAgent = request.headers.get('user-agent');
 		const isMobile = isMobileUserAgent(userAgent);
 
-		const session = await lucia.createSession(String(userId), {
+		const session = await lucia.createSession(String(newUser.id), {
 			uaIsMobile: isMobile,
 			rememberMe: true
 		});
@@ -162,73 +172,67 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const userId = parseInt(formData.get('userId') as string);
+		const token = (formData.get('token') as string)?.trim();
 
-		if (!userId) {
-			return fail(400, { resendError: 'ID Pengguna tidak ditemukan.' });
+		if (!token) {
+			return fail(400, { resendError: 'Token sesi verifikasi tidak ditemukan.' });
 		}
 
-		const users = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
-		const targetUser = users[0];
-
-		if (!targetUser || !targetUser.email) {
-			return fail(400, { resendError: 'Email pengguna tidak ditemukan.' });
-		}
-
-		// Query riwayat OTP terakhir untuk menghitung progressive cooldown
-		const existingCodes = await db
+		const pendingList = await db
 			.select()
-			.from(emailVerificationCode)
-			.where(eq(emailVerificationCode.userId, userId))
-			.orderBy(desc(emailVerificationCode.createdAt))
+			.from(pendingRegistration)
+			.where(eq(pendingRegistration.token, token))
 			.limit(1);
 
-		let currentResendCount = 0;
-		if (existingCodes.length > 0) {
-			const lastCode = existingCodes[0];
-			currentResendCount = lastCode.resendCount ?? 0;
-			const lastCreatedAt = new Date(lastCode.createdAt).getTime();
-			const elapsedSeconds = Math.floor((Date.now() - lastCreatedAt) / 1000);
-			const requiredCooldown = getCooldownForResend(currentResendCount);
+		const pending = pendingList[0];
 
-			if (elapsedSeconds < requiredCooldown) {
-				const remaining = requiredCooldown - elapsedSeconds;
-				return fail(400, {
-					error: `Harap tunggu ${remaining} detik lagi sebelum meminta kode verifikasi baru.`,
-					remainingCooldown: remaining
-				});
-			}
+		if (!pending) {
+			return fail(400, { resendError: 'Sesi verifikasi tidak ditemukan atau telah kadaluarsa. Silakan mendaftar kembali.' });
+		}
+
+		// Progressive Cooldown Check
+		const currentResendCount = pending.resendCount ?? 0;
+		const lastCreatedAt = new Date(pending.createdAt).getTime();
+		const elapsedSeconds = Math.floor((Date.now() - lastCreatedAt) / 1000);
+		const requiredCooldown = getCooldownForResend(currentResendCount);
+
+		if (elapsedSeconds < requiredCooldown) {
+			const remaining = requiredCooldown - elapsedSeconds;
+			return fail(400, {
+				error: `Harap tunggu ${remaining} detik lagi sebelum meminta kode verifikasi baru.`,
+				remainingCooldown: remaining
+			});
 		}
 
 		const nextResendCount = currentResendCount + 1;
 		if (nextResendCount > 5) {
 			return fail(429, {
-				error: 'Anda telah mencapai batas maksimum permintaan ulang OTP (5x). Silakan coba lagi nanti atau hubungi administrator.'
+				error: 'Anda telah mencapai batas maksimum permintaan ulang OTP (5x). Silakan mendaftar kembali.'
 			});
 		}
-
-		// Hapus kode lama
-		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
 
 		// Buat kode OTP baru
 		const newCode = generateVerificationCode();
 		const hashedNewCode = hashVerificationCode(newCode);
 		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
-		await db.insert(emailVerificationCode).values({
-			userId,
-			email: targetUser.email,
-			code: hashedNewCode,
-			attempts: 0,
-			resendCount: nextResendCount,
-			expiresAt
-		});
+		// Update record pending registration yang ada
+		await db
+			.update(pendingRegistration)
+			.set({
+				code: hashedNewCode,
+				attempts: 0,
+				resendCount: nextResendCount,
+				expiresAt,
+				createdAt: new Date()
+			})
+			.where(eq(pendingRegistration.id, pending.id));
 
 		const mailResult = await sendMail({
-			to: targetUser.email,
+			to: pending.email,
 			subject: '✉️ Kode Verifikasi Email Baru — NLC',
 			html: buildVerificationEmail({
-				fullName: targetUser.fullName,
+				fullName: pending.fullName,
 				code: newCode,
 				expiresInMinutes: 5
 			}),
@@ -246,16 +250,16 @@ export const actions: Actions = {
 		return {
 			resendSuccess: true,
 			remainingCooldown: nextCooldown,
-			message: `Kode verifikasi baru telah dikirim ke ${targetUser.email}`
+			message: `Kode verifikasi baru telah dikirim ke ${pending.email}`
 		};
 	},
 
 	updateEmail: async ({ request }) => {
 		const formData = await request.formData();
-		const userId = parseInt(formData.get('userId') as string);
+		const token = (formData.get('token') as string)?.trim();
 		const newEmail = (formData.get('newEmail') as string)?.trim().toLowerCase();
 
-		if (!userId || !newEmail) {
+		if (!token || !newEmail) {
 			return fail(400, { emailError: 'Alamat email baru wajib diisi.' });
 		}
 
@@ -263,13 +267,19 @@ export const actions: Actions = {
 			return fail(400, { emailError: 'Format alamat email tidak valid.' });
 		}
 
-		const users = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
-		const targetUser = users[0];
-		if (!targetUser) {
-			return fail(400, { emailError: 'Pengguna tidak ditemukan. Silakan mendaftar kembali.' });
+		const pendingList = await db
+			.select()
+			.from(pendingRegistration)
+			.where(eq(pendingRegistration.token, token))
+			.limit(1);
+
+		const pending = pendingList[0];
+
+		if (!pending) {
+			return fail(400, { emailError: 'Sesi pendaftaran tidak ditemukan. Silakan mendaftar kembali.' });
 		}
 
-		if (targetUser.email === newEmail) {
+		if (pending.email === newEmail) {
 			return fail(400, { emailError: 'Alamat email baru sama dengan alamat email saat ini.' });
 		}
 
@@ -283,42 +293,33 @@ export const actions: Actions = {
 			return fail(400, { emailError: 'Alamat email tersebut sudah terdaftar pada akun lain.' });
 		}
 
-		// Update email pengguna di database
-		await db
-			.update(userTable)
-			.set({
-				email: newEmail,
-				updatedAt: new Date()
-			})
-			.where(eq(userTable.id, userId));
-
-		// Hapus kode OTP lama
-		await db.delete(emailVerificationCode).where(eq(emailVerificationCode.userId, userId));
-
 		// Buat kode OTP baru
 		const newCode = generateVerificationCode();
 		const hashedNewCode = hashVerificationCode(newCode);
-		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-		await db.insert(emailVerificationCode).values({
-			userId,
-			email: newEmail,
-			code: hashedNewCode,
-			attempts: 0,
-			resendCount: 0,
-			expiresAt
-		});
+		// Update email & OTP pada pendingRegistration
+		await db
+			.update(pendingRegistration)
+			.set({
+				email: newEmail,
+				code: hashedNewCode,
+				attempts: 0,
+				resendCount: 0,
+				expiresAt,
+				createdAt: new Date()
+			})
+			.where(eq(pendingRegistration.id, pending.id));
 
-		// Kirim email verifikasi ke email baru
 		const mailResult = await sendMail({
 			to: newEmail,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',
 			html: buildVerificationEmail({
-				fullName: targetUser.fullName,
+				fullName: pending.fullName,
 				code: newCode,
 				expiresInMinutes: 5
 			}),
-			text: `Halo ${targetUser.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 5 menit.`
+			text: `Halo ${pending.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 5 menit.`
 		});
 
 		if (!mailResult.success) {

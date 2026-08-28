@@ -98,12 +98,6 @@ export const AuthGatekeeper = {
 
 		if (!user) return;
 
-		// Mencegah siswa yang belum verifikasi email mengakses dashboard/portal
-		if (user.role === 'siswa' && user.isEmailVerified === false) {
-			const emailQuery = user.email ? `&email=${encodeURIComponent(user.email)}` : '';
-			throw redirect(302, `/verify-email?userId=${user.id}${emailQuery}`);
-		}
-
 		// Check if user is accessing a protected role route outside their assigned role
 		const userAllowedPrefix = rolePrefixes[user.role];
 
@@ -139,14 +133,6 @@ export const AuthGatekeeper = {
 		const validPassword = await bcrypt.compare(passwordInput, user.passwordHash);
 		if (!validPassword) {
 			throw new Error('Username atau password salah');
-		}
-
-		// Blokir login jika email akun belum terverifikasi OTP
-		if (user.role === 'siswa' && !user.isEmailVerified) {
-			const err: any = new Error('EMAIL_NOT_VERIFIED');
-			err.userId = user.id;
-			err.email = user.email;
-			throw err;
 		}
 
 		const isMobile = isMobileUserAgent(userAgent);

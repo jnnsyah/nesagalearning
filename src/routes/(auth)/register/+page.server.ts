@@ -1,12 +1,18 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { user as userTable, emailVerificationCode } from '$lib/server/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { user as userTable, pendingRegistration } from '$lib/server/db/schema';
+import { eq, or, sql } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import bcrypt from 'bcryptjs';
-import { sendMail, generateVerificationCode, hashVerificationCode, buildVerificationEmail, getActiveEmailConfig } from '$lib/server/services/email.service';
+import {
+	sendMail,
+	generateVerificationCode,
+	generateSecureToken,
+	hashVerificationCode,
+	buildVerificationEmail,
+	getActiveEmailConfig
+} from '$lib/server/services/email.service';
 import { isGoogleOAuthEnabled } from '$lib/server/auth/oauth';
-
 import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -87,7 +93,10 @@ export const actions: Actions = {
 			});
 		}
 
-		// Cek ketersediaan username & email
+		// Bersihkan draf pendaftaran yang sudah expired
+		await db.delete(pendingRegistration).where(sql.raw('expires_at <= NOW()'));
+
+		// Cek apakah username atau email sudah terdaftar resmi di tabel `user`
 		const existingUsers = await db
 			.select()
 			.from(userTable)
@@ -98,49 +107,44 @@ export const actions: Actions = {
 			const found = existingUsers[0];
 			if (found.username === username) {
 				return fail(400, {
-					error: 'Username tersebut sudah terdaftar. Silakan pilih username lain.',
+					error: 'Username tersebut sudah terdaftar. Silakan pilih username lain atau login.',
 					fullName,
 					username,
 					email
 				});
 			}
 			return fail(400, {
-				error: 'Alamat email tersebut sudah terdaftar. Silakan login atau pilih email lain.',
+				error: 'Alamat email tersebut sudah terdaftar. Silakan login atau gunakan email lain.',
 				fullName,
 				username,
 				email
 			});
 		}
 
+		// Hapus draf pending lama jika email atau username ini pernah dicoba mendaftar sebelumnya (Auto-Overwrite)
+		await db
+			.delete(pendingRegistration)
+			.where(or(eq(pendingRegistration.email, email), eq(pendingRegistration.username, username)));
+
 		// Hash password
 		const passwordHash = await bcrypt.hash(password, 10);
 
-		// Insert user baru dengan status belum verifikasi email
-		const newUsers = await db
-			.insert(userTable)
-			.values({
-				username,
-				email,
-				fullName,
-				passwordHash,
-				role: 'siswa',
-				isEmailVerified: false,
-				isActive: true
-			})
-			.returning();
-
-		const newUser = newUsers[0];
-
-		// Buat kode OTP 6-digit
+		// Buat token acak aman (64 hex) & kode OTP 6-digit
+		const token = generateSecureToken();
 		const code = generateVerificationCode();
 		const hashCode = hashVerificationCode(code);
 		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
-		await db.insert(emailVerificationCode).values({
-			userId: newUser.id,
+		// Simpan ke tabel staging sementara (Deferred User Creation)
+		await db.insert(pendingRegistration).values({
+			token,
+			fullName,
+			username,
 			email,
+			passwordHash,
 			code: hashCode,
 			resendCount: 0,
+			attempts: 0,
 			expiresAt
 		});
 
@@ -158,14 +162,14 @@ export const actions: Actions = {
 
 		if (!mailResult.success) {
 			return fail(500, {
-				error: `Akun berhasil dibuat, namun gagal mengirim email verifikasi: ${mailResult.error}. Silakan coba kirim ulang dari halaman verifikasi.`,
+				error: `Gagal mengirim email verifikasi: ${mailResult.error}. Silakan periksa kembali email Anda dan coba lagi.`,
 				fullName,
 				username,
 				email
 			});
 		}
 
-		// Redirect ke halaman verifikasi email OTP
-		throw redirect(303, `/verify-email?email=${encodeURIComponent(email)}&userId=${newUser.id}`);
+		// Redirect ke halaman verifikasi email dengan token acak yang aman
+		throw redirect(303, `/verify-email?token=${token}`);
 	}
 };

@@ -93,6 +93,29 @@ export const emailVerificationCode = pgTable(
 	(table) => [index('idx_email_verification_code_user').on(table.userId)]
 );
 
+// Tabel staging pendaftaran sementara (Deferred User Creation)
+export const pendingRegistration = pgTable(
+	'pending_registration',
+	{
+		id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+		token: text('token').notNull().unique(), // Secure 64-char hex token untuk URL /verify-email
+		fullName: text('full_name').notNull(),
+		username: text('username').notNull(),
+		email: text('email').notNull(),
+		passwordHash: text('password_hash').notNull(),
+		code: text('code').notNull(), // SHA-256 hashed 6-digit numeric OTP
+		attempts: integer('attempts').notNull().default(0),
+		resendCount: integer('resend_count').notNull().default(0),
+		expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		index('idx_pending_registration_token').on(table.token),
+		index('idx_pending_registration_email').on(table.email),
+		index('idx_pending_registration_username').on(table.username)
+	]
+);
+
 // Tabel log outbox email terkirim
 export const emailOutbox = pgTable(
 	'email_outbox',
