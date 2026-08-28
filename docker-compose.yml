@@ -42,3 +42,4 @@ services:
 
 volumes:
   pgdata:
+    name: web-nesagalearn_pgdata
