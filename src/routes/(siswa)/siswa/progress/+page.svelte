@@ -394,12 +394,13 @@
 					</div>
 
 					<div class="phases-grid">
-						{#each phaseProgressList as phaseItem}
+						{#each phaseProgressList as phaseItem, phaseIndex}
 							<div class="phase-card">
 								<div class="phase-card-header">
-									<div>
+									<div class="phase-title-wrap">
+										<span class="badge badge-grade">Fase {phaseIndex + 1}</span>
 										<h3 class="phase-title">{phaseItem.phaseTitle}</h3>
-										<span class="phase-meta">{phaseItem.completedSubPhases}/{phaseItem.totalSubPhases} Sub-fase Selesai</span>
+										<span class="phase-meta">• {phaseItem.completedSubPhases}/{phaseItem.totalSubPhases} Sub-fase Selesai</span>
 									</div>
 									<span class="phase-badge">{phaseItem.progressPercentage}%</span>
 								</div>
@@ -423,17 +424,21 @@
 												<div class="subphase-info">
 													<div class="subphase-name">{subItem.subPhaseTitle}</div>
 													<div class="subphase-meta-row">
-														<span class="meta-pill">
-															<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-															<span>{subItem.completedSessions}/{subItem.totalSessions} Sesi</span>
-														</span>
-														{#if subItem.totalTasks > 0}
-															<span class="meta-pill meta-pill-task">
-																<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-																<span>{subItem.approvedTasks}/{subItem.totalTasks} Tugas Approved</span>
-															</span>
+														{#if subItem.totalSessions === 0 && subItem.totalTasks === 0}
+															<span class="meta-pill meta-pill-unstarted">Belum Dimulai</span>
 														{:else}
-															<span class="meta-pill type-sub">Tanpa Tugas</span>
+															{#if subItem.totalSessions > 0}
+																<span class="meta-pill">
+																	<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+																	<span>{subItem.completedSessions}/{subItem.totalSessions} Sesi</span>
+																</span>
+															{/if}
+															{#if subItem.totalTasks > 0}
+																<span class="meta-pill meta-pill-task">
+																	<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+																	<span>{subItem.approvedTasks}/{subItem.totalTasks} Tugas Approved</span>
+																</span>
+															{/if}
 														{/if}
 													</div>
 												</div>
@@ -1257,6 +1262,14 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.phase-title-wrap {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
 
 	.phase-title {
@@ -1280,6 +1293,7 @@
 		background: var(--primary-light, #eff6ff);
 		padding: 2px 10px;
 		border-radius: 9999px;
+		flex-shrink: 0;
 	}
 
 	.phase-bar-bg {
@@ -1363,6 +1377,12 @@
 		color: #166534;
 		background: #f0fdf4;
 		border-color: #bbf7d0;
+	}
+
+	.meta-pill-unstarted {
+		color: var(--text-muted, #64748b);
+		background: var(--bg-cell, #f1f5f9);
+		border-color: var(--border-hard, #cbd5e1);
 	}
 
 	/* Summary Badges Row */

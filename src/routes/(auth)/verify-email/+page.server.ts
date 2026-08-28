@@ -1,10 +1,17 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { user as userTable, emailVerificationCode } from '$lib/server/db/schema';
-import { eq, and, gt, desc, sql } from 'drizzle-orm';
+import { eq, and, gt, lte, desc, sql } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
-import { sendMail, generateVerificationCode, buildVerificationEmail } from '$lib/server/services/email.service';
+import {
+	sendMail,
+	generateVerificationCode,
+	hashVerificationCode,
+	getCooldownForResend,
+	buildVerificationEmail
+} from '$lib/server/services/email.service';
 import { lucia, isMobileUserAgent } from '$lib/server/auth/lucia';
+import { authRateLimiter } from '$lib/server/utils/rate-limiter';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
 	const userId = url.searchParams.get('userId');
@@ -31,10 +38,32 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		throw redirect(302, '/siswa');
 	}
 
+	// Clean up expired OTPs for this user
+	await db
+		.delete(emailVerificationCode)
+		.where(and(eq(emailVerificationCode.userId, targetUserId), lte(emailVerificationCode.expiresAt, new Date())));
+
+	// Calculate remaining cooldown for active/recent OTP
+	const activeCodes = await db
+		.select()
+		.from(emailVerificationCode)
+		.where(eq(emailVerificationCode.userId, targetUserId))
+		.orderBy(desc(emailVerificationCode.createdAt))
+		.limit(1);
+
+	let remainingCooldown = 0;
+	if (activeCodes.length > 0) {
+		const codeRecord = activeCodes[0];
+		const elapsedSeconds = Math.floor((Date.now() - new Date(codeRecord.createdAt).getTime()) / 1000);
+		const requiredCooldown = getCooldownForResend(codeRecord.resendCount ?? 0);
+		remainingCooldown = Math.max(0, requiredCooldown - elapsedSeconds);
+	}
+
 	return {
 		userId: targetUser.id,
 		email: targetUser.email || email || '',
-		fullName: targetUser.fullName
+		fullName: targetUser.fullName,
+		remainingCooldown
 	};
 };
 
@@ -48,7 +77,15 @@ export const actions: Actions = {
 			return fail(400, { error: 'Kode verifikasi 6 digit wajib diisi lengkap.' });
 		}
 
-		// Cari kode verifikasi terbaru di DB
+		// Hash code untuk mencocokkan dengan hash di DB
+		const hashCode = hashVerificationCode(code);
+
+		// Clean up expired codes for user
+		await db
+			.delete(emailVerificationCode)
+			.where(and(eq(emailVerificationCode.userId, userId), lte(emailVerificationCode.expiresAt, new Date())));
+
+		// Cari kode verifikasi aktif di DB
 		const codes = await db
 			.select()
 			.from(emailVerificationCode)
@@ -68,8 +105,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Kode verifikasi telah hangus karena salah mencoba 5 kali. Silakan minta kode baru.' });
 		}
 
-		// Jika kode salah
-		if (activeCodeRecord.code !== code) {
+		// Bandingkan hash OTP
+		if (activeCodeRecord.code !== hashCode) {
 			const newAttempts = activeCodeRecord.attempts + 1;
 			if (newAttempts >= 5) {
 				await db.delete(emailVerificationCode).where(eq(emailVerificationCode.id, activeCodeRecord.id));
@@ -115,7 +152,15 @@ export const actions: Actions = {
 		throw redirect(303, '/siswa?verified=success');
 	},
 
-	resend: async ({ request }) => {
+	resend: async ({ request, getClientAddress }) => {
+		const ipAddress = getClientAddress() || request.headers.get('x-forwarded-for') || '127.0.0.1';
+		const rateLimit = authRateLimiter.check(`resend_otp_${ipAddress}`, 5, 60000);
+		if (!rateLimit.allowed) {
+			return fail(429, {
+				error: `Terlalu banyak permintaan OTP dari perangkat ini. Silakan tunggu ${Math.ceil(rateLimit.resetInMs / 1000)} detik.`
+			});
+		}
+
 		const formData = await request.formData();
 		const userId = parseInt(formData.get('userId') as string);
 
@@ -130,7 +175,7 @@ export const actions: Actions = {
 			return fail(400, { resendError: 'Email pengguna tidak ditemukan.' });
 		}
 
-		// Rate Limiting: Cooldown 60 detik sebelum resend
+		// Query riwayat OTP terakhir untuk menghitung progressive cooldown
 		const existingCodes = await db
 			.select()
 			.from(emailVerificationCode)
@@ -138,13 +183,28 @@ export const actions: Actions = {
 			.orderBy(desc(emailVerificationCode.createdAt))
 			.limit(1);
 
+		let currentResendCount = 0;
 		if (existingCodes.length > 0) {
-			const lastCreatedAt = new Date(existingCodes[0].createdAt).getTime();
+			const lastCode = existingCodes[0];
+			currentResendCount = lastCode.resendCount ?? 0;
+			const lastCreatedAt = new Date(lastCode.createdAt).getTime();
 			const elapsedSeconds = Math.floor((Date.now() - lastCreatedAt) / 1000);
-			if (elapsedSeconds < 60) {
-				const remaining = 60 - elapsedSeconds;
-				return fail(400, { error: `Harap tunggu ${remaining} detik lagi sebelum meminta kode verifikasi baru.` });
+			const requiredCooldown = getCooldownForResend(currentResendCount);
+
+			if (elapsedSeconds < requiredCooldown) {
+				const remaining = requiredCooldown - elapsedSeconds;
+				return fail(400, {
+					error: `Harap tunggu ${remaining} detik lagi sebelum meminta kode verifikasi baru.`,
+					remainingCooldown: remaining
+				});
 			}
+		}
+
+		const nextResendCount = currentResendCount + 1;
+		if (nextResendCount > 5) {
+			return fail(429, {
+				error: 'Anda telah mencapai batas maksimum permintaan ulang OTP (5x). Silakan coba lagi nanti atau hubungi administrator.'
+			});
 		}
 
 		// Hapus kode lama
@@ -152,29 +212,40 @@ export const actions: Actions = {
 
 		// Buat kode OTP baru
 		const newCode = generateVerificationCode();
-		const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+		const hashedNewCode = hashVerificationCode(newCode);
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
 		await db.insert(emailVerificationCode).values({
 			userId,
 			email: targetUser.email,
-			code: newCode,
+			code: hashedNewCode,
 			attempts: 0,
+			resendCount: nextResendCount,
 			expiresAt
 		});
 
-		await sendMail({
+		const mailResult = await sendMail({
 			to: targetUser.email,
 			subject: '✉️ Kode Verifikasi Email Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: targetUser.fullName,
 				code: newCode,
-				expiresInMinutes: 15
+				expiresInMinutes: 5
 			}),
 			text: `Kode verifikasi baru Anda adalah: ${newCode}`
 		});
 
+		if (!mailResult.success) {
+			return fail(500, {
+				error: `Gagal mengirim email OTP: ${mailResult.error}. Silakan periksa jaringan/layanan email Anda.`
+			});
+		}
+
+		const nextCooldown = getCooldownForResend(nextResendCount);
+
 		return {
 			resendSuccess: true,
+			remainingCooldown: nextCooldown,
 			message: `Kode verifikasi baru telah dikirim ke ${targetUser.email}`
 		};
 	},
@@ -226,31 +297,40 @@ export const actions: Actions = {
 
 		// Buat kode OTP baru
 		const newCode = generateVerificationCode();
-		const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 menit
+		const hashedNewCode = hashVerificationCode(newCode);
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
 		await db.insert(emailVerificationCode).values({
 			userId,
 			email: newEmail,
-			code: newCode,
+			code: hashedNewCode,
 			attempts: 0,
+			resendCount: 0,
 			expiresAt
 		});
 
-		// Kirim email verifikasi ke email yang baru diperbarui
-		await sendMail({
+		// Kirim email verifikasi ke email baru
+		const mailResult = await sendMail({
 			to: newEmail,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran Baru — NLC',
 			html: buildVerificationEmail({
 				fullName: targetUser.fullName,
 				code: newCode,
-				expiresInMinutes: 15
+				expiresInMinutes: 5
 			}),
-			text: `Halo ${targetUser.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 15 menit.`
+			text: `Halo ${targetUser.fullName},\n\nAlamat email pendaftaran Anda telah diperbarui. Kode verifikasi akun NLC Anda adalah: ${newCode}\nKode ini berlaku selama 5 menit.`
 		});
+
+		if (!mailResult.success) {
+			return fail(500, {
+				emailError: `Email berhasil diubah ke ${newEmail}, namun gagal mengirimkan OTP: ${mailResult.error}`
+			});
+		}
 
 		return {
 			emailSuccess: true,
 			updatedEmail: newEmail,
+			remainingCooldown: 30,
 			message: `Alamat email berhasil diperbarui ke ${newEmail}! Kode OTP baru telah dikirimkan.`
 		};
 	}

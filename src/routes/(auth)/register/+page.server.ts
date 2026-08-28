@@ -4,7 +4,7 @@ import { user as userTable, emailVerificationCode } from '$lib/server/db/schema'
 import { eq, or } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import bcrypt from 'bcryptjs';
-import { sendMail, generateVerificationCode, buildVerificationEmail, getActiveEmailConfig } from '$lib/server/services/email.service';
+import { sendMail, generateVerificationCode, hashVerificationCode, buildVerificationEmail, getActiveEmailConfig } from '$lib/server/services/email.service';
 import { isGoogleOAuthEnabled } from '$lib/server/auth/oauth';
 
 import { authRateLimiter } from '$lib/server/utils/rate-limiter';
@@ -133,26 +133,37 @@ export const actions: Actions = {
 
 		// Buat kode OTP 6-digit
 		const code = generateVerificationCode();
-		const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 menit
+		const hashCode = hashVerificationCode(code);
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
 		await db.insert(emailVerificationCode).values({
 			userId: newUser.id,
 			email,
-			code,
+			code: hashCode,
+			resendCount: 0,
 			expiresAt
 		});
 
 		// Kirim email kode verifikasi
-		await sendMail({
+		const mailResult = await sendMail({
 			to: email,
 			subject: '✉️ Kode Verifikasi Email Pendaftaran — NLC',
 			html: buildVerificationEmail({
 				fullName,
 				code,
-				expiresInMinutes: 15
+				expiresInMinutes: 5
 			}),
-			text: `Halo ${fullName},\n\nKode verifikasi pendaftaran akun NLC Anda adalah: ${code}\nKode ini berlaku selama 15 menit.`
+			text: `Halo ${fullName},\n\nKode verifikasi pendaftaran akun NLC Anda adalah: ${code}\nKode ini berlaku selama 5 menit.`
 		});
+
+		if (!mailResult.success) {
+			return fail(500, {
+				error: `Akun berhasil dibuat, namun gagal mengirim email verifikasi: ${mailResult.error}. Silakan coba kirim ulang dari halaman verifikasi.`,
+				fullName,
+				username,
+				email
+			});
+		}
 
 		// Redirect ke halaman verifikasi email OTP
 		throw redirect(303, `/verify-email?email=${encodeURIComponent(email)}&userId=${newUser.id}`);

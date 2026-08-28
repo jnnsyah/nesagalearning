@@ -84,8 +84,9 @@ export const emailVerificationCode = pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
 		email: text('email').notNull(),
-		code: text('code').notNull(), // 6-digit numeric string (e.g. "849201")
+		code: text('code').notNull(), // SHA-256 hashed 6-digit numeric string
 		attempts: integer('attempts').notNull().default(0),
+		resendCount: integer('resend_count').notNull().default(0),
 		expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import crypto from 'node:crypto';
 import { db } from '$lib/server/db';
 import { systemEmailConfig, emailOutbox } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -205,6 +206,20 @@ export function buildResetPasswordEmail(opts: {
 /** Generate kode verifikasi 6 angka (OTP) */
 export function generateVerificationCode(): string {
 	return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/** Hash kode verifikasi 6 angka menggunakan SHA-256 */
+export function hashVerificationCode(code: string): string {
+	return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+/** Hitung durasi cooldown (dalam detik) berdasarkan jumlah resend (Progressive Backoff) */
+export function getCooldownForResend(resendCount: number): number {
+	if (resendCount <= 0) return 30; // 30 detik (resend pertama setelah daftar)
+	if (resendCount === 1) return 60; // 1 menit
+	if (resendCount === 2) return 120; // 2 menit
+	if (resendCount === 3) return 300; // 5 menit
+	return 900; // 15 menit (untuk percobaan 5+)
 }
 
 /** Template HTML email kode verifikasi (OTP) */

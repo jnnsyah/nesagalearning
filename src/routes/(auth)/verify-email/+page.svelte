@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
 
@@ -12,10 +13,11 @@
 	let isUpdatingEmail = $state(false);
 	let isEditingEmail = $state(false);
 	let newEmailInput = $state('');
-	let cooldownSeconds = $state(0);
+	let cooldownSeconds = $state(data.remainingCooldown ?? 0);
 	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
-	function startCooldown(seconds = 60) {
+	function startCooldown(seconds: number) {
+		if (seconds <= 0) return;
 		cooldownSeconds = seconds;
 		if (timerInterval) clearInterval(timerInterval);
 		timerInterval = setInterval(() => {
@@ -29,8 +31,18 @@
 	}
 
 	$effect(() => {
-		if (form?.resendSuccess) {
-			startCooldown(60);
+		const initialCd = data.remainingCooldown ?? 0;
+		if (initialCd > 0) {
+			untrack(() => startCooldown(initialCd));
+		}
+	});
+
+	$effect(() => {
+		if (form?.remainingCooldown !== undefined && form.remainingCooldown > 0) {
+			const cd = form.remainingCooldown;
+			untrack(() => startCooldown(cd));
+		} else if (form?.resendSuccess) {
+			untrack(() => startCooldown(30));
 		}
 	});
 
