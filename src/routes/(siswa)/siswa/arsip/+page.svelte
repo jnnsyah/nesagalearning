@@ -127,7 +127,6 @@
 				</div>
 			</div>
 		{/if}
-	</div>
 
 	{#if !data.archiveData}
 		<div class="empty-card">
