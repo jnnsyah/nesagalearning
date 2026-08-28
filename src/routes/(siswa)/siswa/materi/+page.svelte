@@ -157,7 +157,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.selectedTrack ? `${data.selectedTrack.title} — Modul Pembelajaran` : 'Pilihan Track Pembelajaran — Siswa Hub'}</title>
+	<title>{data.selectedTrack ? `${data.selectedTrack.title} — Modul Pembelajaran` : 'Track Pembelajaran — Siswa Hub'}</title>
 </svelte:head>
 
 <div class="content-area">
@@ -167,7 +167,7 @@
 		     ══════════════════════════════════════════════════════════ -->
 		<!-- Page Header Card (Single Source of Truth Blueprint) -->
 		<PageHeaderCard
-			title="Pilihan Track Pembelajaran"
+			title="Track Pembelajaran"
 			breadcrumbs={[
 				{ label: 'Beranda', href: '/siswa' },
 				{ label: 'Track Pembelajaran' }
@@ -285,7 +285,7 @@
 		<PageHeaderCard
 			title={data.selectedTrack?.title ?? 'Modul Pembelajaran'}
 			breadcrumbs={[
-				{ label: 'Pilihan Track', href: '/siswa/materi' },
+				{ label: 'Track Pembelajaran', href: '/siswa/materi' },
 				{ label: data.selectedTrack?.title ?? 'Detail Track' }
 			]}
 		>
