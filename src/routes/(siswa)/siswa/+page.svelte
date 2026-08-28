@@ -115,45 +115,75 @@
 		</section>
 	{/if}
 
-	<!-- Key Metrics Stats Grid -->
+	<!-- Key Metrics Stats Grid (4 Cards 2x2 Grid on Mobile) -->
 	<section class="stats-grid mt-5">
-		<div class="stat-card stat-card--indigo">
-			<div class="stat-card__icon-wrap" style="background: #e0e7ff;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
-					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-				</svg>
+		<!-- Card 1: Total Poin -->
+		<div class="stat-card">
+			<div class="stat-card-top">
+				<div class="stat-icon icon-streak">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+					</svg>
+				</div>
+				<span class="stat-pill">{totalPoints} Pts</span>
 			</div>
-			<div class="stat-card__body">
-				<div class="stat-card__label">Total Poin</div>
-				<div class="stat-card__value">{totalPoints}</div>
-				<div class="stat-card__meta truncate">{tahunAjaranName} &middot; {kelasName}</div>
-			</div>
-		</div>
-
-		<div class="stat-card stat-card--amber">
-			<div class="stat-card__icon-wrap" style="background: #fef3c7;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
-					<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-				</svg>
-			</div>
-			<div class="stat-card__body">
-				<div class="stat-card__label">Streak Pertemuan</div>
-				<div class="stat-card__value">{currentStreak}</div>
-				<div class="stat-card__meta">Berturut-turut</div>
+			<div class="stat-info">
+				<div class="stat-value">{totalPoints}</div>
+				<div class="stat-label">Total Poin</div>
+				<div class="stat-subtext truncate">{tahunAjaranName} &middot; {kelasName}</div>
 			</div>
 		</div>
 
-		<div class="stat-card stat-card--green">
-			<div class="stat-card__icon-wrap" style="background: #dcfce7;">
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
-					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-					<polyline points="22 4 12 14.01 9 11.01" />
-				</svg>
+		<!-- Card 2: Streak Pertemuan -->
+		<div class="stat-card">
+			<div class="stat-card-top">
+				<div class="stat-icon icon-pending">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+						<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+					</svg>
+				</div>
+				<span class="stat-pill">{currentStreak} Sesi</span>
 			</div>
-			<div class="stat-card__body">
-				<div class="stat-card__label">Kehadiran Presensi</div>
-				<div class="stat-card__value">{attendanceCount}</div>
-				<div class="stat-card__meta">Total Sesi Diikuti</div>
+			<div class="stat-info">
+				<div class="stat-value">{currentStreak} <span class="text-xs font-normal text-slate-500">Hari</span></div>
+				<div class="stat-label">Streak Pertemuan</div>
+				<div class="stat-subtext">Berturut-turut</div>
+			</div>
+		</div>
+
+		<!-- Card 3: Kehadiran Presensi -->
+		<div class="stat-card">
+			<div class="stat-card-top">
+				<div class="stat-icon icon-approved">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+						<polyline points="22 4 12 14.01 9 11.01" />
+					</svg>
+				</div>
+				<span class="stat-pill">{attendanceCount} Hadir</span>
+			</div>
+			<div class="stat-info">
+				<div class="stat-value">{attendanceCount}</div>
+				<div class="stat-label">Kehadiran Presensi</div>
+				<div class="stat-subtext">Total Sesi Diikuti</div>
+			</div>
+		</div>
+
+		<!-- Card 4: Tugas Pending -->
+		<div class="stat-card">
+			<div class="stat-card-top">
+				<div class="stat-icon icon-revisi">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+					</svg>
+				</div>
+				<span class="stat-pill">{pendingTasksList.length} Pending</span>
+			</div>
+			<div class="stat-info">
+				<div class="stat-value">{pendingTasksList.length}</div>
+				<div class="stat-label">Tugas Pending</div>
+				<div class="stat-subtext">Perlu Dikerjakan</div>
 			</div>
 		</div>
 	</section>
@@ -492,66 +522,103 @@
 	}
 
 	/* Stats grid */
+	/* Stats grid (4 Cards 2x2 Grid on Mobile) */
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 20px;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 16px;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	@media (max-width: 1023px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+		}
 	}
 
 	.stat-card {
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-lg, 12px);
-		padding: 20px;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 14px 16px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 		display: flex;
-		align-items: center;
-		gap: 16px;
-		box-shadow: var(--shadow-sm);
+		flex-direction: column;
+		gap: 10px;
+		min-width: 0;
+		box-sizing: border-box;
 		transition: transform 200ms ease, box-shadow 200ms ease;
 	}
 
 	.stat-card:hover {
 		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 	}
 
-	.stat-card__icon-wrap {
-		width: 48px;
-		height: 48px;
-		border-radius: 12px;
+	.stat-card-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.stat-icon {
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
 	}
+	.icon-total { background: #e0f2fe; color: #0284c7; }
+	.icon-approved { background: #dcfce7; color: #16a34a; }
+	.icon-pending { background: #fef3c7; color: #d97706; }
+	.icon-revisi { background: #ffe4e6; color: #be123c; }
+	.icon-streak { background: #e0e7ff; color: #6366f1; }
 
-	.stat-card__body {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.stat-card__label {
-		font-size: 12px;
+	.stat-pill {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
 		font-weight: 700;
-		color: var(--text-secondary);
-		margin-bottom: 4px;
+		color: var(--text-muted, #64748b);
+		background: var(--bg-cell, #f1f5f9);
+		padding: 2px 8px;
+		border-radius: 9999px;
 	}
 
-	.stat-card__value {
-		font-family: var(--font-macro);
-		font-size: 2rem;
+	.stat-info {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.stat-value {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 1.45rem;
 		font-weight: 800;
-		color: var(--text-primary);
-		line-height: 1;
-		letter-spacing: -0.02em;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.2;
 	}
 
-	.stat-card__meta {
-		font-family: var(--font-mono);
-		font-size: 10.5px;
-		font-weight: 500;
-		color: var(--text-muted);
-		margin-top: 4px;
+	.stat-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--text-muted, #64748b);
+		margin-top: 2px;
+	}
+
+	.stat-subtext {
+		font-size: 11px;
+		color: var(--text-sub, #94a3b8);
+		margin-top: 2px;
 	}
 
 	/* Two-col grid */
@@ -818,26 +885,8 @@
 		}
 
 		.stats-grid {
-			grid-template-columns: 1fr;
-			gap: 12px;
-		}
-
-		.stat-card {
-			padding: 16px;
-			gap: 14px;
-		}
-
-		.stat-card__icon-wrap {
-			width: 44px;
-			height: 44px;
-		}
-
-		.stat-card__value {
-			font-size: 1.8rem;
-		}
-
-		.stat-card__label {
-			font-size: 12px;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
 		}
 
 		.task-card-item {
