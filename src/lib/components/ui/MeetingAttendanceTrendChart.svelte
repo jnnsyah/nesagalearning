@@ -176,23 +176,23 @@
 
 	<!-- Custom Date Picker Fields (if custom range selected) -->
 	{#if selectedRange === 'custom'}
-		<div class="custom-date-card mb-5 p-4 sm:p-5 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-end gap-4 flex-wrap">
-			<div class="w-full sm:w-56">
+		<div class="custom-date-card mb-6 p-3.5 sm:p-4 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-end gap-3.5 flex-wrap sm:flex-nowrap">
+			<div class="w-full sm:w-48 shrink-0">
 				<DatePicker
 					id="trend-start-date"
 					name="startDate"
 					label="Tanggal Mulai"
 					bind:value={customStartDate}
-					placeholder="Pilih tanggal mulai..."
+					placeholder="Tanggal mulai..."
 				/>
 			</div>
-			<div class="w-full sm:w-56">
+			<div class="w-full sm:w-48 shrink-0">
 				<DatePicker
 					id="trend-end-date"
 					name="endDate"
 					label="Tanggal Selesai"
 					bind:value={customEndDate}
-					placeholder="Pilih tanggal selesai..."
+					placeholder="Tanggal selesai..."
 				/>
 			</div>
 
@@ -200,7 +200,7 @@
 				<button
 					type="button"
 					onclick={() => { customStartDate = ''; customEndDate = ''; }}
-					class="h-[38px] px-4 rounded-xl text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/90 inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 mb-[1px]"
+					class="h-[38px] px-3.5 rounded-xl text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 mb-[1px]"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<line x1="18" y1="6" x2="6" y2="18" />
