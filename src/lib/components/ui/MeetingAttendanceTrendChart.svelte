@@ -176,66 +176,39 @@
 
 	<!-- Custom Date Picker Fields (if custom range selected) -->
 	{#if selectedRange === 'custom'}
-		<div class="custom-date-card mb-5 p-4 sm:p-5 bg-slate-50/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all">
-			<div class="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-slate-200/80">
-				<div class="flex items-center gap-2">
-					<div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-							<line x1="16" y1="2" x2="16" y2="6" />
-							<line x1="8" y1="2" x2="8" y2="6" />
-							<line x1="3" y1="10" x2="21" y2="10" />
-						</svg>
-					</div>
-					<div>
-						<h4 class="font-extrabold text-slate-800 text-xs sm:text-sm">Filter Rentang Tanggal Custom</h4>
-						<p class="text-[11px] text-slate-500">Tentukan batas awal dan akhir tanggal sesi pertemuan yang ingin ditampilkan.</p>
-					</div>
-				</div>
-
-				{#if customStartDate || customEndDate}
-					<button
-						type="button"
-						onclick={() => { customStartDate = ''; customEndDate = ''; }}
-						class="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-					>
-						Reset Filter Tanggal
-					</button>
-				{/if}
+		<div class="custom-date-card mb-5 p-4 sm:p-5 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-end gap-4 flex-wrap">
+			<div class="w-full sm:w-56">
+				<DatePicker
+					id="trend-start-date"
+					name="startDate"
+					label="Tanggal Mulai"
+					bind:value={customStartDate}
+					placeholder="Pilih tanggal mulai..."
+				/>
+			</div>
+			<div class="w-full sm:w-56">
+				<DatePicker
+					id="trend-end-date"
+					name="endDate"
+					label="Tanggal Selesai"
+					bind:value={customEndDate}
+					placeholder="Pilih tanggal selesai..."
+				/>
 			</div>
 
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-				<div class="w-full">
-					<DatePicker
-						id="trend-start-date"
-						name="startDate"
-						label="Tanggal Mulai"
-						bind:value={customStartDate}
-						placeholder="Pilih tanggal mulai..."
-					/>
-				</div>
-				<div class="w-full">
-					<DatePicker
-						id="trend-end-date"
-						name="endDate"
-						label="Tanggal Selesai"
-						bind:value={customEndDate}
-						placeholder="Pilih tanggal selesai..."
-					/>
-				</div>
-				<div class="text-xs text-slate-500 pb-1">
-					{#if customStartDate && customEndDate}
-						<span class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 rounded-xl">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-							<span>Filter Aktif: {formatIndoDate(customStartDate)} – {formatIndoDate(customEndDate)}</span>
-						</span>
-					{:else}
-						<span class="text-slate-400 font-medium italic">Pilih kedua tanggal untuk menyaring grafik.</span>
-					{/if}
-				</div>
-			</div>
+			{#if customStartDate || customEndDate}
+				<button
+					type="button"
+					onclick={() => { customStartDate = ''; customEndDate = ''; }}
+					class="h-[38px] px-4 rounded-xl text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/90 inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 mb-[1px]"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="18" y1="6" x2="6" y2="18" />
+						<line x1="6" y1="6" x2="18" y2="18" />
+					</svg>
+					<span>Reset Filter</span>
+				</button>
+			{/if}
 		</div>
 	{/if}
 
