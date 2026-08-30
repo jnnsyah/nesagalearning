@@ -26,6 +26,17 @@
 	let pathname = $derived($page.url.pathname);
 	let role = $derived(NavigationRegistry.deriveRole(currentUser?.role?.toLowerCase(), pathname));
 
+	// Focus mode / Reading mode detection (Materi Reader for Siswa & Modul Builder for Mentor)
+	let isFocusMode = $derived.by(() => {
+		if (pathname.startsWith('/siswa/materi/') && pathname !== '/siswa/materi') {
+			return true;
+		}
+		if (/\/mentor\/kurikulum\/[^\/]+\/materi\/[^\/]+/.test(pathname)) {
+			return true;
+		}
+		return false;
+	});
+
 	// Sidebar collapsed state
 	let sidebarCollapsed = $state(false);
 
@@ -473,145 +484,149 @@
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<div class="nlc-app-shell">
+<div class="nlc-app-shell" class:focus-mode-active={isFocusMode}>
 	<!-- ══════════════════════════════════════════════════════════
 	     DESKTOP & TABLET UNIFIED SIDEBAR (COLLAPSIBLE)
 	     ══════════════════════════════════════════════════════════ -->
-	<aside class="app-sidebar hide-mobile" class:app-sidebar--collapsed={sidebarCollapsed} aria-label="Navigasi Utama">
-		<!-- Brand Header -->
-		<div class="sidebar__brand">
-			{#if !sidebarCollapsed}
-				<a href="/{role}" class="brand-link">
-					<span class="brand-logo">NLC</span>
-					<span class="brand-sub">{currentRoleMeta.label}</span>
-				</a>
-			{:else}
-				<a href="/{role}" class="brand-link-collapsed" title="Nesaga Learning Community">
-					<span class="brand-logo-sm">N</span>
-				</a>
-			{/if}
-		</div>
+	{#if !isFocusMode}
+		<aside class="app-sidebar hide-mobile" class:app-sidebar--collapsed={sidebarCollapsed} aria-label="Navigasi Utama">
+			<!-- Brand Header -->
+			<div class="sidebar__brand">
+				{#if !sidebarCollapsed}
+					<a href="/{role}" class="brand-link">
+						<span class="brand-logo">NLC</span>
+						<span class="brand-sub">{currentRoleMeta.label}</span>
+					</a>
+				{:else}
+					<a href="/{role}" class="brand-link-collapsed" title="Nesaga Learning Community">
+						<span class="brand-logo-sm">N</span>
+					</a>
+				{/if}
+			</div>
 
-		<!-- Nav Items -->
-		<nav class="sidebar__nav">
-			{#each desktopNavItems() as item}
-				{@const active = isItemActive(item)}
-				<a
-					href={item.href}
-					class="nav-item"
-					class:nav-item--active={active}
-					title={sidebarCollapsed ? item.label : undefined}
-					aria-current={active ? 'page' : undefined}
-				>
-					<span class="nav-item__icon">{@html item.icon}</span>
-					{#if !sidebarCollapsed}
-						<span class="nav-item__label">{item.label}</span>
-					{/if}
-				</a>
-			{/each}
-		</nav>
+			<!-- Nav Items -->
+			<nav class="sidebar__nav">
+				{#each desktopNavItems() as item}
+					{@const active = isItemActive(item)}
+					<a
+						href={item.href}
+						class="nav-item"
+						class:nav-item--active={active}
+						title={sidebarCollapsed ? item.label : undefined}
+						aria-current={active ? 'page' : undefined}
+					>
+						<span class="nav-item__icon">{@html item.icon}</span>
+						{#if !sidebarCollapsed}
+							<span class="nav-item__label">{item.label}</span>
+						{/if}
+					</a>
+				{/each}
+			</nav>
 
-		<!-- User Section Pinned to Bottom -->
-		<div class="sidebar__user">
-			<div class="sidebar-user-divider"></div>
-			{#if sidebarCollapsed}
-				<a href="/{role}/profile" class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
-						{#if currentUser?.avatarUrl}
-							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
-						{:else}
-						{currentUser?.fullName?.charAt(0) ?? 'U'}
-					{/if}
-				</a>
-			{:else}
-				<a href="/{role}/profile" class="user-profile-box user-profile-box--link" title="Lihat Profil Saya">
-					<div class="user-avatar">
-						{#if currentUser?.avatarUrl}
-							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
-						{:else}
+			<!-- User Section Pinned to Bottom -->
+			<div class="sidebar__user">
+				<div class="sidebar-user-divider"></div>
+				{#if sidebarCollapsed}
+					<a href="/{role}/profile" class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
+							{#if currentUser?.avatarUrl}
+								<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
+							{:else}
 							{currentUser?.fullName?.charAt(0) ?? 'U'}
 						{/if}
-					</div>
-					<div class="user-profile-info">
-						<div class="user-name">{currentUser?.fullName ?? 'Pengguna'}</div>
-						<div class="user-badge" style="color: {currentRoleMeta.color};">{currentRoleMeta.badge}</div>
-					</div>
-				</a>
-				<button
-					type="button"
-					onclick={() => (showLogoutModal = true)}
-					class="logout-btn"
-					aria-label="Keluar dari akun"
-				>
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-					<span>Keluar</span>
-				</button>
-			{/if}
-		</div>
+					</a>
+				{:else}
+					<a href="/{role}/profile" class="user-profile-box user-profile-box--link" title="Lihat Profil Saya">
+						<div class="user-avatar">
+							{#if currentUser?.avatarUrl}
+								<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
+							{:else}
+								{currentUser?.fullName?.charAt(0) ?? 'U'}
+							{/if}
+						</div>
+						<div class="user-profile-info">
+							<div class="user-name">{currentUser?.fullName ?? 'Pengguna'}</div>
+							<div class="user-badge" style="color: {currentRoleMeta.color};">{currentRoleMeta.badge}</div>
+						</div>
+					</a>
+					<button
+						type="button"
+						onclick={() => (showLogoutModal = true)}
+						class="logout-btn"
+						aria-label="Keluar dari akun"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+							<polyline points="16 17 21 12 16 7"/>
+							<line x1="21" y1="12" x2="9" y2="12"/>
+						</svg>
+						<span>Keluar</span>
+					</button>
+				{/if}
+			</div>
 
-		<!-- Collapse Toggle Button -->
-		<button
-			type="button"
-			class="sidebar-collapse-toggle"
-			onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
-			aria-label={sidebarCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-			title="Toggle sidebar [ ]"
-		>
-			{#if sidebarCollapsed}
-				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="9 18 15 12 9 6"/>
-				</svg>
-			{:else}
-				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="15 18 9 12 15 6"/>
-				</svg>
-			{/if}
-		</button>
-	</aside>
+			<!-- Collapse Toggle Button -->
+			<button
+				type="button"
+				class="sidebar-collapse-toggle"
+				onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
+				aria-label={sidebarCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+				title="Toggle sidebar [ ]"
+			>
+				{#if sidebarCollapsed}
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="9 18 15 12 9 6"/>
+					</svg>
+				{:else}
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="15 18 9 12 15 6"/>
+					</svg>
+				{/if}
+			</button>
+		</aside>
+	{/if}
 
 	<!-- ══════════════════════════════════════════════════════════
 	     MAIN CONTENT AREA
 	     ══════════════════════════════════════════════════════════ -->
 	<div class="app-main-area">
-		<!-- Topbar Header (Mobile & Desktop) -->
-		<header class="app-topbar">
-			<div class="topbar-left">
-				<a href="/{role}" class="topbar-brand">
-					<span class="brand-logo" style="font-size: 1.25rem;">NLC</span>
-					<span class="topbar-role-tag">{currentRoleMeta.label}</span>
-				</a>
-			</div>
+		{#if !isFocusMode}
+			<!-- Topbar Header (Mobile & Desktop) -->
+			<header class="app-topbar">
+				<div class="topbar-left">
+					<a href="/{role}" class="topbar-brand">
+						<span class="brand-logo" style="font-size: 1.25rem;">NLC</span>
+						<span class="topbar-role-tag">{currentRoleMeta.label}</span>
+					</a>
+				</div>
 
-			<div class="topbar-right">
-				<a href="/{role}/profile" class="user-pill" title="Lihat Profil Saya">
-					<div class="user-pill-avatar">
-						{#if currentUser?.avatarUrl}
-							<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
-						{:else}
-							{currentUser?.fullName?.charAt(0) ?? 'U'}
-						{/if}
-					</div>
-					<span class="user-pill-name">{currentUser?.fullName ?? 'User'}</span>
-				</a>
-				<NotificationBell />
-				<button
-					type="button"
-					onclick={() => (showLogoutModal = true)}
-					class="btn-logout-icon"
-					aria-label="Keluar dari akun"
-					title="Keluar dari Akun"
-				>
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-				</button>
-			</div>
-		</header>
+				<div class="topbar-right">
+					<a href="/{role}/profile" class="user-pill" title="Lihat Profil Saya">
+						<div class="user-pill-avatar">
+							{#if currentUser?.avatarUrl}
+								<img src={currentUser.avatarUrl} alt={currentUser?.fullName} class="user-avatar-img" referrerpolicy="no-referrer" />
+							{:else}
+								{currentUser?.fullName?.charAt(0) ?? 'U'}
+							{/if}
+						</div>
+						<span class="user-pill-name">{currentUser?.fullName ?? 'User'}</span>
+					</a>
+					<NotificationBell />
+					<button
+						type="button"
+						onclick={() => (showLogoutModal = true)}
+						class="btn-logout-icon"
+						aria-label="Keluar dari akun"
+						title="Keluar dari Akun"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+							<polyline points="16 17 21 12 16 7"/>
+							<line x1="21" y1="12" x2="9" y2="12"/>
+						</svg>
+					</button>
+				</div>
+			</header>
+		{/if}
 
 		<!-- Page Content Injection -->
 		<main class="app-content pb-safe">
@@ -622,26 +637,28 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     MOBILE BOTTOM NAVIGATION BAR
 	     ══════════════════════════════════════════════════════════ -->
-	<nav class="app-bottom-nav hide-desktop" aria-label="Navigasi Bawah Seluler">
-		{#each mobileNavItems() as item}
-			{@const active = isItemActive(item)}
-			<a
-				href={item.href}
-				class="bottom-nav-item {item.isCenter ? 'bottom-nav-item--center' : ''}"
-				class:bottom-nav-item--active={active}
-				aria-current={active ? 'page' : undefined}
-				onclick={(e) => {
-					if (item.isMore) {
-						e.preventDefault();
-						showMoreDrawer = true;
-					}
-				}}
-			>
-				<span class="bottom-nav-icon">{@html item.icon}</span>
-				<span class="bottom-nav-label">{item.label}</span>
-			</a>
-		{/each}
-	</nav>
+	{#if !isFocusMode}
+		<nav class="app-bottom-nav hide-desktop" aria-label="Navigasi Bawah Seluler">
+			{#each mobileNavItems() as item}
+				{@const active = isItemActive(item)}
+				<a
+					href={item.href}
+					class="bottom-nav-item {item.isCenter ? 'bottom-nav-item--center' : ''}"
+					class:bottom-nav-item--active={active}
+					aria-current={active ? 'page' : undefined}
+					onclick={(e) => {
+						if (item.isMore) {
+							e.preventDefault();
+							showMoreDrawer = true;
+						}
+					}}
+				>
+					<span class="bottom-nav-icon">{@html item.icon}</span>
+					<span class="bottom-nav-label">{item.label}</span>
+				</a>
+			{/each}
+		</nav>
+	{/if}
 
 	<!-- ══════════════════════════════════════════════════════════
 	     MOBILE BOTTOM SHEET DRAWER (MENU LAINNYA)

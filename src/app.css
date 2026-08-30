@@ -981,18 +981,26 @@ th, td {
 body.focus-mode-active .app-topbar,
 body.focus-mode-active .app-sidebar,
 body.focus-mode-active .app-bottom-nav,
-body.focus-mode-active .mobile-bottom-nav {
+body.focus-mode-active .mobile-bottom-nav,
+.nlc-app-shell.focus-mode-active .app-topbar,
+.nlc-app-shell.focus-mode-active .app-sidebar,
+.nlc-app-shell.focus-mode-active .app-bottom-nav,
+.nlc-app-shell.focus-mode-active .mobile-bottom-nav {
 	display: none !important;
 }
 
-body.focus-mode-active .app-main {
+body.focus-mode-active .app-main,
+.nlc-app-shell.focus-mode-active .app-main,
+.nlc-app-shell.focus-mode-active .app-main-area,
+.nlc-app-shell.focus-mode-active .app-content {
 	padding-top: 0 !important;
 	padding-left: 0 !important;
 	padding-right: 0 !important;
 	padding-bottom: 0 !important;
 }
 
-body.focus-mode-active .mobile-toc-fab {
+body.focus-mode-active .mobile-toc-fab,
+.nlc-app-shell.focus-mode-active .mobile-toc-fab {
 	bottom: 20px !important;
 }
 
