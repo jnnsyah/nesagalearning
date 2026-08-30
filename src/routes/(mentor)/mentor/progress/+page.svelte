@@ -2,6 +2,10 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
+	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 	import { untrack } from 'svelte';
 
@@ -24,6 +28,10 @@
 	let searchInput = $state('');
 	let selectedAngkatanFilter = $state('all');
 
+	// Pagination State
+	let currentPage = $state(1);
+	const pageSize = 10;
+
 	// Collapsible phase state for Tier 2
 	let expandedPhases = $state<Record<number, boolean>>({});
 
@@ -36,6 +44,41 @@
 				nextState[p.id] = prev[p.id] !== undefined ? prev[p.id] : true;
 			}
 			expandedPhases = nextState;
+		}
+	});
+
+	// Derived Roster Search & Filter & Pagination
+	const rosterList = $derived(data.rosterData?.roster ?? []);
+
+	const filteredRoster = $derived.by(() => {
+		let list = [...rosterList];
+		if (searchInput.trim()) {
+			const q = searchInput.toLowerCase().trim();
+			list = list.filter(
+				(s) =>
+					s.fullName.toLowerCase().includes(q) ||
+					(s.nisn && s.nisn.toLowerCase().includes(q)) ||
+					(s.username && s.username.toLowerCase().includes(q))
+			);
+		}
+		if (selectedAngkatanFilter !== 'all') {
+			list = list.filter(
+				(s) => String(s.angkatan || s.targetAngkatan) === selectedAngkatanFilter
+			);
+		}
+		return list;
+	});
+
+	const paginatedRoster = $derived.by(() => {
+		const start = (currentPage - 1) * pageSize;
+		return filteredRoster.slice(start, start + pageSize);
+	});
+
+	$effect(() => {
+		if (searchInput !== undefined || selectedAngkatanFilter !== undefined) {
+			untrack(() => {
+				currentPage = 1;
+			});
 		}
 	});
 
@@ -105,62 +148,66 @@
 
 <div class="page-container">
 	{#if data.monitoringData.viewMode === 'grid'}
-		<!-- ══════════════════════════════════════════════════════════
-		     TIER 1: GRID VIEW (Katalog & Ringkasan Track Angkatan)
-		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-row">
-				<div class="header-main-content flex-1">
-					<div class="hero-title-group flex items-center gap-2 flex-wrap mb-1">
-						<h1 class="hero-title">Progress Track Pembelajaran Angkatan</h1>
-						{#if data.monitoringData.selectedTahunAjaran}
-							<span class="badge badge-primary h-[26px] leading-none text-[11px] px-2.5 inline-flex items-center">
-								TA {data.monitoringData.selectedTahunAjaran.name}
-							</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Pilih alur track pembelajaran di bawah ini untuk memantau detail pencapaian modul, materi, kuis, dan progres siswa per angkatan.
-					</p>
-				</div>
+		<!-- TIER 1: GRID VIEW (Katalog & Ringkasan Track Angkatan) -->
+		<div class="panel header-card mb-6 p-5">
+			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
+				<nav class="breadcrumb" aria-label="Breadcrumb">
+					<a href="/mentor" class="bc-link">Dashboard</a>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<span class="bc-current">Progress Pembelajaran</span>
+				</nav>
 
-				<div class="flex items-center gap-3 flex-wrap">
-					<div class="w-48">
-						<label for="grid-ta-select" class="filter-label">Periode</label>
-						<CustomSelect
-							id="grid-ta-select"
-							name="tahunAjaranId"
-							options={taSelectOptions}
-							value={selectedTaId}
-							onchange={handleTaChange}
-							searchable={false}
-						/>
+				{#if data.monitoringData.selectedTahunAjaran}
+					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+						TA {data.monitoringData.selectedTahunAjaran.name}
+					</span>
+				{/if}
+			</div>
+
+			<div class="header-main-content text-left">
+				<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+					<div class="text-left">
+						<h1 class="page-title text-left">Progress Track Pembelajaran Angkatan</h1>
+						<p class="page-sub text-left">
+							Pilih alur track pembelajaran di bawah ini untuk memantau detail pencapaian modul, materi, kuis, dan progres siswa.
+						</p>
 					</div>
 
-					<div class="w-56">
-						<label for="grid-kelas-select" class="filter-label">Pilih Kelompok Belajar</label>
-						<CustomSelect
-							id="grid-kelas-select"
-							name="kelasInstanceId"
-							options={kelasSelectOptions}
-							value={selectedKelasId}
-							onchange={handleKelasChange}
-							searchable={false}
-						/>
+					<div class="flex items-center gap-3 flex-wrap shrink-0">
+						<div class="w-48">
+							<CustomSelect
+								id="grid-ta-select"
+								name="tahunAjaranId"
+								options={taSelectOptions}
+								value={selectedTaId}
+								onchange={handleTaChange}
+								searchable={false}
+							/>
+						</div>
+
+						<div class="w-56">
+							<CustomSelect
+								id="grid-kelas-select"
+								name="kelasInstanceId"
+								options={kelasSelectOptions}
+								value={selectedKelasId}
+								onchange={handleKelasChange}
+								searchable={false}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
-		</header>
+		</div>
 
 		{#if data.monitoringData.trackCards.length === 0}
-			<div class="empty-card py-12 text-center">
-				<div class="empty-icon-circle">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-				</div>
-				<h3 class="font-bold text-slate-800 text-base">Belum Ada Track Pembelajaran Dipublikasi</h3>
-				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-					Tidak ditemukan alur track pembelajaran aktif untuk Periode {data.monitoringData.selectedTahunAjaran?.name || ''}.
-				</p>
+			<div class="panel p-10 text-center">
+				<EmptyState
+					title="Belum Ada Track Pembelajaran Dipublikasi"
+					message={`Tidak ditemukan alur track pembelajaran aktif untuk Periode ${data.monitoringData.selectedTahunAjaran?.name || ''}.`}
+				/>
 			</div>
 		{:else}
 			<section class="grid-cards-container" aria-label="Daftar Alur Track Pembelajaran">
@@ -266,93 +313,102 @@
 		{/if}
 
 	{:else if data.monitoringData.viewMode === 'detail'}
-		<!-- ══════════════════════════════════════════════════════════
-		     TIER 2: DETAIL BREAKDOWN VIEW (Matrix & Detail Modul Track)
-		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-bar mb-3">
-				<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-					<span>Kembali ke Katalog Track (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
+		<!-- TIER 2: DETAIL BREAKDOWN VIEW -->
+		<div class="panel header-card mb-6 p-5">
+			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
+				<nav class="breadcrumb" aria-label="Breadcrumb">
+					<a href="/mentor" class="bc-link">Dashboard</a>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<button type="button" onclick={navigateBackToGrid} class="bc-link bg-transparent border-none p-0 cursor-pointer text-left">
+						Progress Pembelajaran
+					</button>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<span class="bc-current">Detail Track</span>
+				</nav>
+
+				<button type="button" onclick={navigateBackToGrid} class="btn-secondary-head-pill border-none cursor-pointer">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<span>Kembali ke Katalog Track</span>
 				</button>
 			</div>
 
-			<div class="hero-content-flex">
-				<div class="flex-grow">
-					<div class="flex items-center gap-3 flex-wrap mb-1">
-						<h1 class="hero-title">{data.monitoringData.selectedTrack.title}</h1>
-						<span class="badge badge-primary">{data.monitoringData.selectedTrack.tingkatName}</span>
+			<div class="header-main-content text-left">
+				<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+					<div class="text-left">
+						<div class="flex items-center gap-2 flex-wrap mb-1">
+							<h1 class="page-title text-left">{data.monitoringData.selectedTrack.title}</h1>
+							<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+								{data.monitoringData.selectedTrack.tingkatName}
+							</span>
+						</div>
+						{#if data.monitoringData.selectedTrack.description}
+							<p class="page-sub text-left">{data.monitoringData.selectedTrack.description}</p>
+						{/if}
 					</div>
-					{#if data.monitoringData.selectedTrack.description}
-						<p class="hero-subtitle">{data.monitoringData.selectedTrack.description}</p>
-					{/if}
-				</div>
 
-				<div class="w-64 flex-shrink-0">
-					<label for="detail-kelas-select" class="filter-label">Filter Kelompok Belajar</label>
-					<CustomSelect
-						id="detail-kelas-select"
-						name="kelasInstanceId"
-						options={kelasSelectOptions}
-						value={selectedKelasId}
-						onchange={handleKelasChange}
-						searchable={false}
-					/>
+					<div class="w-64 shrink-0">
+						<CustomSelect
+							id="detail-kelas-select"
+							name="kelasInstanceId"
+							options={kelasSelectOptions}
+							value={selectedKelasId}
+							onchange={handleKelasChange}
+							searchable={false}
+						/>
+					</div>
 				</div>
 			</div>
-		</header>
+		</div>
 
-		<!-- 4 STAT CARDS SUMMARY -->
-		<section class="stats-grid mb-6" aria-label="Ringkasan Matrix Progress Track">
-			<div class="stat-card">
-				<div class="stat-icon-box icon-students">
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-				</div>
-				<div class="stat-info">
-					<span class="stat-value">{data.monitoringData.phases.length} Phase</span>
-					<span class="stat-label">Total Modul Pembelajaran</span>
-					<span class="stat-subtext">Alur Kurikulum Track</span>
-				</div>
-			</div>
+		<!-- 4 STAT CARDS SUMMARY (UI Component Integration) -->
+		<section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6" aria-label="Ringkasan Matrix Progress Track">
+			<StatCard label="Total Modul Pembelajaran" value={`${data.monitoringData.phases.length} Phase`} subtext="Alur Track Pembelajaran" variant="attendance">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+					</svg>
+				{/snippet}
+			</StatCard>
 
-			<div class="stat-card">
-				<div class="stat-icon-box icon-attendance">
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-				</div>
-				<div class="stat-info">
-					<span class="stat-value">{data.monitoringData.selectedTrack.avgCompletionRate}%</span>
-					<span class="stat-label">Rata-rata Ketercapaian</span>
-					<span class="stat-subtext">Kelompok {data.monitoringData.selectedKelas?.name || 'Semua'}</span>
-				</div>
-			</div>
+			<StatCard label="Rata-Rata Ketercapaian" value={`${data.monitoringData.selectedTrack.avgCompletionRate}%`} subtext={`Kelompok ${data.monitoringData.selectedKelas?.name || 'Semua'}`} variant="approved">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+					</svg>
+				{/snippet}
+			</StatCard>
 
-			<div class="stat-card">
-				<div class="stat-icon-box icon-points">
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-				</div>
-				<div class="stat-info">
-					<span class="stat-value">{data.rosterData?.summary?.totalStudentsCount || 0} Siswa</span>
-					<span class="stat-label">Siswa Aktif Roster</span>
-					<span class="stat-subtext">Terdaftar di Kelompok</span>
-				</div>
-			</div>
+			<StatCard label="Siswa Aktif Roster" value={`${data.rosterData?.summary?.totalStudentsCount || 0} Siswa`} subtext="Terdaftar di Kelompok" variant="pending">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+						<circle cx="9" cy="7" r="4" />
+						<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+						<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+					</svg>
+				{/snippet}
+			</StatCard>
 
-			<div class="stat-card">
-				<div class="stat-icon-box icon-attention">
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-				</div>
-				<div class="stat-info">
-					<span class="stat-value">{data.rosterData?.summary?.avgPoints || 0} Pts</span>
-					<span class="stat-label">Rata-rata Poin</span>
-					<span class="stat-subtext">Gamifikasi Siswa</span>
-				</div>
-			</div>
+			<StatCard label="Rata-Rata Poin" value={`${data.rosterData?.summary?.avgPoints || 0} Pts`} subtext="Gamifikasi Siswa" variant="revisi">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+					</svg>
+				{/snippet}
+			</StatCard>
 		</section>
 
 		<!-- PHASE ACCORDION BREAKDOWN -->
 		<section class="phases-container space-y-4 mb-6">
 			<h2 class="text-base font-bold text-slate-800 flex items-center justify-between">
-				<span>Peta Ketercapaian SubPhase & Kuis</span>
+				<span>Peta Ketercapaian SubPhase &amp; Kuis</span>
 				<span class="text-xs font-normal text-slate-500">Klik baris phase untuk melipat/membuka</span>
 			</h2>
 
@@ -423,22 +479,43 @@
 		</section>
 
 		<!-- STUDENT ROSTER PROGRESS TABLE -->
-		{#if data.rosterData && data.rosterData.roster.length > 0}
-			<section class="recap-card" aria-label="Detail Progress Roster Siswa">
-				<div class="card-header flex items-center justify-between p-4 border-b border-slate-200">
-					<div>
-						<h3 class="font-bold text-slate-900 text-sm">Progress Roster Siswa Kelompok</h3>
-						<p class="text-xs text-slate-500">Daftar siswa dan persentase ketercapaian alur track pembelajaran</p>
-					</div>
-					<span class="badge badge-neutral font-semibold">Total {data.rosterData.roster.length} Siswa</span>
+		<section class="recap-card" aria-label="Detail Progress Roster Siswa">
+			<div class="card-header flex items-center justify-between p-4 border-b border-slate-200 flex-wrap gap-3">
+				<div>
+					<h3 class="font-bold text-slate-900 text-sm">Progress Roster Siswa Kelompok</h3>
+					<p class="text-xs text-slate-500">Daftar siswa dan persentase ketercapaian alur track pembelajaran</p>
 				</div>
+				<span class="badge badge-neutral font-semibold">Total {filteredRoster.length} Siswa</span>
+			</div>
 
+			<!-- Filter Bar -->
+			<div class="p-4 bg-slate-50/70 border-b border-slate-200">
+				<FilterBar>
+					{#snippet search()}
+						<TextInput
+							label="Cari Siswa"
+							placeholder="Cari berdasarkan nama, NISN, atau username..."
+							bind:value={searchInput}
+							clearable
+						/>
+					{/snippet}
+				</FilterBar>
+			</div>
+
+			{#if paginatedRoster.length === 0}
+				<div class="p-8 text-center">
+					<EmptyState
+						title="Tidak Ada Siswa Ditemukan"
+						message="Tidak ada siswa pada roster kelompok ini yang cocok dengan kriteria filter Anda."
+					/>
+				</div>
+			{:else}
 				<div class="table-scroll-container">
 					<table class="data-table">
 						<thead>
 							<tr>
 								<th class="w-12 text-center">No</th>
-								<th>Nama Siswa & Rombel</th>
+								<th>Nama Siswa &amp; Rombel</th>
 								<th class="text-center">Poin</th>
 								<th class="text-center">Presensi</th>
 								<th class="text-right w-52">% Progress Track Pembelajaran</th>
@@ -446,9 +523,9 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each data.rosterData.roster as student, idx}
+							{#each paginatedRoster as student, idx}
 								<tr class="hover:bg-slate-50 transition-colors">
-									<td class="text-center text-xs font-mono text-slate-400">{idx + 1}</td>
+									<td class="text-center text-xs font-mono text-slate-400">{(currentPage - 1) * pageSize + idx + 1}</td>
 									<td>
 										<div class="student-profile-flex">
 											<div class="avatar-circle">
@@ -512,8 +589,17 @@
 						</tbody>
 					</table>
 				</div>
-			</section>
-		{/if}
+
+				<!-- Pagination Footer -->
+				<div class="p-4 border-t border-slate-200">
+					<PaginationFooter
+						totalItems={filteredRoster.length}
+						bind:currentPage
+						{pageSize}
+					/>
+				</div>
+			{/if}
+		</section>
 	{/if}
 </div>
 
@@ -526,42 +612,45 @@
 		box-sizing: border-box;
 	}
 
-	.page-hero {
-		background: #ffffff;
-		border: 1px solid var(--border-hard, #cbd5e1);
-		border-radius: var(--radius-lg, 12px);
-		padding: 20px 24px;
-		margin-bottom: 24px;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-	}
-
-	.hero-top-row,
-	.hero-content-flex {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	.hero-title-group {
-		display: flex;
+	.btn-secondary-head-pill {
+		display: inline-flex;
 		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
+		gap: 6px;
+		height: 34px;
+		padding: 0 14px;
+		background: #ffffff;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 9999px;
+		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		line-height: 1;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		transition: all 150ms ease;
+		white-space: nowrap;
 	}
 
-	.hero-title {
-		font-size: 22px;
-		font-weight: 800;
-		color: var(--text-main, #0f172a);
-		letter-spacing: -0.02em;
+	.btn-secondary-head-pill:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
-	.hero-subtitle {
-		font-size: 13px;
-		color: var(--text-muted, #64748b);
-		margin-top: 4px;
+	.activity-badge-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 10.5px;
+		font-weight: 700;
+		line-height: 1;
+		border-width: 1px;
+		border-style: solid;
+		white-space: nowrap;
 	}
 
 	.filter-label {
@@ -693,74 +782,6 @@
 	.btn-open-track:hover {
 		background: #4338ca;
 		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-	}
-
-	.btn-back-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 13px;
-		font-weight: 700;
-		color: #4f46e5;
-		background: #eef2ff;
-		padding: 6px 12px;
-		border-radius: 8px;
-		transition: background 150ms ease;
-	}
-
-	.btn-back-link:hover {
-		background: #e0e7ff;
-	}
-
-	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 16px;
-	}
-
-	.stat-card {
-		background: #ffffff;
-		border: 1px solid #e2e8f0;
-		border-radius: 12px;
-		padding: 16px;
-		display: flex;
-		align-items: center;
-		gap: 14px;
-	}
-
-	.stat-icon-box {
-		width: 44px;
-		height: 44px;
-		border-radius: 10px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.icon-students { background: #e0e7ff; color: #4338ca; }
-	.icon-attendance { background: #dcfce7; color: #15803d; }
-	.icon-points { background: #fef3c7; color: #b45309; }
-	.icon-attention { background: #fee2e2; color: #b91c1c; }
-
-	.stat-value {
-		font-size: 18px;
-		font-weight: 800;
-		color: #0f172a;
-		display: block;
-	}
-
-	.stat-label {
-		font-size: 12px;
-		font-weight: 700;
-		color: #334155;
-		display: block;
-	}
-
-	.stat-subtext {
-		font-size: 11px;
-		color: #64748b;
-		display: block;
 	}
 
 	.phase-accordion-card {
@@ -923,9 +944,6 @@
 	@media (max-width: 640px) {
 		.page-container {
 			padding: 16px 16px 36px;
-		}
-		.stats-grid {
-			grid-template-columns: 1fr;
 		}
 		.cards-grid {
 			grid-template-columns: 1fr;
