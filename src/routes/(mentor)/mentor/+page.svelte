@@ -207,8 +207,8 @@
 									{formatIndoDate(r.sessionDate)} &bull; {formatTimeOnly(r.startTime)} - {formatTimeOnly(r.endTime)} WIB
 								</div>
 							</div>
-							<a href={`/mentor/pertemuan/${r.id}`} class="btn-ghost-sm">
-								Presensi &rarr;
+							<a href={`/mentor/pertemuan/${r.id}?from=dashboard`} class="btn-ghost-sm">
+								Detail Pertemuan &rarr;
 							</a>
 						</div>
 					{/each}

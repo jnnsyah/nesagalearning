@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { onDestroy } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
@@ -9,6 +10,19 @@
 	import QRCode from 'qrcode';
 
 	let { data }: { data: PageData } = $props();
+
+	// Dynamic Back Navigation derived state
+	const fromParam = $derived(page.url.searchParams.get('from'));
+	const fromDashboardParam = $derived(page.url.searchParams.get('from_dashboard'));
+	const isFromDetail = $derived(fromParam === 'detail' || fromParam === 'detail_pertemuan');
+
+	const backToDetailHref = $derived(
+		currentMeeting
+			? `/mentor/pertemuan/${currentMeeting.id}${fromDashboardParam === 'true' ? '?from=dashboard' : ''}`
+			: '/mentor/pertemuan'
+	);
+	const backLabel = $derived(isFromDetail ? 'Kembali ke Detail Pertemuan' : 'Kembali ke Daftar Pertemuan');
+	const backHref = $derived(isFromDetail ? backToDetailHref : '/mentor/pertemuan');
 
 	// Mode Presensi Manual Bulk State
 	let isBulkEditMode = $state(false);
@@ -373,8 +387,13 @@
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				<span class="text-slate-400">/</span>
-				<a href="/mentor/pertemuan" class="bc-link">Daftar Pertemuan</a>
-				<span class="text-slate-400">/</span>
+				{#if isFromDetail && currentMeeting}
+					<a href={backToDetailHref} class="bc-link">Detail Pertemuan #{currentMeeting.id}</a>
+					<span class="text-slate-400">/</span>
+				{:else}
+					<a href="/mentor/pertemuan" class="bc-link">Daftar Pertemuan</a>
+					<span class="text-slate-400">/</span>
+				{/if}
 				<span class="bc-current">Kelola Presensi</span>
 			</nav>
 			<h1 class="page-title">
@@ -394,12 +413,12 @@
 		</div>
 
 		<div class="flex items-center gap-3">
-			<a href="/mentor/pertemuan" class="btn-ghost text-xs">
+			<a href={backHref} class="btn-ghost text-xs">
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<line x1="19" y1="12" x2="5" y2="12" />
 					<polyline points="12 19 5 12 12 5" />
 				</svg>
-				<span>Kembali ke Daftar Pertemuan</span>
+				<span>{backLabel}</span>
 			</a>
 		</div>
 	</div>

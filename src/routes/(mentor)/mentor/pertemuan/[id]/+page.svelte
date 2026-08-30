@@ -1,13 +1,27 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { page } from '$app/state';
+	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const m = $derived(data.meeting);
 	const actBadge = $derived(getActivityBadgeStyle(m.activityType));
 
+	const fromParam = $derived(page.url.searchParams.get('from'));
+	const isFromDashboard = $derived(fromParam === 'dashboard');
+	const backHref = $derived(isFromDashboard ? '/mentor' : '/mentor/pertemuan');
+	const backLabel = $derived(isFromDashboard ? 'Kembali ke Dashboard' : 'Kembali ke Daftar');
+	const presensiHref = $derived(
+		`/mentor/presensi?pertemuanId=${m.id}&from=detail${isFromDashboard ? '&from_dashboard=true' : ''}`
+	);
+
 	let isInfoExpanded = $state(true);
 	let rosterFilter = $state<'all' | 'hadir' | 'excused' | 'belum_hadir'>('all');
 	let searchQuery = $state('');
+
+	// Roster Pagination State
+	let rosterPage = $state(1);
+	const rosterPageSize = 10;
 
 	// Attendance Roster Derived Metrics
 	const studentList = $derived(data.attendanceList || []);
@@ -31,6 +45,18 @@
 			return true;
 		});
 	});
+
+	const totalRosterItems = $derived(filteredRoster.length);
+	const totalRosterPages = $derived(Math.ceil(totalRosterItems / rosterPageSize) || 1);
+	const paginatedRoster = $derived.by(() => {
+		const start = (rosterPage - 1) * rosterPageSize;
+		return filteredRoster.slice(start, start + rosterPageSize);
+	});
+
+	function handleRosterFilterChange(newFilter: 'all' | 'hadir' | 'excused' | 'belum_hadir') {
+		rosterFilter = newFilter;
+		rosterPage = 1;
+	}
 
 	function formatIndoDate(dateStr: string): string {
 		if (!dateStr) return '-';
@@ -102,14 +128,21 @@
 		<div class="header-top-row">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<span class="bc-current">Detail Sesi #{m.id}</span>
+				{#if isFromDashboard}
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<span class="bc-current">Detail Sesi #{m.id}</span>
+				{:else}
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+					<span class="bc-current">Detail Sesi #{m.id}</span>
+				{/if}
 			</nav>
 
 			<div class="header-badges-row">
@@ -132,13 +165,13 @@
 					</p>
 				</div>
 				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href="/mentor/pertemuan" class="btn-secondary-head-pill">
+					<a href={backHref} class="btn-secondary-head-pill">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<polyline points="15 18 9 12 15 6" />
 						</svg>
-						<span>Kembali ke Daftar</span>
+						<span>{backLabel}</span>
 					</a>
-					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-create-pill">
+					<a href={presensiHref} class="btn-create-pill">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
 						</svg>
@@ -208,7 +241,7 @@
 
 	<!-- Main Details Grid Layout -->
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-		<!-- Left Main Column (Details & Materials & Presensi Roster) -->
+		<!-- Left Main Column (Detail Card & Daftar Presensi Siswa Roster) -->
 		<div class="lg:col-span-2 stacked-column">
 			<!-- Detail Card (Collapsible) -->
 			<div class="detail-panel">
@@ -285,56 +318,7 @@
 				{/if}
 			</div>
 
-			<!-- PPT Slide / Material Card -->
-			<div class="detail-panel">
-				<div class="panel-header flex items-center justify-between">
-					<h2 class="panel-title">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-						</svg>
-						Slide PPT &amp; Modul Pembelajaran
-					</h2>
-				</div>
-
-				<div class="panel-body">
-					{#if m.materialUrl}
-						<div class="material-download-box">
-							<div class="ext-badge">{getFileExt(m.materialUrl)}</div>
-							<div class="flex-1 min-w-0">
-								<h4 class="material-box-title">Slide PPT / Modul Pembelajaran Sesi</h4>
-								<p class="material-box-sub">File materi telah disiapkan dan siap diakses oleh siswa.</p>
-							</div>
-							<a
-								href={m.materialUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="btn-download"
-							>
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-									<polyline points="15 3 21 3 21 9" />
-									<line x1="10" y1="14" x2="21" y2="3" />
-								</svg>
-								<span>Buka Material Slide</span>
-							</a>
-						</div>
-					{:else}
-						<div class="empty-material-state">
-							<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-								<polyline points="14 2 14 8 20 8" />
-							</svg>
-							<p class="text-sm font-semibold text-slate-700 mt-2">Belum Ada File Slide / PPT</p>
-							<p class="text-xs text-slate-500 max-w-sm mt-1">
-								Slide materi belum diunggah untuk pertemuan ini. Anda dapat menambahkan materi melalui tombol Edit Pertemuan.
-							</p>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Student Presensi Roster Panel -->
+			<!-- Student Presensi Roster Panel (Daftar Hadir Card - Direct Below Detail Card) -->
 			<div class="detail-panel">
 				<div class="panel-header flex items-center justify-between flex-wrap gap-3">
 					<h2 class="panel-title">
@@ -347,7 +331,7 @@
 						Daftar Presensi Siswa Sesi ({totalHadir}/{totalStudents} Hadir)
 					</h2>
 
-					<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+					<a href={presensiHref} class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
 						Kelola Presensi Full &rarr;
 					</a>
 				</div>
@@ -360,7 +344,7 @@
 								type="button"
 								class="roster-tab"
 								class:active={rosterFilter === 'all'}
-								onclick={() => (rosterFilter = 'all')}
+								onclick={() => handleRosterFilterChange('all')}
 							>
 								Semua ({totalStudents})
 							</button>
@@ -368,7 +352,7 @@
 								type="button"
 								class="roster-tab roster-tab--hadir"
 								class:active={rosterFilter === 'hadir'}
-								onclick={() => (rosterFilter = 'hadir')}
+								onclick={() => handleRosterFilterChange('hadir')}
 							>
 								Hadir ({totalHadir})
 							</button>
@@ -376,7 +360,7 @@
 								type="button"
 								class="roster-tab roster-tab--izin"
 								class:active={rosterFilter === 'excused'}
-								onclick={() => (rosterFilter = 'excused')}
+								onclick={() => handleRosterFilterChange('excused')}
 							>
 								Izin/Sakit ({totalIzin})
 							</button>
@@ -384,7 +368,7 @@
 								type="button"
 								class="roster-tab roster-tab--belum"
 								class:active={rosterFilter === 'belum_hadir'}
-								onclick={() => (rosterFilter = 'belum_hadir')}
+								onclick={() => handleRosterFilterChange('belum_hadir')}
 							>
 								Belum Absen ({totalBelum})
 							</button>
@@ -394,6 +378,7 @@
 							type="text"
 							placeholder="Cari siswa…"
 							bind:value={searchQuery}
+							oninput={() => (rosterPage = 1)}
 							class="roster-search-input"
 						/>
 					</div>
@@ -415,9 +400,9 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each filteredRoster as st, idx (st.userId)}
+									{#each paginatedRoster as st, idx (st.userId)}
 										<tr>
-											<td class="font-mono text-xs text-slate-400">{idx + 1}</td>
+											<td class="font-mono text-xs text-slate-400">{(rosterPage - 1) * rosterPageSize + idx + 1}</td>
 											<td>
 												<div class="flex items-center gap-2">
 													<div class="w-7 h-7 rounded-full bg-slate-100 font-bold text-slate-600 text-xs flex items-center justify-center shrink-0">
@@ -457,12 +442,22 @@
 								</tbody>
 							</table>
 						</div>
+
+						<div class="mt-4">
+							<PaginationFooter
+								currentPage={rosterPage}
+								totalPages={totalRosterPages}
+								totalItems={totalRosterItems}
+								pageSize={rosterPageSize}
+								onPageChange={(p) => (rosterPage = p)}
+							/>
+						</div>
 					{/if}
 				</div>
 			</div>
 		</div>
 
-		<!-- Right Side Column (Task & Quick Presensi) -->
+		<!-- Right Side Column (Presensi Card, PPT Slide Card, Task Card) -->
 		<div class="stacked-column">
 			<!-- Presensi Quick Card -->
 			<div class="presensi-card">
@@ -471,12 +466,63 @@
 					<h3 class="presensi-card__title">Sistem Absensi Sesi</h3>
 					<p class="presensi-card__sub">Buka token QR atau catat kehadiran siswa kelas {m.kelasName}.</p>
 				</div>
-				<a href={`/mentor/presensi?pertemuanId=${m.id}`} class="btn-presensi-action">
+				<a href={presensiHref} class="btn-presensi-action">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
 					</svg>
 					<span>Buka Scanner Presensi QR &rarr;</span>
 				</a>
+			</div>
+
+			<!-- PPT Slide / Material Card (Moved below Presensi Quick Card) -->
+			<div class="detail-panel">
+				<div class="panel-header flex items-center justify-between">
+					<h2 class="panel-title">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+						</svg>
+						Slide PPT &amp; Modul Pembelajaran
+					</h2>
+				</div>
+
+				<div class="panel-body">
+					{#if m.materialUrl}
+						<div class="material-download-box flex-col items-start">
+							<div class="flex items-center gap-3 w-full">
+								<div class="ext-badge">{getFileExt(m.materialUrl)}</div>
+								<div class="flex-1 min-w-0">
+									<h4 class="material-box-title truncate">Slide PPT / Modul Sesi</h4>
+									<p class="material-box-sub text-xs">File materi siap diakses.</p>
+								</div>
+							</div>
+							<a
+								href={m.materialUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn-download w-full justify-center mt-2"
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+									<polyline points="15 3 21 3 21 9" />
+									<line x1="10" y1="14" x2="21" y2="3" />
+								</svg>
+								<span>Buka Material Slide</span>
+							</a>
+						</div>
+					{:else}
+						<div class="empty-material-state">
+							<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+								<polyline points="14 2 14 8 20 8" />
+							</svg>
+							<p class="text-sm font-semibold text-slate-700 mt-2">Belum Ada File Slide / PPT</p>
+							<p class="text-xs text-slate-500 max-w-sm mt-1 text-center">
+								Slide materi belum diunggah untuk pertemuan ini.
+							</p>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Task Nempel Card -->
