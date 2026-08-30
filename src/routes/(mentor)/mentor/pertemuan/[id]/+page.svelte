@@ -71,11 +71,22 @@
 		return `${days[dateObj.getDay()]}, ${d} ${months[mVal - 1]} ${y}`;
 	}
 
+	function formatTimeOnly(timeStr: string | null | undefined): string {
+		if (!timeStr) return '-';
+		const parts = String(timeStr).trim().split(':');
+		if (parts.length >= 2) {
+			return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+		}
+		return String(timeStr);
+	}
+
 	function formatTime(val: string | Date | null | undefined): string {
 		if (!val) return '-';
 		const d = new Date(val);
 		if (isNaN(d.getTime())) return String(val);
-		return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+		const hh = String(d.getHours()).padStart(2, '0');
+		const mm = String(d.getMinutes()).padStart(2, '0');
+		return `${hh}:${mm} WIB`;
 	}
 
 	function getActivityBadgeStyle(type: string) {
@@ -199,7 +210,7 @@
 			</div>
 			<div>
 				<div class="stat-label">Waktu Pertemuan</div>
-				<div class="stat-value-sm">{m.startTime} - {m.endTime} WIB</div>
+				<div class="stat-value-sm">{formatTimeOnly(m.startTime)} - {formatTimeOnly(m.endTime)} WIB</div>
 			</div>
 		</div>
 
@@ -297,7 +308,7 @@
 
 							<div class="info-group">
 								<span class="info-label">Jam Pelaksanaan</span>
-								<span class="info-val">{m.startTime} — {m.endTime} WIB</span>
+								<span class="info-val">{formatTimeOnly(m.startTime)} — {formatTimeOnly(m.endTime)} WIB</span>
 							</div>
 
 							<div class="info-group sm:col-span-2">
