@@ -14,7 +14,8 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// Dynamic Back Navigation derived state
+	// Derivations & Dynamic Back Navigation derived state
+	const currentMeeting = $derived(data.selectedMeeting);
 	const fromParam = $derived(page.url.searchParams.get('from'));
 	const fromDashboardParam = $derived(page.url.searchParams.get('from_dashboard'));
 	const isFromDetail = $derived(fromParam === 'detail' || fromParam === 'detail_pertemuan');
@@ -83,7 +84,6 @@
 	});
 
 	// Derivations
-	const currentMeeting = $derived(data.selectedMeeting);
 	const isOngoing = $derived(data.isOngoing ?? false);
 	const students = $derived(liveAttendanceList);
 	const totalStudents = $derived(students.length);
