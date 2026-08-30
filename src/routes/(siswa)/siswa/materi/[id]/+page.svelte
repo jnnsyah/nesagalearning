@@ -22,6 +22,13 @@
 	let isSlidebarOpen = $state(false);
 	let activeSlidebarTab = $state<'syllabus' | 'toc' | 'settings'>('syllabus');
 
+	// Auto-open sidebar on desktop screens (>= 1024px) by default
+	$effect(() => {
+		if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+			isSlidebarOpen = true;
+		}
+	});
+
 	// Lightbox Zoom Modal State
 	interface LightboxData {
 		src: string;
@@ -136,7 +143,8 @@
 		const el = document.getElementById(id);
 		if (el) {
 			activeTocId = id;
-			if (window.innerWidth < 1024) {
+			// Close drawer ONLY on mobile screens (< 1024px); keep desktop docked sidebar open
+			if (typeof window !== 'undefined' && window.innerWidth < 1024) {
 				isSlidebarOpen = false;
 			}
 			const targetPosition = el.getBoundingClientRect().top + window.scrollY - 115;
