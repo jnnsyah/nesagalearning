@@ -405,9 +405,9 @@
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && isQRExpanded) isQRExpanded = false; }} />
 
 <div class="content-area">
-	<!-- Standardized Gold-Standard Header Card -->
-	<div class="header-card mb-6">
-		<div class="header-top-row">
+	<!-- Standardized Gold-Standard Header Card Wrapper -->
+	<div class="panel header-card mb-6 p-5">
+		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -427,54 +427,40 @@
 				<span class="bc-current">Kelola Presensi</span>
 			</nav>
 
-			{#if currentMeeting}
-				<div class="header-badges-row">
-					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-						{currentMeeting.activityType || 'SESI'}
-					</span>
-					<span class="kelas-tag-pill">{currentMeeting.kelasName}</span>
-				</div>
-			{/if}
+			<a href={backHref} class="btn-secondary-head-pill">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="15 18 9 12 15 6" />
+				</svg>
+				<span>{backLabel}</span>
+			</a>
 		</div>
 
 		<div class="header-main-content text-left">
-			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-				<div class="text-left">
-					<h1 class="page-title text-left">
-						{#if currentMeeting}
-							Presensi: {currentMeeting.title}
-						{:else}
-							Manajemen Presensi Sesi
-						{/if}
-					</h1>
-					<p class="page-sub text-left">
-						{#if currentMeeting}
-							Kelas: <strong class="text-indigo-600 font-semibold">{currentMeeting.kelasName}</strong> · Sub-Fase Track Pembelajaran: {currentMeeting.subPhaseTitle}
-						{:else}
-							Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
-						{/if}
-					</p>
-				</div>
-				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href={backHref} class="btn-secondary-head-pill">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<polyline points="15 18 9 12 15 6" />
-						</svg>
-						<span>{backLabel}</span>
-					</a>
-				</div>
-			</div>
+			<h1 class="page-title text-left">
+				{#if currentMeeting}
+					Presensi: {currentMeeting.title}
+				{:else}
+					Manajemen Presensi Sesi
+				{/if}
+			</h1>
+			<p class="page-sub text-left">
+				{#if currentMeeting}
+					Kelas: <strong class="text-indigo-600 font-semibold">{currentMeeting.kelasName}</strong> · Sub-Fase Track Pembelajaran: {currentMeeting.subPhaseTitle}
+				{:else}
+					Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
+				{/if}
+			</p>
 		</div>
 	</div>
 
 	{#if currentMeeting}
 		<!-- Main Top Grid: QR Generator Panel + Meeting Specs Card -->
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-			<!-- QR Generator Card -->
-			<div class="panel lg:col-span-2 p-6 flex flex-col justify-between">
+			<!-- QR Generator Card (Vertically Centered Content) -->
+			<div class="panel lg:col-span-2 p-6 flex flex-col justify-between min-h-[380px]">
 				{#if isOngoing}
-					<div>
-						<div class="flex items-center justify-between pb-3 border-bottom mb-4">
+					<div class="flex flex-col h-full justify-between">
+						<div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
 							<div class="flex items-center gap-2.5">
 								<div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
 									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -513,7 +499,7 @@
 						</div>
 
 						{#if currentToken}
-							<div class="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center">
+							<div class="my-auto p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center">
 								<!-- Scannable QR Code Image -->
 								{#if qrDataUrl}
 									<div class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm mb-4 flex items-center justify-center">
@@ -547,7 +533,7 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="py-6 px-4 flex flex-col items-center justify-center text-center my-auto">
+					<div class="flex-1 my-auto py-8 px-4 flex flex-col items-center justify-center text-center">
 						<div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mb-3 shadow-xs">
 							<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -676,10 +662,40 @@
 
 				<!-- Individual Stat Cards Grid (2x2 spacious layout) -->
 				<div class="grid grid-cols-2 gap-3">
-					<StatCard label="Total Siswa" value={totalStudents} variant="attendance" />
-					<StatCard label="Hadir" value={totalHadir} subtext={`${hadirPercent}% Kehadiran`} variant="approved" />
-					<StatCard label="Izin (Excused)" value={totalExcused} variant="pending" />
-					<StatCard label="Belum Hadir" value={totalBelumHadir} variant="revisi" />
+					<StatCard label="Total Siswa" value={totalStudents} variant="attendance">
+						{#snippet icon()}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+								<circle cx="9" cy="7" r="4" />
+								<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+								<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+							</svg>
+						{/snippet}
+					</StatCard>
+					<StatCard label="Hadir" value={totalHadir} subtext={`${hadirPercent}% Kehadiran`} variant="approved">
+						{#snippet icon()}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						{/snippet}
+					</StatCard>
+					<StatCard label="Izin (Excused)" value={totalExcused} variant="pending">
+						{#snippet icon()}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<line x1="12" y1="8" x2="12" y2="12" />
+								<line x1="12" y1="16" x2="12.01" y2="16" />
+							</svg>
+						{/snippet}
+					</StatCard>
+					<StatCard label="Belum Hadir" value={totalBelumHadir} variant="revisi">
+						{#snippet icon()}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<polyline points="12 6 12 12 16 14" />
+							</svg>
+						{/snippet}
+					</StatCard>
 				</div>
 			</div>
 		</div>
@@ -1184,6 +1200,32 @@
 		background: #4338ca;
 		color: white;
 		transform: translateY(-1px);
+	}
+
+	.btn-secondary-head-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 34px;
+		padding: 0 14px;
+		background: #ffffff;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 9999px;
+		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		line-height: 1;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-secondary-head-pill:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #94a3b8;
 	}
 
 	@media (max-width: 768px) {

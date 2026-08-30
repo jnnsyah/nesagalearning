@@ -125,7 +125,7 @@
 <div class="content-area">
 	<!-- Standardized Gold-Standard Header Card -->
 	<div class="header-card mb-6">
-		<div class="header-top-row">
+		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				{#if isFromDashboard}
@@ -145,15 +145,12 @@
 				{/if}
 			</nav>
 
-			<div class="header-badges-row">
-				<span class="activity-badge-pill {actBadge.bg} {actBadge.text} {actBadge.border}">
-					{actBadge.label}
-				</span>
-				{#if m.isWeekend}
-					<span class="weekend-tag-pill">WEEKEND (+50% POIN)</span>
-				{/if}
-				<span class="kelas-tag-pill">{m.kelasName}</span>
-			</div>
+			<a href={backHref} class="btn-secondary-head-pill">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="15 18 9 12 15 6" />
+				</svg>
+				<span>{backLabel}</span>
+			</a>
 		</div>
 
 		<div class="header-main-content text-left">
@@ -165,12 +162,6 @@
 					</p>
 				</div>
 				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href={backHref} class="btn-secondary-head-pill">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<polyline points="15 18 9 12 15 6" />
-						</svg>
-						<span>{backLabel}</span>
-					</a>
 					<a href={presensiHref} class="btn-create-pill">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
