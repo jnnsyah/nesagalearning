@@ -34,32 +34,39 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO HEADER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-top-row">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Dashboard Guru Pembimbing</h1>
-					{#if data.dashboardData.selectedTahunAjaran}
-						<span class="badge badge-primary">
-							TA {data.dashboardData.selectedTahunAjaran.name}
-						</span>
-					{/if}
-				</div>
-				<p class="hero-subtitle">
-					Ringkasan agregat presensi sesi, skor ketercapaian komposit track pembelajaran, dan jurnal pendampingan siswa.
-				</p>
-			</div>
+	<!-- Standardized Gold-Standard Header Card Wrapper -->
+	<header class="panel header-card mb-6 p-5">
+		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
+			<nav class="breadcrumb" aria-label="Breadcrumb">
+				<span class="bc-current">Dashboard</span>
+			</nav>
 
-			<div class="w-64 flex-shrink-0">
-				<label for="dash-ta-select" class="filter-label">Periode</label>
-				<CustomSelect
-					id="dash-ta-select"
-					name="tahunAjaranId"
-					options={taSelectOptions}
-					value={selectedTaId}
-					onchange={handleTaChange}
-					searchable={false}
-				/>
+			{#if data.dashboardData.selectedTahunAjaran}
+				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					TA {data.dashboardData.selectedTahunAjaran.name}
+				</span>
+			{/if}
+		</div>
+
+		<div class="header-main-content text-left">
+			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+				<div class="text-left">
+					<h1 class="page-title text-left">Dashboard Guru Pembimbing</h1>
+					<p class="page-sub text-left">
+						Selamat datang kembali, <strong class="text-indigo-600 font-semibold">{data.user?.fullName}</strong>.
+					</p>
+				</div>
+
+				<div class="w-64 shrink-0">
+					<CustomSelect
+						id="dash-ta-select"
+						name="tahunAjaranId"
+						options={taSelectOptions}
+						value={selectedTaId}
+						onchange={handleTaChange}
+						searchable={false}
+					/>
+				</div>
 			</div>
 		</div>
 	</header>
@@ -475,9 +482,19 @@
 		border: 1px solid #cbd5e1;
 	}
 
-	.btn-action-outline:hover {
-		background: #f1f5f9;
-		color: #0f172a;
+	.activity-badge-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 10.5px;
+		font-weight: 700;
+		line-height: 1;
+		border-width: 1px;
+		border-style: solid;
+		white-space: nowrap;
 	}
 
 	/* Notes Feed Stack */

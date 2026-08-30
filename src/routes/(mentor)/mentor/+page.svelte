@@ -41,24 +41,45 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Page Header Banner -->
-	<div class="page-header-row">
-		<div>
+	<!-- Standardized Gold-Standard Header Card Wrapper -->
+	<div class="panel header-card mb-6 p-5">
+		<div class="header-top-row flex items-center justify-between gap-3">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<span class="bc-current">Dashboard</span>
 			</nav>
-			<h1 class="page-title">Dashboard Mentor</h1>
-			<p class="page-sub">Selamat datang kembali, <strong>{data.user?.fullName}</strong>. Ringkasan keaktifan &amp; antrean tugas siswa.</p>
+
+			<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+				PORTAL MENTOR
+			</span>
 		</div>
-		<div class="flex items-center gap-3">
-			<a href="/mentor/jadwal" class="btn-secondary-head hide-mobile">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-				<span>Kalender Jadwal</span>
-			</a>
-			<a href="/mentor/pertemuan" class="btn-create hide-mobile" style="text-decoration:none;">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-				<span>Kelola Pertemuan</span>
-			</a>
+
+		<div class="header-main-content text-left">
+			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+				<div class="text-left">
+					<h1 class="page-title text-left">Dashboard Mentor</h1>
+					<p class="page-sub text-left">
+						Selamat datang kembali, <strong class="text-indigo-600 font-semibold">{data.user?.fullName}</strong>.
+					</p>
+				</div>
+				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
+					<a href="/mentor/jadwal" class="btn-secondary-head-pill">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<rect x="3" y="4" width="18" height="18" rx="2" />
+							<line x1="16" y1="2" x2="16" y2="6" />
+							<line x1="8" y1="2" x2="8" y2="6" />
+							<line x1="3" y1="10" x2="21" y2="10" />
+						</svg>
+						<span>Kalender Jadwal</span>
+					</a>
+					<a href="/mentor/pertemuan" class="btn-create-pill">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="12" y1="5" x2="12" y2="19" />
+							<line x1="5" y1="12" x2="19" y2="12" />
+						</svg>
+						<span>Kelola Pertemuan</span>
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -326,27 +347,69 @@
 		box-shadow: 0 10px 24px -4px rgba(79,70,229,0.45);
 	}
 
-	.btn-secondary-head {
+	.btn-secondary-head-pill {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 16px;
+		gap: 6px;
+		height: 34px;
+		padding: 0 14px;
 		background: #ffffff;
-		border: 1px solid var(--border-hard);
-		border-radius: var(--radius-md);
-		font-family: var(--font-macro);
-		font-size: 13px;
-		font-weight: 700;
-		color: var(--text-primary);
+		color: #475569;
+		border: 1px solid #cbd5e1;
+		border-radius: 9999px;
 		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		line-height: 1;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 		transition: all 150ms ease;
 		white-space: nowrap;
 	}
 
-	.btn-secondary-head:hover {
-		background: var(--bg-inset);
-		border-color: #cbd5e1;
-		color: var(--primary);
+	.btn-secondary-head-pill:hover {
+		background: #f8fafc;
+		color: #0f172a;
+		border-color: #94a3b8;
+	}
+
+	.btn-create-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 34px;
+		padding: 0 14px;
+		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+		color: #ffffff;
+		border-radius: 9999px;
+		text-decoration: none;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12.5px;
+		font-weight: 700;
+		line-height: 1;
+		box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+		transition: all 150ms ease;
+		white-space: nowrap;
+	}
+
+	.btn-create-pill:hover {
+		background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+		transform: translateY(-1px);
+	}
+
+	.activity-badge-pill {
+		display: inline-flex;
+		align-items: center;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 6px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 10.5px;
+		font-weight: 700;
+		line-height: 1;
+		border-width: 1px;
+		border-style: solid;
+		white-space: nowrap;
 	}
 
 	.stats-row {
