@@ -610,21 +610,21 @@
 										onclick={() => setFontSize('sm')}
 										class="pill-btn flex-1 {fontSize === 'sm' ? 'pill-btn--active' : ''}"
 									>
-										Kecil (14px)
+										Kecil
 									</button>
 									<button
 										type="button"
 										onclick={() => setFontSize('base')}
 										class="pill-btn flex-1 {fontSize === 'base' ? 'pill-btn--active' : ''}"
 									>
-										Sedang (16px)
+										Sedang
 									</button>
 									<button
 										type="button"
 										onclick={() => setFontSize('lg')}
 										class="pill-btn flex-1 {fontSize === 'lg' ? 'pill-btn--active' : ''}"
 									>
-										Besar (18px)
+										Besar
 									</button>
 								</div>
 							</div>
@@ -1038,21 +1038,21 @@
 										onclick={() => setFontSize('sm')}
 										class="pill-btn flex-1 {fontSize === 'sm' ? 'pill-btn--active' : ''}"
 									>
-										Kecil (14px)
+										Kecil
 									</button>
 									<button
 										type="button"
 										onclick={() => setFontSize('base')}
 										class="pill-btn flex-1 {fontSize === 'base' ? 'pill-btn--active' : ''}"
 									>
-										Normal (16px)
+										Sedang
 									</button>
 									<button
 										type="button"
 										onclick={() => setFontSize('lg')}
 										class="pill-btn flex-1 {fontSize === 'lg' ? 'pill-btn--active' : ''}"
 									>
-										Besar (18px)
+										Besar
 									</button>
 								</div>
 							</div>
