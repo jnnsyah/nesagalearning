@@ -176,8 +176,8 @@
 
 	<!-- Custom Date Picker Fields (if custom range selected) -->
 	{#if selectedRange === 'custom'}
-		<div class="custom-date-card mb-6 p-3.5 sm:p-4 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-end gap-3.5 flex-wrap sm:flex-nowrap">
-			<div class="w-full sm:w-48 shrink-0">
+		<div class="custom-date-card">
+			<div class="date-field-wrap">
 				<DatePicker
 					id="trend-start-date"
 					name="startDate"
@@ -186,7 +186,7 @@
 					placeholder="Tanggal mulai..."
 				/>
 			</div>
-			<div class="w-full sm:w-48 shrink-0">
+			<div class="date-field-wrap">
 				<DatePicker
 					id="trend-end-date"
 					name="endDate"
@@ -200,7 +200,7 @@
 				<button
 					type="button"
 					onclick={() => { customStartDate = ''; customEndDate = ''; }}
-					class="h-[38px] px-3.5 rounded-xl text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 mb-[1px]"
+					class="btn-reset-date-filter"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<line x1="18" y1="6" x2="6" y2="18" />
@@ -368,6 +368,52 @@
 		align-items: center;
 		gap: 10px;
 		flex-wrap: wrap;
+	}
+
+	.custom-date-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 14px 16px;
+		margin-bottom: 24px !important;
+		display: flex;
+		align-items: flex-end;
+		gap: 12px;
+		flex-wrap: wrap;
+		width: 100%;
+		box-sizing: border-box;
+		max-width: 100%;
+	}
+
+	.date-field-wrap {
+		flex: 1 1 180px;
+		min-width: 150px;
+		max-width: 220px;
+	}
+
+	.btn-reset-date-filter {
+		height: 38px;
+		padding: 0 14px;
+		border-radius: 10px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		color: #e11d48;
+		background: #fff1f2;
+		border: 1px solid #fecdd3;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+		margin-bottom: 1px;
+	}
+
+	.btn-reset-date-filter:hover {
+		background: #ffe4e6;
+		color: #be123c;
+		border-color: #fda4af;
 	}
 
 	.stats-summary-strip {
@@ -555,5 +601,16 @@
 		font-size: 11px;
 		border-top: 1px solid #334155;
 		padding-top: 4px;
+	}
+
+	@media (max-width: 640px) {
+		.date-field-wrap {
+			max-width: 100%;
+			flex: 1 1 100%;
+		}
+		.btn-reset-date-filter {
+			width: 100%;
+			justify-content: center;
+		}
 	}
 </style>
