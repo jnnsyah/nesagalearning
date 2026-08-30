@@ -1217,7 +1217,7 @@
 		min-height: 100vh;
 		width: 100%;
 		max-width: 100vw;
-		overflow-x: hidden;
+		overflow-x: clip;
 		box-sizing: border-box;
 		background-color: var(--r-bg);
 		color: var(--r-text-body);
