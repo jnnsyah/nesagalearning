@@ -149,7 +149,7 @@
 <div class="page-container">
 	{#if data.monitoringData.viewMode === 'grid'}
 		<!-- TIER 1: GRID VIEW (Katalog & Ringkasan Track Angkatan) -->
-		<div class="panel header-card mb-6 p-5">
+		<div class="panel header-card p-5">
 			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
 				<nav class="breadcrumb" aria-label="Breadcrumb">
 					<a href="/mentor" class="bc-link">Dashboard</a>
@@ -314,7 +314,7 @@
 
 	{:else if data.monitoringData.viewMode === 'detail'}
 		<!-- TIER 2: DETAIL BREAKDOWN VIEW -->
-		<div class="panel header-card mb-6 p-5">
+		<div class="panel header-card p-5">
 			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
 				<nav class="breadcrumb" aria-label="Breadcrumb">
 					<a href="/mentor" class="bc-link">Dashboard</a>
@@ -610,6 +610,71 @@
 		margin: 0 auto;
 		padding: 24px 24px 48px;
 		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	/* Standardized Header Card (Blueprint Spec) */
+	.header-card {
+		background: #ffffff;
+		border: 1px solid var(--border-hard, #e2e8f0);
+		border-radius: 14px;
+		padding: 16px 20px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		max-width: 100%;
+		word-break: break-word;
+	}
+
+	.header-top-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		flex-wrap: wrap;
+		min-height: 26px;
+	}
+
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.85rem;
+	}
+
+	.bc-link {
+		color: var(--text-muted, #64748b);
+		font-weight: 500;
+		text-decoration: none;
+	}
+
+	.bc-link:hover {
+		color: var(--primary, #4f46e5);
+	}
+
+	.bc-current {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--primary, #4f46e5);
+	}
+
+	.page-title {
+		font-family: var(--font-macro, sans-serif);
+		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-weight: 800;
+		color: var(--text-primary, #0f172a);
+		letter-spacing: -0.02em;
+		margin-bottom: 4px;
+	}
+
+	.page-sub {
+		font-size: 14px;
+		color: var(--text-secondary, #475569);
 	}
 
 	.btn-secondary-head-pill {
