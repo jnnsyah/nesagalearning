@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
 	import { toast } from '$lib/stores/toast';
 	import QRCode from 'qrcode';
 
@@ -23,6 +26,10 @@
 	);
 	const backLabel = $derived(isFromDetail ? 'Kembali ke Detail Pertemuan' : 'Kembali ke Daftar Pertemuan');
 	const backHref = $derived(isFromDetail ? backToDetailHref : '/mentor/pertemuan');
+
+	// Pagination State
+	let currentPage = $state(1);
+	const pageSize = 10;
 
 	// Mode Presensi Manual Bulk State
 	let isBulkEditMode = $state(false);
@@ -182,6 +189,23 @@
 		}
 
 		return list;
+	});
+
+	// Pagination Derived State & Auto-Reset Effect
+	const totalItems = $derived(filteredStudents.length);
+	const totalPages = $derived(Math.ceil(totalItems / pageSize) || 1);
+	const paginatedStudents = $derived.by(() => {
+		const start = (currentPage - 1) * pageSize;
+		return filteredStudents.slice(start, start + pageSize);
+	});
+
+	$effect(() => {
+		searchQuery;
+		statusFilter;
+		sortBy;
+		untrack(() => {
+			currentPage = 1;
+		});
 	});
 
 	// Auto-Rotating Token Interval logic
@@ -381,45 +405,65 @@
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && isQRExpanded) isQRExpanded = false; }} />
 
 <div class="content-area">
-	<!-- Page Header Row -->
-	<div class="page-header-row">
-		<div>
+	<!-- Standardized Gold-Standard Header Card -->
+	<div class="header-card mb-6">
+		<div class="header-top-row">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
-				<span class="text-slate-400">/</span>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<polyline points="9 18 15 12 9 6" />
+				</svg>
 				{#if isFromDetail && currentMeeting}
 					<a href={backToDetailHref} class="bc-link">Detail Pertemuan #{currentMeeting.id}</a>
-					<span class="text-slate-400">/</span>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
 				{:else}
 					<a href="/mentor/pertemuan" class="bc-link">Daftar Pertemuan</a>
-					<span class="text-slate-400">/</span>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
 				{/if}
 				<span class="bc-current">Kelola Presensi</span>
 			</nav>
-			<h1 class="page-title">
-				{#if currentMeeting}
-					Presensi: {currentMeeting.title}
-				{:else}
-					Manajemen Presensi Sesi
-				{/if}
-			</h1>
-			<p class="page-sub">
-				{#if currentMeeting}
-					Kelas: <strong>{currentMeeting.kelasName}</strong> · Sub-Fase: {currentMeeting.subPhaseTitle}
-				{:else}
-					Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
-				{/if}
-			</p>
+
+			{#if currentMeeting}
+				<div class="header-badges-row">
+					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+						{currentMeeting.activityType || 'SESI'}
+					</span>
+					<span class="kelas-tag-pill">{currentMeeting.kelasName}</span>
+				</div>
+			{/if}
 		</div>
 
-		<div class="flex items-center gap-3">
-			<a href={backHref} class="btn-ghost text-xs">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<line x1="19" y1="12" x2="5" y2="12" />
-					<polyline points="12 19 5 12 12 5" />
-				</svg>
-				<span>{backLabel}</span>
-			</a>
+		<div class="header-main-content text-left">
+			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+				<div class="text-left">
+					<h1 class="page-title text-left">
+						{#if currentMeeting}
+							Presensi: {currentMeeting.title}
+						{:else}
+							Manajemen Presensi Sesi
+						{/if}
+					</h1>
+					<p class="page-sub text-left">
+						{#if currentMeeting}
+							Kelas: <strong class="text-indigo-600 font-semibold">{currentMeeting.kelasName}</strong> · Sub-Fase Track Pembelajaran: {currentMeeting.subPhaseTitle}
+						{:else}
+							Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
+						{/if}
+					</p>
+				</div>
+				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
+					<a href={backHref} class="btn-secondary-head-pill">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<polyline points="15 18 9 12 15 6" />
+						</svg>
+						<span>{backLabel}</span>
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -631,64 +675,11 @@
 				</div>
 
 				<!-- Individual Stat Cards Grid (2x2 spacious layout) -->
-				<div class="grid grid-cols-2 gap-3.5">
-					<!-- Stat Card 1: Total Siswa -->
-					<div class="panel p-4 flex items-center gap-3.5 shadow-xs">
-						<div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/80">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-								<circle cx="9" cy="7" r="4" />
-								<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-								<path d="M16 3.13a4 4 0 0 1 0 7.75" />
-							</svg>
-						</div>
-						<div>
-							<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Total Siswa</div>
-							<div class="text-xl font-extrabold text-slate-900 leading-tight">{totalStudents}</div>
-						</div>
-					</div>
-
-					<!-- Stat Card 2: Hadir -->
-					<div class="panel p-4 flex items-center gap-3.5 shadow-xs bg-emerald-50/30 border-emerald-100">
-						<div class="w-10 h-10 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/80">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</div>
-						<div>
-							<div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wide">Hadir ({hadirPercent}%)</div>
-							<div class="text-xl font-extrabold text-emerald-700 leading-tight">{totalHadir}</div>
-						</div>
-					</div>
-
-					<!-- Stat Card 3: Excused / Izin -->
-					<div class="panel p-4 flex items-center gap-3.5 shadow-xs bg-amber-50/30 border-amber-100">
-						<div class="w-10 h-10 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200/80">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10" />
-								<line x1="12" y1="8" x2="12" y2="12" />
-								<line x1="12" y1="16" x2="12.01" y2="16" />
-							</svg>
-						</div>
-						<div>
-							<div class="text-[11px] font-bold text-amber-800 uppercase tracking-wide">Izin (Excused)</div>
-							<div class="text-xl font-extrabold text-amber-700 leading-tight">{totalExcused}</div>
-						</div>
-					</div>
-
-					<!-- Stat Card 4: Belum Presensi -->
-					<div class="panel p-4 flex items-center gap-3.5 shadow-xs bg-slate-50 border-slate-200">
-						<div class="w-10 h-10 rounded-xl bg-slate-200/80 text-slate-600 flex items-center justify-center shrink-0 border border-slate-300/50">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10" />
-								<polyline points="12 6 12 12 16 14" />
-							</svg>
-						</div>
-						<div>
-							<div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Belum Hadir</div>
-							<div class="text-xl font-extrabold text-slate-700 leading-tight">{totalBelumHadir}</div>
-						</div>
-					</div>
+				<div class="grid grid-cols-2 gap-3">
+					<StatCard label="Total Siswa" value={totalStudents} variant="attendance" />
+					<StatCard label="Hadir" value={totalHadir} subtext={`${hadirPercent}% Kehadiran`} variant="approved" />
+					<StatCard label="Izin (Excused)" value={totalExcused} variant="pending" />
+					<StatCard label="Belum Hadir" value={totalBelumHadir} variant="revisi" />
 				</div>
 			</div>
 		</div>
@@ -819,106 +810,128 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
-						{#each filteredStudents as s, idx (s.userId)}
-							{@const current = bulkMap[s.userId] ?? { status: 'belum_hadir', manualReason: '' }}
-							<tr class="hover:bg-slate-50/80 transition-colors">
-								<td class="py-3 px-4 font-mono text-xs text-slate-400">{idx + 1}</td>
-								<td class="py-3 px-4">
-									<div class="flex items-center gap-3">
-										<div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center">
-											{s.fullName.charAt(0)}
-										</div>
-										<div>
-											<div class="font-bold text-slate-900 text-sm">{s.fullName}</div>
-											<div class="type-mono text-slate-500">@{s.username}</div>
-										</div>
-									</div>
-								</td>
-								<td class="py-3 px-4">
-									<!-- Perfectly Balanced Radio Card Grid (h-9 / 36px) -->
-									<div class="grid grid-cols-3 gap-2 w-full max-w-md" role="radiogroup" aria-label="Status Kehadiran {s.fullName}">
-										<!-- Hadir Option Card -->
-										<label
-											class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
-												{current.status === 'hadir'
-													? 'bg-emerald-600 text-white border-emerald-700 shadow-xs ring-1 ring-emerald-400/50'
-													: 'bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40'}"
-										>
-											<input
-												type="radio"
-												name="status-{s.userId}"
-												value="hadir"
-												checked={current.status === 'hadir'}
-												onchange={() => setSingleStudentStatus(s.userId, 'hadir')}
-												class="sr-only"
-											/>
-											<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'hadir' ? 'border-white bg-white' : 'border-slate-400'}">
-												{#if current.status === 'hadir'}
-													<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-												{/if}
-											</span>
-											<span>HADIR</span>
-										</label>
-
-										<!-- Excused Option Card -->
-										<label
-											class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
-												{current.status === 'excused'
-													? 'bg-amber-600 text-white border-amber-700 shadow-xs ring-1 ring-amber-400/50'
-													: 'bg-white text-slate-700 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40'}"
-										>
-											<input
-												type="radio"
-												name="status-{s.userId}"
-												value="excused"
-												checked={current.status === 'excused'}
-												onchange={() => setSingleStudentStatus(s.userId, 'excused')}
-												class="sr-only"
-											/>
-											<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'excused' ? 'border-white bg-white' : 'border-slate-400'}">
-												{#if current.status === 'excused'}
-													<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-												{/if}
-											</span>
-											<span>EXCUSED</span>
-										</label>
-
-										<!-- Belum Presensi Option Card -->
-										<label
-											class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
-												{current.status === 'belum_hadir'
-													? 'bg-slate-700 text-white border-slate-800 shadow-xs ring-1 ring-slate-400/50'
-													: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'}"
-										>
-											<input
-												type="radio"
-												name="status-{s.userId}"
-												value="belum_hadir"
-												checked={current.status === 'belum_hadir'}
-												onchange={() => setSingleStudentStatus(s.userId, 'belum_hadir')}
-												class="sr-only"
-											/>
-											<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'belum_hadir' ? 'border-white bg-white' : 'border-slate-400'}">
-												{#if current.status === 'belum_hadir'}
-													<span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-												{/if}
-											</span>
-											<span>BELUM</span>
-										</label>
-									</div>
-								</td>
-								<td class="py-3 px-4">
-									<input
-										type="text"
-										bind:value={bulkMap[s.userId].manualReason}
-										placeholder="Catatan khusus..."
-										class="field-input py-1.5 px-3 text-xs"
+						{#if paginatedStudents.length === 0}
+							<tr>
+								<td colspan="4" class="p-0">
+									<EmptyState
+										title="Tidak Ada Data Siswa"
+										description="Coba sesuaikan kata kunci pencarian atau filter status presensi."
+										iconTheme="slate"
 									/>
 								</td>
 							</tr>
-						{/each}
+						{:else}
+							{#each paginatedStudents as s, idx ((currentPage - 1) * pageSize + idx)}
+								{@const current = bulkMap[s.userId] ?? { status: 'belum_hadir', manualReason: '' }}
+								<tr class="hover:bg-slate-50/80 transition-colors">
+									<td class="py-3 px-4 font-mono text-xs text-slate-400">{(currentPage - 1) * pageSize + idx + 1}</td>
+									<td class="py-3 px-4">
+										<div class="flex items-center gap-3">
+											<div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center">
+												{s.fullName.charAt(0)}
+											</div>
+											<div>
+												<div class="font-bold text-slate-900 text-sm">{s.fullName}</div>
+												<div class="type-mono text-slate-500">@{s.username}</div>
+											</div>
+										</div>
+									</td>
+									<td class="py-3 px-4">
+										<!-- Perfectly Balanced Radio Card Grid (h-9 / 36px) -->
+										<div class="grid grid-cols-3 gap-2 w-full max-w-md" role="radiogroup" aria-label="Status Kehadiran {s.fullName}">
+											<!-- Hadir Option Card -->
+											<label
+												class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
+													{current.status === 'hadir'
+														? 'bg-emerald-600 text-white border-emerald-700 shadow-xs ring-1 ring-emerald-400/50'
+														: 'bg-white text-slate-700 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40'}"
+											>
+												<input
+													type="radio"
+													name="status-{s.userId}"
+													value="hadir"
+													checked={current.status === 'hadir'}
+													onchange={() => setSingleStudentStatus(s.userId, 'hadir')}
+													class="sr-only"
+												/>
+												<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'hadir' ? 'border-white bg-white' : 'border-slate-400'}">
+													{#if current.status === 'hadir'}
+														<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+													{/if}
+												</span>
+												<span>HADIR</span>
+											</label>
+
+											<!-- Excused Option Card -->
+											<label
+												class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
+													{current.status === 'excused'
+														? 'bg-amber-600 text-white border-amber-700 shadow-xs ring-1 ring-amber-400/50'
+														: 'bg-white text-slate-700 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40'}"
+											>
+												<input
+													type="radio"
+													name="status-{s.userId}"
+													value="excused"
+													checked={current.status === 'excused'}
+													onchange={() => setSingleStudentStatus(s.userId, 'excused')}
+													class="sr-only"
+												/>
+												<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'excused' ? 'border-white bg-white' : 'border-slate-400'}">
+													{#if current.status === 'excused'}
+														<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+													{/if}
+												</span>
+												<span>EXCUSED</span>
+											</label>
+
+											<!-- Belum Presensi Option Card -->
+											<label
+												class="flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all select-none shadow-2xs
+													{current.status === 'belum_hadir'
+														? 'bg-slate-700 text-white border-slate-800 shadow-xs ring-1 ring-slate-400/50'
+														: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'}"
+											>
+												<input
+													type="radio"
+													name="status-{s.userId}"
+													value="belum_hadir"
+													checked={current.status === 'belum_hadir'}
+													onchange={() => setSingleStudentStatus(s.userId, 'belum_hadir')}
+													class="sr-only"
+												/>
+												<span class="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors {current.status === 'belum_hadir' ? 'border-white bg-white' : 'border-slate-400'}">
+													{#if current.status === 'belum_hadir'}
+														<span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+													{/if}
+												</span>
+												<span>BELUM</span>
+											</label>
+										</div>
+									</td>
+									<td class="py-3 px-4">
+										<input
+											type="text"
+											bind:value={bulkMap[s.userId].manualReason}
+											placeholder="Catatan khusus..."
+											class="field-input py-1.5 px-3 text-xs"
+										/>
+									</td>
+								</tr>
+							{/each}
+						{/if}
 					</tbody>
 				</table>
+
+				<div class="p-4 border-t border-slate-100">
+					<PaginationFooter
+						currentPage={currentPage}
+						totalPages={totalPages}
+						totalItems={totalItems}
+						pageSize={pageSize}
+						onPageChange={(p) => (currentPage = p)}
+					/>
+				</div>
 			</div>
 		{:else}
 			<!-- READ-ONLY ATTENDANCE TABLE PANEL -->
@@ -959,13 +972,16 @@
 					<tbody class="divide-y divide-slate-100">
 						{#if filteredStudents.length === 0}
 							<tr>
-								<td colspan="5" class="text-center py-10">
-									<div class="text-sm font-bold text-slate-700">Tidak Ada Data Siswa</div>
-									<div class="text-xs text-slate-500 mt-1">Coba sesuaikan kata kunci pencarian atau filter status.</div>
+								<td colspan="5" class="p-0">
+									<EmptyState
+										title="Tidak Ada Data Siswa"
+										description="Coba sesuaikan kata kunci pencarian atau filter status presensi."
+										iconTheme="slate"
+									/>
 								</td>
 							</tr>
 						{:else}
-							{#each filteredStudents as s}
+							{#each paginatedStudents as s (s.userId)}
 								<tr class="hover:bg-slate-50/80 transition-colors">
 									<td class="py-3 px-4">
 										<div class="flex items-center gap-3">
@@ -1007,6 +1023,18 @@
 						{/if}
 					</tbody>
 				</table>
+
+				{#if filteredStudents.length > 0}
+					<div class="p-4 border-t border-slate-100">
+						<PaginationFooter
+							currentPage={currentPage}
+							totalPages={totalPages}
+							totalItems={totalItems}
+							pageSize={pageSize}
+							onPageChange={(p) => (currentPage = p)}
+						/>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	{/if}
