@@ -10,7 +10,7 @@ import {
 	user,
 	phase
 } from '$lib/server/db/schema';
-import { eq, and, inArray, desc, count, sql } from 'drizzle-orm';
+import { eq, and, inArray, desc, asc, count, sql } from 'drizzle-orm';
 import { CurriculumMonitoringService } from './curriculum-monitoring.service';
 
 export interface TahunAjaranOption {
@@ -48,6 +48,21 @@ export interface PhaseProgressSummary {
 	avgCompletionRate: number;
 }
 
+export interface SessionAttendanceTrendItem {
+	id: number;
+	title: string;
+	sessionDate: string;
+	startTime: string;
+	endTime: string;
+	activityType: string;
+	kelasId: number;
+	kelasName: string;
+	totalEnrolled: number;
+	totalHadir: number;
+	totalIzin: number;
+	attendanceRate: number;
+}
+
 export interface GuruDashboardData {
 	tahunAjaranOptions: TahunAjaranOption[];
 	selectedTahunAjaran: TahunAjaranOption | null;
@@ -59,6 +74,8 @@ export interface GuruDashboardData {
 		overallCurriculumRate: number;
 	};
 	runningClasses: ClassDashboardSummary[];
+	runningClassesOptions: { id: number; name: string }[];
+	sessionAttendanceTrend: SessionAttendanceTrendItem[];
 	phaseSummaries: PhaseProgressSummary[];
 	recentNotes: RecentAdvisorNoteItem[];
 }
@@ -94,6 +111,8 @@ export const GuruDashboardService = {
 					overallCurriculumRate: 0
 				},
 				runningClasses: [],
+				runningClassesOptions: [],
+				sessionAttendanceTrend: [],
 				phaseSummaries: [],
 				recentNotes: []
 			};
@@ -128,6 +147,8 @@ export const GuruDashboardService = {
 					overallCurriculumRate: 0
 				},
 				runningClasses: [],
+				runningClassesOptions: [],
+				sessionAttendanceTrend: [],
 				phaseSummaries: [],
 				recentNotes: []
 			};
@@ -156,10 +177,19 @@ export const GuruDashboardService = {
 			db
 				.select({
 					id: pertemuan.id,
+					title: pertemuan.title,
+					sessionDate: pertemuan.sessionDate,
+					startTime: pertemuan.startTime,
+					endTime: pertemuan.endTime,
+					activityType: pertemuan.activityType,
+					kelasId: kelasInstance.id,
+					kelasName: kelasInstance.name,
 					kelasInstanceId: pertemuan.kelasInstanceId
 				})
 				.from(pertemuan)
-				.where(inArray(pertemuan.kelasInstanceId, classIds)),
+				.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
+				.where(inArray(pertemuan.kelasInstanceId, classIds))
+				.orderBy(asc(pertemuan.sessionDate), asc(pertemuan.startTime)),
 
 			db
 				.select({
@@ -192,17 +222,27 @@ export const GuruDashboardService = {
 
 		const sessionIds = allSessions.map((s) => s.id);
 
-		// Attendance count per session
-		const attendanceCounts = sessionIds.length > 0
+		// Attendance count per session (hadir & excused)
+		const attendanceRecords = sessionIds.length > 0
 			? await db
 					.select({
 						pertemuanId: attendance.pertemuanId,
-						totalHadir: count(attendance.id)
+						status: attendance.status
 					})
 					.from(attendance)
-					.where(and(inArray(attendance.pertemuanId, sessionIds), eq(attendance.status, 'hadir')))
-					.groupBy(attendance.pertemuanId)
+					.where(and(inArray(attendance.pertemuanId, sessionIds), inArray(attendance.status, ['hadir', 'excused'])))
 			: [];
+
+		const hadirMap = new Map<number, number>();
+		const izinMap = new Map<number, number>();
+
+		for (const att of attendanceRecords) {
+			if (att.status === 'hadir') {
+				hadirMap.set(att.pertemuanId, (hadirMap.get(att.pertemuanId) || 0) + 1);
+			} else if (att.status === 'excused') {
+				izinMap.set(att.pertemuanId, (izinMap.get(att.pertemuanId) || 0) + 1);
+			}
+		}
 
 		const studentsCountMap = new Map<number, number>();
 		for (const st of studentsCountList) studentsCountMap.set(st.kelasInstanceId, Number(st.totalStudents));
@@ -210,19 +250,44 @@ export const GuruDashboardService = {
 		const sessionsCountMap = new Map<number, number>();
 		for (const se of sessionsList) sessionsCountMap.set(se.kelasInstanceId, Number(se.totalSessions));
 
-		const attendanceMap = new Map<number, number>();
-		for (const a of attendanceCounts) attendanceMap.set(a.pertemuanId, Number(a.totalHadir));
-
 		// Class Progress Map: kelasId -> { totalHadir, totalPossible }
 		const classProgressMap = new Map<number, { totalHadir: number; totalPossible: number }>();
 		for (const s of allSessions) {
 			const studCount = studentsCountMap.get(s.kelasInstanceId) || 0;
-			const hadir = attendanceMap.get(s.id) || 0;
+			const hadir = hadirMap.get(s.id) || 0;
 			const entry = classProgressMap.get(s.kelasInstanceId) || { totalHadir: 0, totalPossible: 0 };
 			entry.totalHadir += hadir;
 			entry.totalPossible += studCount;
 			classProgressMap.set(s.kelasInstanceId, entry);
 		}
+
+		// Session Attendance Trend calculation for visual chart
+		const sessionAttendanceTrend: SessionAttendanceTrendItem[] = allSessions.map((s) => {
+			const totalEnrolled = studentsCountMap.get(s.kelasInstanceId) || 0;
+			const totalHadir = hadirMap.get(s.id) || 0;
+			const totalIzin = izinMap.get(s.id) || 0;
+			const attendanceRate = totalEnrolled > 0 ? Math.min(100, Math.round((totalHadir / totalEnrolled) * 100)) : 0;
+
+			return {
+				id: s.id,
+				title: s.title,
+				sessionDate: s.sessionDate,
+				startTime: s.startTime,
+				endTime: s.endTime,
+				activityType: s.activityType,
+				kelasId: s.kelasId,
+				kelasName: s.kelasName,
+				totalEnrolled,
+				totalHadir,
+				totalIzin,
+				attendanceRate
+			};
+		});
+
+		const runningClassesOptions = runningClassesRaw.map((c) => ({
+			id: c.id,
+			name: c.name
+		}));
 
 		// Calculate Overall Curriculum Rate
 		const overallCurriculumRate = trackCardsRes.trackCards.length > 0
@@ -303,6 +368,8 @@ export const GuruDashboardService = {
 				overallCurriculumRate
 			},
 			runningClasses,
+			runningClassesOptions,
+			sessionAttendanceTrend,
 			phaseSummaries,
 			recentNotes
 		};

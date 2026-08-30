@@ -77,7 +77,7 @@
 	<div class="card-header-row">
 		<div>
 			<div class="flex items-center gap-2 flex-wrap">
-				<h3 class="card-title">Grafik Kehadiran Sesi</h3>
+				<h3 class="card-title">Grafik Statistik Kehadiran Sesi</h3>
 				{#if kelasName}
 					<span class="kelas-badge-pill">{kelasName}</span>
 				{/if}

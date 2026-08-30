@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import CustomSelect from './CustomSelect.svelte';
 	import DatePicker from './DatePicker.svelte';
 
@@ -24,11 +25,16 @@
 
 	let {
 		sessions = [],
-		mentorClasses = []
+		mentorClasses = [],
+		title = 'Grafik Statistik Kehadiran Sesi Pertemuan'
 	}: {
 		sessions: SessionTrendItem[];
 		mentorClasses: MentorClassOption[];
+		title?: string;
 	} = $props();
+
+	// Scroll container reference & auto-scroll effect
+	let scrollContainer = $state<HTMLDivElement | null>(null);
 
 	// Filter state
 	let selectedRange = $state<'7_days' | '30_days' | 'this_month' | 'all' | 'custom'>('30_days');
@@ -37,6 +43,17 @@
 	let customEndDate = $state<string>('');
 
 	let activeHoverIndex = $state<number | null>(null);
+
+	// Auto-scroll to the latest (rightmost) session bar whenever sessions or filters change
+	$effect(() => {
+		if (scrollContainer && filteredSessions.length > 0) {
+			tick().then(() => {
+				if (scrollContainer) {
+					scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+				}
+			});
+		}
+	});
 
 	// Date Range Calculation Helpers
 	function getTodayIso(): string {
@@ -127,7 +144,7 @@
 	<div class="card-header-row">
 		<div>
 			<div class="flex items-center gap-2 flex-wrap">
-				<h3 class="card-title">Grafik Stat Kehadiran Antar Pertemuan</h3>
+				<h3 class="card-title">{title}</h3>
 				<span class="count-badge">{totalSessions} Sesi Terfilter</span>
 			</div>
 			<p class="card-subtitle">Tren perbandingan tingkat kehadiran siswa antar sesi pertemuan kelas.</p>
@@ -229,7 +246,7 @@
 				<span>0%</span>
 			</div>
 
-			<div class="chart-bars-scroll">
+			<div class="chart-bars-scroll" bind:this={scrollContainer}>
 				<div class="chart-bars-track">
 					<!-- Horizontal Guide Lines -->
 					<div class="guide-line" style="bottom: 48px; top: 0;"></div>

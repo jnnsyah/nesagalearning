@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import MeetingAttendanceTrendChart from '$lib/components/ui/MeetingAttendanceTrendChart.svelte';
 
 	let { data } = $props();
 
@@ -110,6 +111,16 @@
 				<span class="stat-subtext">Hadir (40%) + Tugas (30%) + Quiz (30%)</span>
 			</div>
 		</div>
+	</section>
+
+	<!-- ══════════════════════════════════════════════════════════
+	     INTERACTIVE SESSION ATTENDANCE TREND CHART
+	     ══════════════════════════════════════════════════════════ -->
+	<section class="mb-6">
+		<MeetingAttendanceTrendChart
+			sessions={data.dashboardData.sessionAttendanceTrend || []}
+			mentorClasses={data.dashboardData.runningClassesOptions || []}
+		/>
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
