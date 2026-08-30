@@ -136,7 +136,7 @@
 <div class="content-area">
 	<!-- Standardized Gold-Standard Header Card -->
 	<div class="header-card mb-6">
-		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
+		<div class="header-top-row flex items-center justify-between gap-3">
 			<nav class="breadcrumb" aria-label="Breadcrumb">
 				<a href="/mentor" class="bc-link">Dashboard</a>
 				{#if isFromDashboard}
@@ -603,7 +603,7 @@
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 8px;
 		margin-bottom: 24px !important;
 		max-width: 100%;
 		word-break: break-word;
