@@ -121,7 +121,7 @@
 		]}
 	>
 		{#snippet badges()}
-			<span class="badge badge-primary">KATALOG TRACK</span>
+			<span class="badge badge-neutral">{totalTracks} TRACK TOTAL</span>
 		{/snippet}
 
 		{#snippet actions()}
@@ -147,6 +147,7 @@
 			{form.error}
 		</div>
 	{/if}
+
 	{#if form?.success}
 		<div class="notif notif--success" role="status">
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -154,45 +155,49 @@
 		</div>
 	{/if}
 
-	<!-- ── Stat cards ────────────────────────────── -->
-	<div class="stats-row">
+	<!-- Overview Stats Grid -->
+	<div class="stats-grid">
 		<div class="stat-card">
-			<div class="stat-card__icon" style="background:#e0e7ff;color:#4f46e5;">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+			<div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 			</div>
 			<div>
-				<div class="stat-card__label">Total Track</div>
-				<div class="stat-card__value">{totalTracks}</div>
+				<div class="stat-label">Total Track</div>
+				<div class="stat-value">{totalTracks}</div>
+				<div class="stat-meta">Kurikulum Aktif</div>
 			</div>
 		</div>
 
 		<div class="stat-card">
-			<div class="stat-card__icon" style="background:#dcfce7;color:#16a34a;">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+			<div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 			</div>
 			<div>
-				<div class="stat-card__label">Published</div>
-				<div class="stat-card__value" style="color:#16a34a;">{publishedTracks}</div>
+				<div class="stat-label">Published</div>
+				<div class="stat-value" style="color: #16a34a;">{publishedTracks}</div>
+				<div class="stat-meta">Siap Diakses Siswa</div>
 			</div>
 		</div>
 
 		<div class="stat-card">
-			<div class="stat-card__icon" style="background:#fef3c7;color:#d97706;">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+			<div class="stat-icon" style="background: #fffbeb; color: #d97706;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 			</div>
 			<div>
-				<div class="stat-card__label">Draft</div>
-				<div class="stat-card__value" style="color:#d97706;">{draftTracks}</div>
+				<div class="stat-label">Draft</div>
+				<div class="stat-value" style="color: #d97706;">{draftTracks}</div>
+				<div class="stat-meta">Tahap Penyusunan</div>
 			</div>
 		</div>
 
 		<div class="stat-card">
-			<div class="stat-card__icon" style="background:#f3e8ff;color:#9333ea;">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+			<div class="stat-icon" style="background: #f3e8ff; color: #9333ea;">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 			</div>
 			<div>
-				<div class="stat-card__label">Total Materi</div>
-				<div class="stat-card__value">{totalMateris}</div>
+				<div class="stat-label">Total Materi</div>
+				<div class="stat-value" style="color: #9333ea;">{totalMateris}</div>
+				<div class="stat-meta">Modul Pembelajaran</div>
 			</div>
 		</div>
 	</div>
@@ -745,21 +750,31 @@
 		color: var(--green-live);
 	}
 
-	/* ── Stats row ─────────────────────────────────── */
-	.stats-row {
+	/* ── Stats Grid (Blueprint Spec) ─────────────────── */
+	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 14px;
+		gap: 16px;
+		margin-bottom: 0;
 	}
 
-	@media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
-	@media (max-width: 560px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+	@media (max-width: 900px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 480px) {
+		.stats-grid {
+			grid-template-columns: 1fr;
+		}
+	}
 
 	.stat-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg);
-		padding: 16px 18px;
+		padding: 18px;
 		display: flex;
 		align-items: center;
 		gap: 14px;
@@ -772,7 +787,7 @@
 		box-shadow: var(--shadow-md);
 	}
 
-	.stat-card__icon {
+	.stat-icon {
 		width: 44px;
 		height: 44px;
 		border-radius: var(--radius-md);
@@ -782,20 +797,28 @@
 		flex-shrink: 0;
 	}
 
-	.stat-card__label {
+	.stat-label {
 		font-size: 12px;
 		font-weight: 700;
 		color: var(--text-secondary);
-		margin-bottom: 4px;
+		margin-bottom: 2px;
 	}
 
-	.stat-card__value {
+	.stat-value {
 		font-family: var(--font-macro);
 		font-size: 1.8rem;
 		font-weight: 800;
 		color: var(--text-primary);
 		line-height: 1;
-		letter-spacing: -0.025em;
+		letter-spacing: -0.02em;
+	}
+
+	.stat-meta {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 500;
+		color: var(--text-muted);
+		margin-top: 4px;
 	}
 
 	/* ── Filter bar ─────────────────────────────────── */
