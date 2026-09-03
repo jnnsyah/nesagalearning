@@ -433,6 +433,7 @@
 						Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
 					{/if}
 				</p>
+			{/snippet}
 		</PageHeaderCard>
 
 	{#if currentMeeting}

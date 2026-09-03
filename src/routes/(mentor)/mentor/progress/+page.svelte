@@ -305,7 +305,7 @@
 	{:else if data.monitoringData.viewMode === 'detail'}
 		<PageHeaderCard
 			title={data.monitoringData.selectedTrack.title}
-			subtitle={data.monitoringData.selectedTrack.description}
+			subtitle={data.monitoringData.selectedTrack.description ?? undefined}
 			breadcrumbs={[
 				{ label: 'Dashboard', href: '/mentor' },
 				{ label: 'Progress Pembelajaran', href: 'javascript:void(0)' },
