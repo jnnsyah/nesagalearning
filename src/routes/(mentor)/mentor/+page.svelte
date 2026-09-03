@@ -41,9 +41,8 @@
 	<title>Dashboard Mentor — Portal NLC</title>
 </svelte:head>
 
-<div class="content-area">
-	<div class="mb-6">
-		<PageHeaderCard
+<div class="page-container">
+	<PageHeaderCard
 			title="Dashboard Mentor"
 			breadcrumbs={[{ label: 'Dashboard' }]}
 		>
@@ -74,9 +73,7 @@
 					</svg>
 					<span>Kelola Pertemuan</span>
 				</a>
-			{/snippet}
 		</PageHeaderCard>
-	</div>
 
 	<!-- Overview Stats Grid -->
 	<div class="stats-row">

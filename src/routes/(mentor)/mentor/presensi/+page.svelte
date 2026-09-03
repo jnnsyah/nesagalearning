@@ -405,9 +405,8 @@
 
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && isQRExpanded) isQRExpanded = false; }} />
 
-<div class="content-area">
-	<div class="mb-6">
-		<PageHeaderCard
+<div class="page-container">
+	<PageHeaderCard
 			title={currentMeeting ? `Presensi: ${currentMeeting.title}` : 'Manajemen Presensi Sesi'}
 			breadcrumbs={[
 				{ label: 'Dashboard', href: '/mentor' },
@@ -434,9 +433,7 @@
 						Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
 					{/if}
 				</p>
-			{/snippet}
 		</PageHeaderCard>
-	</div>
 
 	{#if currentMeeting}
 		<!-- Main Top Grid: QR Generator Panel + Meeting Specs Card -->

@@ -199,50 +199,48 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO HEADER
 	     ══════════════════════════════════════════════════════════ -->
-	<div class="mb-6">
-		<PageHeaderCard
-			title="Roster Siswa & Progress Track Pembelajaran"
-			subtitle="Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase track pembelajaran siswa."
-			breadcrumbs={[
-				{ label: 'Dashboard', href: '/mentor' },
-				{ label: 'Daftar Siswa Bimbingan' }
-			]}
-		>
-			{#snippet badges()}
-				{#if data.rosterData.selectedKelas}
-					<span class="badge badge-primary">
-						{data.rosterData.selectedKelas.name} ({data.rosterData.selectedKelas.tingkatName})
-					</span>
-				{/if}
-			{/snippet}
+	<PageHeaderCard
+		title="Roster Siswa & Progress Track Pembelajaran"
+		subtitle="Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase track pembelajaran siswa."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/mentor' },
+			{ label: 'Daftar Siswa Bimbingan' }
+		]}
+	>
+		{#snippet badges()}
+			{#if data.rosterData.selectedKelas}
+				<span class="badge badge-primary">
+					{data.rosterData.selectedKelas.name} ({data.rosterData.selectedKelas.tingkatName})
+				</span>
+			{/if}
+		{/snippet}
 
-			{#snippet actions()}
-				<div class="flex items-center gap-3 flex-wrap">
-					<div class="w-48">
-						<CustomSelect
-							id="ta-select"
-							name="tahunAjaranId"
-							options={taSelectOptions}
-							value={selectedTaId}
-							onchange={handleTaChange}
-							searchable={false}
-						/>
-					</div>
-
-					<div class="w-56">
-						<CustomSelect
-							id="kelas-select"
-							name="kelasInstanceId"
-							options={kelasSelectOptions}
-							value={selectedKelasId}
-							onchange={handleKelasChange}
-							searchable={false}
-						/>
-					</div>
+		{#snippet actions()}
+			<div class="flex items-center gap-3 flex-wrap">
+				<div class="w-48">
+					<CustomSelect
+						id="ta-select"
+						name="tahunAjaranId"
+						options={taSelectOptions}
+						value={selectedTaId}
+						onchange={handleTaChange}
+						searchable={false}
+					/>
 				</div>
-			{/snippet}
-		</PageHeaderCard>
-	</div>
+
+				<div class="w-56">
+					<CustomSelect
+						id="kelas-select"
+						name="kelasInstanceId"
+						options={kelasSelectOptions}
+						value={selectedKelasId}
+						onchange={handleKelasChange}
+						searchable={false}
+					/>
+				</div>
+			</div>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4 KEY METRIC STAT CARDS (60% MINIMUM ATTENDANCE THRESHOLD)

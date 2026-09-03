@@ -483,21 +483,19 @@ let rosterSortOptions = [
 
 {#if selectedPertemuanId === null}
 	<!-- LEVEL 1: MASTER GRID VIEW (PILIH PERTEMUAN) -->
-	<div class="content-area">
-		<div class="mb-6">
-			<PageHeaderCard
-				title="Daftar Pertemuan Ber-Tugas"
-				subtitle="Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa dalam antarmuka Studio 3-Pane Review."
-				breadcrumbs={[
-					{ label: 'Dashboard', href: '/mentor' },
-					{ label: 'Penilaian Tugas' }
-				]}
-			>
-				{#snippet badges()}
-					<span class="badge badge-pending">ANTREAN REVIEW</span>
-				{/snippet}
-			</PageHeaderCard>
-		</div>
+	<div class="page-container">
+		<PageHeaderCard
+			title="Daftar Pertemuan Ber-Tugas"
+			subtitle="Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa dalam antarmuka Studio 3-Pane Review."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Penilaian Tugas' }
+			]}
+		>
+			{#snippet badges()}
+				<span class="badge badge-pending">ANTREAN REVIEW</span>
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- Overview Stats Grid -->
 		<div class="stats-row">

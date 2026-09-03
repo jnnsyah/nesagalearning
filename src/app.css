@@ -146,6 +146,34 @@ body {
 }
 
 /* === CONTAINERS & PANELS === */
+.page-container,
+.content-area {
+	width: 100%;
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	box-sizing: border-box;
+}
+
+@media (max-width: 1023px) {
+	.page-container,
+	.content-area {
+		padding: 20px 18px;
+		gap: 18px;
+	}
+}
+
+@media (max-width: 639px) {
+	.page-container,
+	.content-area {
+		padding: 14px 14px calc(100px + env(safe-area-inset-bottom, 0px));
+		gap: 16px;
+	}
+}
+
 .panel {
 	background-color: var(--bg-panel);
 	border: 1px solid var(--border-hard);

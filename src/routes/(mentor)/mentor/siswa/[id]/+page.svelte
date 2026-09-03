@@ -119,38 +119,36 @@
 
 <div class="page-container">
 	<!-- Standardized Header Card -->
-	<div class="mb-6">
-		<PageHeaderCard
-			title={studentInfo.fullName}
-			subtitle={studentInfo.nisn ? `NISN: ${studentInfo.nisn}` : `@${studentInfo.username}`}
-			breadcrumbs={[
-				{ label: 'Dashboard', href: '/mentor' },
-				{ label: 'Daftar Siswa', href: `/mentor/siswa?kelasInstanceId=${data.kelasInstanceId}` },
-				{ label: `Detail Siswa` }
-			]}
-		>
-			{#snippet badges()}
-				{#if data.from === 'progress'}
-					<a
-						href="/mentor/progress?{data.trackId ? `trackId=${data.trackId}&` : ''}kelasInstanceId={data.kelasInstanceId}{data.tahunAjaranId ? `&tahunAjaranId=${data.tahunAjaranId}` : ''}"
-						class="btn-secondary-head-pill"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<polyline points="15 18 9 12 15 6" />
-						</svg>
-						<span>Kembali ke Progress</span>
-					</a>
-				{:else}
-					<a href="/mentor/siswa?kelasInstanceId={data.kelasInstanceId}" class="btn-secondary-head-pill">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<polyline points="15 18 9 12 15 6" />
-						</svg>
-						<span>Kembali ke Roster</span>
-					</a>
-				{/if}
-			{/snippet}
-		</PageHeaderCard>
-	</div>
+	<PageHeaderCard
+		title={studentInfo.fullName}
+		subtitle={studentInfo.nisn ? `NISN: ${studentInfo.nisn}` : `@${studentInfo.username}`}
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/mentor' },
+			{ label: 'Daftar Siswa', href: `/mentor/siswa?kelasInstanceId=${data.kelasInstanceId}` },
+			{ label: `Detail Siswa` }
+		]}
+	>
+		{#snippet badges()}
+			{#if data.from === 'progress'}
+				<a
+					href="/mentor/progress?{data.trackId ? `trackId=${data.trackId}&` : ''}kelasInstanceId={data.kelasInstanceId}{data.tahunAjaranId ? `&tahunAjaranId=${data.tahunAjaranId}` : ''}"
+					class="btn-secondary-head-pill"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<span>Kembali ke Progress</span>
+				</a>
+			{:else}
+				<a href="/mentor/siswa?kelasInstanceId={data.kelasInstanceId}" class="btn-secondary-head-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<span>Kembali ke Roster</span>
+				</a>
+			{/if}
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO PROFILE BANNER CARD

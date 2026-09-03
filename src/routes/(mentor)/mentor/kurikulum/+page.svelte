@@ -111,37 +111,34 @@
 	<title>Track Pembelajaran — Portal Mentor NLC</title>
 </svelte:head>
 
-<div class="content-area">
+<div class="page-container">
+	<PageHeaderCard
+		title="Track Pembelajaran"
+		subtitle="Kelola dan susun alur materi, modul (phase), sub-phase, serta kuis pembelajaran per jenjang."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/mentor' },
+			{ label: 'Track Pembelajaran' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-primary">KATALOG TRACK</span>
+		{/snippet}
 
-	<div class="mb-6">
-		<PageHeaderCard
-			title="Track Pembelajaran"
-			subtitle="Kelola dan susun alur materi, modul (phase), sub-phase, serta kuis pembelajaran per jenjang."
-			breadcrumbs={[
-				{ label: 'Dashboard', href: '/mentor' },
-				{ label: 'Track Pembelajaran' }
-			]}
-		>
-			{#snippet badges()}
-				<span class="badge badge-primary">KATALOG TRACK</span>
-			{/snippet}
-
-			{#snippet actions()}
-				<button
-					id="btn-buat-track"
-					onclick={openCreateForm}
-					class="btn-create-pill border-none cursor-pointer"
-					aria-label="Buat track pembelajaran baru (Alt+N)"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<line x1="12" y1="5" x2="12" y2="19" />
-						<line x1="5" y1="12" x2="19" y2="12" />
-					</svg>
-					<span>Buat Track</span>
-				</button>
-			{/snippet}
-		</PageHeaderCard>
-	</div>
+		{#snippet actions()}
+			<button
+				id="btn-buat-track"
+				onclick={openCreateForm}
+				class="btn-create-pill border-none cursor-pointer"
+				aria-label="Buat track pembelajaran baru (Alt+N)"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				<span>Buat Track</span>
+			</button>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ── Notifications ────────────────────────── -->
 	{#if form?.error}

@@ -259,32 +259,30 @@
 <ToastContainer />
 
 <div class="page-container">
-	<div class="mb-6">
-		<PageHeaderCard
-			title="Kalender & Timeline Jadwal Pertemuan"
-			subtitle="Visualisasikan jadwal sesi kelas komunitas, pantau status pertemuan secara real-time, dan akses materi serta lembar presensi."
-			breadcrumbs={[
-				{ label: 'Dashboard', href: '/mentor' },
-				{ label: 'Kalender Jadwal' }
-			]}
-		>
-			{#snippet badges()}
-				<span class="badge badge-neutral">{totalCount} SESI TOTAL</span>
-			{/snippet}
+	<PageHeaderCard
+		title="Kalender & Timeline Jadwal Pertemuan"
+		subtitle="Visualisasikan jadwal sesi kelas komunitas, pantau status pertemuan secara real-time, dan akses materi serta lembar presensi."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/mentor' },
+			{ label: 'Kalender Jadwal' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">{totalCount} SESI TOTAL</span>
+		{/snippet}
 
-			{#snippet actions()}
-				<a href="/mentor/pertemuan" class="btn-create-pill">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="3" y="4" width="18" height="18" rx="2" />
-						<line x1="16" y1="2" x2="16" y2="6" />
-						<line x1="8" y1="2" x2="8" y2="6" />
-						<line x1="3" y1="10" x2="21" y2="10" />
-					</svg>
-					<span>Kelola Sesi</span>
-				</a>
-			{/snippet}
-		</PageHeaderCard>
-	</div>
+		{#snippet actions()}
+			<a href="/mentor/pertemuan" class="btn-create-pill">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="4" width="18" height="18" rx="2" />
+					<line x1="16" y1="2" x2="16" y2="6" />
+					<line x1="8" y1="2" x2="8" y2="6" />
+					<line x1="3" y1="10" x2="21" y2="10" />
+				</svg>
+				<span>Kelola Sesi</span>
+			</a>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Quick Stats Grid (4 Metrics Cards) -->
 	<div class="stats-grid mb-6">
