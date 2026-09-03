@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
@@ -198,52 +199,50 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO HEADER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-top-row">
-			<div class="header-main-content flex-1">
-				<div class="hero-title-group flex items-center gap-2 flex-wrap mb-1">
-					<h1 class="hero-title">Roster Siswa & Progress Track Pembelajaran</h1>
-					{#if data.rosterData.selectedKelas}
-						<span class="badge badge-neutral font-semibold h-[26px] leading-none text-[11px] px-2.5 inline-flex items-center">
-							Angkatan {data.rosterData.selectedKelas.targetAngkatan || 2025}
-						</span>
-						<span class="badge badge-primary h-[26px] leading-none text-[11px] px-2.5 inline-flex items-center">
-							⭐ {data.rosterData.selectedKelas.name} ({data.rosterData.selectedKelas.tingkatName})
-						</span>
-					{/if}
-				</div>
-				<p class="hero-subtitle">
-					Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase track pembelajaran siswa.
-				</p>
-			</div>
+	<div class="mb-6">
+		<PageHeaderCard
+			title="Roster Siswa & Progress Track Pembelajaran"
+			subtitle="Direktori siswa aktif di kelas yang Anda ampu. Pantau statistik presensi, poin, dan progres pencapaian fase track pembelajaran siswa."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Daftar Siswa Bimbingan' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.rosterData.selectedKelas}
+					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+						⭐ {data.rosterData.selectedKelas.name} ({data.rosterData.selectedKelas.tingkatName})
+					</span>
+				{/if}
+			{/snippet}
 
-			<div class="flex items-center gap-3 flex-wrap">
-				<div class="w-48">
-					<label for="ta-select" class="filter-label">Periode</label>
-					<CustomSelect
-						id="ta-select"
-						name="tahunAjaranId"
-						options={taSelectOptions}
-						value={selectedTaId}
-						onchange={handleTaChange}
-						searchable={false}
-					/>
-				</div>
+			{#snippet actions()}
+				<div class="flex items-center gap-3 flex-wrap">
+					<div class="w-48">
+						<CustomSelect
+							id="ta-select"
+							name="tahunAjaranId"
+							options={taSelectOptions}
+							value={selectedTaId}
+							onchange={handleTaChange}
+							searchable={false}
+						/>
+					</div>
 
-				<div class="w-56">
-					<label for="kelas-select" class="filter-label">Pilih Kelompok Belajar</label>
-					<CustomSelect
-						id="kelas-select"
-						name="kelasInstanceId"
-						options={kelasSelectOptions}
-						value={selectedKelasId}
-						onchange={handleKelasChange}
-						searchable={false}
-					/>
+					<div class="w-56">
+						<CustomSelect
+							id="kelas-select"
+							name="kelasInstanceId"
+							options={kelasSelectOptions}
+							value={selectedKelasId}
+							onchange={handleKelasChange}
+							searchable={false}
+						/>
+					</div>
 				</div>
-			</div>
-		</div>
-	</header>
+			{/snippet}
+		</PageHeaderCard>
+	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4 KEY METRIC STAT CARDS (60% MINIMUM ATTENDANCE THRESHOLD)

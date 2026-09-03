@@ -8,6 +8,7 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
@@ -589,35 +590,31 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Standardized Header Card -->
-	<div class="header-card mb-6">
-		<div class="header-top-row">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<span class="bc-current">Pertemuan &amp; Sesi QR</span>
-			</nav>
+	<div class="mb-6">
+		<PageHeaderCard
+			title="Manajemen Pertemuan"
+			subtitle="Jadwalkan sesi kelas, distribusikan slide materi PPT, dan kelola presensi QR siswa secara real-time."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Pertemuan & Sesi QR' }
+			]}
+		>
+			{#snippet badges()}
+				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					{totalCount} SESI TOTAL
+				</span>
+			{/snippet}
 
-			<div class="header-badges-row">
-				<span class="header-badge-pill">{totalCount} Sesi Total</span>
-				<button type="button" onclick={openCreateForm} class="btn-create-pill" aria-label="Buat sesi pertemuan baru">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+			{#snippet actions()}
+				<button type="button" onclick={openCreateForm} class="btn-create-pill border-none cursor-pointer" aria-label="Buat sesi pertemuan baru">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<line x1="12" y1="5" x2="12" y2="19" />
 						<line x1="5" y1="12" x2="19" y2="12" />
 					</svg>
 					<span>Buat Sesi Pertemuan</span>
 				</button>
-			</div>
-		</div>
-
-		<div class="header-main-content">
-			<h1 class="page-title">Manajemen Pertemuan</h1>
-			<p class="page-sub">
-				Jadwalkan sesi kelas, distribusikan slide materi PPT, dan kelola presensi QR siswa secara real-time.
-			</p>
-		</div>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- Overview Stats Grid -->

@@ -5,6 +5,7 @@
 	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
@@ -112,29 +113,36 @@
 
 <div class="content-area">
 
-	<!-- Header row with page title & action button -->
-	<div class="page-header-row">
-		<div>
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-				<span class="bc-current">Track Pembelajaran</span>
-			</nav>
-			<h1 class="page-title">Track Pembelajaran</h1>
-		</div>
-		<button
-			id="btn-buat-track"
-			onclick={openCreateForm}
-			class="btn-create"
-			aria-label="Buat track pembelajaran baru (Alt+N)"
+	<div class="mb-6">
+		<PageHeaderCard
+			title="Track Pembelajaran"
+			subtitle="Kelola dan susun alur materi, modul (phase), sub-phase, serta kuis pembelajaran per jenjang."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Track Pembelajaran' }
+			]}
 		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-				<line x1="12" y1="5" x2="12" y2="19"/>
-				<line x1="5" y1="12" x2="19" y2="12"/>
-			</svg>
-			<span>Buat Track</span>
-			<kbd aria-hidden="true">Alt+N</kbd>
-		</button>
+			{#snippet badges()}
+				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					KATALOG TRACK
+				</span>
+			{/snippet}
+
+			{#snippet actions()}
+				<button
+					id="btn-buat-track"
+					onclick={openCreateForm}
+					class="btn-create-pill border-none cursor-pointer"
+					aria-label="Buat track pembelajaran baru (Alt+N)"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19" />
+						<line x1="5" y1="12" x2="19" y2="12" />
+					</svg>
+					<span>Buat Track</span>
+				</button>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- ── Notifications ────────────────────────── -->

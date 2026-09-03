@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
@@ -258,43 +259,33 @@
 <ToastContainer />
 
 <div class="page-container">
-	<!-- Standardized Gold-Standard Header Card -->
-	<div class="header-card mb-6">
-		<div class="header-top-row">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				<span class="bc-current">Kalender Jadwal</span>
-			</nav>
+	<div class="mb-6">
+		<PageHeaderCard
+			title="Kalender & Timeline Jadwal Pertemuan"
+			subtitle="Visualisasikan jadwal sesi kelas komunitas, pantau status pertemuan secara real-time, dan akses materi serta lembar presensi."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Kalender Jadwal' }
+			]}
+		>
+			{#snippet badges()}
+				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					{totalCount} SESI TOTAL
+				</span>
+			{/snippet}
 
-			<div class="header-badges-row">
-				<span class="header-badge-pill">{totalCount} Sesi Total</span>
-			</div>
-		</div>
-
-		<div class="header-main-content text-left">
-			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-				<div class="text-left">
-					<h1 class="page-title text-left">Kalender &amp; Timeline Jadwal Pertemuan</h1>
-					<p class="page-sub text-left">
-						Visualisasikan jadwal sesi kelas komunitas, pantau status pertemuan secara real-time, dan akses materi serta lembar presensi.
-					</p>
-				</div>
-				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href="/mentor/pertemuan" class="btn-create-pill">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="3" y="4" width="18" height="18" rx="2" />
-							<line x1="16" y1="2" x2="16" y2="6" />
-							<line x1="8" y1="2" x2="8" y2="6" />
-							<line x1="3" y1="10" x2="21" y2="10" />
-						</svg>
-						<span>Kelola Sesi Pertemuan</span>
-					</a>
-				</div>
-			</div>
-		</div>
+			{#snippet actions()}
+				<a href="/mentor/pertemuan" class="btn-create-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="4" width="18" height="18" rx="2" />
+						<line x1="16" y1="2" x2="16" y2="6" />
+						<line x1="8" y1="2" x2="8" y2="6" />
+						<line x1="3" y1="10" x2="21" y2="10" />
+					</svg>
+					<span>Kelola Sesi</span>
+				</a>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- Quick Stats Grid (4 Metrics Cards) -->

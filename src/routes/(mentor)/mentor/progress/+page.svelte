@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
@@ -148,59 +149,48 @@
 
 <div class="page-container">
 	{#if data.monitoringData.viewMode === 'grid'}
-		<!-- TIER 1: GRID VIEW (Katalog & Ringkasan Track Angkatan) -->
-		<div class="panel header-card p-5">
-			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/mentor" class="bc-link">Dashboard</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Progress Pembelajaran</span>
-				</nav>
-
+		<PageHeaderCard
+			title="Progress Track Pembelajaran Angkatan"
+			subtitle="Pilih alur track pembelajaran di bawah ini untuk memantau detail pencapaian modul, materi, kuis, dan progres siswa."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Progress Pembelajaran' }
+			]}
+		>
+			{#snippet badges()}
 				{#if data.monitoringData.selectedTahunAjaran}
 					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
 						TA {data.monitoringData.selectedTahunAjaran.name}
 					</span>
 				{/if}
-			</div>
+			{/snippet}
 
-			<div class="header-main-content text-left">
-				<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-					<div class="text-left">
-						<h1 class="page-title text-left">Progress Track Pembelajaran Angkatan</h1>
-						<p class="page-sub text-left">
-							Pilih alur track pembelajaran di bawah ini untuk memantau detail pencapaian modul, materi, kuis, dan progres siswa.
-						</p>
+			{#snippet actions()}
+				<div class="flex items-center gap-3 flex-wrap">
+					<div class="w-48">
+						<CustomSelect
+							id="grid-ta-select"
+							name="tahunAjaranId"
+							options={taSelectOptions}
+							value={selectedTaId}
+							onchange={handleTaChange}
+							searchable={false}
+						/>
 					</div>
 
-					<div class="flex items-center gap-3 flex-wrap shrink-0">
-						<div class="w-48">
-							<CustomSelect
-								id="grid-ta-select"
-								name="tahunAjaranId"
-								options={taSelectOptions}
-								value={selectedTaId}
-								onchange={handleTaChange}
-								searchable={false}
-							/>
-						</div>
-
-						<div class="w-56">
-							<CustomSelect
-								id="grid-kelas-select"
-								name="kelasInstanceId"
-								options={kelasSelectOptions}
-								value={selectedKelasId}
-								onchange={handleKelasChange}
-								searchable={false}
-							/>
-						</div>
+					<div class="w-56">
+						<CustomSelect
+							id="grid-kelas-select"
+							name="kelasInstanceId"
+							options={kelasSelectOptions}
+							value={selectedKelasId}
+							onchange={handleKelasChange}
+							searchable={false}
+						/>
 					</div>
 				</div>
-			</div>
-		</div>
+			{/snippet}
+		</PageHeaderCard>
 
 		{#if data.monitoringData.trackCards.length === 0}
 			<div class="panel p-10 text-center">
@@ -313,58 +303,37 @@
 		{/if}
 
 	{:else if data.monitoringData.viewMode === 'detail'}
-		<!-- TIER 2: DETAIL BREAKDOWN VIEW -->
-		<div class="panel header-card p-5">
-			<div class="header-top-row flex items-center justify-between gap-3 mb-2">
-				<nav class="breadcrumb" aria-label="Breadcrumb">
-					<a href="/mentor" class="bc-link">Dashboard</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<button type="button" onclick={navigateBackToGrid} class="bc-link bg-transparent border-none p-0 cursor-pointer text-left">
-						Progress Pembelajaran
-					</button>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Detail Track</span>
-				</nav>
-
+		<PageHeaderCard
+			title={data.monitoringData.selectedTrack.title}
+			subtitle={data.monitoringData.selectedTrack.description}
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Progress Pembelajaran', href: 'javascript:void(0)' },
+				{ label: 'Detail Track' }
+			]}
+		>
+			{#snippet badges()}
 				<button type="button" onclick={navigateBackToGrid} class="btn-secondary-head-pill border-none cursor-pointer">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<polyline points="15 18 9 12 15 6" />
 					</svg>
 					<span>Kembali ke Katalog Track</span>
 				</button>
-			</div>
+			{/snippet}
 
-			<div class="header-main-content text-left">
-				<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-					<div class="text-left">
-						<div class="flex items-center gap-2 flex-wrap mb-1">
-							<h1 class="page-title text-left">{data.monitoringData.selectedTrack.title}</h1>
-							<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-								{data.monitoringData.selectedTrack.tingkatName}
-							</span>
-						</div>
-						{#if data.monitoringData.selectedTrack.description}
-							<p class="page-sub text-left">{data.monitoringData.selectedTrack.description}</p>
-						{/if}
-					</div>
-
-					<div class="w-64 shrink-0">
-						<CustomSelect
-							id="detail-kelas-select"
-							name="kelasInstanceId"
-							options={kelasSelectOptions}
-							value={selectedKelasId}
-							onchange={handleKelasChange}
-							searchable={false}
-						/>
-					</div>
+			{#snippet actions()}
+				<div class="w-64">
+					<CustomSelect
+						id="detail-kelas-select"
+						name="kelasInstanceId"
+						options={kelasSelectOptions}
+						value={selectedKelasId}
+						onchange={handleKelasChange}
+						searchable={false}
+					/>
 				</div>
-			</div>
-		</div>
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- 4 STAT CARDS SUMMARY (UI Component Integration) -->
 		<section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6" aria-label="Ringkasan Matrix Progress Track">

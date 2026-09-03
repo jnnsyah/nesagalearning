@@ -6,6 +6,7 @@
 	import TextArea from '$lib/components/ui/TextArea.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData, ActionData } from './$types';
 
@@ -183,40 +184,38 @@
 	<!-- ═══════════════════════════════════════════════════════
 	     HEADER & BREADCRUMBS
 	     ═══════════════════════════════════════════════════════ -->
-	<div class="page-header-row">
-		<div>
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-				<a href="/mentor/kurikulum" class="bc-link">Track Pembelajaran</a>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-				<span class="bc-current">{data.track.title}</span>
-			</nav>
-			<div class="flex items-center gap-3 mt-1">
-				<h1 class="page-title">{data.track.title}</h1>
-				<span class="badge {data.track.isPublished ? 'badge-hadir' : 'badge-pending'}">
-					{data.track.isPublished ? 'PUBLISHED' : 'DRAFT'}
-				</span>
-				<span class="badge badge-live">{data.track.tingkatName || 'Tingkat'}</span>
-			</div>
-			{#if data.track.description}
-				<p class="page-sub mt-1">{data.track.description}</p>
-			{/if}
-		</div>
+	<div class="mb-6">
+		<PageHeaderCard
+			title={data.track.title}
+			subtitle={data.track.description ?? ''}
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				{ label: 'Track Pembelajaran', href: '/mentor/kurikulum' },
+				{ label: data.track.title }
+			]}
+		>
+			{#snippet badges()}
+				<a href="/mentor/kurikulum" class="btn-secondary-head-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					<span>Kembali ke Katalog</span>
+				</a>
+			{/snippet}
 
-		<div class="flex items-center gap-2 flex-wrap">
-			<a href="/mentor/kurikulum" class="btn-ghost" style="padding: 8px 14px; font-size: 13px;">
-				← Kembali
-			</a>
-			<button onclick={openEditTrackDrawer} class="btn-ghost" style="padding: 8px 14px; font-size: 13px;">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-				Edit Track
-			</button>
-			<button onclick={openCreatePhaseDrawer} class="btn-create">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-				<span>Tambah Fase</span>
-			</button>
-		</div>
+			{#snippet actions()}
+				<div class="flex items-center gap-2 flex-wrap">
+					<button onclick={openEditTrackDrawer} class="btn-secondary-head-pill border-none cursor-pointer">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+						<span>Edit Track</span>
+					</button>
+					<button onclick={openCreatePhaseDrawer} class="btn-create-pill border-none cursor-pointer">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+						<span>Tambah Fase</span>
+					</button>
+				</div>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- ═══════════════════════════════════════════════════════

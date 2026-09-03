@@ -8,12 +8,14 @@
 
 	interface Props {
 		title: string;
+		subtitle?: string;
 		breadcrumbs?: BreadcrumbItem[];
 		badges?: Snippet;
 		actions?: Snippet;
+		subtitleSnippet?: Snippet;
 	}
 
-	let { title, breadcrumbs = [], badges, actions }: Props = $props();
+	let { title, subtitle, breadcrumbs = [], badges, actions, subtitleSnippet }: Props = $props();
 </script>
 
 <div class="page-header-card">
@@ -47,6 +49,11 @@
 	<div class="header-main-content">
 		<div class="header-title-block">
 			<h1 class="page-header-title">{title}</h1>
+			{#if subtitle}
+				<p class="page-header-sub">{subtitle}</p>
+			{:else if subtitleSnippet}
+				{@render subtitleSnippet()}
+			{/if}
 			{#if badges}
 				<div class="header-badges header-badges--mobile">
 					{@render badges()}
@@ -178,6 +185,13 @@
 		line-height: 1.25;
 		margin: 0;
 		letter-spacing: -0.01em;
+	}
+
+	.page-header-sub {
+		font-size: 13.5px;
+		color: var(--text-secondary, #475569);
+		margin: 0;
+		line-height: 1.4;
 	}
 
 	@media (max-width: 640px) {

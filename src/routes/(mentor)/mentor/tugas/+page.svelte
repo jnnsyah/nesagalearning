@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import TextArea from '$lib/components/ui/TextArea.svelte';
@@ -483,23 +484,21 @@ let rosterSortOptions = [
 {#if selectedPertemuanId === null}
 	<!-- LEVEL 1: MASTER GRID VIEW (PILIH PERTEMUAN) -->
 	<div class="content-area">
-		<!-- Page Header Card -->
-		<div class="header-card">
-			<div class="page-header-row" style="margin-bottom: 0;">
-				<div>
-					<nav class="breadcrumb" aria-label="Breadcrumb">
-						<a href="/mentor" class="bc-link">Dashboard</a>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-							<polyline points="9 18 15 12 9 6" />
-						</svg>
-						<span class="bc-current">Penilaian Tugas</span>
-					</nav>
-					<h1 class="page-title">Daftar Pertemuan Ber-Tugas</h1>
-					<p class="page-sub">
-						Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa dalam antarmuka <strong>Studio 3-Pane Review</strong>.
-					</p>
-				</div>
-			</div>
+		<div class="mb-6">
+			<PageHeaderCard
+				title="Daftar Pertemuan Ber-Tugas"
+				subtitle="Pilih sesi pertemuan di bawah ini untuk memeriksa hasil submisi tugas dari siswa dalam antarmuka Studio 3-Pane Review."
+				breadcrumbs={[
+					{ label: 'Dashboard', href: '/mentor' },
+					{ label: 'Penilaian Tugas' }
+				]}
+			>
+				{#snippet badges()}
+					<span class="activity-badge-pill bg-amber-50 text-amber-700 border-amber-200 font-extrabold uppercase">
+						ANTREAN REVIEW
+					</span>
+				{/snippet}
+			</PageHeaderCard>
 		</div>
 
 		<!-- Overview Stats Grid -->

@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { page } from '$app/state';
 	import PaginationFooter from '$lib/components/ui/PaginationFooter.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const m = $derived(data.meeting);
@@ -134,54 +135,39 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Standardized Gold-Standard Header Card -->
-	<div class="header-card mb-6">
-		<div class="header-top-row flex items-center justify-between gap-3">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				{#if isFromDashboard}
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
+	<div class="mb-6">
+		<PageHeaderCard
+			title={m.title}
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				...(isFromDashboard ? [] : [{ label: 'Pertemuan', href: '/mentor/pertemuan' }]),
+				{ label: `Detail Sesi #${m.id}` }
+			]}
+		>
+			{#snippet badges()}
+				<a href={backHref} class="btn-secondary-head-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
 					</svg>
-					<span class="bc-current">Detail Sesi #{m.id}</span>
-				{:else}
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<a href="/mentor/pertemuan" class="bc-link">Pertemuan</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-					<span class="bc-current">Detail Sesi #{m.id}</span>
-				{/if}
-			</nav>
+					<span>{backLabel}</span>
+				</a>
+			{/snippet}
 
-			<a href={backHref} class="btn-secondary-head-pill">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="15 18 9 12 15 6" />
-				</svg>
-				<span>{backLabel}</span>
-			</a>
-		</div>
+			{#snippet subtitleSnippet()}
+				<p class="page-sub text-left">
+					Sub-Fase Track Pembelajaran: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle}</strong>
+				</p>
+			{/snippet}
 
-		<div class="header-main-content text-left">
-			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-				<div class="text-left">
-					<h1 class="page-title text-left">{m.title}</h1>
-					<p class="page-sub text-left">
-						Sub-Fase Track Pembelajaran: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle}</strong>
-					</p>
-				</div>
-				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href={presensiHref} class="btn-create-pill">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-						</svg>
-						<span>Buka Presensi QR</span>
-					</a>
-				</div>
-			</div>
-		</div>
+			{#snippet actions()}
+				<a href={presensiHref} class="btn-create-pill">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+					</svg>
+					<span>Buka Presensi QR</span>
+				</a>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- Quick Stats Grid (4 Metrics Cards) -->

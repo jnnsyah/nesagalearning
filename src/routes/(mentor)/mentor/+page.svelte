@@ -1,5 +1,6 @@
 <script lang="ts">
 	import MeetingAttendanceTrendChart from '$lib/components/ui/MeetingAttendanceTrendChart.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	let { data } = $props();
 
 	let pendingMeetingSummaries = $derived(
@@ -41,46 +42,42 @@
 </svelte:head>
 
 <div class="content-area">
-	<!-- Standardized Gold-Standard Header Card Wrapper -->
-	<div class="panel header-card mb-6 p-5">
-		<div class="header-top-row flex items-center justify-between gap-3">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<span class="bc-current">Dashboard</span>
-			</nav>
+	<div class="mb-6">
+		<PageHeaderCard
+			title="Dashboard Mentor"
+			breadcrumbs={[{ label: 'Dashboard' }]}
+		>
+			{#snippet badges()}
+				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					PORTAL MENTOR
+				</span>
+			{/snippet}
 
-			<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-				PORTAL MENTOR
-			</span>
-		</div>
+			{#snippet subtitleSnippet()}
+				<p class="page-sub text-left">
+					Selamat datang kembali, <strong class="text-indigo-600 font-semibold">{data.user?.fullName}</strong>.
+				</p>
+			{/snippet}
 
-		<div class="header-main-content text-left">
-			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-				<div class="text-left">
-					<h1 class="page-title text-left">Dashboard Mentor</h1>
-					<p class="page-sub text-left">
-						Selamat datang kembali, <strong class="text-indigo-600 font-semibold">{data.user?.fullName}</strong>.
-					</p>
-				</div>
-				<div class="flex items-center gap-2.5 flex-wrap shrink-0">
-					<a href="/mentor/jadwal" class="btn-secondary-head-pill">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="3" y="4" width="18" height="18" rx="2" />
-							<line x1="16" y1="2" x2="16" y2="6" />
-							<line x1="8" y1="2" x2="8" y2="6" />
-							<line x1="3" y1="10" x2="21" y2="10" />
-						</svg>
-						<span>Kalender Jadwal</span>
-					</a>
-					<a href="/mentor/pertemuan" class="btn-create-pill">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19" />
-							<line x1="5" y1="12" x2="19" y2="12" />
-						</svg>
-						<span>Kelola Pertemuan</span>
-					</a>
-				</div>
-			</div>
-		</div>
+			{#snippet actions()}
+				<a href="/mentor/jadwal" class="btn-secondary-head-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="4" width="18" height="18" rx="2" />
+						<line x1="16" y1="2" x2="16" y2="6" />
+						<line x1="8" y1="2" x2="8" y2="6" />
+						<line x1="3" y1="10" x2="21" y2="10" />
+					</svg>
+					<span>Kalender Jadwal</span>
+				</a>
+				<a href="/mentor/pertemuan" class="btn-create-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19" />
+						<line x1="5" y1="12" x2="19" y2="12" />
+					</svg>
+					<span>Kelola Pertemuan</span>
+				</a>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	<!-- Overview Stats Grid -->

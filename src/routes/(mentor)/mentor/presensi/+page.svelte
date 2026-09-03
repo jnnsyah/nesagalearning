@@ -3,6 +3,7 @@
 	import { onDestroy, untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
@@ -405,52 +406,36 @@
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && isQRExpanded) isQRExpanded = false; }} />
 
 <div class="content-area">
-	<!-- Standardized Gold-Standard Header Card Wrapper -->
-	<div class="panel header-card mb-6 p-5">
-		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<a href="/mentor" class="bc-link">Dashboard</a>
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-					<polyline points="9 18 15 12 9 6" />
-				</svg>
-				{#if isFromDetail && currentMeeting}
-					<a href={backToDetailHref} class="bc-link">Detail Pertemuan #{currentMeeting.id}</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
+	<div class="mb-6">
+		<PageHeaderCard
+			title={currentMeeting ? `Presensi: ${currentMeeting.title}` : 'Manajemen Presensi Sesi'}
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/mentor' },
+				...(isFromDetail && currentMeeting
+					? [{ label: `Detail Pertemuan #${currentMeeting.id}`, href: backToDetailHref }]
+					: [{ label: 'Daftar Pertemuan', href: '/mentor/pertemuan' }]),
+				{ label: 'Kelola Presensi' }
+			]}
+		>
+			{#snippet badges()}
+				<a href={backHref} class="btn-secondary-head-pill">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
 					</svg>
-				{:else}
-					<a href="/mentor/pertemuan" class="bc-link">Daftar Pertemuan</a>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<polyline points="9 18 15 12 9 6" />
-					</svg>
-				{/if}
-				<span class="bc-current">Kelola Presensi</span>
-			</nav>
+					<span>{backLabel}</span>
+				</a>
+			{/snippet}
 
-			<a href={backHref} class="btn-secondary-head-pill">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="15 18 9 12 15 6" />
-				</svg>
-				<span>{backLabel}</span>
-			</a>
-		</div>
-
-		<div class="header-main-content text-left">
-			<h1 class="page-title text-left">
-				{#if currentMeeting}
-					Presensi: {currentMeeting.title}
-				{:else}
-					Manajemen Presensi Sesi
-				{/if}
-			</h1>
-			<p class="page-sub text-left">
-				{#if currentMeeting}
-					Kelas: <strong class="text-indigo-600 font-semibold">{currentMeeting.kelasName}</strong> · Sub-Fase Track Pembelajaran: {currentMeeting.subPhaseTitle}
-				{:else}
-					Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
-				{/if}
-			</p>
-		</div>
+			{#snippet subtitleSnippet()}
+				<p class="page-sub text-left">
+					{#if currentMeeting}
+						Kelas: <strong class="text-indigo-600 font-semibold">{currentMeeting.kelasName}</strong> · Sub-Fase Track Pembelajaran: {currentMeeting.subPhaseTitle}
+					{:else}
+						Generate token QR 30-detik otomatis atau kelola presensi massal siswa.
+					{/if}
+				</p>
+			{/snippet}
+		</PageHeaderCard>
 	</div>
 
 	{#if currentMeeting}
