@@ -359,11 +359,22 @@ let rosterSortOptions = [
 
 	function closeStudioView() {
 		const fromSource = $page.url.searchParams.get('from');
+		const returnUrl = $page.url.searchParams.get('returnUrl');
+		const fromMeetingId = $page.url.searchParams.get('fromMeetingId');
+
 		selectedPertemuanId = null;
 		selectedSubmissionId = null;
 		rosterSearchQuery = '';
 		rosterStatusFilter = 'all';
 
+		if (returnUrl) {
+			goto(returnUrl);
+			return;
+		}
+		if (fromMeetingId) {
+			goto(`/mentor/pertemuan/${fromMeetingId}`);
+			return;
+		}
 		if (fromSource === 'dashboard') {
 			goto('/mentor');
 			return;

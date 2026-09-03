@@ -513,7 +513,7 @@
 
 			<!-- Task Nempel Card -->
 			<div class="detail-panel">
-				<div class="panel-header flex items-center justify-between">
+				<div class="panel-header flex items-center justify-between gap-3 flex-wrap">
 					<h2 class="panel-title">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M9 11l3 3L22 4" />
@@ -521,12 +521,30 @@
 						</svg>
 						Penugasan Task (Opsional)
 					</h2>
+
+					<a
+						href="/mentor/tugas?pertemuanId={m.id}&fromMeetingId={m.id}"
+						class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1"
+					>
+						<span>Studio Grading</span>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><polyline points="12 5 19 12 12 19"/></svg>
+					</a>
 				</div>
 
 				<div class="panel-body">
 					{#if !m.tasks || m.tasks.length === 0}
-						<div class="empty-task-state">
-							<p class="text-xs text-slate-500 italic">Tidak ada task penugasan yang ditempelkan pada pertemuan ini.</p>
+						<div class="empty-task-state py-4 text-center">
+							<p class="text-xs text-slate-500 italic mb-3">Tidak ada task penugasan yang ditempelkan pada pertemuan ini.</p>
+							<a
+								href="/mentor/tugas?fromMeetingId={m.id}"
+								class="btn-secondary-head-pill border-slate-300 text-slate-700 inline-flex"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M9 11l3 3L22 4" />
+									<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+								</svg>
+								<span>Buka Studio Penilaian Tugas</span>
+							</a>
 						</div>
 					{:else}
 						<div class="space-y-4">
@@ -553,6 +571,17 @@
 											<p class="task-desc-text">{t.description}</p>
 										</div>
 									{/if}
+
+									<a
+										href="/mentor/tugas?pertemuanId={m.id}&fromMeetingId={m.id}"
+										class="btn-create-pill border-none cursor-pointer w-full justify-center mt-3 text-xs"
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+											<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+											<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+										</svg>
+										<span>Buka Studio Grading / Penilaian</span>
+									</a>
 								</div>
 							{/each}
 						</div>
