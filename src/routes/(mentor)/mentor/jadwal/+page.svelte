@@ -269,9 +269,7 @@
 			]}
 		>
 			{#snippet badges()}
-				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-					{totalCount} SESI TOTAL
-				</span>
+				<span class="badge badge-neutral">{totalCount} SESI TOTAL</span>
 			{/snippet}
 
 			{#snippet actions()}

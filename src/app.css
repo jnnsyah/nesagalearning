@@ -220,6 +220,18 @@ body {
 	border-color: var(--blue-border);
 }
 
+.badge-primary {
+	color: #4338ca;
+	background: #eef2ff;
+	border-color: #c7d2fe;
+}
+
+.badge-neutral {
+	color: #475569;
+	background: #f1f5f9;
+	border-color: #cbd5e1;
+}
+
 .badge-live::before {
 	content: '';
 	width: 7px;

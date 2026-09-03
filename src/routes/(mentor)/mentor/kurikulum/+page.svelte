@@ -123,9 +123,7 @@
 			]}
 		>
 			{#snippet badges()}
-				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-					KATALOG TRACK
-				</span>
+				<span class="badge badge-primary">KATALOG TRACK</span>
 			{/snippet}
 
 			{#snippet actions()}

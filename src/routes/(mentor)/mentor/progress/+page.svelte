@@ -159,7 +159,7 @@
 		>
 			{#snippet badges()}
 				{#if data.monitoringData.selectedTahunAjaran}
-					<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+					<span class="badge badge-primary">
 						TA {data.monitoringData.selectedTahunAjaran.name}
 					</span>
 				{/if}

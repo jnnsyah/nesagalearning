@@ -48,9 +48,7 @@
 			breadcrumbs={[{ label: 'Dashboard' }]}
 		>
 			{#snippet badges()}
-				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
-					PORTAL MENTOR
-				</span>
+				<span class="badge badge-primary">PORTAL MENTOR</span>
 			{/snippet}
 
 			{#snippet subtitleSnippet()}

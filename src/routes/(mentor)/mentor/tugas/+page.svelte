@@ -494,9 +494,7 @@ let rosterSortOptions = [
 				]}
 			>
 				{#snippet badges()}
-					<span class="activity-badge-pill bg-amber-50 text-amber-700 border-amber-200 font-extrabold uppercase">
-						ANTREAN REVIEW
-					</span>
+					<span class="badge badge-pending">ANTREAN REVIEW</span>
 				{/snippet}
 			</PageHeaderCard>
 		</div>
