@@ -28,6 +28,13 @@
 	// Tab state
 	let activeTab = $state<'curriculum' | 'attendance'>(data.activeTab || 'curriculum');
 
+	// Phase Accordion State
+	let expandedPhases = $state<Record<number | string, boolean>>({});
+
+	function togglePhase(phaseKey: number | string) {
+		expandedPhases[phaseKey] = expandedPhases[phaseKey] === false ? true : false;
+	}
+
 	// Attendance Filters State
 	let statusFilter = $state<'all' | 'hadir' | 'excused' | 'alpha'>('all');
 	let startDateFilter = $state('');
@@ -263,84 +270,108 @@
 					<p class="text-sm text-slate-500 font-mono">Belum ada modul / fase track pembelajaran yang ditautkan ke kelas ini.</p>
 				</div>
 			{:else}
-				<div class="space-y-6">
+				<div class="space-y-4">
 					<div class="flex items-center justify-between pb-2 border-b border-slate-200">
 						<h3 class="text-sm font-bold text-slate-700 font-mono uppercase tracking-wider">
-							Daftar Fase Track Pembelajaran ({data.studentProgress.phases.length} Fase)
+							Peta Ketercapaian Track Pembelajaran ({data.studentProgress.phases.length} Fase)
 						</h3>
-						<span class="text-xs text-slate-400 font-mono">Standar Ketercapaian 100%</span>
+						<span class="text-xs text-slate-400 font-mono">Klik baris fase untuk melipat/membuka</span>
 					</div>
 
-					{#each data.studentProgress.phases as phaseItem}
-						<div class="phase-card">
-							<div class="flex items-center justify-between gap-4 mb-3">
-								<div class="flex items-center gap-3">
-									<span class="phase-code-pill">{phaseItem.phaseCode}</span>
-									<h4 class="font-extrabold text-slate-900 text-base">{phaseItem.title}</h4>
+					{#each data.studentProgress.phases as phaseItem, idx}
+						{@const phaseKey = phaseItem.phaseCode || idx}
+						{@const isExpanded = expandedPhases[phaseKey] !== false}
+						<div class="phase-accordion-card">
+							<button
+								type="button"
+								class="phase-accordion-header"
+								onclick={() => togglePhase(phaseKey)}
+							>
+								<div class="flex items-center gap-3 min-w-0">
+									<span class="phase-code-pill shrink-0">{phaseItem.phaseCode}</span>
+									<h4 class="font-extrabold text-slate-900 text-sm truncate">{phaseItem.title}</h4>
 								</div>
-								{#if phaseItem.hasStartedSubPhases}
-									<span class="phase-rate-badge">{phaseItem.completionRate}%</span>
-								{:else}
-									<span class="badge badge-subtle text-xs">BELUM BERJALAN</span>
-								{/if}
-							</div>
 
-							<div class="progress-track-bar mb-5">
+								<div class="flex items-center gap-4 shrink-0">
+									<div class="text-right">
+										{#if phaseItem.hasStartedSubPhases}
+											<span class="text-sm font-extrabold text-indigo-700 font-mono">{phaseItem.completionRate}%</span>
+											<span class="text-[10px] text-slate-400 block font-mono">Ketercapaian</span>
+										{:else}
+											<span class="badge badge-subtle text-[10px]">BELUM BERJALAN</span>
+										{/if}
+									</div>
+									<div class="accordion-chevron" class:is-expanded={isExpanded}>
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+									</div>
+								</div>
+							</button>
+
+							<!-- Slim Phase Overall Progress Bar -->
+							<div class="subphase-progress-bar rounded-none bg-slate-100 h-1.5">
 								<div
-									class="progress-fill-bar"
+									class="progress-fill h-full bg-gradient-to-r from-indigo-600 to-indigo-500"
 									style="width: {phaseItem.hasStartedSubPhases ? phaseItem.completionRate : 0}%;"
 								></div>
 							</div>
 
-							<div class="space-y-3">
-								{#each phaseItem.subPhases as subP}
-									<div class="subphase-box" class:subphase-unstarted={!subP.isStarted}>
-										<div class="flex items-center justify-between gap-3 mb-2">
-											<h5 class="text-sm font-bold text-slate-900 truncate">{subP.title}</h5>
-											{#if subP.isStarted}
-												<span class="subphase-percent-tag">{subP.completionRate}%</span>
-											{:else}
-												<span class="badge badge-subtle text-[10px]">BELUM DIMULAI</span>
-											{/if}
-										</div>
-
-										<div class="flex items-center gap-2 flex-wrap">
-											{#if !subP.isStarted}
-												<span class="meta-pill meta-pill-gray">
-													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-													<span>Belum ada sesi / tugas diselenggarakan</span>
-												</span>
-											{:else}
-												<span class="meta-pill meta-pill-slate">
-													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
-													<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
-												</span>
-
-												{#if subP.totalTasksCount > 0}
-													<span class={subP.approvedTasksCount > 0 ? "meta-pill meta-pill-emerald" : "meta-pill meta-pill-gray"}>
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-														<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount} Approved</span>
+							{#if isExpanded}
+								<div class="phase-accordion-body border-t border-slate-100 bg-slate-50/50 p-4">
+									<div class="subphases-grid grid grid-cols-1 md:grid-cols-2 gap-3">
+										{#each phaseItem.subPhases as subP}
+											{@const statusClass = subP.completionRate === 100 ? 'status-done' : subP.isStarted ? 'status-active' : 'status-pending'}
+											{@const statusLabel = subP.completionRate === 100 ? 'SELESAI' : subP.isStarted ? 'BERJALAN' : 'BELUM DIMULAI'}
+											<div class="subphase-item-card bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-xs">
+												<div class="flex items-start justify-between gap-2 mb-2">
+													<h5 class="text-xs font-bold text-slate-900 line-clamp-1">{subP.title}</h5>
+													<span class="subphase-status-pill shrink-0 {statusClass}">
+														{statusLabel}
 													</span>
-												{/if}
+												</div>
 
-												{#if subP.hasQuiz}
-													{#if subP.quizPassed}
-														<span class="meta-pill meta-pill-emerald">
-															<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-															<span>Quiz Lulus</span>
-														</span>
+												<!-- Sub-phase Progress fill -->
+												<div class="subphase-progress-bar mb-2.5 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+													<div
+														class="progress-fill h-full {subP.completionRate === 100 ? 'bg-emerald-500' : 'bg-indigo-600'}"
+														style="width: {subP.isStarted ? subP.completionRate : 0}%;"
+													></div>
+												</div>
+
+												<div class="flex items-center justify-between text-[11px] text-slate-500 font-mono gap-2 flex-wrap">
+													{#if !subP.isStarted}
+														<span class="text-slate-400 italic text-[10px]">Belum diselenggarakan</span>
 													{:else}
-														<span class="meta-pill meta-pill-gray">
-															<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-															<span>Quiz Pending</span>
+														<span class="flex items-center gap-1">
+															<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>
+															<span>Sesi: {subP.attendedSessionsCount}/{subP.totalSessionsCount}</span>
 														</span>
+
+														{#if subP.totalTasksCount > 0}
+															<span class="flex items-center gap-1 {subP.approvedTasksCount > 0 ? 'text-emerald-700 font-semibold' : ''}">
+																<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+																<span>Tugas: {subP.approvedTasksCount}/{subP.totalTasksCount}</span>
+															</span>
+														{/if}
+
+														{#if subP.hasQuiz}
+															{#if subP.quizPassed}
+																<span class="text-emerald-700 font-bold flex items-center gap-0.5">
+																	<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+																	<span>Quiz Lulus</span>
+																</span>
+															{:else}
+																<span class="text-amber-700 font-medium">Quiz Pending</span>
+															{/if}
+														{/if}
 													{/if}
-												{/if}
-											{/if}
-										</div>
+
+													<span class="font-extrabold text-slate-800 ml-auto">{subP.isStarted ? subP.completionRate : 0}%</span>
+												</div>
+											</div>
+										{/each}
 									</div>
-								{/each}
-							</div>
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -738,13 +769,29 @@
 		border-bottom-color: #4f46e5;
 	}
 
-	/* Phase Cards */
-	.phase-card {
+	/* Phase Accordion Card (Standard /mentor/progress UI/UX) */
+	.phase-accordion-card {
 		background: #ffffff;
 		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 20px 24px;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+		border-radius: 12px;
+		overflow: hidden;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	}
+
+	.phase-accordion-header {
+		width: 100%;
+		padding: 14px 18px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		background: #ffffff;
+		border: none;
+		cursor: pointer;
+		transition: background 150ms ease;
+	}
+
+	.phase-accordion-header:hover {
+		background: #f8fafc;
 	}
 
 	.phase-code-pill {
@@ -757,49 +804,34 @@
 		border-radius: 6px;
 	}
 
-	.phase-rate-badge {
-		font-family: var(--font-mono, monospace);
-		font-size: 16px;
-		font-weight: 900;
-		color: #3730a3;
+	.accordion-chevron {
+		transition: transform 200ms ease;
+		color: #64748b;
 	}
 
-	.progress-track-bar {
-		width: 100%;
-		height: 8px;
-		background: #f1f5f9;
-		border-radius: 4px;
-		overflow: hidden;
+	.accordion-chevron.is-expanded {
+		transform: rotate(180deg);
 	}
 
-	.progress-fill-bar {
-		height: 100%;
-		background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-		border-radius: 4px;
-	}
-
-	.subphase-box {
-		background: #f8fafc;
+	.subphase-item-card {
+		background: #ffffff;
 		border: 1px solid #e2e8f0;
-		border-left: 4px solid #6366f1;
 		border-radius: 10px;
-		padding: 14px 16px;
+		padding: 14px;
 	}
 
-	.subphase-unstarted {
-		border-left-color: #cbd5e1 !important;
-		background: #fafafa !important;
-	}
-
-	.subphase-percent-tag {
+	.subphase-status-pill {
 		font-family: var(--font-mono, monospace);
-		font-size: 12px;
+		font-size: 10px;
 		font-weight: 800;
-		background: #e0e7ff;
-		color: #4338ca;
+		text-transform: uppercase;
 		padding: 2px 8px;
-		border-radius: 4px;
+		border-radius: 999px;
 	}
+
+	.status-done { background: #dcfce7; color: #15803d; }
+	.status-active { background: #dbeafe; color: #1d4ed8; }
+	.status-pending { background: #f1f5f9; color: #64748b; }
 
 	/* Attendance Filter Card */
 	.page-filter-card {
