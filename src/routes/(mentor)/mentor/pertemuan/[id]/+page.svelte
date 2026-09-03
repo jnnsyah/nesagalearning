@@ -564,18 +564,7 @@
 </div>
 
 <style>
-	.content-area {
-		padding: 32px 36px 64px;
-		max-width: 1320px;
-		margin: 0 auto;
-		width: 100%;
-	}
 
-	@media (max-width: 768px) {
-		.content-area {
-			padding: 20px 18px 48px;
-		}
-	}
 
 	/* Standardized Header Card (Blueprint Spec) */
 	.header-card {

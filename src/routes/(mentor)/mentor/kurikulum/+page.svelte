@@ -640,15 +640,7 @@
 
 <style>
 	/* ── Content area ──────────────────────────────── */
-	.content-area {
-		padding: 24px 28px 40px;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		max-width: 1300px;
-		margin: 0 auto;
-		width: 100%;
-	}
+
 
 	.page-header-row {
 		display: flex;

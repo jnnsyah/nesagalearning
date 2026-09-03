@@ -149,27 +149,19 @@ body {
 .page-container,
 .content-area {
 	width: 100%;
-	max-width: 1400px;
+	max-width: 1280px;
 	margin: 0 auto;
-	padding: 24px;
+	padding: 24px 28px 48px;
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
 	box-sizing: border-box;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
 	.page-container,
 	.content-area {
-		padding: 20px 18px;
-		gap: 18px;
-	}
-}
-
-@media (max-width: 639px) {
-	.page-container,
-	.content-area {
-		padding: 14px 14px calc(100px + env(safe-area-inset-bottom, 0px));
+		padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px));
 		gap: 16px;
 	}
 }

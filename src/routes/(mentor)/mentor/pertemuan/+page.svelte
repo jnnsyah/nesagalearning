@@ -1347,18 +1347,7 @@
 />
 
 <style>
-	.content-area {
-		padding: 24px 28px 48px;
-		max-width: 1280px;
-		margin: 0 auto;
-		width: 100%;
-	}
 
-	@media (max-width: 768px) {
-		.content-area {
-			padding: 16px 16px 40px;
-		}
-	}
 
 	.header-card {
 		background: #ffffff;
