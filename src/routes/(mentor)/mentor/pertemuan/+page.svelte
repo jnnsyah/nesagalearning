@@ -1396,35 +1396,7 @@
 		white-space: nowrap;
 	}
 
-	.btn-create-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		height: 38px;
-		padding: 0 18px;
-		background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-		color: #ffffff;
-		border: none;
-		border-radius: 8px;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 13.5px;
-		font-weight: 700;
-		line-height: 1;
-		cursor: pointer;
-		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
-		transition: all 150ms ease;
-		white-space: nowrap;
-	}
 
-	.btn-create-pill:hover {
-		transform: translateY(-1px);
-		background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-	}
-
-	.btn-create-pill:active {
-		transform: scale(0.98);
-	}
 
 	.header-main-content {
 		display: flex;

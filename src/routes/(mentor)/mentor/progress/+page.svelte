@@ -646,31 +646,7 @@
 		color: var(--text-secondary, #475569);
 	}
 
-	.btn-secondary-head-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		height: 34px;
-		padding: 0 14px;
-		background: #ffffff;
-		color: #475569;
-		border: 1px solid #cbd5e1;
-		border-radius: 9999px;
-		text-decoration: none;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 12.5px;
-		font-weight: 700;
-		line-height: 1;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-		transition: all 150ms ease;
-		white-space: nowrap;
-	}
 
-	.btn-secondary-head-pill:hover {
-		background: #f8fafc;
-		color: #0f172a;
-		border-color: #94a3b8;
-	}
 
 	.activity-badge-pill {
 		display: inline-flex;

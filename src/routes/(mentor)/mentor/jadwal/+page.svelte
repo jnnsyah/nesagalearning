@@ -272,14 +272,12 @@
 		{/snippet}
 
 		{#snippet actions()}
-			<a href="/mentor/pertemuan" class="btn-create-pill">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="4" width="18" height="18" rx="2" />
-					<line x1="16" y1="2" x2="16" y2="6" />
-					<line x1="8" y1="2" x2="8" y2="6" />
-					<line x1="3" y1="10" x2="21" y2="10" />
+			<a href="/mentor/pertemuan" class="btn-create-pill border-none cursor-pointer" aria-label="Buat atau kelola sesi pertemuan">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
-				<span>Kelola Sesi</span>
+				<span>Buat Sesi Pertemuan</span>
 			</a>
 		{/snippet}
 	</PageHeaderCard>
@@ -737,29 +735,7 @@
 		white-space: nowrap;
 	}
 
-	.btn-create-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		height: 38px;
-		padding: 0 16px;
-		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-		color: #ffffff;
-		border-radius: 9999px;
-		text-decoration: none;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 13.5px;
-		font-weight: 700;
-		line-height: 1;
-		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
-		transition: all 150ms ease;
-		white-space: nowrap;
-	}
 
-	.btn-create-pill:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-	}
 
 	.header-main-content {
 		display: flex;
