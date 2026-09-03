@@ -1556,7 +1556,7 @@
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 		margin-top: 0 !important;
-		margin-bottom: 24px !important;
+		margin-bottom: 0 !important;
 	}
 
 	@media (max-width: 900px) {

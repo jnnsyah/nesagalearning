@@ -608,7 +608,7 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 	}
 
 	.stat-card {

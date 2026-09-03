@@ -169,7 +169,7 @@
 	</PageHeaderCard>
 
 	<!-- Quick Stats Grid (4 Metrics Cards) -->
-	<div class="stats-grid mb-6">
+	<div class="stats-grid">
 		<div class="stat-card">
 			<div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

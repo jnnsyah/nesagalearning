@@ -336,7 +336,7 @@
 		</PageHeaderCard>
 
 		<!-- 4 STAT CARDS SUMMARY (UI Component Integration) -->
-		<section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6" aria-label="Ringkasan Matrix Progress Track">
+		<section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5" aria-label="Ringkasan Matrix Progress Track">
 			<StatCard label="Total Modul Pembelajaran" value={`${data.monitoringData.phases.length} Phase`} subtext="Alur Track Pembelajaran" variant="attendance">
 				{#snippet icon()}
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
