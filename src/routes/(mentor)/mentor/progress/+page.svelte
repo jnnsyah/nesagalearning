@@ -377,7 +377,7 @@
 				{/snippet}
 			</StatCard>
 
-			<StatCard label="Rata-Rata Ketercapaian" value={`${data.monitoringData.selectedTrack.avgCompletionRate}%`} subtext={`Kelompok ${data.monitoringData.selectedKelas?.name || 'Semua'}`} variant="approved">
+			<StatCard label="Rata-Rata Ketercapaian" value={`${data.monitoringData.summary?.avgTrackCompletionRate ?? 0}%`} subtext={`Kelompok ${data.monitoringData.selectedKelas?.name || 'Semua'}`} variant="approved">
 				{#snippet icon()}
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
