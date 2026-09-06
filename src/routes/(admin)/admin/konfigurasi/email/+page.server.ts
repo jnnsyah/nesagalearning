@@ -4,6 +4,7 @@ import { systemEmailConfig } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { encryptPassword, sendMail, buildResetPasswordEmail } from '$lib/server/services/email.service';
+import { AuditLogService } from '$lib/server/services/audit-log.service';
 
 export const load: PageServerLoad = async () => {
 	const configs = await db
@@ -16,7 +17,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
 	// Tambah / simpan konfigurasi email baru
-	save: async ({ request }) => {
+	save: async ({ request, locals }) => {
 		const form = await request.formData();
 		const id = form.get('id') as string | null;
 		const label = (form.get('label') as string)?.trim();
@@ -56,18 +57,37 @@ export const actions: Actions = {
 				.update(systemEmailConfig)
 				.set(updateData)
 				.where(eq(systemEmailConfig.id, parseInt(id)));
+
+			await AuditLogService.logAction({
+				actorId: locals.user ? Number(locals.user.id) : null,
+				action: 'UPDATE_SMTP_CONFIG',
+				entityType: 'email_config',
+				entityId: parseInt(id),
+				newValues: { label, senderEmail, provider }
+			});
 		} else {
 			// Insert baru
-			await db.insert(systemEmailConfig).values({
-				label,
-				senderName,
-				senderEmail,
-				provider,
-				smtpHost,
-				smtpPort,
-				smtpUser,
-				smtpPassEncrypted,
-				isActive: false
+			const [inserted] = await db
+				.insert(systemEmailConfig)
+				.values({
+					label,
+					senderName,
+					senderEmail,
+					provider,
+					smtpHost,
+					smtpPort,
+					smtpUser,
+					smtpPassEncrypted,
+					isActive: false
+				})
+				.returning({ id: systemEmailConfig.id });
+
+			await AuditLogService.logAction({
+				actorId: locals.user ? Number(locals.user.id) : null,
+				action: 'CREATE_SMTP_CONFIG',
+				entityType: 'email_config',
+				entityId: inserted?.id || null,
+				newValues: { label, senderEmail, provider }
 			});
 		}
 
@@ -75,7 +95,7 @@ export const actions: Actions = {
 	},
 
 	// Aktifkan salah satu konfigurasi sebagai pengirim aktif
-	activate: async ({ request }) => {
+	activate: async ({ request, locals }) => {
 		const form = await request.formData();
 		const id = parseInt(form.get('id') as string);
 
@@ -89,6 +109,13 @@ export const actions: Actions = {
 			.update(systemEmailConfig)
 			.set({ isActive: true, updatedAt: new Date() })
 			.where(eq(systemEmailConfig.id, id));
+
+		await AuditLogService.logAction({
+			actorId: locals.user ? Number(locals.user.id) : null,
+			action: 'ACTIVATE_SMTP_CONFIG',
+			entityType: 'email_config',
+			entityId: id
+		});
 
 		return { success: true, message: 'Konfigurasi email berhasil diaktifkan.' };
 	},

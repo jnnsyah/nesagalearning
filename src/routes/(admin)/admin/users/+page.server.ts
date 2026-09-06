@@ -92,6 +92,17 @@ export const actions: Actions = {
 				angkatan,
 				rombelLabel: rombelLabel || null
 			});
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'CREATE_USER',
+				entityType: 'user',
+				newValues: {
+					username: parseResult.data.username,
+					fullName: parseResult.data.fullName,
+					role: parseResult.data.role,
+					email: parseResult.data.email
+				}
+			});
 			return {
 				success: true,
 				message: `User '${parseResult.data.username}' berhasil ditambahkan!`
@@ -115,7 +126,7 @@ export const actions: Actions = {
 		const email = String(formData.get('email') || '');
 		const role = String(formData.get('role') || 'siswa');
 		const password = String(formData.get('password') || '');
-		const isActive = formData.get('isActive') === 'on' || formData.get('isActive') === 'true';
+		const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on';
 		const angkatanRaw = formData.get('angkatan');
 		const angkatan = angkatanRaw ? Number(angkatanRaw) : null;
 		const rombelLabel = String(formData.get('rombelLabel') || '');
@@ -141,6 +152,18 @@ export const actions: Actions = {
 				...parseResult.data,
 				angkatan,
 				rombelLabel: rombelLabel || null
+			});
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'UPDATE_USER',
+				entityType: 'user',
+				entityId: parseResult.data.id,
+				newValues: {
+					username: parseResult.data.username,
+					fullName: parseResult.data.fullName,
+					role: parseResult.data.role,
+					isActive: parseResult.data.isActive
+				}
 			});
 			return {
 				success: true,
@@ -204,6 +227,13 @@ export const actions: Actions = {
 
 		try {
 			const updated = await UserAdminService.toggleUserStatus(userId);
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'UPDATE_USER_STATUS',
+				entityType: 'user',
+				entityId: userId,
+				newValues: { username: updated.username, isActive: updated.isActive }
+			});
 			return {
 				success: true,
 				message: `Status user '${updated.username}' diubah menjadi ${updated.isActive ? 'Aktif' : 'Nonaktif'}.`
@@ -242,6 +272,13 @@ export const actions: Actions = {
 				parseResult.data.users,
 				defaultPassword
 			);
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'BULK_IMPORT_USERS',
+				entityType: 'user',
+				newValues: { successCount: result.successCount, skippedCount: result.skippedCount }
+			});
 
 			return {
 				success: true,
