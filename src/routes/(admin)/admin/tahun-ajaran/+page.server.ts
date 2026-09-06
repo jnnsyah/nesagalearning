@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { AcademicAdminService } from '$lib/server/services/academic-admin.service';
 import { createTahunAjaranSchema, updateTahunAjaranSchema } from '$lib/validators/academic';
 import { formatErrorMessage } from '$lib/server/utils/error-formatter';
+import { AuditLogService } from '$lib/server/services/audit-log.service';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -65,6 +66,13 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'CREATE_TAHUN_AJARAN',
+				entityType: 'academic',
+				newValues: { name: parseResult.data.name, isActive: parseResult.data.isActive }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[createTahunAjaran Error]:', err);
@@ -107,6 +115,14 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'UPDATE_TAHUN_AJARAN',
+				entityType: 'academic',
+				entityId: parseResult.data.id,
+				newValues: { name: parseResult.data.name, isActive: parseResult.data.isActive }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[updateTahunAjaran Error]:', err);
@@ -134,6 +150,13 @@ export const actions: Actions = {
 			if (!res.success) {
 				return fail(400, { success: false, message: res.message });
 			}
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'ACTIVATE_TAHUN_AJARAN',
+				entityType: 'academic',
+				entityId: id
+			});
 
 			return { success: true, message: res.message };
 		} catch (err: any) {
@@ -163,6 +186,13 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'DELETE_TAHUN_AJARAN',
+				entityType: 'academic',
+				entityId: id
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[deleteTahunAjaran Error]:', err);
@@ -183,6 +213,14 @@ export const actions: Actions = {
 			if (!res.success) {
 				return fail(400, { success: false, message: res.message });
 			}
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'PROMOTE_STUDENTS',
+				entityType: 'academic',
+				newValues: { type: 'bulk_rombel_promotion' }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[bulkPromote Error]:', err);

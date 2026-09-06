@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { MasterAdminService } from '$lib/server/services/master-admin.service';
 import { createKelasSchema, updateKelasSchema, bulkPromoteSchema, taBulkPromoteSchema } from '$lib/validators/master';
 import { formatErrorMessage } from '$lib/server/utils/error-formatter';
+import { AuditLogService } from '$lib/server/services/audit-log.service';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -78,6 +79,13 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'CREATE_KELAS',
+				entityType: 'kelas',
+				newValues: { name: parseResult.data.name, mentorIds: parseResult.data.mentorIds }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[createKelas Error]:', err);
@@ -131,6 +139,14 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'UPDATE_KELAS',
+				entityType: 'kelas',
+				entityId: parseResult.data.id,
+				newValues: { name: parseResult.data.name, mentorIds: parseResult.data.mentorIds, isActive: parseResult.data.isActive }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[updateKelas Error]:', err);
@@ -158,6 +174,13 @@ export const actions: Actions = {
 			if (!res.success) {
 				return fail(400, { success: false, message: res.message });
 			}
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'DELETE_KELAS',
+				entityType: 'kelas',
+				entityId: id
+			});
 
 			return { success: true, message: res.message };
 		} catch (err: any) {
@@ -231,6 +254,14 @@ export const actions: Actions = {
 			if (!res.success) {
 				return fail(400, { success: false, message: res.message });
 			}
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'PROMOTE_STUDENTS',
+				entityType: 'kelas',
+				entityId: sourceKelasId,
+				newValues: { targetKelasId }
+			});
 
 			return { success: true, message: res.message };
 		} catch (err: any) {
@@ -306,6 +337,13 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'PROMOTE_STUDENTS',
+				entityType: 'academic',
+				newValues: { sourceTaId, targetTaId }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[executeTaPromotion Error]:', err);
@@ -335,6 +373,14 @@ export const actions: Actions = {
 				return fail(400, { success: false, message: res.message });
 			}
 
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'ADD_STUDENT_TO_CLASS',
+				entityType: 'kelas',
+				entityId: kelasInstanceId,
+				newValues: { studentId: userId }
+			});
+
 			return { success: true, message: res.message };
 		} catch (err: any) {
 			console.error('[addStudent Error]:', err);
@@ -363,6 +409,14 @@ export const actions: Actions = {
 			if (!res.success) {
 				return fail(400, { success: false, message: res.message });
 			}
+
+			await AuditLogService.logAction({
+				actorId: Number(locals.user.id),
+				action: 'REMOVE_STUDENT_FROM_CLASS',
+				entityType: 'kelas',
+				entityId: kelasInstanceId,
+				newValues: { studentId: userId }
+			});
 
 			return { success: true, message: res.message };
 		} catch (err: any) {
