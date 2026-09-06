@@ -6,6 +6,7 @@ import { tahunAjaran, kelasInstance } from '$lib/server/db/schema/academic';
 import { auditLog, systemEmailConfig } from '$lib/server/db/schema/system';
 import { eq, count, sql } from 'drizzle-orm';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
+import { UserSessionService } from '$lib/server/services/user-session.service';
 import { env } from '$env/dynamic/private';
 import fs from 'fs';
 import path from 'path';
@@ -63,14 +64,15 @@ export const load: PageServerLoad = async ({ locals }) => {
 		isDbOk = false;
 	}
 
-	// 2. Parallel Query Batching for Real System Stats & Logs
+	// 2. Parallel Query Batching for Real System Stats, Logs, & Security Alerts
 	const [
 		userCountRes,
 		activeTaRes,
 		activeKelasRes,
 		auditLogCountRes,
 		activeEmailRes,
-		auditLogsData
+		auditLogsData,
+		securityAlerts
 	] = await Promise.all([
 		db.select({ total: count(user.id) }).from(user),
 		db
@@ -92,7 +94,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			.from(systemEmailConfig)
 			.where(eq(systemEmailConfig.isActive, true))
 			.limit(1),
-		AuditLogService.getPaginatedAuditLogs({ page: 1, limit: 5 })
+		AuditLogService.getPaginatedAuditLogs({ page: 1, limit: 5 }),
+		UserSessionService.getSecurityAlertsSummary()
 	]);
 
 	const totalUsers = Number(userCountRes[0]?.total ?? 0);
@@ -218,6 +221,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			}
 		},
 		healthStatus,
-		recentAuditLogs: auditLogsData.items
+		recentAuditLogs: auditLogsData.items,
+		securityAlerts
 	};
 };

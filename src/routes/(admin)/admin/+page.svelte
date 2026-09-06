@@ -280,6 +280,36 @@
 					</div>
 				{/each}
 			</div>
+
+			<!-- Security & Failed Login Monitoring Card -->
+			<div class="m-3 p-3.5 rounded-xl border border-rose-200 bg-rose-50/60 flex flex-col gap-2">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2 text-xs font-bold text-rose-900">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+						<span>MONITOR KEAMANAN & LOGIN GAGAL (24 Jam)</span>
+					</div>
+					<span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-rose-200 text-rose-800">
+						{data.securityAlerts?.failedLogins24hCount || 0} Event
+					</span>
+				</div>
+				<p class="text-[11.5px] text-rose-800 leading-snug">
+					{#if (data.securityAlerts?.failedLogins24hCount || 0) > 0}
+						Tercatat <strong>{data.securityAlerts.failedLogins24hCount} percobaan login gagal</strong> dari <strong>{data.securityAlerts.distinctFailedIPsCount} IP unik</strong> dalam 24 jam terakhir.
+					{:else}
+						Sistem aman. Tidak ada percobaan login gagal dalam 24 jam terakhir.
+					{/if}
+				</p>
+				{#if data.securityAlerts?.flaggedIPs && data.securityAlerts.flaggedIPs.length > 0}
+					<div class="flex flex-wrap gap-1.5 mt-1">
+						{#each data.securityAlerts.flaggedIPs as ip}
+							<span class="inline-flex items-center gap-1 font-mono text-[10.5px] bg-white text-rose-900 border border-rose-300 px-2 py-0.5 rounded font-semibold">
+								<span>IP {ip.ipAddress}:</span>
+								<strong class="text-rose-700">{ip.failedCount}x gagal</strong>
+							</span>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</section>
 	</div>
 </div>

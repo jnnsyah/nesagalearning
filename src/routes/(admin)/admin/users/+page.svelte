@@ -74,6 +74,55 @@
 		targetDeleteUser = null;
 	}
 
+	// Active Sessions Drawer & Revocation State
+	let isSessionDrawerOpen = $state(false);
+	let selectedSessionUser = $state<any | null>(null);
+	let userActiveSessions = $state<any[]>([]);
+	let isLoadingSessions = $state(false);
+
+	let isRevokeModalOpen = $state(false);
+	let targetRevokeSessionId = $state<string | null>(null);
+	let isRevokingSession = $state(false);
+	let revokeSessionFormRef: HTMLFormElement;
+
+	let isRevokeAllModalOpen = $state(false);
+	let isRevokingAllSessions = $state(false);
+	let revokeAllFormRef: HTMLFormElement;
+
+	async function openSessionDrawer(userItem: any) {
+		selectedSessionUser = userItem;
+		isSessionDrawerOpen = true;
+		isLoadingSessions = true;
+		userActiveSessions = [];
+
+		try {
+			const fd = new FormData();
+			fd.set('userId', String(userItem.id));
+			const res = await fetch('?/getUserSessions', {
+				method: 'POST',
+				body: fd,
+				headers: {
+					'x-sveltekit-action': 'true'
+				}
+			});
+			const json = await res.json();
+			if (json.data) {
+				const parsed = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
+				userActiveSessions = parsed.sessions || [];
+			}
+		} catch (err) {
+			console.error('Error fetching user sessions:', err);
+			toast.error('Gagal memuat sesi aktif user.');
+		} finally {
+			isLoadingSessions = false;
+		}
+	}
+
+	function promptRevokeSession(sessionId: string) {
+		targetRevokeSessionId = sessionId;
+		isRevokeModalOpen = true;
+	}
+
 	// Bulk Import Drawer state
 	let isBulkDrawerOpen = $state(false);
 	let bulkCsvText = $state('');
@@ -624,6 +673,19 @@
 									<div class="flex items-center justify-end gap-1.5">
 										<button
 											type="button"
+											onclick={() => openSessionDrawer(u)}
+											class="btn-ghost-icon text-cyan-600 hover:bg-cyan-50 relative"
+											title="Kelola & Cabut Sesi Aktif User"
+										>
+											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+											{#if u.activeSessionsCount > 0}
+												<span class="absolute -top-1 -right-1 bg-cyan-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
+													{u.activeSessionsCount}
+												</span>
+											{/if}
+										</button>
+										<button
+											type="button"
 											onclick={() => promptResetPassword(u)}
 											class="btn-ghost-icon text-amber-600 hover:bg-amber-50"
 											title="Reset Password User"
@@ -1156,6 +1218,180 @@
 		{/snippet}
 	</FormDrawer>
 {/if}
+
+<!-- Drawer Active Sessions Management -->
+{#if isSessionDrawerOpen && selectedSessionUser}
+	<FormDrawer
+		bind:open={isSessionDrawerOpen}
+		title="Kelola Sesi Login Aktif"
+		subtitle={`Pengelolaan sesi aktif untuk ${selectedSessionUser.fullName} (@${selectedSessionUser.username})`}
+		onclose={() => (isSessionDrawerOpen = false)}
+	>
+		{#snippet children()}
+			<div class="flex flex-col gap-4">
+				<!-- Target User Profile Card -->
+				<div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
+					<div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+						{#if selectedSessionUser.avatarUrl}
+							<img src={selectedSessionUser.avatarUrl} alt={selectedSessionUser.fullName} class="w-full h-full object-cover rounded-full" />
+						{:else}
+							<span>{selectedSessionUser.fullName.charAt(0).toUpperCase()}</span>
+						{/if}
+					</div>
+					<div class="flex-1">
+						<div class="font-bold text-slate-900 text-sm">{selectedSessionUser.fullName}</div>
+						<div class="text-xs text-slate-500 font-mono">@{selectedSessionUser.username} • <span class="capitalize font-semibold">{selectedSessionUser.role}</span></div>
+					</div>
+					<span class="px-2.5 py-1 text-xs font-bold bg-cyan-100 text-cyan-800 rounded-full">
+						{userActiveSessions.length} Sesi Aktif
+					</span>
+				</div>
+
+				<!-- Session Items List -->
+				{#if isLoadingSessions}
+					<div class="p-8 text-center text-xs font-semibold text-slate-500 flex flex-col items-center gap-2">
+						<svg class="animate-spin text-indigo-600" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/></svg>
+						<span>Memuat sesi aktif pengguna...</span>
+					</div>
+				{:else if userActiveSessions.length > 0}
+					<div class="flex flex-col gap-2.5">
+						{#each userActiveSessions as sess}
+							<div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+								<div class="flex items-center gap-3">
+									<div class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+										{#if sess.uaIsMobile}
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+										{:else}
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+										{/if}
+									</div>
+									<div class="flex flex-col gap-0.5">
+										<div class="flex items-center gap-1.5">
+											<span class="font-bold text-xs text-slate-900">{sess.uaIsMobile ? 'Mobile Device' : 'Desktop Browser'}</span>
+											{#if sess.rememberMe}
+												<span class="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">Remembered</span>
+											{/if}
+										</div>
+										<div class="font-mono text-[11px] text-slate-500">
+											Login: {new Date(sess.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+										</div>
+										<div class="font-mono text-[10px] text-slate-400">
+											Token: {sess.id.substring(0, 12)}...
+										</div>
+									</div>
+								</div>
+								<button
+									type="button"
+									onclick={() => promptRevokeSession(sess.id)}
+									class="px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition"
+								>
+									Cabut Sesi
+								</button>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="p-8 text-center text-xs text-slate-500 flex flex-col items-center gap-1 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+						<span class="font-bold text-slate-700 mt-1">Tidak Ada Sesi Aktif</span>
+						<span>User ini saat ini tidak sedang login di perangkat manapun.</span>
+					</div>
+				{/if}
+			</div>
+		{/snippet}
+
+		{#snippet footer()}
+			<div class="flex items-center justify-between w-full">
+				{#if userActiveSessions.length > 0}
+					<button
+						type="button"
+						onclick={() => (isRevokeAllModalOpen = true)}
+						class="px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition"
+					>
+						Cabut Seluruh Perangkat ({userActiveSessions.length})
+					</button>
+				{:else}
+					<div></div>
+				{/if}
+				<button type="button" onclick={() => (isSessionDrawerOpen = false)} class="btn-drawer-secondary">
+					Tutup
+				</button>
+			</div>
+		{/snippet}
+	</FormDrawer>
+{/if}
+
+<!-- Confirmation Modal: Revoke Single Session -->
+<ConfirmModal
+	bind:open={isRevokeModalOpen}
+	title="Cabut Sesi Perangkat"
+	message="User akan otomatis ter-logout dari perangkat ini pada aktivitas berikutnya. Lanjutkan?"
+	confirmText="Ya, Cabut Sesi"
+	cancelText="Batal"
+	variant="danger"
+	loading={isRevokingSession}
+	onconfirm={() => revokeSessionFormRef?.requestSubmit()}
+>
+	{#snippet children()}
+		<form
+			bind:this={revokeSessionFormRef}
+			action="?/revokeSession"
+			method="POST"
+			use:enhance={() => {
+				isRevokingSession = true;
+				return async ({ result, update }) => {
+					isRevokingSession = false;
+					isRevokeModalOpen = false;
+					if (result.type === 'success' && result.data?.message) {
+						toast.success(result.data.message);
+						if (selectedSessionUser) openSessionDrawer(selectedSessionUser);
+					} else if (result.type === 'failure' && result.data?.message) {
+						toast.error(result.data.message);
+					}
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="sessionId" value={targetRevokeSessionId || ''} />
+		</form>
+	{/snippet}
+</ConfirmModal>
+
+<!-- Confirmation Modal: Revoke All Sessions -->
+<ConfirmModal
+	bind:open={isRevokeAllModalOpen}
+	title="Cabut Seluruh Sesi Perangkat"
+	message={`Keluar dari seluruh perangkat yang terhubung untuk ${selectedSessionUser?.fullName || 'user ini'}. Lanjutkan?`}
+	confirmText="Ya, Cabut Semua Sesi"
+	cancelText="Batal"
+	variant="danger"
+	loading={isRevokingAllSessions}
+	onconfirm={() => revokeAllFormRef?.requestSubmit()}
+>
+	{#snippet children()}
+		<form
+			bind:this={revokeAllFormRef}
+			action="?/revokeAllUserSessions"
+			method="POST"
+			use:enhance={() => {
+				isRevokingAllSessions = true;
+				return async ({ result, update }) => {
+					isRevokingAllSessions = false;
+					isRevokeAllModalOpen = false;
+					if (result.type === 'success' && result.data?.message) {
+						toast.success(result.data.message);
+						if (selectedSessionUser) openSessionDrawer(selectedSessionUser);
+					} else if (result.type === 'failure' && result.data?.message) {
+						toast.error(result.data.message);
+					}
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="userId" value={selectedSessionUser?.id || ''} />
+		</form>
+	{/snippet}
+</ConfirmModal>
 
 <style>
 	.page-container {

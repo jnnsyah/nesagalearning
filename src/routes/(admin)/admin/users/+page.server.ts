@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { UserAdminService } from '$lib/server/services/user-admin.service';
+import { UserSessionService } from '$lib/server/services/user-session.service';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
 import { db } from '$lib/server/db';
 import { masterAngkatan, masterRombel } from '$lib/server/db/schema/academic';
@@ -25,23 +26,32 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const status = (url.searchParams.get('status') as 'all' | 'active' | 'inactive') || 'all';
 	const page = Number(url.searchParams.get('page')) || 1;
 	try {
-		const usersResult = await UserAdminService.getUsersList({
-			limit: 500
-		});
+		const [usersResult, angkatanList, rombelList] = await Promise.all([
+			UserAdminService.getUsersList({ limit: 500 }),
+			db
+				.select({ id: masterAngkatan.id, year: masterAngkatan.year, name: masterAngkatan.name })
+				.from(masterAngkatan)
+				.orderBy(desc(masterAngkatan.year)),
+			db
+				.select({ id: masterRombel.id, name: masterRombel.name })
+				.from(masterRombel)
+				.orderBy(masterRombel.levelOrder, masterRombel.name)
+		]);
 
-		const angkatanList = await db
-			.select({ id: masterAngkatan.id, year: masterAngkatan.year, name: masterAngkatan.name })
-			.from(masterAngkatan)
-			.orderBy(desc(masterAngkatan.year));
+		const userIds = usersResult.users.map((u) => u.id);
+		const sessionCountMap = await UserSessionService.getActiveSessionCountsMap(userIds);
 
-		const rombelList = await db
-			.select({ id: masterRombel.id, name: masterRombel.name })
-			.from(masterRombel)
-			.orderBy(masterRombel.levelOrder, masterRombel.name);
+		const usersWithSessions = usersResult.users.map((u) => ({
+			...u,
+			activeSessionsCount: sessionCountMap.get(u.id) || 0
+		}));
 
 		return {
 			user: locals.user,
-			usersResult,
+			usersResult: {
+				...usersResult,
+				users: usersWithSessions
+			},
 			options: {
 				angkatanList,
 				rombelList
@@ -294,5 +304,83 @@ export const actions: Actions = {
 		return fail(400, {
 			message: 'Fitur hapus permanen user telah dinonaktifkan demi keamanan data. Gunakan status Nonaktifkan Akun.'
 		});
+	},
+
+	getUserSessions: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { success: false, message: 'Akses ditolak.' });
+		}
+
+		try {
+			const formData = await request.formData();
+			const userId = Number(formData.get('userId'));
+			if (!userId || userId <= 0) {
+				return fail(400, { success: false, message: 'ID User tidak valid.' });
+			}
+
+			const sessions = await UserSessionService.getUserActiveSessions(userId);
+			return {
+				success: true,
+				userId,
+				sessions
+			};
+		} catch (err: any) {
+			console.error('[getUserSessions Action Error]:', err);
+			return fail(500, { success: false, message: 'Gagal mengambil data sesi aktif.' });
+		}
+	},
+
+	revokeSession: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { success: false, message: 'Akses ditolak.' });
+		}
+
+		try {
+			const formData = await request.formData();
+			const sessionId = String(formData.get('sessionId') || '');
+			if (!sessionId) {
+				return fail(400, { success: false, message: 'Session ID tidak valid.' });
+			}
+
+			const res = await UserSessionService.revokeSession(sessionId, Number(locals.user.id));
+			if (!res.success) {
+				return fail(400, { success: false, message: res.message });
+			}
+
+			return {
+				success: true,
+				message: res.message
+			};
+		} catch (err: any) {
+			console.error('[revokeSession Action Error]:', err);
+			return fail(500, { success: false, message: 'Gagal mencabut sesi pengguna.' });
+		}
+	},
+
+	revokeAllUserSessions: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { success: false, message: 'Akses ditolak.' });
+		}
+
+		try {
+			const formData = await request.formData();
+			const userId = Number(formData.get('userId'));
+			if (!userId || userId <= 0) {
+				return fail(400, { success: false, message: 'ID User tidak valid.' });
+			}
+
+			const res = await UserSessionService.revokeAllUserSessions(userId, Number(locals.user.id));
+			if (!res.success) {
+				return fail(400, { success: false, message: res.message });
+			}
+
+			return {
+				success: true,
+				message: res.message
+			};
+		} catch (err: any) {
+			console.error('[revokeAllUserSessions Action Error]:', err);
+			return fail(500, { success: false, message: 'Gagal mencabut seluruh sesi pengguna.' });
+		}
 	}
 };
