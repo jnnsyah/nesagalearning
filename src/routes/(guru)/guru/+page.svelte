@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import MeetingAttendanceTrendChart from '$lib/components/ui/MeetingAttendanceTrendChart.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data } = $props();
 
@@ -34,42 +35,32 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     HERO HEADER
 	     ══════════════════════════════════════════════════════════ -->
-	<!-- Standardized Gold-Standard Header Card Wrapper -->
-	<header class="panel header-card mb-6 p-5">
-		<div class="header-top-row flex items-center justify-between gap-3 mb-2">
-			<nav class="breadcrumb" aria-label="Breadcrumb">
-				<span class="bc-current">Dashboard</span>
-			</nav>
-
+	<PageHeaderCard
+		title="Dashboard Guru Pembimbing"
+		subtitle="Selamat datang kembali, {data.user?.fullName}."
+		breadcrumbs={[{ label: 'Dashboard' }]}
+	>
+		{#snippet badges()}
 			{#if data.dashboardData.selectedTahunAjaran}
-				<span class="activity-badge-pill bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold uppercase">
+				<span class="badge badge-neutral">
 					TA {data.dashboardData.selectedTahunAjaran.name}
 				</span>
 			{/if}
-		</div>
+		{/snippet}
 
-		<div class="header-main-content text-left">
-			<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-				<div class="text-left">
-					<h1 class="page-title text-left">Dashboard Guru Pembimbing</h1>
-					<p class="page-sub text-left">
-						Selamat datang kembali, <strong class="text-indigo-600 font-semibold">{data.user?.fullName}</strong>.
-					</p>
-				</div>
-
-				<div class="w-64 shrink-0">
-					<CustomSelect
-						id="dash-ta-select"
-						name="tahunAjaranId"
-						options={taSelectOptions}
-						value={selectedTaId}
-						onchange={handleTaChange}
-						searchable={false}
-					/>
-				</div>
+		{#snippet actions()}
+			<div class="w-64 shrink-0">
+				<CustomSelect
+					id="dash-ta-select"
+					name="tahunAjaranId"
+					options={taSelectOptions}
+					value={selectedTaId}
+					onchange={handleTaChange}
+					searchable={false}
+				/>
 			</div>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4 KEY METRIC STAT CARDS
@@ -114,7 +105,7 @@
 			</div>
 			<div class="stat-info">
 				<span class="stat-value">{data.dashboardData.stats.overallCurriculumRate}%</span>
-				<span class="stat-label">Skor Komposit Track Pembelajaran</span>
+				<span class="stat-label">Capaian Track Pembelajaran</span>
 				<span class="stat-subtext">Hadir (40%) + Tugas (30%) + Quiz (30%)</span>
 			</div>
 		</div>
@@ -123,7 +114,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     INTERACTIVE SESSION ATTENDANCE TREND CHART
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="mb-6">
+	<section class="chart-section">
 		<MeetingAttendanceTrendChart
 			sessions={data.dashboardData.sessionAttendanceTrend || []}
 			mentorClasses={data.dashboardData.runningClassesOptions || []}
@@ -177,7 +168,7 @@
 
 									<div class="dual-metric-item mt-2">
 										<div class="flex items-center justify-between text-xs mb-1">
-											<span class="text-slate-500 font-mono">Track Pembelajaran Komposit</span>
+											<span class="text-slate-500 font-mono">Track Pembelajaran</span>
 											<span class="font-bold text-indigo-700">{cClass.curriculumRate}%</span>
 										</div>
 										<div class="mini-progress-track">
@@ -210,7 +201,7 @@
 		<!-- Right Column: Recent Notes Feed & Phase Overview -->
 		<div class="main-right-col">
 			<!-- Recent Supervisory Notes Feed -->
-			<section class="panel-section mb-6">
+			<section class="panel-section">
 				<div class="panel-header">
 					<div>
 						<h3 class="panel-title">Catatan Pendampingan Terbaru</h3>
@@ -275,66 +266,12 @@
 </div>
 
 <style>
-	.page-container {
-		padding: 24px 28px 48px;
-		max-width: 1280px;
-		margin: 0 auto;
-	}
-
-	.page-hero {
-		background: #ffffff;
-		border: 1px solid var(--border-hard, #cbd5e1);
-		border-radius: var(--radius-lg, 12px);
-		padding: 20px 24px;
-		margin-bottom: 24px;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-	}
-
-	.hero-top-row {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	.hero-title-group {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.hero-title {
-		font-size: 22px;
-		font-weight: 800;
-		color: var(--text-main, #0f172a);
-		letter-spacing: -0.02em;
-	}
-
-	.hero-subtitle {
-		font-size: 13px;
-		color: var(--text-muted, #64748b);
-		margin-top: 4px;
-	}
-
-	.filter-label {
-		display: block;
-		font-size: 11px;
-		font-weight: 700;
-		font-family: var(--font-mono, monospace);
-		color: var(--text-muted, #64748b);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		margin-bottom: 4px;
-	}
-
 	/* Stats Grid */
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 	}
 
 	.stat-card {
@@ -394,7 +331,13 @@
 	.dashboard-main-grid {
 		display: grid;
 		grid-template-columns: 2fr 1fr;
-		gap: 24px;
+		gap: 20px;
+	}
+
+	.main-right-col {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
 	}
 
 	.panel-section {
@@ -482,21 +425,6 @@
 		border: 1px solid #cbd5e1;
 	}
 
-	.activity-badge-pill {
-		display: inline-flex;
-		align-items: center;
-		height: 24px;
-		padding: 0 10px;
-		border-radius: 6px;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 10.5px;
-		font-weight: 700;
-		line-height: 1;
-		border-width: 1px;
-		border-style: solid;
-		white-space: nowrap;
-	}
-
 	/* Notes Feed Stack */
 	.notes-feed-stack {
 		display: flex;
@@ -543,10 +471,10 @@
 		flex-shrink: 0;
 	}
 
+	.icon-hadir { background: #e0e7ff; color: #4338ca; }
+	.icon-rate { background: #fef3c7; color: #b45309; }
+
 	@media (max-width: 768px) {
-		.page-container {
-			padding: 16px 16px 36px;
-		}
 		.stats-grid {
 			grid-template-columns: 1fr;
 		}
