@@ -38,10 +38,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				.orderBy(masterRombel.levelOrder, masterRombel.name)
 		]);
 
-		const userIds = usersResult.users.map((u) => u.id);
+		const userIds = usersResult.items.map((u) => u.id);
 		const sessionCountMap = await UserSessionService.getActiveSessionCountsMap(userIds);
 
-		const usersWithSessions = usersResult.users.map((u) => ({
+		const usersWithSessions = usersResult.items.map((u) => ({
 			...u,
 			activeSessionsCount: sessionCountMap.get(u.id) || 0
 		}));
@@ -50,7 +50,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			user: locals.user,
 			usersResult: {
 				...usersResult,
-				users: usersWithSessions
+				items: usersWithSessions
 			},
 			options: {
 				angkatanList,

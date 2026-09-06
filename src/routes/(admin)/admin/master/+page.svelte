@@ -1268,9 +1268,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
-		max-width: 1200px;
+		max-width: 1280px;
 		margin: 0 auto;
-		padding: 24px 20px 40px;
+		padding: 24px 28px 48px;
 	}
 
 	.page-hero {

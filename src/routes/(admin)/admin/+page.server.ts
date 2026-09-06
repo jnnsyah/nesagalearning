@@ -10,6 +10,7 @@ import { UserSessionService } from '$lib/server/services/user-session.service';
 import { env } from '$env/dynamic/private';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 function calculateFolderStats(dirPath: string): { totalBytes: number; fileCount: number } {
 	let totalBytes = 0;
@@ -46,23 +47,122 @@ function formatBytes(bytes: number): string {
 	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+function formatUptime(seconds: number): string {
+	const days = Math.floor(seconds / 86400);
+	const hours = Math.floor((seconds % 86400) / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	if (days > 0) return `${days}h ${hours}j ${minutes}m`;
+	if (hours > 0) return `${hours}j ${minutes}m`;
+	return `${minutes}m`;
+}
+
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
 		throw redirect(302, '/login');
 	}
 
-	// 1. Database Health & Latency Check (Real Ping)
+	// 1. Database Health, Metadata & Latency Check (Real Ping)
 	let isDbOk = false;
 	let dbLatency = 0;
+	let dbVersion = 'PostgreSQL';
+	let dbSize = 'N/A';
+	let activeDbConns = 0;
+	let maxDbConns = 100;
+	let activeSessionsCount = 0;
+	let audit24hCount = 0;
+
 	try {
 		const start = Date.now();
-		await db.execute(sql`SELECT 1`);
+		const res = await db.execute(sql`
+			SELECT 
+				version() as pg_version,
+				pg_size_pretty(pg_database_size(current_database())) as db_size,
+				(SELECT count(*)::int FROM pg_stat_activity WHERE datname = current_database()) as active_conns,
+				current_setting('max_connections')::int as max_conns,
+				(SELECT count(*)::int FROM "session" WHERE expires_at > NOW()) as active_sessions,
+				(SELECT count(*)::int FROM audit_log WHERE created_at >= NOW() - INTERVAL '24 hours') as audit_24h_count
+		`);
 		dbLatency = Date.now() - start;
 		isDbOk = true;
+
+		const row = Array.isArray(res) ? res[0] : (res as any)?.rows?.[0];
+		if (row) {
+			const fullVer = String(row.pg_version || '');
+			const match = fullVer.match(/PostgreSQL\s+[\d\.]+/i);
+			dbVersion = match ? match[0] : 'PostgreSQL';
+			dbSize = String(row.db_size || 'N/A');
+			activeDbConns = Number(row.active_conns || 1);
+			maxDbConns = Number(row.max_conns || 100);
+			activeSessionsCount = Number(row.active_sessions || 0);
+			audit24hCount = Number(row.audit_24h_count || 0);
+		}
 	} catch (err) {
 		console.error('[Admin Dashboard] DB health check error:', err);
 		isDbOk = false;
 	}
+
+	const memoryUsage = process.memoryUsage();
+	const totalSystemMem = os.totalmem();
+	const freeSystemMem = os.freemem();
+	const usedSystemMem = totalSystemMem - freeSystemMem;
+	const systemMemPercent = Math.round((usedSystemMem / totalSystemMem) * 100);
+
+	const heapUsed = memoryUsage.heapUsed;
+	const heapTotal = memoryUsage.heapTotal;
+	const heapPercent = Math.round((heapUsed / heapTotal) * 100);
+
+	const cpus = os.cpus();
+	const cpuCount = cpus ? cpus.length : 1;
+	const loadAvg1m = os.loadavg ? os.loadavg()[0].toFixed(2) : '0.00';
+
+	// Real Server Harddisk Filesystem Capacity Stats
+	let diskTotalBytes = 0;
+	let diskUsedBytes = 0;
+	let diskPercent = 0;
+	try {
+		if (typeof fs.statfsSync === 'function') {
+			const stats = fs.statfsSync(process.cwd());
+			const total = Number(stats.blocks) * Number(stats.bsize);
+			const free = Number(stats.bavail) * Number(stats.bsize);
+			diskTotalBytes = total;
+			diskUsedBytes = total - free;
+			diskPercent = total > 0 ? Math.round((diskUsedBytes / total) * 100) : 0;
+		}
+	} catch (e) {
+		console.error('[Admin Dashboard] Disk stat error:', e);
+	}
+
+	const serverRuntime = {
+		nodeVersion: process.version,
+		platform: `${process.platform} (${process.arch})`,
+		uptime: formatUptime(process.uptime()),
+		hostUptime: formatUptime(os.uptime()),
+		heapUsedFormatted: formatBytes(heapUsed),
+		heapTotalFormatted: formatBytes(heapTotal),
+		heapPercent,
+		rssFormatted: formatBytes(memoryUsage.rss),
+		systemMemUsedFormatted: formatBytes(usedSystemMem),
+		systemMemTotalFormatted: formatBytes(totalSystemMem),
+		systemMemPercent,
+		diskUsedFormatted: formatBytes(diskUsedBytes),
+		diskTotalFormatted: formatBytes(diskTotalBytes),
+		diskPercent,
+		cpuCount,
+		loadAvg1m,
+		activeSessionsCount,
+		env: process.env.NODE_ENV || 'development'
+	};
+
+	const dbRuntime = {
+		ok: isDbOk,
+		version: dbVersion,
+		size: dbSize,
+		activeConnections: activeDbConns,
+		maxConnections: maxDbConns,
+		connPercent: Math.round((activeDbConns / maxDbConns) * 100),
+		latencyMs: dbLatency,
+		audit24hCount
+	};
 
 	// 2. Parallel Query Batching for Real System Stats, Logs, & Security Alerts
 	const [
@@ -120,10 +220,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	let totalStorageBytes = 0;
 	let totalStorageFiles = 0;
+	const scannedRealPaths = new Set<string>();
 
-	// Calculate usage across active directories
+	// Calculate usage across active directories (deduplicating identical real paths)
 	for (const baseDir of uploadDirCandidates) {
 		if (fs.existsSync(baseDir)) {
+			let realPath = baseDir;
+			try {
+				realPath = fs.realpathSync(baseDir);
+			} catch {
+				// fallback to baseDir if realpath fails
+			}
+
+			if (scannedRealPaths.has(realPath)) continue;
+			scannedRealPaths.add(realPath);
+
 			const stats = calculateFolderStats(baseDir);
 			totalStorageBytes += stats.totalBytes;
 			totalStorageFiles += stats.fileCount;
@@ -136,7 +247,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 					folderBreakdown[subFolder].count += subStats.fileCount;
 				}
 			}
-			break; // Avoid double counting if paths resolve to same folder
 		}
 	}
 
@@ -193,6 +303,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		storageStats: {
 			totalBytes: totalStorageBytes,
 			formattedTotalSize: formatBytes(totalStorageBytes),
+			diskUsedFormatted: formatBytes(diskUsedBytes),
+			diskTotalFormatted: formatBytes(diskTotalBytes),
+			diskPercent,
 			totalFiles: totalStorageFiles,
 			breakdown: {
 				materials: {
@@ -221,6 +334,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			}
 		},
 		healthStatus,
+		serverRuntime,
+		dbRuntime,
 		recentAuditLogs: auditLogsData.items,
 		securityAlerts
 	};

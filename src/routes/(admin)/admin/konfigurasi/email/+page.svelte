@@ -934,4 +934,48 @@
 		animation: spin 600ms linear infinite;
 	}
 	@keyframes spin { to { transform: rotate(360deg); } }
+
+	.btn-primary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: var(--primary, #4f46e5);
+		color: #ffffff;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		transition: all 150ms ease;
+	}
+
+	.btn-primary-action:hover {
+		background: var(--primary-hover, #4338ca);
+	}
+
+	.btn-secondary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		background: #ffffff;
+		color: #4338ca;
+		border: 1.5px solid #c7d2fe;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+	}
+
+	.btn-secondary-action:hover {
+		background: #eef2ff;
+		border-color: #a5b4fc;
+	}
 </style>

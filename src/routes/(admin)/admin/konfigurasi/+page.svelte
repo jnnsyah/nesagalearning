@@ -559,9 +559,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
-		max-width: 1200px;
+		max-width: 1280px;
 		margin: 0 auto;
-		padding: 24px 20px 40px;
+		padding: 24px 28px 48px;
 	}
 
 	/* Hero Section */
@@ -635,6 +635,28 @@
 
 	.btn-primary-action:hover {
 		background: var(--primary-hover, #4338ca);
+	}
+
+	.btn-secondary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		background: #ffffff;
+		color: #4338ca;
+		border: 1.5px solid #c7d2fe;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+	}
+
+	.btn-secondary-action:hover {
+		background: #eef2ff;
+		border-color: #a5b4fc;
 	}
 
 	.btn-warning-action {

@@ -863,7 +863,7 @@
 
 		{#snippet footer()}
 			<div class="flex items-center justify-end gap-3 w-full">
-				<button type="button" onclick={closeFormDrawer} class="btn-secondary-sm px-4 py-2">
+				<button type="button" onclick={closeFormDrawer} class="btn-drawer-secondary">
 					Batal
 				</button>
 				<button
@@ -872,7 +872,7 @@
 						const formEl = document.getElementById('user-drawer-form') as HTMLFormElement;
 						if (formEl) formEl.requestSubmit();
 					}}
-					class="btn-primary-sm px-5 py-2"
+					class="btn-drawer-primary"
 				>
 					{editingUser ? 'Simpan Perubahan' : 'Daftarkan User Baru'}
 				</button>
@@ -1190,7 +1190,7 @@
 
 		{#snippet footer()}
 			<div class="flex items-center justify-end gap-3 w-full">
-				<button type="button" onclick={closeBulkDrawer} class="btn-secondary-sm px-4 py-2">
+				<button type="button" onclick={closeBulkDrawer} class="btn-drawer-secondary">
 					Batal
 				</button>
 				<button
@@ -1200,7 +1200,7 @@
 						if (formEl) formEl.requestSubmit();
 					}}
 					disabled={parsedBulkUsers.filter((u) => !u.isDuplicate).length === 0}
-					class="btn-primary-sm px-5 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="btn-drawer-primary"
 				>
 					Impor {parsedBulkUsers.filter((u) => !u.isDuplicate).length} Akun Siswa
 				</button>
@@ -1218,37 +1218,54 @@
 		onclose={() => (isSessionDrawerOpen = false)}
 	>
 		{#snippet children()}
-			<div class="flex flex-col gap-4">
+			<div class="drawer-content-stack">
 				<!-- Target User Profile Card -->
-				<div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
-					<div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+				<div class="session-user-card">
+					<div class="session-user-avatar">
 						{#if selectedSessionUser.avatarUrl}
-							<img src={selectedSessionUser.avatarUrl} alt={selectedSessionUser.fullName} class="w-full h-full object-cover rounded-full" />
+							<img src={selectedSessionUser.avatarUrl} alt={selectedSessionUser.fullName} class="w-full h-full object-cover" />
 						{:else}
 							<span>{selectedSessionUser.fullName.charAt(0).toUpperCase()}</span>
 						{/if}
 					</div>
-					<div class="flex-1">
-						<div class="font-bold text-slate-900 text-sm">{selectedSessionUser.fullName}</div>
-						<div class="text-xs text-slate-500 font-mono">@{selectedSessionUser.username} • <span class="capitalize font-semibold">{selectedSessionUser.role}</span></div>
+					<div class="session-user-details">
+						<div class="session-user-name">{selectedSessionUser.fullName}</div>
+						<div class="session-user-meta">
+							<span class="session-user-username">@{selectedSessionUser.username}</span>
+							<span
+								class="badge"
+								class:badge-purple={selectedSessionUser.role === 'admin'}
+								class:badge-amber={selectedSessionUser.role === 'guru'}
+								class:badge-live={selectedSessionUser.role === 'mentor'}
+								class:badge-hadir={selectedSessionUser.role === 'siswa'}
+							>
+								{selectedSessionUser.role.toUpperCase()}
+							</span>
+						</div>
 					</div>
-					<span class="px-2.5 py-1 text-xs font-bold bg-cyan-100 text-cyan-800 rounded-full">
-						{userActiveSessions.length} Sesi Aktif
+					<span class="badge badge-primary">
+						<span class="status-dot"></span>
+						<span>{userActiveSessions.length} Sesi Aktif</span>
 					</span>
+				</div>
+
+				<!-- Section Header for Session List -->
+				<div class="session-section-header">
+					<span class="session-section-title">Daftar Perangkat & Sesi Aktif</span>
 				</div>
 
 				<!-- Session Items List -->
 				{#if isLoadingSessions}
-					<div class="p-8 text-center text-xs font-semibold text-slate-500 flex flex-col items-center gap-2">
+					<div class="session-loading-state">
 						<svg class="animate-spin text-indigo-600" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/></svg>
 						<span>Memuat sesi aktif pengguna...</span>
 					</div>
 				{:else if userActiveSessions.length > 0}
-					<div class="flex flex-col gap-2.5">
+					<div class="session-list-stack">
 						{#each userActiveSessions as sess}
-							<div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+							<div class="session-item-card">
 								<div class="flex items-center gap-3">
-									<div class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+									<div class="session-device-icon">
 										{#if sess.uaIsMobile}
 											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
 										{:else}
@@ -1257,15 +1274,15 @@
 									</div>
 									<div class="flex flex-col gap-0.5">
 										<div class="flex items-center gap-1.5">
-											<span class="font-bold text-xs text-slate-900">{sess.uaIsMobile ? 'Mobile Device' : 'Desktop Browser'}</span>
+											<span class="session-device-title">{sess.uaIsMobile ? 'Mobile Device' : 'Desktop Browser'}</span>
 											{#if sess.rememberMe}
-												<span class="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">Remembered</span>
+												<span class="badge badge-neutral text-[10px]">Remembered</span>
 											{/if}
 										</div>
-										<div class="font-mono text-[11px] text-slate-500">
+										<div class="session-time-info">
 											Login: {new Date(sess.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
 										</div>
-										<div class="font-mono text-[10px] text-slate-400">
+										<div class="session-token-info">
 											Token: {sess.id.substring(0, 12)}...
 										</div>
 									</div>
@@ -1273,7 +1290,7 @@
 								<button
 									type="button"
 									onclick={() => promptRevokeSession(sess.id)}
-									class="px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition"
+									class="btn-danger-xs"
 								>
 									Cabut Sesi
 								</button>
@@ -1281,7 +1298,7 @@
 						{/each}
 					</div>
 				{:else}
-					<div class="p-8 text-center text-xs text-slate-500 flex flex-col items-center gap-1 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+					<div class="session-empty-state">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
 						<span class="font-bold text-slate-700 mt-1">Tidak Ada Sesi Aktif</span>
 						<span>User ini saat ini tidak sedang login di perangkat manapun.</span>
@@ -1296,9 +1313,10 @@
 					<button
 						type="button"
 						onclick={() => (isRevokeAllModalOpen = true)}
-						class="px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition"
+						class="btn-drawer-danger"
 					>
-						Cabut Seluruh Perangkat ({userActiveSessions.length})
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+						<span>Cabut Seluruh Perangkat ({userActiveSessions.length})</span>
 					</button>
 				{:else}
 					<div></div>
@@ -1386,7 +1404,7 @@
 <style>
 	.page-container {
 		padding: 24px 28px 48px;
-		max-width: 1200px;
+		max-width: 1280px;
 		margin: 0 auto;
 		width: 100%;
 	}
@@ -1525,6 +1543,50 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+
+	.btn-primary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		background: var(--primary, #4f46e5);
+		color: #ffffff;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		transition: all 150ms ease;
+	}
+
+	.btn-primary-action:hover {
+		background: var(--primary-hover, #4338ca);
+	}
+
+	.btn-secondary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		background: #ffffff;
+		color: #4338ca;
+		border: 1.5px solid #c7d2fe;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+	}
+
+	.btn-secondary-action:hover {
+		background: #eef2ff;
+		border-color: #a5b4fc;
 	}
 
 	.btn-primary-sm {
@@ -1875,5 +1937,256 @@
 	.btn-remove-file:hover {
 		background: #ffe4e6;
 		color: #be123c;
+	}
+
+	.btn-drawer-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 40px;
+		padding: 0 20px;
+		background: #ffffff;
+		color: var(--text-secondary, #475569);
+		border: 1.5px solid var(--border-hard, #cbd5e1);
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-drawer-secondary:hover {
+		background: var(--bg-inset, #f8fafc);
+		color: var(--text-primary, #0f172a);
+		border-color: #94a3b8;
+	}
+
+	.btn-drawer-primary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		height: 40px;
+		padding: 0 22px;
+		background: var(--primary, #4f46e5);
+		color: #ffffff;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		transition: all 150ms ease;
+	}
+
+	.btn-drawer-primary:hover:not(:disabled) {
+		background: var(--primary-hover, #4338ca);
+		box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3);
+	}
+
+	.btn-drawer-primary:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+		box-shadow: none;
+	}
+
+	.btn-drawer-danger {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		height: 40px;
+		padding: 0 20px;
+		background: #fff1f2;
+		color: #e11d48;
+		border: 1.5px solid #fecdd3;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-drawer-danger:hover:not(:disabled) {
+		background: #ffe4e6;
+		color: #be123c;
+		border-color: #fda4af;
+	}
+
+	.btn-drawer-danger:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.btn-danger-xs {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 30px;
+		padding: 0 12px;
+		background: #fff1f2;
+		color: #e11d48;
+		border: 1px solid #fecdd3;
+		border-radius: var(--radius-md, 6px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.btn-danger-xs:hover {
+		background: #ffe4e6;
+		color: #be123c;
+		border-color: #fda4af;
+	}
+
+	.drawer-content-stack {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.session-user-card {
+		background: var(--bg-inset, #f8fafc);
+		border: 1.5px solid var(--border-subtle, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin-bottom: 20px;
+	}
+
+	.session-user-avatar {
+		width: 44px;
+		height: 44px;
+		border-radius: var(--radius-md, 10px);
+		background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+		color: #ffffff;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-weight: 800;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		overflow: hidden;
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+	}
+
+	.session-user-details {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.session-user-name {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-weight: 800;
+		font-size: 14px;
+		color: var(--text-primary, #0f172a);
+		line-height: 1.2;
+	}
+
+	.session-user-meta {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.session-user-username {
+		font-family: var(--font-mono, monospace);
+		font-size: 11.5px;
+		color: var(--text-muted, #64748b);
+	}
+
+	.session-section-header {
+		margin-bottom: 12px;
+		padding-bottom: 6px;
+		border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+	}
+
+	.session-section-title {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 11px;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		color: var(--text-muted, #64748b);
+		text-transform: uppercase;
+	}
+
+	.session-list-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.session-item-card {
+		padding: 12px 14px;
+		background: #ffffff;
+		border: 1px solid var(--border-subtle, #e2e8f0);
+		border-radius: var(--radius-lg, 10px);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+		transition: border-color 150ms ease, box-shadow 150ms ease;
+	}
+
+	.session-item-card:hover {
+		border-color: #cbd5e1;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	}
+
+	.session-device-icon {
+		width: 38px;
+		height: 38px;
+		border-radius: var(--radius-md, 8px);
+		background: #f1f5f9;
+		color: #475569;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.session-device-title {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-weight: 700;
+		font-size: 13px;
+		color: var(--text-primary, #0f172a);
+	}
+
+	.session-time-info {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		color: var(--text-secondary, #475569);
+	}
+
+	.session-token-info {
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		color: var(--text-muted, #94a3b8);
+	}
+
+	.session-loading-state,
+	.session-empty-state {
+		padding: 32px 16px;
+		text-align: center;
+		font-size: 12px;
+		color: var(--text-muted, #64748b);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		background: var(--bg-inset, #f8fafc);
+		border: 1.5px dashed var(--border-subtle, #e2e8f0);
+		border-radius: var(--radius-lg, 12px);
 	}
 </style>

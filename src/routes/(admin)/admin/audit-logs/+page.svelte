@@ -18,6 +18,58 @@
 	let dateFrom = $state(data.filters.dateFrom || '');
 	let dateTo = $state(data.filters.dateTo || '');
 
+	function formatDateISO(d: Date): string {
+		const year = d.getFullYear();
+		const month = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+
+	function getInitialTimePreset(from: string, to: string): string {
+		if (!from && !to) return 'all';
+		const now = new Date();
+		const todayStr = formatDateISO(now);
+		const weekAgoStr = formatDateISO(new Date(Date.now() - 6 * 86400 * 1000));
+		const monthStartStr = formatDateISO(new Date(now.getFullYear(), now.getMonth(), 1));
+
+		if (from === todayStr && (to === todayStr || !to)) return 'today';
+		if (from === weekAgoStr && (to === todayStr || !to)) return 'this_week';
+		if (from === monthStartStr && (to === todayStr || !to)) return 'this_month';
+		return 'custom';
+	}
+
+	let selectedTimePreset = $state(getInitialTimePreset(data.filters.dateFrom || '', data.filters.dateTo || ''));
+
+	const timePresetOptions = [
+		{ value: 'all', label: 'Semua Waktu' },
+		{ value: 'today', label: 'Hari Ini' },
+		{ value: 'this_week', label: '7 Hari Terakhir' },
+		{ value: 'this_month', label: 'Bulan Ini' },
+		{ value: 'custom', label: 'Rentang Kustom…' }
+	];
+
+	function handleTimePresetChange(preset: string) {
+		selectedTimePreset = preset;
+		const now = new Date();
+		if (preset === 'all') {
+			dateFrom = '';
+			dateTo = '';
+		} else if (preset === 'today') {
+			dateFrom = formatDateISO(now);
+			dateTo = formatDateISO(now);
+		} else if (preset === 'this_week') {
+			dateFrom = formatDateISO(new Date(Date.now() - 6 * 86400 * 1000));
+			dateTo = formatDateISO(now);
+		} else if (preset === 'this_month') {
+			dateFrom = formatDateISO(new Date(now.getFullYear(), now.getMonth(), 1));
+			dateTo = formatDateISO(now);
+		}
+
+		if (preset !== 'custom') {
+			applyFilters();
+		}
+	}
+
 	let selectedLog = $state<any>(null);
 	let isDetailDrawerOpen = $state(false);
 
@@ -46,6 +98,14 @@
 		{ value: 'guru', label: 'Guru Supervisi' },
 		{ value: 'siswa', label: 'Siswa / Peserta' },
 		{ value: 'system', label: 'Sistem Otomatis' }
+	];
+
+	const purgeDaysOptions = [
+		{ value: 30, label: 'Log lebih tua dari 30 hari' },
+		{ value: 60, label: 'Log lebih tua dari 60 hari' },
+		{ value: 90, label: 'Log lebih tua dari 90 hari (Sangat Direkomendasikan)' },
+		{ value: 180, label: 'Log lebih tua dari 180 hari' },
+		{ value: 365, label: 'Log lebih tua dari 1 tahun (365 hari)' }
 	];
 
 	let actionOptions = $derived([
@@ -85,6 +145,7 @@
 		searchVal = '';
 		selectedRole = 'all';
 		selectedAction = 'all';
+		selectedTimePreset = 'all';
 		dateFrom = '';
 		dateTo = '';
 		goto('/admin/audit-logs', { keepFocus: true, noScroll: true, replaceState: true });
@@ -257,7 +318,7 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     3. FILTER BAR ($lib/components/ui/FilterBar.svelte)
 	     ══════════════════════════════════════════════════════════ -->
-	<FilterBar>
+	<FilterBar stacked>
 		{#snippet search()}
 			<div class="flex items-center gap-2 w-full">
 				<div class="flex-1">
@@ -272,7 +333,7 @@
 					<button
 						type="button"
 						onclick={resetFilters}
-						class="btn-drawer-secondary flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-bold flex-shrink-0"
+						class="btn-secondary-action"
 						title="Reset Filter"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -297,19 +358,28 @@
 				onchange={applyFilters}
 			/>
 
-			<DatePicker
-				name="dateFrom"
-				placeholder="Tanggal Mulai"
-				bind:value={dateFrom}
-				onchange={applyFilters}
+			<CustomSelect
+				name="timePreset"
+				options={timePresetOptions}
+				bind:value={selectedTimePreset}
+				onchange={handleTimePresetChange}
 			/>
 
-			<DatePicker
-				name="dateTo"
-				placeholder="Tanggal Akhir"
-				bind:value={dateTo}
-				onchange={applyFilters}
-			/>
+			{#if selectedTimePreset === 'custom'}
+				<DatePicker
+					name="dateFrom"
+					placeholder="Tanggal Mulai"
+					bind:value={dateFrom}
+					onchange={applyFilters}
+				/>
+
+				<DatePicker
+					name="dateTo"
+					placeholder="Tanggal Akhir"
+					bind:value={dateTo}
+					onchange={applyFilters}
+				/>
+			{/if}
 		{/snippet}
 	</FilterBar>
 
@@ -326,28 +396,28 @@
 				<a
 					href={getExportUrl('csv')}
 					download
-					class="btn-drawer-secondary inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold"
+					class="btn-secondary-action"
 					title="Unduh Audit Log dalam Format CSV"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 					<span>Export CSV</span>
 				</a>
 				<a
 					href={getExportUrl('json')}
 					download
-					class="btn-drawer-secondary inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold"
+					class="btn-secondary-action"
 					title="Unduh Audit Log dalam Format JSON"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 					<span>Export JSON</span>
 				</a>
 				<button
 					type="button"
 					onclick={() => (isPurgeModalOpen = true)}
-					class="btn-drawer-danger inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition rounded-lg"
+					class="btn-danger-action"
 					title="Bersihkan Log Lama"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
 					<span>Pembersihan Log</span>
 				</button>
 			</div>
@@ -675,22 +745,15 @@
 					await update();
 				};
 			}}
-			class="flex flex-col gap-3"
+			class="flex flex-col gap-3 text-left"
 		>
-			<label class="flex flex-col gap-1.5 text-left">
-				<span class="text-xs font-bold text-slate-700">Pilih Rentang Retensi Pembersihan:</span>
-				<select
-					name="days"
-					bind:value={purgeDays}
-					class="w-full text-xs font-semibold p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
-				>
-					<option value={30}>Log lebih tua dari 30 hari</option>
-					<option value={60}>Log lebih tua dari 60 hari</option>
-					<option value={90}>Log lebih tua dari 90 hari (Sangat Direkomendasikan)</option>
-					<option value={180}>Log lebih tua dari 180 hari</option>
-					<option value={365}>Log lebih tua dari 1 tahun (365 hari)</option>
-				</select>
-			</label>
+			<CustomSelect
+				name="days"
+				label="Pilih Rentang Retensi Pembersihan:"
+				options={purgeDaysOptions}
+				bind:value={purgeDays}
+				searchable={false}
+			/>
 		</form>
 	{/snippet}
 </ConfirmModal>
@@ -1016,6 +1079,51 @@
 		justify-content: space-between;
 		align-items: center;
 		width: 100%;
+	}
+
+	.btn-secondary-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 16px;
+		background: #ffffff;
+		color: #4338ca;
+		border: 1.5px solid #c7d2fe;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+	}
+
+	.btn-secondary-action:hover {
+		background: #eef2ff;
+		border-color: #a5b4fc;
+	}
+
+	.btn-danger-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 16px;
+		background: #fff1f2;
+		color: #e11d48;
+		border: 1.5px solid #fecdd3;
+		border-radius: var(--radius-md, 8px);
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 13.5px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 150ms ease;
+	}
+
+	.btn-danger-action:hover:not(:disabled) {
+		background: #ffe4e6;
+		color: #be123c;
+		border-color: #fda4af;
 	}
 
 	.btn-drawer-secondary {
