@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
 
 	let { data } = $props();
 
@@ -38,50 +39,70 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     SYSTEM OVERVIEW STAT CARDS
 	     ══════════════════════════════════════════════════════════ -->
-	<section class="stats-grid-4" aria-label="Status Komponen Utama">
-		<div class="stat-card-v" style="--accent: #4f46e5; --bg: #e0e7ff;">
-			<div class="stat-card-v__top">
-				<span class="stat-card-v__label">Total Pengguna</span>
-				<div class="stat-card-v__icon">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-				</div>
-			</div>
-			<div class="stat-card-v__value">5</div>
-			<div class="stat-card-v__meta">Terdaftar di Sistem</div>
-		</div>
+	<section class="stats-grid" aria-label="Status Komponen Utama">
+		<StatCard
+			label="Total Pengguna"
+			value="5"
+			subtext="Terdaftar di Sistem"
+			variant="streak"
+			href="/admin/users"
+			tooltip="Kelola Pengguna"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+					<circle cx="9" cy="7" r="4" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
-		<div class="stat-card-v" style="--accent: #0d9488; --bg: #ccfbf1;">
-			<div class="stat-card-v__top">
-				<span class="stat-card-v__label">Tahun Ajaran</span>
-				<div class="stat-card-v__icon">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-				</div>
-			</div>
-			<div class="stat-card-v__value">1</div>
-			<div class="stat-card-v__meta">2026/2027 Aktif</div>
-		</div>
+		<StatCard
+			label="Tahun Ajaran"
+			value="1"
+			subtext="2026/2027 Aktif"
+			variant="attendance"
+			href="/admin/tahun-ajaran"
+			tooltip="Kelola Periode & Semester"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="4" width="18" height="18" rx="2" />
+					<line x1="16" y1="2" x2="16" y2="6" />
+					<line x1="8" y1="2" x2="8" y2="6" />
+					<line x1="3" y1="10" x2="21" y2="10" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
-		<div class="stat-card-v" style="--accent: #d97706; --bg: #fef3c7;">
-			<div class="stat-card-v__top">
-				<span class="stat-card-v__label">Kelas Aktif</span>
-				<div class="stat-card-v__icon">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-				</div>
-			</div>
-			<div class="stat-card-v__value">1</div>
-			<div class="stat-card-v__meta">Kelas 1 TA 2026/2027</div>
-		</div>
+		<StatCard
+			label="Kelas Aktif"
+			value="1"
+			subtext="Kelas 1 TA 2026/2027"
+			variant="pending"
+			href="/admin/kelas"
+			tooltip="Kelola Kelompok Kelas"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+				</svg>
+			{/snippet}
+		</StatCard>
 
-		<div class="stat-card-v" style="--accent: #dc2626; --bg: #fee2e2;">
-			<div class="stat-card-v__top">
-				<span class="stat-card-v__label">Audit Log</span>
-				<div class="stat-card-v__icon">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-				</div>
-			</div>
-			<div class="stat-card-v__value">0</div>
-			<div class="stat-card-v__meta">Entri Terbaru</div>
-		</div>
+		<StatCard
+			label="Audit Log"
+			value="0"
+			subtext="Entri Terbaru"
+			variant="revisi"
+			href="/admin/audit-logs"
+			tooltip="Lihat Audit Log Stream"
+		>
+			{#snippet icon()}
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+				</svg>
+			{/snippet}
+		</StatCard>
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
@@ -170,69 +191,22 @@
 		50% { opacity: 0.5; }
 	}
 
-	.stats-grid-4 {
+	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 	}
 
-	@media (max-width: 900px) { .stats-grid-4 { grid-template-columns: repeat(2, 1fr); } }
-	@media (max-width: 480px) { .stats-grid-4 { grid-template-columns: 1fr; } }
-
-	.stat-card-v {
-		background: #ffffff;
-		border: 1px solid var(--border-hard, #cbd5e1);
-		border-radius: var(--radius-lg, 12px);
-		padding: 20px;
-		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-		transition: transform 200ms ease, box-shadow 200ms ease;
-		border-top: 3px solid var(--accent);
+	@media (max-width: 1024px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
-	.stat-card-v:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0,0,0,0.1));
-	}
-
-	.stat-card-v__top {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 12px;
-	}
-
-	.stat-card-v__label {
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--text-secondary, #64748b);
-	}
-
-	.stat-card-v__icon {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
-		background: var(--bg);
-		color: var(--accent);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.stat-card-v__value {
-		font-family: var(--font-macro);
-		font-size: 2.2rem;
-		font-weight: 800;
-		color: var(--text-primary, #0f172a);
-		line-height: 1;
-		letter-spacing: -0.03em;
-	}
-
-	.stat-card-v__meta {
-		font-family: var(--font-mono, monospace);
-		font-size: 11px;
-		font-weight: 500;
-		color: var(--text-muted, #94a3b8);
-		margin-top: 6px;
+	@media (max-width: 640px) {
+		.stats-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.two-col-grid {
