@@ -344,7 +344,7 @@
 	</div>
 
 	<!-- Filter Card -->
-	<div class="page-filter-card mb-6">
+	<div class="page-filter-card">
 		<!-- Row 1: Search Bar & Conditional Reset -->
 		<div class="filter-row-top">
 			<div class="flex-1">
@@ -698,7 +698,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		margin-bottom: 24px !important;
+		margin-bottom: 0;
 		max-width: 100%;
 		word-break: break-word;
 	}
@@ -800,7 +800,7 @@
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 		margin-top: 0 !important;
-		margin-bottom: 24px !important;
+		margin-bottom: 0;
 	}
 
 	.stat-card {
@@ -852,7 +852,7 @@
 		border-radius: 14px;
 		padding: 20px;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-		margin-bottom: 24px !important;
+		margin-bottom: 0;
 	}
 
 	.filter-row-top {
