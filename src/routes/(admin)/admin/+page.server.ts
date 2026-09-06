@@ -1,12 +1,41 @@
-import { redirect, fail } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema/auth';
 import { tahunAjaran, kelasInstance } from '$lib/server/db/schema/academic';
 import { auditLog, systemEmailConfig } from '$lib/server/db/schema/system';
 import { eq, count, sql } from 'drizzle-orm';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
-import { StorageManagementService } from '$lib/server/services/storage-management.service';
+import { env } from '$env/dynamic/private';
+import fs from 'fs';
+import path from 'path';
+
+function calculateFolderStats(dirPath: string): { totalBytes: number; fileCount: number } {
+	let totalBytes = 0;
+	let fileCount = 0;
+
+	if (!fs.existsSync(dirPath)) return { totalBytes: 0, fileCount: 0 };
+
+	try {
+		const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+		for (const entry of entries) {
+			const fullPath = path.join(dirPath, entry.name);
+			if (entry.isDirectory()) {
+				const sub = calculateFolderStats(fullPath);
+				totalBytes += sub.totalBytes;
+				fileCount += sub.fileCount;
+			} else if (entry.isFile()) {
+				const stat = fs.statSync(fullPath);
+				totalBytes += stat.size;
+				fileCount++;
+			}
+		}
+	} catch (e) {
+		console.error('Error calculating folder stats:', e);
+	}
+
+	return { totalBytes, fileCount };
+}
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return '0 B';
@@ -34,15 +63,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 		isDbOk = false;
 	}
 
-	// 2. Parallel Query Batching for Real System Stats, Storage Overview, & Logs
+	// 2. Parallel Query Batching for Real System Stats & Logs
 	const [
 		userCountRes,
 		activeTaRes,
 		activeKelasRes,
 		auditLogCountRes,
 		activeEmailRes,
-		auditLogsData,
-		storageOverview
+		auditLogsData
 	] = await Promise.all([
 		db.select({ total: count(user.id) }).from(user),
 		db
@@ -64,8 +92,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			.from(systemEmailConfig)
 			.where(eq(systemEmailConfig.isActive, true))
 			.limit(1),
-		AuditLogService.getPaginatedAuditLogs({ page: 1, limit: 5 }),
-		StorageManagementService.getStorageOverview()
+		AuditLogService.getPaginatedAuditLogs({ page: 1, limit: 5 })
 	]);
 
 	const totalUsers = Number(userCountRes[0]?.total ?? 0);
@@ -74,7 +101,52 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const totalAuditLogs = Number(auditLogCountRes[0]?.total ?? 0);
 	const activeEmailConfig = activeEmailRes[0] || null;
 
-	// 3. Real System Health Status Indicators
+	// 3. Local Docker Storage Volume Statistics
+	const uploadDirCandidates = [
+		process.env.UPLOADS_DIR || '/app/uploads',
+		path.join(process.cwd(), 'uploads'),
+		path.join(process.cwd(), 'static', 'uploads')
+	];
+
+	const folderBreakdown: Record<string, { bytes: number; count: number }> = {
+		materials: { bytes: 0, count: 0 },
+		avatars: { bytes: 0, count: 0 },
+		submissions: { bytes: 0, count: 0 },
+		attachments: { bytes: 0, count: 0 }
+	};
+
+	let totalStorageBytes = 0;
+	let totalStorageFiles = 0;
+
+	// Calculate usage across active directories
+	for (const baseDir of uploadDirCandidates) {
+		if (fs.existsSync(baseDir)) {
+			const stats = calculateFolderStats(baseDir);
+			totalStorageBytes += stats.totalBytes;
+			totalStorageFiles += stats.fileCount;
+
+			for (const subFolder of ['materials', 'avatars', 'submissions', 'attachments']) {
+				const subPath = path.join(baseDir, subFolder);
+				if (fs.existsSync(subPath)) {
+					const subStats = calculateFolderStats(subPath);
+					folderBreakdown[subFolder].bytes += subStats.totalBytes;
+					folderBreakdown[subFolder].count += subStats.fileCount;
+				}
+			}
+			break; // Avoid double counting if paths resolve to same folder
+		}
+	}
+
+	// 4. Cloudflare R2 Cloud Backup Status
+	const r2AccountId = env.R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+	const r2BucketName = env.R2_BUCKET_NAME || process.env.R2_BUCKET_NAME;
+	const hasR2Config = Boolean(
+		r2AccountId &&
+			(env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID) &&
+			r2BucketName
+	);
+
+	// 5. Real System Health Status Indicators
 	const healthStatus = [
 		{
 			label: 'Database (PostgreSQL)',
@@ -89,13 +161,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		{
 			label: 'Local Docker Storage',
 			ok: true,
-			status: `Operational (${formatBytes(storageOverview.totalBytes)} · ${storageOverview.totalFiles} File)`
+			status: `Operational (${formatBytes(totalStorageBytes)} · ${totalStorageFiles} File)`
 		},
 		{
 			label: 'Cloudflare R2 Cloud Backup',
-			ok: storageOverview.r2Backup.isConfigured,
-			status: storageOverview.r2Backup.isConfigured
-				? `Aktif (Bucket: ${storageOverview.r2Backup.bucketName})`
+			ok: hasR2Config,
+			status: hasR2Config
+				? `Aktif (Bucket: ${r2BucketName})`
 				: 'Standby (Local Docker Mode Active)'
 		},
 		{
@@ -116,79 +188,36 @@ export const load: PageServerLoad = async ({ locals }) => {
 			totalAuditLogs
 		},
 		storageStats: {
-			totalBytes: storageOverview.totalBytes,
-			formattedTotalSize: formatBytes(storageOverview.totalBytes),
-			totalFiles: storageOverview.totalFiles,
+			totalBytes: totalStorageBytes,
+			formattedTotalSize: formatBytes(totalStorageBytes),
+			totalFiles: totalStorageFiles,
 			breakdown: {
 				materials: {
-					count: storageOverview.folderStats.materials?.count || 0,
-					formattedSize: formatBytes(storageOverview.folderStats.materials?.bytes || 0)
+					count: folderBreakdown.materials.count,
+					formattedSize: formatBytes(folderBreakdown.materials.bytes)
 				},
 				avatars: {
-					count: storageOverview.folderStats.avatars?.count || 0,
-					formattedSize: formatBytes(storageOverview.folderStats.avatars?.bytes || 0)
+					count: folderBreakdown.avatars.count,
+					formattedSize: formatBytes(folderBreakdown.avatars.bytes)
 				},
 				submissions: {
-					count: storageOverview.folderStats.submissions?.count || 0,
-					formattedSize: formatBytes(storageOverview.folderStats.submissions?.bytes || 0)
+					count: folderBreakdown.submissions.count,
+					formattedSize: formatBytes(folderBreakdown.submissions.bytes)
 				},
 				attachments: {
-					count: storageOverview.folderStats.attachments?.count || 0,
-					formattedSize: formatBytes(storageOverview.folderStats.attachments?.bytes || 0)
+					count: folderBreakdown.attachments.count,
+					formattedSize: formatBytes(folderBreakdown.attachments.bytes)
 				}
 			},
 			r2Backup: {
-				isConfigured: storageOverview.r2Backup.isConfigured,
-				bucketName: storageOverview.r2Backup.bucketName || 'N/A',
-				statusText: storageOverview.r2Backup.isConfigured
-					? `Terhubung ke Cloudflare R2 (${storageOverview.r2Backup.bucketName})`
+				isConfigured: hasR2Config,
+				bucketName: r2BucketName || 'N/A',
+				statusText: hasR2Config
+					? `Terhubung ke Cloudflare R2 (${r2BucketName})`
 					: 'Local Storage Active · R2 Backup Standby'
-			},
-			orphanStats: {
-				count: storageOverview.orphanStats.orphanCount,
-				formattedSize: formatBytes(storageOverview.orphanStats.orphanBytes)
 			}
 		},
 		healthStatus,
 		recentAuditLogs: auditLogsData.items
 	};
-};
-
-export const actions: Actions = {
-	syncR2Backup: async ({ locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(401, { success: false, message: 'Akses ditolak.' });
-		}
-
-		try {
-			const res = await StorageManagementService.syncLocalVolumeToR2(Number(locals.user.id));
-			if (!res.success) {
-				return fail(400, { success: false, message: res.message });
-			}
-			return {
-				success: true,
-				message: res.message
-			};
-		} catch (err: any) {
-			console.error('[syncR2Backup Error]:', err);
-			return fail(500, { success: false, message: 'Gagal melakukan sinkronisasi ke R2 Cloud.' });
-		}
-	},
-
-	cleanOrphans: async ({ locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(401, { success: false, message: 'Akses ditolak.' });
-		}
-
-		try {
-			const res = await StorageManagementService.cleanOrphanFiles(Number(locals.user.id));
-			return {
-				success: true,
-				message: res.message
-			};
-		} catch (err: any) {
-			console.error('[cleanOrphans Error]:', err);
-			return fail(500, { success: false, message: 'Gagal membersihkan file orphan.' });
-		}
-	}
 };

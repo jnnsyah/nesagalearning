@@ -1,17 +1,8 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import { toast } from '$lib/stores/toast';
 
 	let { data } = $props();
-
-	let isSyncingR2 = $state(false);
-	let isCleaningOrphans = $state(false);
-	let isCleanOrphanModalOpen = $state(false);
-	let syncFormRef: HTMLFormElement;
-	let cleanFormRef: HTMLFormElement;
 
 	function formatDate(d: Date | string): string {
 		const dt = new Date(d);
@@ -185,83 +176,22 @@
 				</div>
 			</div>
 
-			<!-- Storage Maintenance & Cloudflare R2 Backup Row -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-				<!-- Cloudflare R2 Backup Card -->
-				<div class="r2-backup-banner flex flex-wrap items-center justify-between gap-3">
-					<div class="flex items-center gap-3">
-						<div class="r2-icon-wrap" class:r2-icon-wrap--active={data.storageStats?.r2Backup?.isConfigured}>
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
-							</svg>
-						</div>
-						<div>
-							<div class="r2-title">Cloudflare R2 Backup & Mirror</div>
-							<div class="r2-status-desc">{data.storageStats?.r2Backup?.statusText}</div>
-						</div>
+			<!-- Cloudflare R2 Backup Banner -->
+			<div class="r2-backup-banner">
+				<div class="flex items-center gap-3">
+					<div class="r2-icon-wrap" class:r2-icon-wrap--active={data.storageStats?.r2Backup?.isConfigured}>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+						</svg>
 					</div>
-					{#if data.storageStats?.r2Backup?.isConfigured}
-						<form
-							bind:this={syncFormRef}
-							action="?/syncR2Backup"
-							method="POST"
-							use:enhance={() => {
-								isSyncingR2 = true;
-								return async ({ result, update }) => {
-									isSyncingR2 = false;
-									if (result.type === 'success' && result.data?.message) {
-										toast.success(result.data.message);
-									} else if (result.type === 'failure' && result.data?.message) {
-										toast.error(result.data.message);
-									}
-									await update();
-								};
-							}}
-						>
-							<button
-								type="submit"
-								disabled={isSyncingR2}
-								class="btn-drawer-secondary inline-flex items-center gap-1.5 py-1.5 px-3 text-xs font-bold bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm"
-							>
-								{#if isSyncingR2}
-									<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/></svg>
-									<span>Syncing...</span>
-								{:else}
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-									<span>Trigger Sync R2</span>
-								{/if}
-							</button>
-						</form>
-					{/if}
-				</div>
-
-				<!-- Orphan File Maintenance Card -->
-				<div class="orphan-card flex flex-wrap items-center justify-between gap-3 p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl">
-					<div class="flex items-center gap-3">
-						<div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold flex-shrink-0">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-						</div>
-						<div>
-							<div class="text-xs font-bold text-amber-950">Maintenance File Orphan (Unused Files)</div>
-							<div class="text-[11px] font-medium text-amber-800">
-								{#if data.storageStats?.orphanStats?.count > 0}
-									Ditemukan <strong>{data.storageStats.orphanStats.count} file</strong> ({data.storageStats.orphanStats.formattedSize}) tidak terpakai di DB.
-								{:else}
-									Semua file tersimpan rapi & terhubung di database (0 file orphan).
-								{/if}
-							</div>
-						</div>
+					<div>
+						<div class="r2-title">Cloudflare R2 Cloud Backup & Mirror Service</div>
+						<div class="r2-status-desc">{data.storageStats?.r2Backup?.statusText}</div>
 					</div>
-					{#if data.storageStats?.orphanStats?.count > 0}
-						<button
-							type="button"
-							onclick={() => (isCleanOrphanModalOpen = true)}
-							class="px-3 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm transition"
-						>
-							Bersihkan File ({data.storageStats.orphanStats.formattedSize})
-						</button>
-					{/if}
 				</div>
+				{#if data.storageStats?.r2Backup?.isConfigured}
+					<span class="r2-bucket-tag">Bucket: {data.storageStats?.r2Backup?.bucketName}</span>
+				{/if}
 			</div>
 		</div>
 	</section>
@@ -353,41 +283,6 @@
 		</section>
 	</div>
 </div>
-
-<!-- ══════════════════════════════════════════════════════════
-     CONFIRMATION MODAL: CLEAN ORPHAN FILES
-     ══════════════════════════════════════════════════════════ -->
-<ConfirmModal
-	bind:open={isCleanOrphanModalOpen}
-	title="Pembersihan File Orphan (Unused Storage)"
-	message={`Hapus ${data.storageStats?.orphanStats?.count || 0} file orphan (${data.storageStats?.orphanStats?.formattedSize || '0 B'}) dari volume penyimpanan lokal. File-file ini sudah tidak tereferensi di database.`}
-	confirmText="Hapus Permanen File Orphan"
-	cancelText="Batal"
-	variant="warning"
-	loading={isCleaningOrphans}
-	onconfirm={() => cleanFormRef?.requestSubmit()}
->
-	{#snippet children()}
-		<form
-			bind:this={cleanFormRef}
-			action="?/cleanOrphans"
-			method="POST"
-			use:enhance={() => {
-				isCleaningOrphans = true;
-				return async ({ result, update }) => {
-					isCleaningOrphans = false;
-					isCleanOrphanModalOpen = false;
-					if (result.type === 'success' && result.data?.message) {
-						toast.success(result.data.message);
-					} else if (result.type === 'failure' && result.data?.message) {
-						toast.error(result.data.message);
-					}
-					await update();
-				};
-			}}
-		></form>
-	{/snippet}
-</ConfirmModal>
 
 <style>
 	.status-dot {
