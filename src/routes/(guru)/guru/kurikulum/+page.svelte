@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	import { untrack } from 'svelte';
 
@@ -110,24 +111,24 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 1: GRID VIEW (Katalog Kartu Track Pembelajaran)
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-row">
-				<div>
-					<div class="hero-title-group">
-						<h1 class="hero-title">Katalog & Pantau Track Pembelajaran</h1>
-						{#if data.monitoringData.selectedTahunAjaran}
-							<span class="badge badge-primary">
-								TA {data.monitoringData.selectedTahunAjaran.name}
-							</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Pilih alur track pembelajaran di bawah ini untuk memantau progres ketercapaian modul, materi, dan quiz per tingkat kelas.
-					</p>
-				</div>
+		<PageHeaderCard
+			title="Katalog & Pantau Track Pembelajaran"
+			subtitle="Pilih alur track pembelajaran di bawah ini untuk memantau progres ketercapaian modul, materi, dan quiz per tingkat kelas."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/guru' },
+				{ label: 'Track Pembelajaran' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.monitoringData.selectedTahunAjaran}
+					<span class="badge badge-neutral">
+						TA {data.monitoringData.selectedTahunAjaran.name}
+					</span>
+				{/if}
+			{/snippet}
 
-				<div class="w-64 flex-shrink-0">
-					<label for="grid-ta-select" class="filter-label">Periode</label>
+			{#snippet actions()}
+				<div class="w-64 shrink-0">
 					<CustomSelect
 						id="grid-ta-select"
 						name="tahunAjaranId"
@@ -137,8 +138,8 @@
 						searchable={false}
 					/>
 				</div>
-			</div>
-		</header>
+			{/snippet}
+		</PageHeaderCard>
 
 		{#if data.monitoringData.trackCards.length === 0}
 			<div class="empty-card py-12 text-center">
@@ -257,34 +258,29 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 2: DETAIL BREAKDOWN VIEW (Detail Modul Track)
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-bar">
-				{#if data.monitoringData.fromDashboard}
-					<button type="button" onclick={() => goto(`/guru?tahunAjaranId=${data.monitoringData.selectedTahunAjaran?.id || ''}`)} class="btn-back-link">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						<span>Kembali ke Dashboard Guru</span>
-					</button>
-				{:else}
-					<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						<span>Kembali ke Katalog Track Pembelajaran (TA {data.monitoringData.selectedTahunAjaran?.name})</span>
-					</button>
-				{/if}
-			</div>
+		<PageHeaderCard
+			title={data.monitoringData.selectedTrack.title}
+			subtitle={data.monitoringData.selectedTrack.description}
+			breadcrumbs={data.monitoringData.fromDashboard
+				? [
+						{ label: 'Dashboard', href: `/guru?tahunAjaranId=${data.monitoringData.selectedTahunAjaran?.id || ''}` },
+						{ label: 'Track Pembelajaran', href: `/guru/kurikulum?tahunAjaranId=${data.monitoringData.selectedTahunAjaran?.id || ''}` },
+						{ label: data.monitoringData.selectedTrack.title }
+					]
+				: [
+						{ label: 'Dashboard', href: '/guru' },
+						{ label: 'Katalog Track', href: `/guru/kurikulum?tahunAjaranId=${data.monitoringData.selectedTahunAjaran?.id || ''}` },
+						{ label: data.monitoringData.selectedTrack.title }
+					]}
+		>
+			{#snippet badges()}
+				<span class="badge badge-neutral">
+					{data.monitoringData.selectedTrack.tingkatName}
+				</span>
+			{/snippet}
 
-			<div class="hero-content-flex">
-				<div class="flex-grow">
-					<div class="flex items-center gap-3 flex-wrap">
-						<h1 class="hero-title">{data.monitoringData.selectedTrack.title}</h1>
-						<span class="badge badge-primary">{data.monitoringData.selectedTrack.tingkatName}</span>
-					</div>
-					{#if data.monitoringData.selectedTrack.description}
-						<p class="hero-subtitle">{data.monitoringData.selectedTrack.description}</p>
-					{/if}
-				</div>
-
-				<div class="w-64 flex-shrink-0">
-					<label for="detail-kelas-select" class="filter-label">Filter Rombel Kelas</label>
+			{#snippet actions()}
+				<div class="w-64 shrink-0">
 					<CustomSelect
 						id="detail-kelas-select"
 						name="kelasInstanceId"
@@ -294,8 +290,8 @@
 						searchable={false}
 					/>
 				</div>
-			</div>
-		</header>
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- ══════════════════════════════════════════════════════════
 		     SUMMARY STAT CARDS
@@ -544,7 +540,7 @@
 		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: var(--radius-lg, 12px);
 		padding: 20px 24px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
@@ -742,7 +738,7 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 	}
 
 	.stat-card {
