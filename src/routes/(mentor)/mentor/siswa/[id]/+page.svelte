@@ -163,7 +163,7 @@
 				<span class="hero-overall-val text-indigo-700 font-mono">
 					{summary.totalPoints ?? 0} Pts
 				</span>
-				<span class="hero-overall-lbl">Total Poin Gamifikasi</span>
+				<span class="hero-overall-lbl">Total Poin Siswa</span>
 			</div>
 		</div>
 	</header>
