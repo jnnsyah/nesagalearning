@@ -7,6 +7,7 @@
 	import DatePicker from '$lib/components/ui/DatePicker.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -238,40 +239,47 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HEADER / HERO TITLE BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-content-row">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Manajemen Periode Komunitas</h1>
-					<span class="badge badge-primary">
-						{data.stats?.totalTahunAjaran ?? 0} Periode
-					</span>
-				</div>
-				<p class="hero-subtitle">
-					Kelola periode komunitas aktif, jadwalkan pergantian periode, dan jalankan proses kenaikan kelas rombel otomatis.
-				</p>
-			</div>
-			<div class="hero-actions-group">
+	<PageHeaderCard
+		title="Manajemen Periode Komunitas"
+		subtitle="Kelola periode komunitas aktif, jadwalkan pergantian periode, dan jalankan proses kenaikan kelas rombel otomatis."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Tahun Ajaran & Semester' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{data.stats?.totalTahunAjaran ?? 0} Periode
+			</span>
+			{#if data.stats?.activeTahunAjaranName}
+				<span class="badge badge-success">
+					TA {data.stats.activeTahunAjaranName} (Aktif)
+				</span>
+			{/if}
+		{/snippet}
+
+		{#snippet actions()}
+			<div class="flex items-center gap-2 flex-wrap justify-end">
 				<button
 					type="button"
 					class="btn-secondary-action"
 					onclick={() => (isPromotionPreviewOpen = true)}
 				>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/>
 					</svg>
-					<span>Preview & Kenaikan Kelas</span>
+					<span>Preview Kenaikan Kelas</span>
 				</button>
 
 				<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
 					</svg>
 					<span>Tambah Periode Baru</span>
 				</button>
 			</div>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID (.stats-grid)
