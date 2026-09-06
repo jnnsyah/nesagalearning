@@ -10,6 +10,38 @@
 
 	let { data } = $props();
 
+	// Tier 1 Katalog Filter State
+	let searchQuery = $state('');
+	let selectedTingkat = $state<string>('all');
+
+	let tingkatOptions = $derived.by(() => {
+		const set = new Set<string>();
+		(data.recapData.classCards || []).forEach((c: any) => {
+			if (c.tingkatName) set.add(c.tingkatName);
+		});
+		return Array.from(set).map((name) => ({ value: name, label: `Tingkat ${name}` }));
+	});
+
+	let filteredClassCards = $derived.by(() => {
+		const cards = data.recapData.classCards || [];
+		const q = searchQuery.trim().toLowerCase();
+		return cards.filter((c: any) => {
+			const matchSearch =
+				!q ||
+				c.name.toLowerCase().includes(q) ||
+				(c.tingkatName && c.tingkatName.toLowerCase().includes(q));
+			const matchTingkat = selectedTingkat === 'all' || c.tingkatName === selectedTingkat;
+			return matchSearch && matchTingkat;
+		});
+	});
+
+	let isFilterActive = $derived(searchQuery.trim() !== '' || selectedTingkat !== 'all');
+
+	function resetGridFilters() {
+		searchQuery = '';
+		selectedTingkat = 'all';
+	}
+
 	// Derived values for filter controls
 	let selectedTaId = $derived(
 		data.recapData.selectedTahunAjaran?.id
@@ -162,20 +194,61 @@
 			{/snippet}
 		</PageHeaderCard>
 
-		{#if data.recapData.classCards.length === 0}
+		<!-- Filter Bar / Filter Card -->
+		<div class="page-filter-card">
+			<div class="filter-row-top">
+				<div class="flex-1">
+					<TextInput
+						id="search-presensi-kelas-input"
+						label="Cari Rombel Kelas"
+						placeholder="Ketik kata kunci nama rombel atau tingkat..."
+						bind:value={searchQuery}
+					/>
+				</div>
+
+				{#if isFilterActive}
+					<button type="button" onclick={resetGridFilters} class="btn-reset-filters-active">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+						<span>Reset Filter</span>
+					</button>
+				{/if}
+			</div>
+
+			<div class="filter-row-bottom">
+				<CustomSelect
+					id="filter-presensi-tingkat-select"
+					label="Filter Tingkat Kelas"
+					bind:value={selectedTingkat}
+					options={[
+						{ value: 'all', label: 'Semua Tingkat' },
+						...tingkatOptions
+					]}
+					searchable={false}
+				/>
+			</div>
+		</div>
+
+		{#if filteredClassCards.length === 0}
 			<div class="empty-card py-12 text-center">
 				<div class="empty-icon-circle">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 				</div>
-				<h3 class="font-bold text-slate-800 text-base">Belum Ada Rombel Kelas Aktif</h3>
+				<h3 class="font-bold text-slate-800 text-base">Tidak Ditemukan Rombel Kelas</h3>
 				<p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-					Tidak ditemukan rombel kelas berjalan untuk Periode {data.recapData.selectedTahunAjaran?.name || ''}.
+					{#if isFilterActive}
+						Tidak ada rombel kelas yang cocok dengan filter pencarian. Coba ubah atau reset filter.
+					{:else}
+						Tidak ditemukan rombel kelas berjalan untuk Periode {data.recapData.selectedTahunAjaran?.name || ''}.
+					{/if}
 				</p>
 			</div>
 		{:else}
 			<section class="grid-cards-container" aria-label="Daftar Rombel Kelas">
 				<div class="cards-grid">
-					{#each data.recapData.classCards as cCard}
+					{#each filteredClassCards as cCard}
 						<div
 							class="class-card"
 							class:class-card--archived={cCard.classState === 'archived'}
@@ -708,6 +781,61 @@
 </div>
 
 <style>
+	/* Filter Card Standard Layout */
+	.page-filter-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 20px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		margin-bottom: 0;
+	}
+
+	.filter-row-top {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 14px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 16px;
+	}
+
+	.btn-reset-filters-active {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		height: 42px;
+		background: #fef2f2;
+		color: #ef4444;
+		border: 1px solid #fecaca;
+		border-radius: 8px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-reset-filters-active:hover {
+		background: #fee2e2;
+		color: #dc2626;
+	}
+
+	@media (max-width: 640px) {
+		.filter-row-top {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.filter-row-bottom {
+			grid-template-columns: 1fr;
+		}
+	}
 	.page-container {
 		padding: 24px 28px 48px;
 		max-width: 1280px;
