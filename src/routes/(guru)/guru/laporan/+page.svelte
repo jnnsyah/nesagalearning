@@ -3,6 +3,7 @@
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data } = $props();
 
@@ -69,37 +70,36 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HERO TITLE BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-content">
-			<div class="hero-title-row">
-				<h1 class="page-title">Laporan & Rekapitulasi Komunitas</h1>
-				<span class="badge badge-primary">Fase 12.4 Export Suite</span>
+	<PageHeaderCard
+		title="Laporan & Rekapitulasi Komunitas"
+		subtitle="Rekapitulasi matriks kehadiran, keaktifan presensi, dan perolehan poin siswa per kelas untuk kebutuhan rapor pembimbing."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/guru' },
+			{ label: 'Laporan Komunitas' }
+		]}
+	>
+		{#snippet actions()}
+			<div class="flex items-center gap-2">
+				<button type="button" onclick={exportToCSV} class="btn btn-secondary">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="7 10 12 15 17 10" />
+						<line x1="12" y1="15" x2="12" y2="3" />
+					</svg>
+					<span>Export CSV/Excel</span>
+				</button>
+
+				<button type="button" onclick={printReport} class="btn btn-primary">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="6 9 6 2 18 2 18 9" />
+						<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+						<rect x="6" y="14" width="12" height="8" />
+					</svg>
+					<span>Cetak Rapor / PDF</span>
+				</button>
 			</div>
-			<p class="page-subtitle">
-				Rekapitulasi matriks kehadiran, keaktifan presensi, dan perolehan poin siswa per kelas untuk kebutuhan rapor pembimbing.
-			</p>
-		</div>
-
-		<div class="hero-actions">
-			<button type="button" onclick={exportToCSV} class="btn btn-secondary">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-					<polyline points="7 10 12 15 17 10" />
-					<line x1="12" y1="15" x2="12" y2="3" />
-				</svg>
-				<span>Export CSV/Excel</span>
-			</button>
-
-			<button type="button" onclick={printReport} class="btn btn-primary">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polyline points="6 9 6 2 18 2 18 9" />
-					<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-					<rect x="6" y="14" width="12" height="8" />
-				</svg>
-				<span>Cetak Rapor / PDF</span>
-			</button>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID
