@@ -230,11 +230,6 @@
 		</div>
 
 		<section class="class-cards-section">
-			<div class="section-header-flex">
-				<h2 class="section-title">Daftar Kelas ({filteredClassCards.length} Kelas)</h2>
-				<span class="type-mono text-xs text-slate-500">Periode: {data.cardsData.selectedTahunAjaran?.name}</span>
-			</div>
-
 			{#if filteredClassCards.length === 0}
 				<div class="card-table text-center py-12">
 					<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-slate-400 mb-2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
@@ -248,30 +243,28 @@
 					</p>
 				</div>
 			{:else}
-				<div class="class-cards-grid">
+				<div class="cards-grid">
 					{#each filteredClassCards as card}
 						<div
-							class="class-health-card cursor-pointer"
-							class:class-health-card--archived={card.classState === 'archived'}
-							class:class-health-card--upcoming={card.classState === 'upcoming'}
+							class="track-card cursor-pointer"
+							class:track-card--archived={card.classState === 'archived'}
+							class:track-card--upcoming={card.classState === 'upcoming'}
 							onclick={() => selectKelasCard(card.kelasId)}
 							role="button"
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && selectKelasCard(card.kelasId)}
 						>
-							<div class="class-card-header">
-								<div>
-									<h3 class="class-card-name">{card.kelasName}</h3>
-									<span class="class-card-tingkat">Tingkat {card.tingkatName} • {card.totalStudents} Siswa</span>
-								</div>
-								<div class="flex items-center gap-1.5 flex-wrap justify-end">
+							<div class="track-card-header">
+								<div class="flex items-center justify-between gap-2">
+									<span class="badge badge-subtle">Tingkat {card.tingkatName}</span>
+
 									{#if card.classState === 'upcoming'}
 										<span class="badge badge-amber inline-flex items-center gap-1">
 											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 											<span>TA BELUM DIMULAI</span>
 										</span>
 									{:else if card.classState === 'archived'}
-										<span class="badge badge-neutral inline-flex items-center gap-1">
+										<span class="badge badge-archived inline-flex items-center gap-1">
 											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
 											<span>TERARSIP</span>
 										</span>
@@ -284,51 +277,58 @@
 										</span>
 									{/if}
 								</div>
+
+								<h3 class="track-card-title mt-2">{card.kelasName}</h3>
+								<p class="track-card-desc">{card.totalStudents} Siswa Terdaftar</p>
 							</div>
 
-							<div class="class-card-metrics">
-								<div class="metric-pill">
-									<span class="metric-label">% Kehadiran</span>
-									<span class="metric-value">
-										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgAttendanceRate}%`}
-									</span>
+							<div class="track-card-body">
+								<div class="mb-3">
+									{#if card.classState === 'upcoming'}
+										<span class="neutral-count-pill">
+											Belum Ada Aktivitas
+										</span>
+									{:else if card.totalStudents === 0}
+										<span class="neutral-count-pill">
+											Belum Ada Siswa
+										</span>
+									{:else if card.alertStudentsCount > 0}
+										<span class="alert-count-pill inline-flex items-center gap-1">
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+											<span>{card.alertStudentsCount} Siswa Butuh Intervensi</span>
+										</span>
+									{:else}
+										<span class="healthy-count-pill inline-flex items-center gap-1">
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+											<span>Semua Siswa Sehat</span>
+										</span>
+									{/if}
 								</div>
-								<div class="metric-pill">
-									<span class="metric-label">% Tugas Selesai</span>
-									<span class="metric-value">
-										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgTaskCompletionRate}%`}
-									</span>
-								</div>
-								<div class="metric-pill">
-									<span class="metric-label">Streak Rata-rata</span>
-									<span class="metric-value">
-										{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgStreak} Hari`}
-									</span>
+
+								<div class="metrics-mini-grid">
+									<div class="mini-stat">
+										<span class="mini-stat-val">
+											{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgAttendanceRate}%`}
+										</span>
+										<span class="mini-stat-lbl">% Kehadiran</span>
+									</div>
+									<div class="mini-stat">
+										<span class="mini-stat-val">
+											{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgTaskCompletionRate}%`}
+										</span>
+										<span class="mini-stat-lbl">% Tugas</span>
+									</div>
+									<div class="mini-stat">
+										<span class="mini-stat-val">
+											{card.classState === 'upcoming' || card.totalStudents === 0 ? '-' : `${card.avgStreak} Hari`}
+										</span>
+										<span class="mini-stat-lbl">Streak</span>
+									</div>
 								</div>
 							</div>
 
-							<div class="class-card-footer">
-								{#if card.classState === 'upcoming'}
-									<span class="neutral-count-pill">
-										Belum Ada Aktivitas
-									</span>
-								{:else if card.totalStudents === 0}
-									<span class="neutral-count-pill">
-										Belum Ada Siswa
-									</span>
-								{:else if card.alertStudentsCount > 0}
-									<span class="alert-count-pill inline-flex items-center gap-1">
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-										<span>{card.alertStudentsCount} Siswa Butuh Intervensi</span>
-									</span>
-								{:else}
-									<span class="healthy-count-pill inline-flex items-center gap-1">
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-										<span>Semua Siswa Sehat</span>
-									</span>
-								{/if}
-
-								<button type="button" class="btn-pantau-kelas">
+							<div class="track-card-footer">
+								<button type="button" class="btn-open-track">
 									<span>Pantau Kelas</span>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
 								</button>
@@ -864,144 +864,134 @@
 		margin: 0;
 	}
 
-	.class-cards-grid {
+	.cards-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 18px;
+		gap: 20px;
 	}
 
 	@media (max-width: 1024px) {
-		.class-cards-grid {
+		.cards-grid {
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 
 	@media (max-width: 640px) {
-		.class-cards-grid {
+		.cards-grid {
 			grid-template-columns: 1fr;
 		}
 	}
 
-	.class-health-card {
+	.track-card {
 		background: #ffffff;
-		border: 1.5px solid var(--border-hard, #e2e8f0);
+		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: var(--radius-lg, 12px);
 		padding: 20px;
-		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		gap: 16px;
-		transition: all 150ms ease;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease,
+			border-color 0.15s ease;
 	}
 
-	.class-health-card:hover {
+	.track-card:hover {
 		transform: translateY(-2px);
-		box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
-		border-color: var(--primary, #4f46e5);
+		box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+		border-color: #4f46e5;
 	}
 
-	.class-health-card--archived {
+	.track-card--archived {
 		background: #f8fafc;
 		border: 1.5px dashed #cbd5e1;
-		box-shadow: none;
 	}
 
-	.class-health-card--archived:hover {
-		background: #ffffff;
-		border-color: #94a3b8;
-		border-style: solid;
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
-	}
-
-	.class-health-card--archived .class-card-name {
-		color: #475569;
-	}
-
-	.class-health-card--archived .class-card-metrics {
-		background: #f1f5f9;
-		border-color: #e2e8f0;
-	}
-
-	.class-health-card--upcoming {
+	.track-card--upcoming {
 		background: #fffdf5;
-		border: 1.5px solid #fde68a;
-		box-shadow: none;
+		border: 1px solid #fde68a;
 	}
 
-	.class-health-card--upcoming:hover {
-		background: #ffffff;
-		border-color: #d97706;
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+	.track-card-title {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--text-main, #0f172a);
+		line-height: 1.3;
 	}
 
-	.class-health-card--upcoming .class-card-metrics {
-		background: #fef3c7;
-		border-color: #fde68a;
-	}
-
-	.class-card-header {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.class-card-name {
-		font-family: var(--font-macro);
-		font-size: 1.2rem;
-		font-weight: 800;
-		color: var(--text-primary, #0f172a);
-		margin: 0;
-	}
-
-	.class-card-tingkat {
+	.track-card-desc {
 		font-size: 12px;
 		color: var(--text-muted, #64748b);
-		display: block;
-		margin-top: 2px;
+		margin-top: 4px;
 	}
 
-	.class-card-metrics {
+	.track-card-body {
+		margin-top: 16px;
+		margin-bottom: 16px;
+	}
+
+	.metrics-mini-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
 		gap: 8px;
-		background: var(--bg-inset, #f8fafc);
-		padding: 10px;
+		background: #f8fafc;
+		border: 1px solid #f1f5f9;
 		border-radius: 8px;
-		border: 1px solid var(--border-subtle, #f1f5f9);
-	}
-
-	.metric-pill {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
+		padding: 10px 8px;
 		text-align: center;
 	}
 
-	.metric-label {
-		font-size: 10px;
-		font-weight: 700;
-		color: var(--text-muted, #64748b);
-	}
-
-	.metric-value {
-		font-family: var(--font-macro);
+	.mini-stat-val {
+		display: block;
 		font-size: 14px;
 		font-weight: 800;
-		color: var(--text-primary, #0f172a);
-		margin-top: 2px;
+		color: #0f172a;
 	}
 
-	.class-card-footer {
+	.mini-stat-lbl {
+		display: block;
+		font-size: 10px;
+		font-family: var(--font-mono, monospace);
+		color: #64748b;
+	}
+
+	.track-card-footer {
+		border-top: 1px solid var(--border-subtle, #f1f5f9);
+		padding-top: 14px;
+	}
+
+	.btn-open-track {
+		width: 100%;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-		padding-top: 12px;
-		border-top: 1px solid var(--border-subtle, #f1f5f9);
+		justify-content: center;
+		gap: 6px;
+		padding: 9px 16px;
+		background: #4f46e5;
+		color: #ffffff;
+		border: none;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.btn-open-track:hover {
+		background: #4338ca;
+	}
+
+	.badge-subtle {
+		background: #f1f5f9;
+		color: #64748b;
+		border: 1px solid #cbd5e1;
+	}
+
+	.badge-archived {
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
 	}
 
 	.alert-count-pill {
@@ -1032,19 +1022,6 @@
 		border: 1px solid #cbd5e1;
 		padding: 3px 8px;
 		border-radius: 9999px;
-	}
-
-	.btn-pantau-kelas {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-family: var(--font-macro);
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--primary, #4f46e5);
-		background: transparent;
-		border: none;
-		cursor: pointer;
 	}
 
 	/* Stats Grid */
