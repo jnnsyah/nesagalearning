@@ -18,7 +18,7 @@
 		{ href: '/admin/users', cat: 'PENGGUNA', label: 'Kelola & Tambah User', desc: 'Buat & atur akun siswa / guru / mentor baru', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>`, color: '#4f46e5', bg: '#e0e7ff' },
 		{ href: '/admin/tahun-ajaran', cat: 'PERIODE', label: 'Manajemen Periode & Semester', desc: 'Setup periode komunitas & semester baru', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, color: '#0d9488', bg: '#ccfbf1' },
 		{ href: '/admin/master', cat: 'MASTER DATA', label: 'Master Data Pembelajaran', desc: 'Kelola jenjang, tingkat, & mapel', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`, color: '#d97706', bg: '#fef3c7' },
-		{ href: '/admin/konfigurasi', cat: 'PENGATURAN', label: 'Konfigurasi Sistem & Poin', desc: 'Atur bobot poin, KKM, & streak', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`, color: '#9333ea', bg: '#f3e8ff' },
+		{ href: '/admin/konfigurasi', cat: 'PENGATURAN', label: 'Konfigurasi Sistem & Poin', desc: 'Atur bobot poin, KKM, & streak', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 1 0 14.14"/></svg>`, color: '#9333ea', bg: '#f3e8ff' },
 		{ href: '/admin/audit-logs', cat: 'KEAMANAN', label: 'Audit Log Stream', desc: 'Riwayat aktivitas & audit trail sistem', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`, color: '#dc2626', bg: '#fee2e2' },
 		{ href: '/admin/email', cat: 'KOMUNIKASI', label: 'Template & Log Email', desc: 'Atur template notifikasi & log pengiriman', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`, color: '#0891b2', bg: '#e0f2fe' },
 	];
@@ -116,7 +116,88 @@
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     TWO COLUMN GRID: QUICK ACTIONS + SYSTEM HEALTH / AUDIT LOG STREAM
+	     LOCAL DOCKER STORAGE & CLOUDFLARE R2 BACKUP PANEL
+	     ══════════════════════════════════════════════════════════ -->
+	<section class="panel">
+		<div class="section-header">
+			<div class="flex items-center gap-2">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2">
+					<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+				</svg>
+				<span>Statistik File Storage & Cloudflare R2 Backup</span>
+			</div>
+			<span class="badge" class:badge-success={data.storageStats?.r2Backup?.isConfigured} class:badge-neutral={!data.storageStats?.r2Backup?.isConfigured}>
+				{data.storageStats?.r2Backup?.isConfigured ? 'R2 CLOUD SYNC ACTIVE' : 'DOCKER VOLUME MODE'}
+			</span>
+		</div>
+
+		<div class="storage-stats-container">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<!-- Main Storage Usage Card -->
+				<div class="storage-main-card">
+					<div class="storage-main-info">
+						<span class="storage-label">Kapasitas Disk Terpakai</span>
+						<strong class="storage-value">{data.storageStats?.formattedTotalSize || '0 B'}</strong>
+						<span class="storage-subtext">{data.storageStats?.totalFiles || 0} Total File Tersimpan di Server</span>
+					</div>
+					<div class="storage-badge-wrap">
+						<span class="storage-pill">
+							<span class="status-dot"></span>
+							/app/uploads
+						</span>
+					</div>
+				</div>
+
+				<!-- Folder Breakdown Grid -->
+				<div class="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+					<div class="storage-mini-card">
+						<span class="mini-label">Materi & Modul</span>
+						<strong class="mini-val">{data.storageStats?.breakdown?.materials?.formattedSize || '0 B'}</strong>
+						<span class="mini-meta">{data.storageStats?.breakdown?.materials?.count || 0} File</span>
+					</div>
+
+					<div class="storage-mini-card">
+						<span class="mini-label">Foto Avatars</span>
+						<strong class="mini-val">{data.storageStats?.breakdown?.avatars?.formattedSize || '0 B'}</strong>
+						<span class="mini-meta">{data.storageStats?.breakdown?.avatars?.count || 0} File</span>
+					</div>
+
+					<div class="storage-mini-card">
+						<span class="mini-label">Tugas Siswa</span>
+						<strong class="mini-val">{data.storageStats?.breakdown?.submissions?.formattedSize || '0 B'}</strong>
+						<span class="mini-meta">{data.storageStats?.breakdown?.submissions?.count || 0} File</span>
+					</div>
+
+					<div class="storage-mini-card">
+						<span class="mini-label">Lampiran Pesan</span>
+						<strong class="mini-val">{data.storageStats?.breakdown?.attachments?.formattedSize || '0 B'}</strong>
+						<span class="mini-meta">{data.storageStats?.breakdown?.attachments?.count || 0} File</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Cloudflare R2 Backup Banner -->
+			<div class="r2-backup-banner">
+				<div class="flex items-center gap-3">
+					<div class="r2-icon-wrap" class:r2-icon-wrap--active={data.storageStats?.r2Backup?.isConfigured}>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+						</svg>
+					</div>
+					<div>
+						<div class="r2-title">Cloudflare R2 Cloud Backup & Mirror Service</div>
+						<div class="r2-status-desc">{data.storageStats?.r2Backup?.statusText}</div>
+					</div>
+				</div>
+				{#if data.storageStats?.r2Backup?.isConfigured}
+					<span class="r2-bucket-tag">Bucket: {data.storageStats?.r2Backup?.bucketName}</span>
+				{/if}
+			</div>
+		</div>
+	</section>
+
+	<!-- ══════════════════════════════════════════════════════════
+	     TWO COLUMN GRID: QUICK ACTIONS + SYSTEM HEALTH & LOG STREAM
 	     ══════════════════════════════════════════════════════════ -->
 	<div class="two-col-grid">
 		<!-- Quick actions panel -->
@@ -264,6 +345,141 @@
 		font-size: 14px;
 		font-weight: 700;
 		color: var(--text-primary, #0f172a);
+	}
+
+	/* Storage stats styles */
+	.storage-stats-container {
+		padding: 16px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.storage-main-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 10px;
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.storage-main-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.storage-label {
+		font-size: 12px;
+		font-weight: 700;
+		color: #64748b;
+	}
+
+	.storage-value {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 1.6rem;
+		font-weight: 800;
+		color: #0f172a;
+		line-height: 1.1;
+	}
+
+	.storage-subtext {
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	.storage-pill {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		background: #e2e8f0;
+		color: #334155;
+		padding: 4px 10px;
+		border-radius: 9999px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.storage-mini-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.mini-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: #64748b;
+	}
+
+	.mini-val {
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: #0f172a;
+	}
+
+	.mini-meta {
+		font-family: var(--font-mono, monospace);
+		font-size: 10px;
+		color: #94a3b8;
+	}
+
+	.r2-backup-banner {
+		background: #f0fdf4;
+		border: 1px solid #bbf7d0;
+		border-radius: 8px;
+		padding: 12px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.r2-icon-wrap {
+		width: 36px;
+		height: 36px;
+		border-radius: 8px;
+		background: #dcfce7;
+		color: #16a34a;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.r2-icon-wrap--active {
+		background: #16a34a;
+		color: #ffffff;
+	}
+
+	.r2-title {
+		font-size: 13px;
+		font-weight: 700;
+		color: #14532d;
+	}
+
+	.r2-status-desc {
+		font-size: 12px;
+		color: #166534;
+	}
+
+	.r2-bucket-tag {
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		background: #dcfce7;
+		color: #15803d;
+		padding: 3px 8px;
+		border-radius: 6px;
+		border: 1px solid #86efac;
 	}
 
 	/* Quick actions */

@@ -7,6 +7,43 @@ import { auditLog, systemEmailConfig } from '$lib/server/db/schema/system';
 import { eq, count, sql } from 'drizzle-orm';
 import { AuditLogService } from '$lib/server/services/audit-log.service';
 import { env } from '$env/dynamic/private';
+import fs from 'fs';
+import path from 'path';
+
+function calculateFolderStats(dirPath: string): { totalBytes: number; fileCount: number } {
+	let totalBytes = 0;
+	let fileCount = 0;
+
+	if (!fs.existsSync(dirPath)) return { totalBytes: 0, fileCount: 0 };
+
+	try {
+		const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+		for (const entry of entries) {
+			const fullPath = path.join(dirPath, entry.name);
+			if (entry.isDirectory()) {
+				const sub = calculateFolderStats(fullPath);
+				totalBytes += sub.totalBytes;
+				fileCount += sub.fileCount;
+			} else if (entry.isFile()) {
+				const stat = fs.statSync(fullPath);
+				totalBytes += stat.size;
+				fileCount++;
+			}
+		}
+	} catch (e) {
+		console.error('Error calculating folder stats:', e);
+	}
+
+	return { totalBytes, fileCount };
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes === 0) return '0 B';
+	const k = 1024;
+	const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -64,14 +101,52 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const totalAuditLogs = Number(auditLogCountRes[0]?.total ?? 0);
 	const activeEmailConfig = activeEmailRes[0] || null;
 
-	// 3. Storage Health Check from Dynamic Server Environment
-	const hasStorageConfig = Boolean(
-		env.SUPABASE_URL ||
-			process.env.PUBLIC_SUPABASE_URL ||
-			process.env.SUPABASE_URL
+	// 3. Local Docker Storage Volume Statistics
+	const uploadDirCandidates = [
+		process.env.UPLOADS_DIR || '/app/uploads',
+		path.join(process.cwd(), 'uploads'),
+		path.join(process.cwd(), 'static', 'uploads')
+	];
+
+	const folderBreakdown: Record<string, { bytes: number; count: number }> = {
+		materials: { bytes: 0, count: 0 },
+		avatars: { bytes: 0, count: 0 },
+		submissions: { bytes: 0, count: 0 },
+		attachments: { bytes: 0, count: 0 }
+	};
+
+	let totalStorageBytes = 0;
+	let totalStorageFiles = 0;
+
+	// Calculate usage across active directories
+	for (const baseDir of uploadDirCandidates) {
+		if (fs.existsSync(baseDir)) {
+			const stats = calculateFolderStats(baseDir);
+			totalStorageBytes += stats.totalBytes;
+			totalStorageFiles += stats.fileCount;
+
+			for (const subFolder of ['materials', 'avatars', 'submissions', 'attachments']) {
+				const subPath = path.join(baseDir, subFolder);
+				if (fs.existsSync(subPath)) {
+					const subStats = calculateFolderStats(subPath);
+					folderBreakdown[subFolder].bytes += subStats.totalBytes;
+					folderBreakdown[subFolder].count += subStats.fileCount;
+				}
+			}
+			break; // Avoid double counting if paths resolve to same folder
+		}
+	}
+
+	// 4. Cloudflare R2 Cloud Backup Status
+	const r2AccountId = env.R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+	const r2BucketName = env.R2_BUCKET_NAME || process.env.R2_BUCKET_NAME;
+	const hasR2Config = Boolean(
+		r2AccountId &&
+			(env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID) &&
+			r2BucketName
 	);
 
-	// 4. Real System Health Status Indicators
+	// 5. Real System Health Status Indicators
 	const healthStatus = [
 		{
 			label: 'Database (PostgreSQL)',
@@ -84,9 +159,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 			status: locals.user ? 'Operational (Session Active)' : 'Session Error'
 		},
 		{
-			label: 'File Storage (Supabase)',
-			ok: hasStorageConfig,
-			status: hasStorageConfig ? 'Operational' : 'Key Belum Set'
+			label: 'Local Docker Storage',
+			ok: true,
+			status: `Operational (${formatBytes(totalStorageBytes)} · ${totalStorageFiles} File)`
+		},
+		{
+			label: 'Cloudflare R2 Cloud Backup',
+			ok: hasR2Config,
+			status: hasR2Config
+				? `Aktif (Bucket: ${r2BucketName})`
+				: 'Standby (Local Docker Mode Active)'
 		},
 		{
 			label: 'Email Gateway (SMTP)',
@@ -104,6 +186,36 @@ export const load: PageServerLoad = async ({ locals }) => {
 			activeTaName: activeTa?.name || 'Belum Set',
 			activeKelasCount,
 			totalAuditLogs
+		},
+		storageStats: {
+			totalBytes: totalStorageBytes,
+			formattedTotalSize: formatBytes(totalStorageBytes),
+			totalFiles: totalStorageFiles,
+			breakdown: {
+				materials: {
+					count: folderBreakdown.materials.count,
+					formattedSize: formatBytes(folderBreakdown.materials.bytes)
+				},
+				avatars: {
+					count: folderBreakdown.avatars.count,
+					formattedSize: formatBytes(folderBreakdown.avatars.bytes)
+				},
+				submissions: {
+					count: folderBreakdown.submissions.count,
+					formattedSize: formatBytes(folderBreakdown.submissions.bytes)
+				},
+				attachments: {
+					count: folderBreakdown.attachments.count,
+					formattedSize: formatBytes(folderBreakdown.attachments.bytes)
+				}
+			},
+			r2Backup: {
+				isConfigured: hasR2Config,
+				bucketName: r2BucketName || 'N/A',
+				statusText: hasR2Config
+					? `Terhubung ke Cloudflare R2 (${r2BucketName})`
+					: 'Local Storage Active · R2 Backup Standby'
+			}
 		},
 		healthStatus,
 		recentAuditLogs: auditLogsData.items
