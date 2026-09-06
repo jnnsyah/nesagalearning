@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import StudentTrackProgressView from '$lib/components/progress/StudentTrackProgressView.svelte';
 
 	let { data } = $props();
 
@@ -275,193 +276,14 @@
 	<main class="content-panel">
 		<!-- TAB 1: TRACK PEMBELAJARAN (2-TIER CATALOG VIEW) -->
 		{#if activeTab === 'track'}
-			<div class="tab-section">
-				{#if trackViewMode === 'catalog'}
-					<!-- ══════════════════════════════════════════════════════════
-					     TIER 1: KATALOG KARTU TRACK BELAJAR UTAMA
-					     ══════════════════════════════════════════════════════════ -->
-					<div class="section-header">
-						<div>
-							<h2 class="section-title">Katalog Track Pembelajaran Anda</h2>
-							<p class="section-sub">Ringkasan alur track pembelajaran aktif yang sedang Anda ikuti pada kelas saat ini.</p>
-						</div>
-					</div>
-
-					{#if !data.activeMembership || phaseProgressList.length === 0}
-						<div class="empty-card">
-							<div class="empty-icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-								</svg>
-							</div>
-							<div class="empty-title">Belum Ada Track Pembelajaran Dipublikasikan</div>
-							<div class="empty-sub">Alur track pembelajaran untuk kelas Anda belum dikonfigurasi atau belum dimulai oleh Guru.</div>
-						</div>
-					{:else}
-						<div class="track-catalog-container">
-							<div class="track-main-card">
-								<!-- Header Track Card -->
-								<div class="track-card-header">
-									<div class="track-card-tags">
-										{#if trackInfo?.tingkatName}
-											<span class="badge badge-grade">{trackInfo.tingkatName}</span>
-										{/if}
-										<span class="badge badge-approved">AKTIF (Track Kelas Anda)</span>
-									</div>
-
-									<h3 class="track-card-title">
-										{trackInfo?.trackTitle || 'Track Pembelajaran Kelas'}
-									</h3>
-									<p class="track-card-desc">
-										{trackInfo?.trackDescription || 'Alur pembelajaran terstruktur untuk pengembangan kompetensi dan praktikum siswa.'}
-									</p>
-								</div>
-
-								<!-- Body Track Card -->
-								<div class="track-card-body">
-									<div class="rombel-info-line">
-										<span class="rombel-label">Rombel Kelas:</span>
-										<span class="badge badge-active-class">{data.activeMembership.kelasName}</span>
-										<span class="type-sub">({data.activeMembership.tahunAjaranName})</span>
-									</div>
-
-									<!-- Mini Metrics Grid -->
-									<div class="metrics-mini-grid">
-										<div class="mini-stat-item">
-											<div class="mini-stat-val">{phaseProgressList.length}</div>
-											<div class="mini-stat-lbl">Phase</div>
-										</div>
-										<div class="mini-stat-item">
-											<div class="mini-stat-val">{totalSubPhasesCount}</div>
-											<div class="mini-stat-lbl">SubPhase</div>
-										</div>
-										<div class="mini-stat-item">
-											<div class="mini-stat-val">{summary.totalSessions}</div>
-											<div class="mini-stat-lbl">Sesi</div>
-										</div>
-										<div class="mini-stat-item">
-											<div class="mini-stat-val">{summary.totalTasks}</div>
-											<div class="mini-stat-lbl">Tugas</div>
-										</div>
-									</div>
-
-									<!-- Overall Ketercapaian Progress -->
-									<div class="progress-box-card">
-										<div class="progress-box-top">
-											<span class="progress-box-lbl">Ketercapaian Progress Belajar Anda</span>
-											<span class="progress-box-val">{overallTrackProgress}%</span>
-										</div>
-										<div class="progress-box-bar-bg">
-											<div class="progress-box-bar-fill" style="width: {overallTrackProgress}%;"></div>
-										</div>
-									</div>
-								</div>
-
-								<!-- Footer Action Button -->
-								<div class="track-card-footer">
-									<button
-										type="button"
-										class="btn-open-track"
-										onclick={() => setTrackViewMode('detail')}
-									>
-										<span>Lihat Detail Modul</span>
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-									</button>
-								</div>
-							</div>
-						</div>
-					{/if}
-
-				{:else if trackViewMode === 'detail'}
-					<!-- ══════════════════════════════════════════════════════════
-					     TIER 2: DETAIL BREAKDOWN VIEW (Rincian Fase & Sub-fase)
-					     ══════════════════════════════════════════════════════════ -->
-					<div class="tier-nav-bar">
-						<button
-							type="button"
-							class="btn-back-catalog"
-							onclick={() => setTrackViewMode('catalog')}
-						>
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-							<span>Kembali ke Katalog Track Belajar</span>
-						</button>
-					</div>
-
-					<div class="section-header">
-						<div>
-							<h2 class="section-title">{trackInfo?.trackTitle || 'Detail Modul Track Pembelajaran'}</h2>
-							<p class="section-sub">Detail progres ketercapaian pada setiap fase dan sub-fase pembelajaran.</p>
-						</div>
-
-						<div class="overall-progress-box">
-							<div class="progress-info-row">
-								<span class="progress-label">Kemajuan Total</span>
-								<span class="progress-val">{overallTrackProgress}%</span>
-							</div>
-							<div class="progress-bar-bg">
-								<div class="progress-bar-fill" style="width: {overallTrackProgress}%;"></div>
-							</div>
-						</div>
-					</div>
-
-					<div class="phases-grid">
-						{#each phaseProgressList as phaseItem, phaseIndex}
-							<div class="phase-card">
-								<div class="phase-card-header">
-									<div class="phase-title-wrap">
-										<span class="badge badge-grade">Fase {phaseIndex + 1}</span>
-										<h3 class="phase-title">{phaseItem.phaseTitle}</h3>
-										<span class="phase-meta">• {phaseItem.completedSubPhases}/{phaseItem.totalSubPhases} Sub-fase Selesai</span>
-									</div>
-									<span class="phase-badge">{phaseItem.progressPercentage}%</span>
-								</div>
-
-								<div class="phase-bar-bg">
-									<div class="phase-bar-fill" style="width: {phaseItem.progressPercentage}%;"></div>
-								</div>
-
-								{#if phaseItem.subPhases && phaseItem.subPhases.length > 0}
-									<div class="subphase-stack">
-										{#each phaseItem.subPhases as subItem}
-											<div class="subphase-card">
-												<div class="subphase-icon {subItem.isCompleted ? 'subphase-icon--done' : ''}">
-													{#if subItem.isCompleted}
-														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-													{:else}
-														<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-													{/if}
-												</div>
-
-												<div class="subphase-info">
-													<div class="subphase-name">{subItem.subPhaseTitle}</div>
-													<div class="subphase-meta-row">
-														{#if subItem.totalSessions === 0 && subItem.totalTasks === 0}
-															<span class="meta-pill meta-pill-unstarted">Belum Dimulai</span>
-														{:else}
-															{#if subItem.totalSessions > 0}
-																<span class="meta-pill">
-																	<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-																	<span>{subItem.completedSessions}/{subItem.totalSessions} Sesi</span>
-																</span>
-															{/if}
-															{#if subItem.totalTasks > 0}
-																<span class="meta-pill meta-pill-task">
-																	<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-																	<span>{subItem.approvedTasks}/{subItem.totalTasks} Tugas Approved</span>
-																</span>
-															{/if}
-														{/if}
-													</div>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
+			<StudentTrackProgressView
+				{trackInfo}
+				activeMembership={data.activeMembership}
+				{phaseProgressList}
+				{summary}
+				initialViewMode={trackViewMode}
+				onViewModeChange={(mode) => setTrackViewMode(mode)}
+			/>
 
 		<!-- TAB 2: HISTORI PRESENSI -->
 		{:else if activeTab === 'attendance'}
