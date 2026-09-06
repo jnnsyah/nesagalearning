@@ -3,6 +3,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { untrack } from 'svelte';
 	import { exportAttendanceToExcel, exportAttendanceToPDF } from '$lib/utils/attendance-exporter';
 	import type { StudentRecapRow } from '$lib/server/services/guru-attendance-recap.service';
@@ -131,24 +132,24 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 1: GRID VIEW (Katalog Kartu Rombel Kelas)
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-row">
-				<div>
-					<div class="hero-title-group">
-						<h1 class="hero-title">Katalog Rekap Presensi Rombel</h1>
-						{#if data.recapData.selectedTahunAjaran}
-							<span class="badge badge-primary">
-								TA {data.recapData.selectedTahunAjaran.name}
-							</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Pilih rombel / kelas di bawah ini untuk melihat laporan rekapitulasi presensi sesi kelas secara rinci.
-					</p>
-				</div>
+		<PageHeaderCard
+			title="Katalog Rekap Presensi Rombel"
+			subtitle="Pilih rombel / kelas di bawah ini untuk melihat laporan rekapitulasi presensi sesi kelas secara rinci."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/guru' },
+				{ label: 'Rekap Presensi' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.recapData.selectedTahunAjaran}
+					<span class="badge badge-neutral">
+						TA {data.recapData.selectedTahunAjaran.name}
+					</span>
+				{/if}
+			{/snippet}
 
-				<div class="w-64 flex-shrink-0">
-					<label for="grid-ta-select" class="filter-label">Periode</label>
+			{#snippet actions()}
+				<div class="w-64 shrink-0">
 					<CustomSelect
 						id="grid-ta-select"
 						name="tahunAjaranId"
@@ -158,8 +159,8 @@
 						searchable={false}
 					/>
 				</div>
-			</div>
-		</header>
+			{/snippet}
+		</PageHeaderCard>
 
 		{#if data.recapData.classCards.length === 0}
 			<div class="empty-card py-12 text-center">
@@ -279,38 +280,29 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 2: DETAIL BREAKDOWN VIEW (Rekap Presensi Rombel)
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-top-bar">
-				{#if data.recapData.fromDashboard}
-					<button type="button" onclick={() => goto(`/guru?tahunAjaranId=${data.recapData.selectedTahunAjaran?.id || ''}`)} class="btn-back-link">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						<span>Kembali ke Dashboard Guru</span>
-					</button>
-				{:else}
-					<button type="button" onclick={navigateBackToGrid} class="btn-back-link">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						<span>Kembali ke Daftar Rombel (TA {data.recapData.selectedTahunAjaran?.name})</span>
-					</button>
+		<PageHeaderCard
+			title="Rekap Presensi — {data.recapData.selectedKelas.name}"
+			subtitle={'Ringkasan keikutsertaan presensi siswa. Klik tombol "Detail Presensi" pada siswa untuk melihat timeline pertemuan.'}
+			breadcrumbs={data.recapData.fromDashboard
+				? [
+						{ label: 'Dashboard', href: `/guru?tahunAjaranId=${data.recapData.selectedTahunAjaran?.id || ''}` },
+						{ label: 'Rekap Presensi', href: `/guru/presensi?tahunAjaranId=${data.recapData.selectedTahunAjaran?.id || ''}` },
+						{ label: data.recapData.selectedKelas.name }
+					]
+				: [
+						{ label: 'Dashboard', href: '/guru' },
+						{ label: 'Katalog Rombel', href: `/guru/presensi?tahunAjaranId=${data.recapData.selectedTahunAjaran?.id || ''}` },
+						{ label: data.recapData.selectedKelas.name }
+					]}
+		>
+			{#snippet badges()}
+				<span class="badge badge-neutral">{data.recapData.selectedKelas.tingkatName}</span>
+				{#if !data.recapData.selectedTahunAjaran?.isActive}
+					<span class="badge badge-neutral">ARSIP DATA REKAP</span>
 				{/if}
-			</div>
+			{/snippet}
 
-			<div class="hero-top-row">
-				<div>
-					<div class="hero-title-group">
-						<h1 class="hero-title">Rekap Presensi — {data.recapData.selectedKelas.name}</h1>
-						<span class="badge badge-primary">{data.recapData.selectedKelas.tingkatName}</span>
-						{#if !data.recapData.selectedTahunAjaran?.isActive}
-							<span class="badge badge-archived inline-flex items-center gap-1">
-								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-								<span>ARSIP DATA REKAP</span>
-							</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Ringkasan keikutsertaan presensi siswa. Klik tombol "Detail Presensi" pada siswa untuk melihat timeline pertemuan.
-					</p>
-				</div>
-
+			{#snippet actions()}
 				<div class="flex items-center gap-2 flex-wrap">
 					<button
 						type="button"
@@ -334,7 +326,8 @@
 						<span>Export PDF (.pdf)</span>
 					</button>
 				</div>
-			</div>
+			{/snippet}
+		</PageHeaderCard>
 
 			<!-- Filter Bar for Search -->
 			<div class="filter-card mt-5">
@@ -355,7 +348,6 @@
 					</div>
 				</form>
 			</div>
-		</header>
 
 		<!-- ══════════════════════════════════════════════════════════
 		     4 SUMMARY STAT CARDS
@@ -727,7 +719,7 @@
 		border: 1px solid var(--border-hard, #cbd5e1);
 		border-radius: var(--radius-lg, 12px);
 		padding: 20px 24px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
 	}
 
@@ -1002,7 +994,7 @@
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 24px;
+		margin-bottom: 0;
 	}
 
 	.stat-card {
