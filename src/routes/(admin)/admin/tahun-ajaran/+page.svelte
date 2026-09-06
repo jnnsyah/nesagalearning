@@ -819,31 +819,29 @@
 				</div>
 
 				<!-- Section 2: Standard FilterBar with TextInput & CustomSelect -->
-				<div class="mb-6">
-					<FilterBar>
-						{#snippet search()}
-							<TextInput
-								name="previewSearch"
-								placeholder="Cari nama siswa, angkatan, atau rombel…"
-								bind:value={previewSearchQuery}
-								clearable
-							/>
-						{/snippet}
+				<FilterBar>
+					{#snippet search()}
+						<TextInput
+							name="previewSearch"
+							placeholder="Cari nama siswa, angkatan, atau rombel…"
+							bind:value={previewSearchQuery}
+							clearable
+						/>
+					{/snippet}
 
-						{#snippet filters()}
-							<CustomSelect
-								name="previewFilterStatus"
-								bind:value={previewFilterStatus}
-								options={[
-									{ value: 'all', label: `Semua (${data.promotionPreview?.summary.totalStudents ?? 0})` },
-									{ value: 'promote', label: `Naik Kelas (${data.promotionPreview?.summary.willPromoteCount ?? 0})` },
-									{ value: 'graduate', label: `Lulus Alumni (${data.promotionPreview?.summary.willGraduateCount ?? 0})` },
-									{ value: 'unchanged', label: `Tetap (${data.promotionPreview?.summary.unchangedCount ?? 0})` }
-								]}
-							/>
-						{/snippet}
-					</FilterBar>
-				</div>
+					{#snippet filters()}
+						<CustomSelect
+							name="previewFilterStatus"
+							bind:value={previewFilterStatus}
+							options={[
+								{ value: 'all', label: `Semua (${data.promotionPreview?.summary.totalStudents ?? 0})` },
+								{ value: 'promote', label: `Naik Kelas (${data.promotionPreview?.summary.willPromoteCount ?? 0})` },
+								{ value: 'graduate', label: `Lulus Alumni (${data.promotionPreview?.summary.willGraduateCount ?? 0})` },
+								{ value: 'unchanged', label: `Tetap (${data.promotionPreview?.summary.unchangedCount ?? 0})` }
+							]}
+						/>
+					{/snippet}
+				</FilterBar>
 
 				<!-- Section 3: Standard Data Table (.card-table & .data-table) -->
 				<div class="card card-table overflow-hidden">

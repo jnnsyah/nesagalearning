@@ -24,7 +24,6 @@
 		border-radius: var(--radius-lg);
 		padding: 14px 16px;
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 24px;
 	}
 
 	.filter-grid {

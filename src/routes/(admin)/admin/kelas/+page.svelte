@@ -1702,7 +1702,6 @@
 		border: 1px solid var(--border-hard);
 		border-radius: var(--radius-lg, 12px);
 		padding: 20px 22px;
-		margin-bottom: 24px;
 		box-shadow: var(--shadow-sm);
 		display: flex;
 		flex-direction: column;
