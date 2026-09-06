@@ -3,6 +3,7 @@
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 
 	let { data } = $props();
 
@@ -114,22 +115,24 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 1: CLASS SELECTION GRID VIEW (Pilih Kelas)
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-content-row">
-				<div>
-					<div class="hero-title-group">
-						<h1 class="hero-title">Class Health Monitoring & Pendampingan Pembimbing</h1>
-						{#if data.cardsData.selectedTahunAjaran}
-							<span class="badge badge-primary">
-								{data.cardsData.selectedTahunAjaran.name}
-							</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Pilih rombongan belajar (kelas) di bawah ini untuk memantau kesehatan kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan pendampingan.
-					</p>
-				</div>
-				<div class="w-64 flex-shrink-0">
+		<PageHeaderCard
+			title="Monitoring Kesehatan Kelas & Pendampingan"
+			subtitle="Pilih rombongan belajar (kelas) di bawah ini untuk memantau kesehatan kehadiran, penyelesaian tugas, dan daftar siswa yang membutuhkan pendampingan."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/guru' },
+				{ label: 'Monitoring Kelas' }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.cardsData.selectedTahunAjaran}
+					<span class="badge badge-neutral">
+						TA {data.cardsData.selectedTahunAjaran.name}
+					</span>
+				{/if}
+			{/snippet}
+
+			{#snippet actions()}
+				<div class="w-64 shrink-0">
 					<CustomSelect
 						name="taId"
 						options={taDropdownOptions}
@@ -137,8 +140,8 @@
 						onchange={changeTahunAjaran}
 					/>
 				</div>
-			</div>
-		</header>
+			{/snippet}
+		</PageHeaderCard>
 
 		<section class="class-cards-section">
 			<div class="section-header-flex">
@@ -248,45 +251,31 @@
 		<!-- ══════════════════════════════════════════════════════════
 		     TIER 2: DETAILED CLASS HEALTH DASHBOARD & ROSTER TABLE
 		     ══════════════════════════════════════════════════════════ -->
-		<header class="page-hero">
-			<div class="hero-content-row">
-				<div>
-					<div class="flex items-center gap-3 mb-2">
-						<button
-							type="button"
-							onclick={backToClassGrid}
-							class="btn-back-link cursor-pointer"
-						>
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-							<span>Kembali ke Daftar Kelas</span>
-						</button>
-					</div>
-					<div class="hero-title-group">
-						<h1 class="hero-title">{data.summary.kelasName} — Health Dashboard</h1>
-						{#if data.summary.classState === 'upcoming'}
-							<span class="badge badge-amber inline-flex items-center gap-1">
-								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-								<span>TA BELUM DIMULAI</span>
-							</span>
-						{:else if data.summary.classState === 'archived'}
-							<span class="badge badge-neutral inline-flex items-center gap-1">
-								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-								<span>TERARSIP</span>
-							</span>
-						{:else if data.summary.healthStatus === 'KRITIS'}
-							<span class="badge badge-warning">KRITIS</span>
-						{:else if data.summary.healthStatus === 'WASPADA'}
-							<span class="badge badge-amber">WASPADA</span>
-						{:else}
-							<span class="badge badge-success">SEHAT</span>
-						{/if}
-					</div>
-					<p class="hero-subtitle">
-						Detail tingkat kehadiran, penyelesaian tugas, dan intervensi siswa untuk {data.summary.kelasName} ({data.summary.tahunAjaranName}).
-					</p>
-				</div>
+		<PageHeaderCard
+			title="{data.summary.kelasName} — Health Dashboard"
+			subtitle="Detail tingkat kehadiran, penyelesaian tugas, dan intervensi siswa untuk {data.summary.kelasName} ({data.summary.tahunAjaranName})."
+			breadcrumbs={[
+				{ label: 'Dashboard', href: '/guru' },
+				{ label: 'Daftar Kelas', href: `/guru/monitoring?taId=${selectedTaId}` },
+				{ label: data.summary.kelasName }
+			]}
+		>
+			{#snippet badges()}
+				{#if data.summary.classState === 'upcoming'}
+					<span class="badge badge-amber">TA BELUM DIMULAI</span>
+				{:else if data.summary.classState === 'archived'}
+					<span class="badge badge-neutral">TERARSIP</span>
+				{:else if data.summary.healthStatus === 'KRITIS'}
+					<span class="badge badge-amber">KRITIS</span>
+				{:else if data.summary.healthStatus === 'WASPADA'}
+					<span class="badge badge-amber">WASPADA</span>
+				{:else}
+					<span class="badge badge-success">SEHAT</span>
+				{/if}
+			{/snippet}
 
-				<div class="w-64 flex-shrink-0">
+			{#snippet actions()}
+				<div class="w-64 shrink-0">
 					<CustomSelect
 						name="kelasId"
 						options={classDropdownOptions}
@@ -294,8 +283,8 @@
 						onchange={applyFilters}
 					/>
 				</div>
-			</div>
-		</header>
+			{/snippet}
+		</PageHeaderCard>
 
 		<!-- Key Metrics Grid -->
 		<section class="stats-grid" aria-label="Statistik Kesehatan Kelas">
