@@ -109,7 +109,7 @@
 	</PageHeaderCard>
 
 		<!-- 2. Key Metrics Grid (`.stats-grid`) -->
-		<div class="stats-overview-grid mt-5">
+		<div class="stats-overview-grid">
 			<div class="stat-card">
 				<div class="stat-card-header">
 					<span class="stat-label">Total Outbox Log</span>

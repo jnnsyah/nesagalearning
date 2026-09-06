@@ -304,7 +304,7 @@
 	</PageHeaderCard>
 
 		<!-- TAB STRIP NAVIGATION -->
-		<div class="tab-strip-container mt-6">
+		<div class="tab-strip-container">
 			<button
 				type="button"
 				class="tab-btn"

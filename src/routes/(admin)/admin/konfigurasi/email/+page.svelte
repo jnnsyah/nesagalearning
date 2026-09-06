@@ -114,7 +114,7 @@
 	</PageHeaderCard>
 
 		<!-- Quick System Overview Pills -->
-		<div class="system-overview-grid mt-5">
+		<div class="system-overview-grid">
 			<div class="overview-pill">
 				<span class="overview-label">Total Konfigurasi:</span>
 				<strong class="overview-val">{data.configs.length} Akun</strong>
