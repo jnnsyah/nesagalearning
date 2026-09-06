@@ -5,6 +5,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -83,40 +84,29 @@
 	<title>Manajemen Email & Outbox Log — Admin Console</title>
 </svelte:head>
 
-<div class="content-area">
+<div class="page-container">
 	<!-- 1. Header / Hero Title Banner -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/admin" class="bc-link">Dashboard</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Manajemen Email</span>
-		</nav>
+	<PageHeaderCard
+		title="Manajemen Email & Outbox Log"
+		subtitle="Pantau riwayat pengiriman email terkirim, pratinjau pesan HTML, dan atur konfigurasi server SMTP pengirim."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Manajemen Email' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-success inline-flex items-center gap-1">
+				<span>Live Monitoring</span>
+			</span>
+		{/snippet}
 
-		<div class="header-content-row">
-			<div>
-				<div class="flex items-center gap-2 mb-1">
-					<h1 class="page-title">Manajemen Email & Outbox Log</h1>
-					<span class="status-live-pill">
-						<span class="status-live-dot"></span>
-						Live Monitoring
-					</span>
-				</div>
-				<p class="page-sub">
-					Pantau riwayat pengiriman email terkirim, pratinjau pesan HTML, dan atur konfigurasi server SMTP pengirim.
-				</p>
-			</div>
-
-			<!-- Header Action Button: Konfigurasi Email -->
-			<a href="/admin/konfigurasi/email" class="btn btn-primary">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="3" />
-					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-				</svg>
-				Konfigurasi Email SMTP
+		{#snippet actions()}
+			<a href="/admin/konfigurasi/email" class="btn-primary-action">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+				<span>Pengaturan SMTP Server</span>
 			</a>
-		</div>
+		{/snippet}
+	</PageHeaderCard>
 
 		<!-- 2. Key Metrics Grid (`.stats-grid`) -->
 		<div class="stats-overview-grid mt-5">
@@ -179,7 +169,6 @@
 				<span class="stat-hint">Aktivitas 24 jam terakhir</span>
 			</div>
 		</div>
-	</div>
 
 	<!-- 3. Filter Bar ($lib/components/ui/FilterBar.svelte) -->
 	<FilterBar>

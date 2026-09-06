@@ -5,6 +5,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import DatePicker from '$lib/components/ui/DatePicker.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data } = $props();
@@ -145,25 +146,24 @@
 	<meta name="description" content="Riwayat pemantauan audit log stream aktivitas penting sistem NLC" />
 </svelte:head>
 
-<div class="audit-logs-page">
+<div class="page-container">
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HEADER / HERO TITLE BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="audit-hero">
-		<div class="hero-content">
-			<div class="hero-text-area">
-				<div class="hero-title-row">
-					<h1 class="hero-title">Audit Log Stream System</h1>
-					<span class="badge badge--live">
-						● LIVE AUDIT STREAM
-					</span>
-				</div>
-				<p class="hero-subtitle">
-					Pemantauan & jejak audit real-time seluruh aktivitas penting sistem (login, presensi manual, reset password, & master data).
-				</p>
-			</div>
-		</div>
-	</header>
+	<PageHeaderCard
+		title="Audit Log Stream System"
+		subtitle="Pemantauan & jejak audit real-time seluruh aktivitas penting sistem (login, presensi manual, reset password, & master data)."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Audit Logs' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-success inline-flex items-center gap-1">
+				<span>● LIVE AUDIT STREAM</span>
+			</span>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID (.stats-grid)

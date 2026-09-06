@@ -3,6 +3,7 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -81,45 +82,36 @@
 	<title>Pengaturan Email — Admin Console</title>
 </svelte:head>
 
-<div class="content-area">
+<div class="page-container">
 	<!-- Header Card -->
-	<div class="header-card">
-		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/admin" class="bc-link">Dashboard</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<a href="/admin/email" class="bc-link">Manajemen Email</a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="9 18 15 12 9 6" />
-			</svg>
-			<span class="bc-current">Konfigurasi SMTP</span>
-		</nav>
-
-		<div class="flex items-start justify-between gap-4 flex-wrap">
-			<div>
-				<h1 class="page-title">Konfigurasi Server SMTP</h1>
-				<p class="page-sub">
-					Kelola akun email pengirim untuk notifikasi sistem dan reset password. Hanya <strong>1 konfigurasi aktif</strong> yang digunakan oleh sistem.
-				</p>
-			</div>
-			<div class="flex items-center gap-2.5 flex-wrap">
-				<a href="/admin/email" class="btn btn-secondary">
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+	<PageHeaderCard
+		title="Konfigurasi Server SMTP Email"
+		subtitle="Kelola akun email pengirim untuk notifikasi sistem dan reset password. Hanya 1 konfigurasi aktif yang digunakan oleh sistem."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Manajemen Email', href: '/admin/email' },
+			{ label: 'Konfigurasi SMTP' }
+		]}
+	>
+		{#snippet actions()}
+			<div class="flex items-center gap-2 flex-wrap justify-end">
+				<a href="/admin/email" class="btn-secondary-action">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
 						<polyline points="22,6 12,13 2,6"/>
 					</svg>
-					Outbox Log
+					<span>Outbox Log</span>
 				</a>
-				<button type="button" class="btn btn-primary" onclick={openAddForm}>
+				<button type="button" class="btn-primary-action" onclick={openAddForm}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<line x1="12" y1="5" x2="12" y2="19" />
 						<line x1="5" y1="12" x2="19" y2="12" />
 					</svg>
-					Tambah Konfigurasi
+					<span>Tambah Server SMTP</span>
 				</button>
 			</div>
-		</div>
+		{/snippet}
+	</PageHeaderCard>
 
 		<!-- Quick System Overview Pills -->
 		<div class="system-overview-grid mt-5">
@@ -140,7 +132,6 @@
 				{/if}
 			</div>
 		</div>
-	</div>
 
 	<!-- Interactive Setup Guide Banner -->
 	<div class="guide-banner">

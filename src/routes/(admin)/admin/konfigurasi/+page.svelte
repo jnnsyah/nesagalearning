@@ -3,6 +3,7 @@
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import { toast } from '$lib/stores/toast';
 
@@ -96,23 +97,25 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HEADER / HERO TITLE BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-content-row">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Konfigurasi Poin & Rules Sistem</h1>
-					<span class="badge badge-primary">
-						{data.stats?.totalConfigsCount ?? 0} Parameter Sistem
-					</span>
-				</div>
-				<p class="hero-subtitle">
-					Atur perolehan poin presensi, bonus milestone streak, dan penghargaan tugas secara fleksibel.
-				</p>
-			</div>
-			<div class="hero-actions-group">
+	<PageHeaderCard
+		title="Konfigurasi Poin & Rules Sistem"
+		subtitle="Atur perolehan poin presensi, bonus milestone streak, dan penghargaan tugas secara fleksibel."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Konfigurasi Sistem' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{data.stats?.totalConfigsCount ?? 0} Parameter Sistem
+			</span>
+		{/snippet}
+
+		{#snippet actions()}
+			<div class="flex items-center gap-2 flex-wrap justify-end">
 				<button
 					type="button"
-					class="btn-warning-action"
+					class="btn-secondary-action"
 					onclick={() => (isResetModalOpen = true)}
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -132,11 +135,11 @@
 						<polyline points="17 21 17 13 7 13 7 21"/>
 						<polyline points="7 3 7 8 15 8"/>
 					</svg>
-					<span>Simpan Semua Perubahan</span>
+					<span>Simpan Perubahan</span>
 				</button>
 			</div>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID (.stats-grid)

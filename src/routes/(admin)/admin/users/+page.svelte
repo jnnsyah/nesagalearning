@@ -7,6 +7,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -421,23 +422,26 @@
 
 <div class="page-container">
 	<!-- Hero Title Banner -->
-	<header class="hero-banner">
-		<div class="hero-banner__inner">
-			<div>
-				<div class="flex items-center gap-2 mb-1.5">
-					<span class="badge badge-live">CONTROL CENTER</span>
-					<span class="type-mono text-muted">ADMINISTRATION</span>
-				</div>
-				<h1 class="hero-title">Manajemen User &amp; Akun Sistem</h1>
-				<p class="hero-desc">
-					Kelola akun Siswa, Mentor, Guru Supervisor, dan Administrator Nesaga Learning Community.
-				</p>
-			</div>
-			<div class="flex items-center gap-2 flex-wrap mt-4 sm:mt-0">
+	<PageHeaderCard
+		title="Manajemen User & Akun Sistem"
+		subtitle="Kelola akun Siswa, Mentor, Guru Supervisor, dan Administrator Nesaga Learning Community."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Manajemen User' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{stats.totalUsers} Total User
+			</span>
+		{/snippet}
+
+		{#snippet actions()}
+			<div class="flex items-center gap-2 flex-wrap justify-end">
 				<button
 					type="button"
 					onclick={openBulkDrawer}
-					class="btn-secondary-sm flex items-center gap-1.5"
+					class="btn-secondary-action"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 					<span>Impor Massal Siswa</span>
@@ -445,14 +449,14 @@
 				<button
 					type="button"
 					onclick={openCreateDrawer}
-					class="btn-primary-sm flex items-center gap-1.5"
+					class="btn-primary-action"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 					<span>Tambah User Baru</span>
 				</button>
 			</div>
-		</div>
-	</header>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Key Metrics Grid -->
 	<section class="stats-grid mt-6">
