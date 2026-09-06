@@ -7,11 +7,48 @@
 
 	let { data } = $props();
 
-	// Local reactive state
+	// Local reactive state & Filter Bar
 	let selectedTaId = $state(String(data.filters.taId || ''));
 	let searchVal = $state(data.filters.search || '');
 	let selectedKelasId = $state(String(data.filters.kelasId || ''));
-	let selectedRiskLevel = $state(data.filters.riskLevel || 'semua');
+	let selectedRiskLevel = $state(data.filters.riskLevel || 'all');
+	let selectedTingkat = $state<string>('all');
+
+	let tingkatOptions = $derived.by(() => {
+		const set = new Set<string>();
+		(data.cardsData.classCards || []).forEach((c: any) => {
+			if (c.tingkatName) set.add(c.tingkatName);
+		});
+		return Array.from(set).map((name) => ({ value: name, label: `Tingkat ${name}` }));
+	});
+
+	let filteredClassCards = $derived.by(() => {
+		const cards = data.cardsData.classCards || [];
+		const q = searchVal.trim().toLowerCase();
+		return cards.filter((c: any) => {
+			const matchSearch =
+				!q ||
+				c.kelasName.toLowerCase().includes(q) ||
+				(c.tingkatName && c.tingkatName.toLowerCase().includes(q));
+			const matchTingkat = selectedTingkat === 'all' || c.tingkatName === selectedTingkat;
+			const matchRisk =
+				selectedRiskLevel === 'all' ||
+				c.healthStatus === selectedRiskLevel ||
+				(selectedRiskLevel === 'upcoming' && c.classState === 'upcoming') ||
+				(selectedRiskLevel === 'archived' && c.classState === 'archived');
+			return matchSearch && matchTingkat && matchRisk;
+		});
+	});
+
+	let isFilterActive = $derived(
+		searchVal.trim() !== '' || selectedTingkat !== 'all' || selectedRiskLevel !== 'all'
+	);
+
+	function resetFilters() {
+		searchVal = '';
+		selectedTingkat = 'all';
+		selectedRiskLevel = 'all';
+	}
 
 	// Dropdown options
 	let taDropdownOptions = $derived(
@@ -87,12 +124,6 @@
 		goto(targetUrl, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
-	function resetFilters() {
-		searchVal = '';
-		selectedRiskLevel = 'semua';
-		applyFilters();
-	}
-
 	function goToPage(pageNum: number) {
 		const params = new URLSearchParams();
 		if (selectedKelasId) params.set('kelasId', selectedKelasId);
@@ -143,21 +174,79 @@
 			{/snippet}
 		</PageHeaderCard>
 
+		<!-- Filter Bar / Filter Card -->
+		<div class="page-filter-card">
+			<div class="filter-row-top">
+				<div class="flex-1">
+					<TextInput
+						id="search-kelas-input"
+						label="Cari Rombel Kelas"
+						placeholder="Ketik kata kunci nama kelas atau tingkat..."
+						bind:value={searchVal}
+					/>
+				</div>
+
+				{#if isFilterActive}
+					<button type="button" onclick={resetFilters} class="btn-reset-filters-active">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+						<span>Reset Filter</span>
+					</button>
+				{/if}
+			</div>
+
+			<div class="filter-row-bottom">
+				<CustomSelect
+					id="filter-tingkat-select"
+					label="Filter Tingkat Kelas"
+					bind:value={selectedTingkat}
+					options={[
+						{ value: 'all', label: 'Semua Tingkat' },
+						...tingkatOptions
+					]}
+					searchable={false}
+				/>
+
+				<CustomSelect
+					id="filter-risk-select"
+					label="Status Kesehatan Kelas"
+					bind:value={selectedRiskLevel}
+					options={[
+						{ value: 'all', label: 'Semua Status Kesehatan' },
+						{ value: 'SEHAT', label: 'SEHAT (≥ 75%)' },
+						{ value: 'WASPADA', label: 'WASPADA (60-74%)' },
+						{ value: 'KRITIS', label: 'KRITIS (< 60%)' },
+						{ value: 'upcoming', label: 'TA Belum Dimulai' },
+						{ value: 'archived', label: 'Terarsip' }
+					]}
+					searchable={false}
+				/>
+			</div>
+		</div>
+
 		<section class="class-cards-section">
 			<div class="section-header-flex">
-				<h2 class="section-title">Daftar Kelas ({data.cardsData.classCards.length} Kelas)</h2>
+				<h2 class="section-title">Daftar Kelas ({filteredClassCards.length} Kelas)</h2>
 				<span class="type-mono text-xs text-slate-500">Periode: {data.cardsData.selectedTahunAjaran?.name}</span>
 			</div>
 
-			{#if data.cardsData.classCards.length === 0}
+			{#if filteredClassCards.length === 0}
 				<div class="card-table text-center py-12">
 					<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-slate-400 mb-2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-					<p class="font-bold text-slate-800 text-sm">Belum Ada Kelas di Periode Ini</p>
-					<p class="text-xs text-slate-500 mt-1">Silakan pilih Periode lain dari dropdown di atas.</p>
+					<p class="font-bold text-slate-800 text-sm">Tidak Ditemukan Rombel Kelas</p>
+					<p class="text-xs text-slate-500 mt-1">
+						{#if isFilterActive}
+							Tidak ada rombel kelas yang cocok dengan pencarian filter. Coba ubah atau reset filter.
+						{:else}
+							Belum ada kelas di Periode ini. Silakan pilih Periode lain.
+						{/if}
+					</p>
 				</div>
 			{:else}
 				<div class="class-cards-grid">
-					{#each data.cardsData.classCards as card}
+					{#each filteredClassCards as card}
 						<div
 							class="class-health-card cursor-pointer"
 							class:class-health-card--archived={card.classState === 'archived'}
@@ -636,6 +725,52 @@
 </div>
 
 <style>
+	/* Filter Card Standard Layout */
+	.page-filter-card {
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 14px;
+		padding: 20px;
+		box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+		margin-bottom: 0;
+	}
+
+	.filter-row-top {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 14px;
+	}
+
+	.filter-row-bottom {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 16px;
+	}
+
+	.btn-reset-filters-active {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		height: 42px;
+		background: #fef2f2;
+		color: #ef4444;
+		border: 1px solid #fecaca;
+		border-radius: 8px;
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-reset-filters-active:hover {
+		background: #fee2e2;
+		color: #dc2626;
+	}
+
 	.page-container {
 		padding: 24px 28px 48px;
 		max-width: 1280px;
@@ -643,7 +778,7 @@
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: 20px;
 	}
 
 	@media (max-width: 640px) {
