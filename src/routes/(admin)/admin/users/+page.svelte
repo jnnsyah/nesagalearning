@@ -96,20 +96,10 @@
 		userActiveSessions = [];
 
 		try {
-			const fd = new FormData();
-			fd.set('userId', String(userItem.id));
-			const res = await fetch('?/getUserSessions', {
-				method: 'POST',
-				body: fd,
-				headers: {
-					'x-sveltekit-action': 'true'
-				}
-			});
+			const res = await fetch(`/api/admin/users/${userItem.id}/sessions`);
+			if (!res.ok) throw new Error('Gagal mengambil data sesi aktif');
 			const json = await res.json();
-			if (json.data) {
-				const parsed = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
-				userActiveSessions = parsed.sessions || [];
-			}
+			userActiveSessions = json.sessions || [];
 		} catch (err) {
 			console.error('Error fetching user sessions:', err);
 			toast.error('Gagal memuat sesi aktif user.');
