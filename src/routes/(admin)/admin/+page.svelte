@@ -4,6 +4,16 @@
 
 	let { data } = $props();
 
+	function formatDate(d: Date | string): string {
+		const dt = new Date(d);
+		return new Intl.DateTimeFormat('id-ID', {
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(dt);
+	}
+
 	const quickActions = [
 		{ href: '/admin/users', cat: 'PENGGUNA', label: 'Kelola & Tambah User', desc: 'Buat & atur akun siswa / guru / mentor baru', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>`, color: '#4f46e5', bg: '#e0e7ff' },
 		{ href: '/admin/tahun-ajaran', cat: 'PERIODE', label: 'Manajemen Periode & Semester', desc: 'Setup periode komunitas & semester baru', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, color: '#0d9488', bg: '#ccfbf1' },
@@ -32,17 +42,17 @@
 				<span class="status-dot"></span>
 				<span>SYSTEM ONLINE</span>
 			</span>
-			<span class="badge badge-neutral">TA 2026/2027</span>
+			<span class="badge badge-neutral">{data.stats?.activeTaName || 'TA 2026/2027'}</span>
 		{/snippet}
 	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     SYSTEM OVERVIEW STAT CARDS
+	     SYSTEM OVERVIEW STAT CARDS (REAL DB DATA)
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="stats-grid" aria-label="Status Komponen Utama">
 		<StatCard
 			label="Total Pengguna"
-			value="5"
+			value={data.stats?.totalUsers ?? 0}
 			subtext="Terdaftar di Sistem"
 			variant="streak"
 			href="/admin/users"
@@ -58,8 +68,8 @@
 
 		<StatCard
 			label="Tahun Ajaran"
-			value="1"
-			subtext="2026/2027 Aktif"
+			value={data.stats?.activeTaName ?? 'Belum Set'}
+			subtext="Periode Komunitas Aktif"
 			variant="attendance"
 			href="/admin/tahun-ajaran"
 			tooltip="Kelola Periode & Semester"
@@ -76,8 +86,8 @@
 
 		<StatCard
 			label="Kelas Aktif"
-			value="1"
-			subtext="Kelas 1 TA 2026/2027"
+			value={data.stats?.activeKelasCount ?? 0}
+			subtext="Kelompok Kelas Berjalan"
 			variant="pending"
 			href="/admin/kelas"
 			tooltip="Kelola Kelompok Kelas"
@@ -91,8 +101,8 @@
 
 		<StatCard
 			label="Audit Log"
-			value="0"
-			subtext="Entri Terbaru"
+			value={data.stats?.totalAuditLogs ?? 0}
+			subtext="Total Entri Terekam"
 			variant="revisi"
 			href="/admin/audit-logs"
 			tooltip="Lihat Audit Log Stream"
@@ -106,7 +116,7 @@
 	</section>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     TWO COLUMN GRID: QUICK ACTIONS + SYSTEM HEALTH / AUDIT LOG
+	     TWO COLUMN GRID: QUICK ACTIONS + SYSTEM HEALTH / AUDIT LOG STREAM
 	     ══════════════════════════════════════════════════════════ -->
 	<div class="two-col-grid">
 		<!-- Quick actions panel -->
@@ -143,31 +153,49 @@
 				</div>
 				<span class="badge badge-neutral">Real-time</span>
 			</div>
-			<div class="audit-empty">
-				<div class="audit-empty__icon">
-					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+
+			{#if data.recentAuditLogs && data.recentAuditLogs.length > 0}
+				<div class="audit-stream-list">
+					{#each data.recentAuditLogs as log}
+						<div class="audit-stream-item">
+							<div class="audit-stream-header">
+								<span class="actor-badge">
+									<strong>{log.actorName}</strong> (@{log.actorUsername})
+								</span>
+								<span class="action-tag">{log.action}</span>
+							</div>
+							<div class="audit-stream-meta">
+								<span>{log.entityLabel}</span>
+								<span class="time-stamp">{formatDate(log.createdAt)}</span>
+							</div>
+						</div>
+					{/each}
 				</div>
-				<p class="empty-title">Log Stream Kosong</p>
-				<p class="empty-sub">Aktivitas sistem terbaru akan terekam di sini secara otomatis.</p>
-				<a href="/admin/audit-logs" class="btn-ghost mt-3" style="width: auto; font-size: 12px;">
-					Lihat Semua Log
+			{:else}
+				<div class="audit-empty">
+					<div class="audit-empty__icon">
+						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+					</div>
+					<p class="empty-title">Log Stream Kosong</p>
+					<p class="empty-sub">Aktivitas sistem terbaru akan terekam di sini secara otomatis.</p>
+				</div>
+			{/if}
+
+			<div class="p-3 border-t border-slate-100 flex justify-end">
+				<a href="/admin/audit-logs" class="btn-ghost" style="font-size: 12px;">
+					Lihat Semua Audit Log
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
 				</a>
 			</div>
 
-			<!-- System health indicators -->
+			<!-- System health indicators (Real live ping) -->
 			<div class="health-panel">
-				<div class="health-panel__title">Status Komponen Sistem</div>
-				{#each [
-					{ label: 'Auth Service', ok: true },
-					{ label: 'Database', ok: true },
-					{ label: 'File Storage (R2)', ok: true },
-					{ label: 'QR Token Generator', ok: true },
-				] as comp}
+				<div class="health-panel__title">STATUS KOMPONEN SISTEM (LIVE PING)</div>
+				{#each data.healthStatus as comp}
 					<div class="health-row">
 						<div class="health-indicator" class:health-indicator--ok={comp.ok}></div>
 						<span class="health-label">{comp.label}</span>
-						<span class="health-status">{comp.ok ? 'Operational' : 'Error'}</span>
+						<span class="health-status" class:health-status--err={!comp.ok}>{comp.status}</span>
 					</div>
 				{/each}
 			</div>
@@ -313,6 +341,59 @@
 		color: var(--primary, #4f46e5);
 	}
 
+	/* Audit stream list */
+	.audit-stream-list {
+		padding: 12px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.audit-stream-item {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.audit-stream-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.actor-badge {
+		font-size: 12px;
+		color: #0f172a;
+	}
+
+	.action-tag {
+		font-family: var(--font-mono, monospace);
+		font-size: 10px;
+		font-weight: 700;
+		background: #e2e8f0;
+		color: #334155;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.audit-stream-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	.time-stamp {
+		font-family: var(--font-mono, monospace);
+		color: #94a3b8;
+	}
+
 	/* Audit empty + health */
 	.audit-empty {
 		display: flex;
@@ -420,5 +501,9 @@
 		font-size: 10px;
 		font-weight: 700;
 		color: #059669;
+	}
+
+	.health-status--err {
+		color: #dc2626 !important;
 	}
 </style>
