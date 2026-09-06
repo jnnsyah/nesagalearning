@@ -6,6 +6,7 @@
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -463,28 +464,29 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HEADER / HERO TITLE BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-content-row">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Manajemen Roster & Kelompok Angkatan</h1>
-					<span class="badge badge-primary">
-						{data.stats?.totalKelas ?? 0} Kelompok
-					</span>
-				</div>
-				<p class="hero-subtitle">
-					Kelola plotting anggota siswa per angkatan & penugasan mentor pembimbing utama di periode berjalan.
-				</p>
-			</div>
-			<div class="hero-actions-group">
-				<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-					</svg>
-					<span>Tambah Kelompok Angkatan</span>
-				</button>
-			</div>
-	</header>
+	<PageHeaderCard
+		title="Manajemen Roster & Kelompok Angkatan"
+		subtitle="Kelola plotting anggota siswa per angkatan & penugasan mentor pembimbing utama di periode berjalan."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Manajemen Kelas' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{data.stats?.totalKelas ?? 0} Kelompok
+			</span>
+		{/snippet}
+
+		{#snippet actions()}
+			<button type="button" class="btn-primary-action" onclick={openCreateDrawer}>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+				</svg>
+				<span>Tambah Kelompok Angkatan</span>
+			</button>
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     2. KEY METRICS GRID (.stats-grid)
