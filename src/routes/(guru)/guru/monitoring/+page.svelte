@@ -33,6 +33,7 @@
 			const matchTingkat = selectedTingkat === 'all' || c.tingkatName === selectedTingkat;
 			const matchRisk =
 				selectedRiskLevel === 'all' ||
+				selectedRiskLevel === 'semua' ||
 				c.healthStatus === selectedRiskLevel ||
 				(selectedRiskLevel === 'upcoming' && c.classState === 'upcoming') ||
 				(selectedRiskLevel === 'archived' && c.classState === 'archived');
@@ -41,7 +42,9 @@
 	});
 
 	let isFilterActive = $derived(
-		searchVal.trim() !== '' || selectedTingkat !== 'all' || selectedRiskLevel !== 'all'
+		searchVal.trim() !== '' ||
+			selectedTingkat !== 'all' ||
+			(selectedRiskLevel !== 'all' && selectedRiskLevel !== 'semua')
 	);
 
 	function resetFilters() {
@@ -72,7 +75,7 @@
 	);
 
 	const riskOptions = [
-		{ value: 'semua', label: 'Semua Risiko' },
+		{ value: 'all', label: 'Semua Risiko' },
 		{ value: 'KRITIS', label: 'KRITIS (< 60%)' },
 		{ value: 'WASPADA', label: 'WASPADA (60-74%)' },
 		{ value: 'SEHAT', label: 'SEHAT (≥ 75%)' }
@@ -116,7 +119,7 @@
 		if (selectedKelasId) params.set('kelasId', selectedKelasId);
 		if (selectedTaId) params.set('taId', selectedTaId);
 		if (searchVal.trim()) params.set('search', searchVal.trim());
-		if (selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
+		if (selectedRiskLevel !== 'all' && selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
 		params.set('page', '1');
 
 		const queryString = params.toString();
@@ -129,7 +132,7 @@
 		if (selectedKelasId) params.set('kelasId', selectedKelasId);
 		if (selectedTaId) params.set('taId', selectedTaId);
 		if (searchVal.trim()) params.set('search', searchVal.trim());
-		if (selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
+		if (selectedRiskLevel !== 'all' && selectedRiskLevel !== 'semua') params.set('risk', selectedRiskLevel);
 		params.set('page', String(pageNum));
 
 		const queryString = params.toString();

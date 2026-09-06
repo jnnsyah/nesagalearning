@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const kelasIdParam = url.searchParams.get('kelasId');
 	const taIdParam = url.searchParams.get('taId');
 	const searchParam = url.searchParams.get('search') || '';
-	const riskLevelParam = url.searchParams.get('risk') || 'semua';
+	const riskLevelParam = url.searchParams.get('risk') || 'all';
 	const pageParam = url.searchParams.get('page');
 
 	const parsedKelasId = kelasIdParam ? Number(kelasIdParam) : null;

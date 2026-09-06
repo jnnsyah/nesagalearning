@@ -660,7 +660,7 @@ export const ClassHealthService = {
 			});
 
 			// Filter by riskLevel if specified
-			if (params.riskLevel && params.riskLevel !== 'semua') {
+			if (params.riskLevel && params.riskLevel !== 'semua' && params.riskLevel !== 'all') {
 				if (params.riskLevel.toUpperCase() !== riskLevel) continue;
 			}
 
