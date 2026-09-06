@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import FilterBar from '$lib/components/ui/FilterBar.svelte';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import DatePicker from '$lib/components/ui/DatePicker.svelte';
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data } = $props();
@@ -18,6 +20,11 @@
 
 	let selectedLog = $state<any>(null);
 	let isDetailDrawerOpen = $state(false);
+
+	let isPurgeModalOpen = $state(false);
+	let purgeDays = $state(90);
+	let isPurging = $state(false);
+	let purgeFormRef: HTMLFormElement;
 
 	// Debounced Live Search for searchVal
 	let debounceTimer: ReturnType<typeof setTimeout>;
@@ -41,16 +48,24 @@
 		{ value: 'system', label: 'Sistem Otomatis' }
 	];
 
-	const actionOptions = [
+	let actionOptions = $derived([
 		{ value: 'all', label: 'Semua Jenis Aksi' },
-		{ value: 'LOGIN_FAILED', label: 'Login Gagal' },
-		{ value: 'RESET_PASSWORD', label: 'Reset Password' },
-		{ value: 'MANUAL_ATTENDANCE_EDIT', label: 'Edit Presensi Manual' },
-		{ value: 'DELETE_MATERIAL', label: 'Hapus Materi' },
-		{ value: 'CREATE_USER', label: 'Tambah User Baru' },
-		{ value: 'UPDATE_MASTER_DATA', label: 'Update Master Data' },
-		{ value: 'DATABASE_SEED', label: 'Database Seed' }
-	];
+		...(data.distinctActions || []).map((act: string) => ({
+			value: act,
+			label: act.replace(/_/g, ' ')
+		}))
+	]);
+
+	function getExportUrl(format: 'csv' | 'json'): string {
+		const params = new URLSearchParams();
+		if (searchVal.trim()) params.set('search', searchVal.trim());
+		if (selectedRole !== 'all') params.set('role', selectedRole);
+		if (selectedAction !== 'all') params.set('action', selectedAction);
+		if (dateFrom) params.set('dateFrom', dateFrom);
+		if (dateTo) params.set('dateTo', dateTo);
+		params.set('format', format);
+		return `/admin/audit-logs/export?${params.toString()}`;
+	}
 
 	function applyFilters() {
 		const params = new URLSearchParams();
@@ -100,17 +115,30 @@
 				return { label: 'Reset Password', bg: '#ffedd5', color: '#c2410c' };
 			case 'DELETE_MATERIAL':
 			case 'DELETE_USER':
+			case 'DELETE_KELAS':
+			case 'DELETE_TAHUN_AJARAN':
 				return { label: 'Hapus Entitas', bg: '#fef2f2', color: '#991b1b' };
+			case 'PURGE_AUDIT_LOGS':
+				return { label: 'Purge Audit Log', bg: '#ffe4e6', color: '#e11d48' };
+			case 'EXPORT_AUDIT_LOGS':
+				return { label: 'Export Audit Log', bg: '#f0fdf4', color: '#166534' };
 			case 'MANUAL_ATTENDANCE_EDIT':
 				return { label: 'Edit Presensi Manual', bg: '#fef9c3', color: '#a16207' };
 			case 'CREATE_USER':
-				return { label: 'Tambah User', bg: '#dcfce7', color: '#15803d' };
+			case 'CREATE_KELAS':
+			case 'CREATE_TAHUN_AJARAN':
+			case 'CREATE_SMTP_CONFIG':
+				return { label: action.replace(/_/g, ' '), bg: '#dcfce7', color: '#15803d' };
 			case 'UPDATE_MASTER_DATA':
-				return { label: 'Update Master Data', bg: '#e0f2fe', color: '#0369a1' };
+			case 'UPDATE_USER':
+			case 'UPDATE_KELAS':
+			case 'UPDATE_TAHUN_AJARAN':
+			case 'UPDATE_SMTP_CONFIG':
+				return { label: action.replace(/_/g, ' '), bg: '#e0f2fe', color: '#0369a1' };
 			case 'DATABASE_SEED':
 				return { label: 'Database Seed', bg: '#f3e8ff', color: '#7e22ce' };
 			default:
-				return { label: action || 'Aktivitas Sistem', bg: '#f1f5f9', color: '#475569' };
+				return { label: action.replace(/_/g, ' ') || 'Aktivitas Sistem', bg: '#f1f5f9', color: '#475569' };
 		}
 	}
 
@@ -289,10 +317,39 @@
 	     4. DATA TABLE / LIST VIEW
 	     ══════════════════════════════════════════════════════════ -->
 	<section class="card card-table">
-		<div class="card-header-flex">
+		<div class="card-header-flex flex-wrap items-center justify-between gap-3">
 			<div>
 				<h2 class="card-title">Jejak Audit Stream ({data.auditLogsData.total})</h2>
 				<p class="card-subtitle">Menampilkan riwayat pencatatan log aktivitas sistem terlengkap</p>
+			</div>
+			<div class="flex items-center gap-2 flex-wrap">
+				<a
+					href={getExportUrl('csv')}
+					download
+					class="btn-drawer-secondary inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold"
+					title="Unduh Audit Log dalam Format CSV"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+					<span>Export CSV</span>
+				</a>
+				<a
+					href={getExportUrl('json')}
+					download
+					class="btn-drawer-secondary inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold"
+					title="Unduh Audit Log dalam Format JSON"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+					<span>Export JSON</span>
+				</a>
+				<button
+					type="button"
+					onclick={() => (isPurgeModalOpen = true)}
+					class="btn-drawer-danger inline-flex items-center gap-1.5 py-2 px-3 text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition rounded-lg"
+					title="Bersihkan Log Lama"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+					<span>Pembersihan Log</span>
+				</button>
 			</div>
 		</div>
 
@@ -586,6 +643,57 @@
 		{/snippet}
 	</FormDrawer>
 {/if}
+
+<!-- ══════════════════════════════════════════════════════════
+     6. PURGE AUDIT LOGS CONFIRMATION MODAL
+     ══════════════════════════════════════════════════════════ -->
+<ConfirmModal
+	bind:open={isPurgeModalOpen}
+	title="Pembersihan Audit Log Lama"
+	message="Hapus log aktivitas yang sudah berusia lebih lama dari rentang retensi yang dipilih. Tindakan pembersihan ini permanen."
+	confirmText="Jalankan Pembersihan"
+	cancelText="Batal"
+	variant="danger"
+	loading={isPurging}
+	onconfirm={() => purgeFormRef?.requestSubmit()}
+>
+	{#snippet children()}
+		<form
+			bind:this={purgeFormRef}
+			action="?/purgeLogs"
+			method="POST"
+			use:enhance={() => {
+				isPurging = true;
+				return async ({ result, update }) => {
+					isPurging = false;
+					isPurgeModalOpen = false;
+					if (result.type === 'success' && result.data?.message) {
+						toast.success(result.data.message);
+					} else if (result.type === 'failure' && result.data?.message) {
+						toast.error(result.data.message);
+					}
+					await update();
+				};
+			}}
+			class="flex flex-col gap-3"
+		>
+			<label class="flex flex-col gap-1.5 text-left">
+				<span class="text-xs font-bold text-slate-700">Pilih Rentang Retensi Pembersihan:</span>
+				<select
+					name="days"
+					bind:value={purgeDays}
+					class="w-full text-xs font-semibold p-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+				>
+					<option value={30}>Log lebih tua dari 30 hari</option>
+					<option value={60}>Log lebih tua dari 60 hari</option>
+					<option value={90}>Log lebih tua dari 90 hari (Sangat Direkomendasikan)</option>
+					<option value={180}>Log lebih tua dari 180 hari</option>
+					<option value={365}>Log lebih tua dari 1 tahun (365 hari)</option>
+				</select>
+			</label>
+		</form>
+	{/snippet}
+</ConfirmModal>
 
 <style>
 	.audit-logs-page {

@@ -355,5 +355,170 @@ export const AuditLogService = {
 				adminActionsCount: Number(adminActionsRes?.total ?? 0)
 			}
 		};
+	},
+
+	/**
+	 * Fetch distinct action names from audit log table
+	 */
+	async getDistinctActions(): Promise<string[]> {
+		try {
+			const results = await db
+				.selectDistinct({ action: auditLog.action })
+				.from(auditLog)
+				.orderBy(auditLog.action);
+			return results.map((r) => r.action);
+		} catch (error) {
+			console.error('[AuditLogService.getDistinctActions error]:', error);
+			return [];
+		}
+	},
+
+	/**
+	 * Fetch unpaginated audit logs for export (up to 5000 records)
+	 */
+	async getExportLogs(params: {
+		search?: string;
+		role?: string;
+		action?: string;
+		dateFrom?: string;
+		dateTo?: string;
+	}): Promise<AuditLogItem[]> {
+		const targetUser = alias(userTable, 'target_user');
+		const conditions = [];
+
+		if (params.role && params.role !== 'all') {
+			conditions.push(eq(userTable.role, params.role));
+		}
+
+		if (params.action && params.action !== 'all') {
+			conditions.push(eq(auditLog.action, params.action));
+		}
+
+		if (params.search && params.search.trim() !== '') {
+			const term = `%${params.search.trim()}%`;
+			conditions.push(
+				or(
+					ilike(userTable.fullName, term),
+					ilike(userTable.username, term),
+					ilike(targetUser.fullName, term),
+					ilike(targetUser.username, term),
+					ilike(auditLog.action, term),
+					ilike(auditLog.entityType, term),
+					sql`${auditLog.newValues}::text ILIKE ${term}`,
+					sql`${auditLog.oldValues}::text ILIKE ${term}`
+				)
+			);
+		}
+
+		if (params.dateFrom) {
+			const dFrom = new Date(params.dateFrom);
+			dFrom.setHours(0, 0, 0, 0);
+			conditions.push(gte(auditLog.createdAt, dFrom));
+		}
+
+		if (params.dateTo) {
+			const dTo = new Date(params.dateTo);
+			dTo.setHours(23, 59, 59, 999);
+			conditions.push(lte(auditLog.createdAt, dTo));
+		}
+
+		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+		const records = await db
+			.select({
+				id: auditLog.id,
+				actorId: auditLog.actorId,
+				actorName: userTable.fullName,
+				actorUsername: userTable.username,
+				actorRole: userTable.role,
+				actorAvatarUrl: userTable.avatarUrl,
+				action: auditLog.action,
+				entityType: auditLog.entityType,
+				entityId: auditLog.entityId,
+				oldValues: auditLog.oldValues,
+				newValues: auditLog.newValues,
+				ipAddress: auditLog.ipAddress,
+				createdAt: auditLog.createdAt
+			})
+			.from(auditLog)
+			.leftJoin(userTable, eq(auditLog.actorId, userTable.id))
+			.leftJoin(targetUser, and(eq(auditLog.entityType, 'user'), eq(auditLog.entityId, targetUser.id)))
+			.where(whereClause)
+			.orderBy(desc(auditLog.createdAt))
+			.limit(5000);
+
+		const targetUserIds = records
+			.filter((r) => r.entityType === 'user' && r.entityId)
+			.map((r) => r.entityId as number);
+
+		const targetUserMap = new Map<number, { fullName: string; username: string }>();
+		if (targetUserIds.length > 0) {
+			const targetUsers = await db
+				.select({ id: userTable.id, fullName: userTable.fullName, username: userTable.username })
+				.from(userTable)
+				.where(inArray(userTable.id, targetUserIds));
+			for (const tu of targetUsers) {
+				targetUserMap.set(tu.id, { fullName: tu.fullName, username: tu.username });
+			}
+		}
+
+		return records.map((r) => ({
+			id: r.id,
+			actorId: r.actorId,
+			actorName: r.actorName || (r.actorId ? 'Pengguna Dihapus' : 'Sistem Otomatis'),
+			actorUsername: r.actorUsername || 'system',
+			actorRole: r.actorRole || 'system',
+			actorAvatarUrl: r.actorAvatarUrl || null,
+			action: r.action,
+			entityType: r.entityType,
+			entityId: r.entityId,
+			entityLabel: deriveEntityLabel(r.entityType, r.entityId, r.oldValues, r.newValues, targetUserMap),
+			oldValues: r.oldValues,
+			newValues: r.newValues,
+			ipAddress: r.ipAddress,
+			createdAt: r.createdAt
+		}));
+	},
+
+	/**
+	 * Purge logs older than X days
+	 */
+	async purgeOldLogs(days: number, actorId: number): Promise<{ success: boolean; deletedCount: number; message: string }> {
+		try {
+			const cutoffDate = new Date();
+			cutoffDate.setDate(cutoffDate.getDate() - days);
+			cutoffDate.setHours(0, 0, 0, 0);
+
+			const deletedRecords = await db
+				.delete(auditLog)
+				.where(lte(auditLog.createdAt, cutoffDate))
+				.returning({ id: auditLog.id });
+
+			const deletedCount = deletedRecords.length;
+
+			await this.logAction({
+				actorId,
+				action: 'PURGE_AUDIT_LOGS',
+				entityType: 'system',
+				newValues: {
+					retentionDays: days,
+					cutoffDate: cutoffDate.toISOString(),
+					purgedCount: deletedCount
+				}
+			});
+
+			return {
+				success: true,
+				deletedCount,
+				message: `Berhasil membersihkan ${deletedCount} record log yang berusia lebih dari ${days} hari.`
+			};
+		} catch (error) {
+			console.error('[AuditLogService.purgeOldLogs error]:', error);
+			return {
+				success: false,
+				deletedCount: 0,
+				message: 'Gagal melakukan pembersihan audit log.'
+			};
+		}
 	}
 };
