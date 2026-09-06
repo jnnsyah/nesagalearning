@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
@@ -106,33 +107,26 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HEADER / HERO BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<a href="/admin/master" class="btn-back">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-				<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-			</svg>
-			<span>Kembali ke Master Data Kelas</span>
-		</a>
-
-		<div class="hero-content-row mt-3">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Kelola Anggota: {data.kelas.name}</h1>
-					<span class="badge badge-primary">
-						{data.members?.length ?? 0} Siswa Terdaftar
-					</span>
-					{#if data.kelas.isActive}
-						<span class="badge badge-success">Kelas Aktif</span>
-					{:else}
-						<span class="badge badge-warning">Terarsip (Read-Only)</span>
-					{/if}
-				</div>
-				<p class="hero-subtitle">
-					{data.kelas.tahunAjaranName} • Tingkat {data.kelas.tingkatName} • Track Pembelajaran: {data.kelas.curriculumTrackTitle}
-				</p>
-			</div>
-		</div>
-	</header>
+	<PageHeaderCard
+		title="Kelola Anggota: {data.kelas.name}"
+		subtitle="{data.kelas.tahunAjaranName} • Tingkat {data.kelas.tingkatName} • Track Pembelajaran: {data.kelas.curriculumTrackTitle}"
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Master Data', href: '/admin/master' },
+			{ label: data.kelas.name }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{data.members?.length ?? 0} Siswa Terdaftar
+			</span>
+			{#if data.kelas.isActive}
+				<span class="badge badge-success">Kelas Aktif</span>
+			{:else}
+				<span class="badge badge-amber">Terarsip (Read-Only)</span>
+			{/if}
+		{/snippet}
+	</PageHeaderCard>
 
 	<!-- Read-Only Banner for Archived Classes -->
 	{#if !data.kelas.isActive}

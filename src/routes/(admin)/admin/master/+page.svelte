@@ -5,6 +5,7 @@
 	import FormDrawer from '$lib/components/ui/FormDrawer.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from '$lib/stores/toast';
+	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 
 	let { data, form } = $props();
@@ -241,65 +242,66 @@
 	<!-- ══════════════════════════════════════════════════════════
 	     1. HERO HEADER BANNER
 	     ══════════════════════════════════════════════════════════ -->
-	<header class="page-hero">
-		<div class="hero-content-row">
-			<div>
-				<div class="hero-title-group">
-					<h1 class="hero-title">Master Data Operasional</h1>
-					<span class="badge badge-primary">
-						{data.stats?.totalRooms ?? 0} Ruangan
-					</span>
-				</div>
-				<p class="hero-subtitle">
-					Kelola data master operasional sekolah: Ruangan Kelas, Tipe Aktivitas Sesi, Avatar Profil, dan Katalog Badge.
-				</p>
-			</div>
-			<div class="hero-actions-group">
-				{#if activeTab === 'rooms'}
-					<button type="button" class="btn-primary-action" onclick={() => (isRoomDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Ruangan</span>
-					</button>
-				{:else if activeTab === 'activities'}
-					<button type="button" class="btn-primary-action" onclick={() => (isActivityDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Tipe Aktivitas</span>
-					</button>
-				{:else if activeTab === 'avatars'}
-					<button type="button" class="btn-primary-action" onclick={() => (isAvatarDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Avatar</span>
-					</button>
-				{:else if activeTab === 'badges'}
-					<button type="button" class="btn-primary-action" onclick={() => (isBadgeDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Badge</span>
-					</button>
-				{:else if activeTab === 'angkatan'}
-					<button type="button" class="btn-primary-action" onclick={() => (isAngkatanDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Angkatan</span>
-					</button>
-				{:else if activeTab === 'rombel'}
-					<button type="button" class="btn-primary-action" onclick={() => (isRombelDrawerOpen = true)}>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-						</svg>
-						<span>Tambah Rombel</span>
-					</button>
-				{/if}
-			</div>
-		</div>
+	<PageHeaderCard
+		title="Master Data Operasional"
+		subtitle="Kelola data master operasional sekolah: Ruangan Kelas, Tipe Aktivitas Sesi, Avatar Profil, dan Katalog Badge."
+		breadcrumbs={[
+			{ label: 'Dashboard', href: '/admin' },
+			{ label: 'Master Data' }
+		]}
+	>
+		{#snippet badges()}
+			<span class="badge badge-neutral">
+				{data.stats?.totalRooms ?? 0} Ruangan
+			</span>
+		{/snippet}
+
+		{#snippet actions()}
+			{#if activeTab === 'rooms'}
+				<button type="button" class="btn-primary-action" onclick={() => (isRoomDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Ruangan</span>
+				</button>
+			{:else if activeTab === 'activities'}
+				<button type="button" class="btn-primary-action" onclick={() => (isActivityDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Tipe Aktivitas</span>
+				</button>
+			{:else if activeTab === 'avatars'}
+				<button type="button" class="btn-primary-action" onclick={() => (isAvatarDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Avatar</span>
+				</button>
+			{:else if activeTab === 'badges'}
+				<button type="button" class="btn-primary-action" onclick={() => (isBadgeDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Badge</span>
+				</button>
+			{:else if activeTab === 'angkatan'}
+				<button type="button" class="btn-primary-action" onclick={() => (isAngkatanDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Angkatan</span>
+				</button>
+			{:else if activeTab === 'rombel'}
+				<button type="button" class="btn-primary-action" onclick={() => (isRombelDrawerOpen = true)}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span>Tambah Rombel</span>
+				</button>
+			{/if}
+		{/snippet}
+	</PageHeaderCard>
 
 		<!-- TAB STRIP NAVIGATION -->
 		<div class="tab-strip-container mt-6">
@@ -375,7 +377,6 @@
 				<span>Badge & Lencana ({data.stats?.totalBadges ?? 0})</span>
 			</button>
 		</div>
-	</header>
 
 	<!-- ══════════════════════════════════════════════════════════
 	     TAB CONTENT: MASTER ANGKATAN
