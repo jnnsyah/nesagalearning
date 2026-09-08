@@ -256,7 +256,6 @@
 							<div class="config-row-info">
 								<div class="config-row-title-row">
 									<span class="config-label">{item.label}</span>
-									<span class="config-key-tag">`{item.configKey}`</span>
 								</div>
 								<p class="config-desc">{item.description || '-'}</p>
 							</div>
@@ -321,7 +320,6 @@
 							<div class="config-row-info">
 								<div class="config-row-title-row">
 									<span class="config-label">{item.label}</span>
-									<span class="config-key-tag">`{item.configKey}`</span>
 								</div>
 								<p class="config-desc">{item.description || '-'}</p>
 							</div>
@@ -387,7 +385,6 @@
 							<div class="config-row-info">
 								<div class="config-row-title-row">
 									<span class="config-label">{item.label}</span>
-									<span class="config-key-tag">`{item.configKey}`</span>
 								</div>
 								<p class="config-desc">{item.description || '-'}</p>
 							</div>
@@ -452,7 +449,6 @@
 							<div class="config-row-info">
 								<div class="config-row-title-row">
 									<span class="config-label">{item.label}</span>
-									<span class="config-key-tag">`{item.configKey}`</span>
 								</div>
 								<p class="config-desc">{item.description || '-'}</p>
 							</div>

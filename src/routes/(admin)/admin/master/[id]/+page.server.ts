@@ -2,13 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { MasterAdminService } from '$lib/server/services/master-admin.service';
 import { bulkAssignStudentsSchema, bulkRemoveStudentsSchema } from '$lib/validators/master';
-
-function formatErrorMessage(err: any, fallback: string): string {
-	if (err?.message && typeof err.message === 'string') {
-		return err.message;
-	}
-	return fallback;
-}
+import { formatErrorMessage } from '$lib/server/utils/error-formatter';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user || locals.user.role !== 'admin') {

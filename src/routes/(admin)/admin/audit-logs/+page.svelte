@@ -222,6 +222,51 @@
 			.replace(/_/g, ' ');
 	}
 
+	function formatEntityType(entityType: string, entityId?: number | null): string {
+		if (!entityType) return '-';
+		const raw = entityType.toLowerCase().trim();
+		const map: Record<string, string> = {
+			user: 'Pengguna',
+			kelas: 'Rombongan Belajar',
+			academic: 'Tahun Ajaran / Akademik',
+			email_config: 'Konfigurasi Email',
+			room: 'Ruangan Kelas',
+			activity_type: 'Tipe Aktivitas',
+			badge: 'Badge / Lencana',
+			badge_type: 'Tipe Badge',
+			avatar: 'Avatar Profil',
+			point_config: 'Konfigurasi Poin',
+			attendance: 'Presensi',
+			system: 'Sistem',
+			master_rombel: 'Master Rombel',
+			master_angkatan: 'Master Angkatan'
+		};
+		const label = map[raw] || raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+		return `${label}${entityId ? ` #${entityId}` : ''}`;
+	}
+
+	function sanitizeLogPayload(log: any): any {
+		if (!log) return log;
+		const sensitiveKeys = ['password', 'password_hash', 'token', 'secret', 'auth', 'code', 'apikey', 'key'];
+
+		function sanitizeValue(val: any): any {
+			if (val === null || val === undefined) return val;
+			if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return val;
+			if (Array.isArray(val)) return val.map(sanitizeValue);
+			if (typeof val === 'object') {
+				const cleaned: Record<string, any> = {};
+				for (const [k, v] of Object.entries(val)) {
+					const isSensitive = sensitiveKeys.some((s) => k.toLowerCase().includes(s));
+					cleaned[k] = isSensitive ? '[REDACTED]' : sanitizeValue(v);
+				}
+				return cleaned;
+			}
+			return val;
+		}
+
+		return sanitizeValue(log);
+	}
+
 	function copyToClipboard(text: string) {
 		if (typeof window !== 'undefined' && navigator?.clipboard) {
 			navigator.clipboard.writeText(text);
@@ -472,7 +517,7 @@
 									<div class="flex flex-col gap-0.5">
 										<span class="font-bold text-xs text-slate-800">{item.entityLabel}</span>
 										<span class="font-mono text-[11px] text-slate-500 font-semibold">
-											{item.entityType.toUpperCase()}{item.entityId ? ` #${item.entityId}` : ''}
+											{formatEntityType(item.entityType, item.entityId)}
 										</span>
 									</div>
 								</td>
@@ -617,7 +662,7 @@
 						<div class="flex flex-col gap-0.5 mt-1">
 							<span class="font-bold text-xs text-slate-900">{selectedLog.entityLabel}</span>
 							<span class="font-mono text-[11px] text-slate-500 font-semibold">
-								{selectedLog.entityType.toUpperCase()}{selectedLog.entityId ? ` #${selectedLog.entityId}` : ''}
+								{formatEntityType(selectedLog.entityType, selectedLog.entityId)}
 							</span>
 						</div>
 					</div>
@@ -691,7 +736,7 @@
 						<span class="font-bold text-xs text-slate-700">Inspect Payload JSON Raw</span>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
 					</summary>
-					<pre class="json-code-block">{JSON.stringify(selectedLog, null, 2)}</pre>
+					<pre class="json-code-block">{JSON.stringify(sanitizeLogPayload(selectedLog), null, 2)}</pre>
 				</details>
 			</div>
 		{/snippet}
@@ -700,7 +745,7 @@
 			<div class="drawer-footer-row flex justify-between items-center w-full">
 				<button
 					type="button"
-					onclick={() => copyToClipboard(JSON.stringify(selectedLog, null, 2))}
+					onclick={() => copyToClipboard(JSON.stringify(sanitizeLogPayload(selectedLog), null, 2))}
 					class="btn-copy-json"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>

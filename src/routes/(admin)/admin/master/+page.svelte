@@ -490,7 +490,7 @@
 						<thead>
 							<tr>
 								<th>NAMA ROMBEL KELAS</th>
-								<th>TINGKAT LEVEL SEKOAH</th>
+								<th>TINGKAT LEVEL SEKOLAH</th>
 								<th class="text-right">AKSI</th>
 							</tr>
 						</thead>
