@@ -288,6 +288,8 @@
 	let previewVideoModal = $state<VideoRecommendation | null>(null);
 	let previewVideoDisplayMode = $state<'mini' | 'expanded' | 'minimized'>('mini');
 	let previewVideoStartTime = $state(0);
+	let showPreviewResumePill = $state(false);
+	let previewResumePillTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function openPreviewVideoModal(video: VideoRecommendation) {
 		let savedTime = 0;
@@ -303,15 +305,29 @@
 		previewVideoStartTime = savedTime;
 		previewVideoModal = video;
 		previewVideoDisplayMode = 'mini';
+
+		if (previewResumePillTimer) clearTimeout(previewResumePillTimer);
+		if (savedTime > 0) {
+			showPreviewResumePill = true;
+			previewResumePillTimer = setTimeout(() => {
+				showPreviewResumePill = false;
+			}, 5000);
+		} else {
+			showPreviewResumePill = false;
+		}
 	}
 
 	function closePreviewVideoModal() {
 		previewVideoModal = null;
 		previewVideoDisplayMode = 'mini';
+		showPreviewResumePill = false;
+		if (previewResumePillTimer) clearTimeout(previewResumePillTimer);
 	}
 
 	function restartPreviewFromStart() {
 		previewVideoStartTime = 0;
+		showPreviewResumePill = false;
+		if (previewResumePillTimer) clearTimeout(previewResumePillTimer);
 		if (previewVideoModal && typeof localStorage !== 'undefined') {
 			localStorage.removeItem(`yt_progress_${previewVideoModal.youtubeId}`);
 		}
@@ -1297,20 +1313,24 @@
 										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 									</button>
 
-									<!-- Centered Floating Resume Progress Pill (Bottom Center) -->
-									{#if previewVideoStartTime > 0}
-										<div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 text-xs font-semibold shadow-md select-none">
-											<div class="flex items-center gap-1.5 text-slate-700">
-												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="text-amber-500 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-												<span class="font-mono text-[11px] font-bold">Melanjutkan: {Math.floor(previewVideoStartTime / 60)}m {previewVideoStartTime % 60}s</span>
+									<!-- Centered Floating Resume Progress Pill (Auto-hides after 5s) -->
+									{#if showPreviewResumePill && previewVideoStartTime > 0}
+										<div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 select-none max-w-[90vw]">
+											<div class="flex items-center gap-2 text-slate-700 font-medium">
+												<div class="w-6 h-6 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-600">
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+												</div>
+												<span class="text-xs sm:text-sm font-semibold tracking-tight text-slate-800 whitespace-nowrap">
+													Melanjutkan dari <span class="font-mono font-bold text-indigo-600 ml-0.5">{Math.floor(previewVideoStartTime / 60)}m {previewVideoStartTime % 60}s</span>
+												</span>
 											</div>
 											<button
 												type="button"
 												onclick={restartPreviewFromStart}
-												class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
+												class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs flex-shrink-0"
 												title="Putar dari 0:00"
 											>
-												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24"/><polyline points="21 3 21 9 15 9"/></svg>
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24"/><polyline points="21 3 21 9 15 9"/></svg>
 												<span>Reset</span>
 											</button>
 										</div>
