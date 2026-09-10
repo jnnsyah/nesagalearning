@@ -187,15 +187,13 @@
 	/* ── Responsive ── */
 	@media (max-width: 640px) {
 		.public-topbar {
-			padding: 10px 14px;
+			padding: 10px 16px;
 		}
 		.brand-name {
-			display: inline-block;
-			font-size: 11.5px;
-			max-width: 160px;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
+			display: none;
+		}
+		.brand-logo-text {
+			font-size: 1.25rem;
 		}
 		.hide-on-mobile {
 			display: none;
