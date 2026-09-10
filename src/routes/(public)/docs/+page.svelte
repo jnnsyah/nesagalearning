@@ -19,19 +19,19 @@
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
 			color: '#4f46e5', bg: '#e0e7ff',
 			title: 'Mengenal Nesaga Learning Community',
-			subtitle: 'Wadah belajar bersama, eksplorasi materi praktis, dan kolaborasi siswa SMK Negeri 1 Gantiwarno',
+			subtitle: 'Wadah belajar bersama, eksplorasi materi, dan kolaborasi siswa SMK Negeri 1 Gantiwarno',
 			content: [
 				{
 					heading: '1. Ruang Belajar Komunitas yang Inklusif',
-					body: 'Nesaga Learning Community (NLC) adalah platform belajar bersama untuk siswa SMK Negeri 1 Gantiwarno. Di sini, materi dirancang bertahap dan santai agar siapa pun bisa belajar dengan nyaman sesuai ritme masing-masing.'
+					body: 'Nesaga Learning Community (NLC) adalah platform belajar bersama untuk siswa SMK Negeri 1 Gantiwarno. Materi dirancang bertahap agar siapa pun bisa belajar sesuai ritme masing-masing.'
 				},
 				{
 					heading: '2. Peran Pengguna di Komunitas',
-					body: 'NLC menghubungkan 4 peran utama: Siswa (belajar mandiri & eksplorasi materi), Mentor (membagikan wawasan & mereview tugas), Guru Pembimbing (memantau perkembangan kelas), dan Administrator (mengelola konfigurasi sistem).'
+					body: 'NLC menghubungkan 4 peran: Siswa (belajar mandiri & eksplorasi materi), Mentor (sharing wawasan & review tugas), Guru Pembimbing (memantau perkembangan kelas), dan Administrator (mengelola konfigurasi sistem).'
 				},
 				{
 					heading: '3. Fitur Utama Platform',
-					body: 'Platform ini dilengkapi alur Track Pembelajaran per fase, presensi mandiri dengan scan QR saat sesi kumpul, kuis latihan pemahaman, pengumpulan tugas proyek, serta apresiasi lewat XP poin, streak keaktifan, dan badge penghargaan.'
+					body: 'Platform ini menyediakan alur Track Pembelajaran, presensi mandiri dengan scan QR saat kumpul, kuis latihan pemahaman, pengumpulan link tugas, serta sistem XP poin, streak harian, dan badge.'
 				}
 			]
 		},
@@ -41,27 +41,27 @@
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`,
 			color: '#0d9488', bg: '#ccfbf1',
 			title: 'Panduan Belajar untuk Siswa',
-			subtitle: 'Maksimalkan progres belajarmu dan raih pencapaian terbaik bersama teman',
+			subtitle: 'Panduan belajar, presensi pertemuan, dan pengumpulan tugas',
 			content: [
 				{
 					heading: '1. Presensi Scan QR Saat Pertemuan',
-					body: 'Saat sesi tatap muka atau workshop komunitas, buka menu "Pertemuan" dari HP kamu lalu pilih "Scan QR". Arahkan kamera ke layar proyektor untuk mencatat kehadiran secara instan.'
+					body: 'Saat sesi kumpul atau tatap muka, buka menu "Pertemuan" dari HP lalu pilih "Scan QR". Arahkan kamera ke layar proyektor untuk mencatat kehadiran secara langsung.'
 				},
 				{
 					heading: '2. Membaca Track Pembelajaran',
-					body: 'Di menu "Track Pembelajaran", kamu bisa memilih modul sesuai jenjang kelasmu. Pelajari topik bertahap per fase, unduh lampiran berkas praktikum, dan tonton video referensi yang disematkan.'
+					body: 'Di menu "Track Pembelajaran", kamu bisa memilih modul sesuai kelasmu. Pelajari topik bertahap per fase, unduh berkas materi, dan tonton video referensi yang disematkan.'
 				},
 				{
 					heading: '3. Mengumpulkan Tugas Praktikum',
-					body: 'Kumpulkan tugas melalui menu "Tugas". Masukkan tautan repository GitHub, link demo karya, atau unggah file proyekmu. Pantau hasil ulasan dari mentor apakah sudah disetujui atau perlu sedikit revisi.'
+					body: 'Kumpulkan tugas melalui menu "Tugas". Masukkan tautan repository GitHub atau link demo karyamu, lalu pantau ulasan dari mentor apakah sudah selesai atau perlu perbaikan.'
 				},
 				{
 					heading: '4. Mengumpulkan XP, Menjaga Streak & Badge',
-					body: 'Setiap keaktifan belajarmu menghasilkan poin XP. Hadiri pertemuan rutin untuk membangun streak harian tanpa terputus, dan raih badge pencapaian spesial untuk ditampilkan di profilmu.'
+					body: 'Setiap keaktifan belajar menghasilkan poin XP. Hadiri pertemuan rutin untuk menjaga streak harian, dan kumpulkan badge di profilmu.'
 				},
 				{
 					heading: '5. Mengerjakan Kuis Pre-Test & Post-Test',
-					body: 'Uji pemahamanmu sebelum dan sesudah mempelajari sub-fase topik tertentu. Kuis latihan ini santai, membantu mengingat poin penting materi, dan memberikan bonus tambahan poin XP.'
+					body: 'Uji pemahaman sebelum dan sesudah mempelajari topik tertentu. Kuis latihan ini membantu mengingat poin penting materi dan menambah poin XP.'
 				}
 			]
 		},
@@ -71,27 +71,27 @@
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
 			color: '#4f46e5', bg: '#e0e7ff',
 			title: 'Panduan Pendampingan untuk Mentor',
-			subtitle: 'Rancang kurikulum materi, kelola sesi pertemuan, dan bimbing siswa',
+			subtitle: 'Rancang materi belajar, kelola sesi pertemuan, dan sharing bareng teman-teman',
 			content: [
 				{
 					heading: '1. Menyusun Track Pembelajaran',
-					body: 'Di menu "Track Pembelajaran", kamu bisa membangun struktur materi bertingkat: Track → Fase → Sub-Fase → Materi. Tulis penjelasan interaktif dengan editor teks kaya, lampirkan modul lab, dan tautkan video referensi.'
+					body: 'Di menu "Track Pembelajaran", kamu bisa menyusun materi bertingkat: Track → Fase → Sub-Fase → Materi. Tulis penjelasan materi, lampirkan berkas modul, dan tautkan video referensi.'
 				},
 				{
 					heading: '2. Membuka Sesi Pertemuan & QR Presensi',
-					body: 'Buat agenda sesi di menu "Pertemuan". Sistem akan menghasilkan token QR dinamis yang dapat ditampilkan di proyektor agar siswa dapat melakukan presensi mandiri secara tertib.'
+					body: 'Buat agenda sesi di menu "Pertemuan". Sistem akan menghasilkan kode QR dinamis yang dapat ditampilkan di proyektor untuk presensi mandiri.'
 				},
 				{
 					heading: '3. Membuat Kuis Evaluasi Pemahaman',
-					body: 'Tambahkan kuis pilihan ganda pada Sub-Fase terkait untuk mengukur penyerapan materi. Kamu bisa membuat soal satu per satu atau melakukan impor instan via template JSON.'
+					body: 'Tambahkan kuis pilihan ganda pada Sub-Fase terkait untuk mengukur pemahaman materi. Soal dapat dibuat manual atau diimpor lewat file JSON.'
 				},
 				{
 					heading: '4. Menilai & Memberi Umpan Balik Tugas',
-					body: 'Buka menu "Penilaian Tugas" untuk mereview submisi siswa. Berikan penilaian serta catatan umpan balik yang membangun untuk membantu siswa terus berkembang.'
+					body: 'Buka menu "Penilaian Tugas" untuk mereview kiriman tugas. Berikan masukan agar teman-teman semakin paham.'
 				},
 				{
-					heading: '5. Memantau Kemajuan Kelas',
-					body: 'Gunakan dashboard "Progress Pembelajaran" untuk melihat ringkasan keaktifan siswa binaanmu, mengidentifikasi materi yang butuh pendalaman, dan mendampingi siswa yang tertinggal.'
+					heading: '5. Memantau Kemajuan Belajar',
+					body: 'Gunakan dashboard "Progress Pembelajaran" untuk melihat keaktifan dan kemajuan belajar teman-teman, melihat materi yang butuh dibahas bareng, dan saling bantu saat ada kendala.'
 				}
 			]
 		},
@@ -101,27 +101,27 @@
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
 			color: '#0d9488', bg: '#ccfbf1',
 			title: 'Panduan Supervisi untuk Guru Pembimbing',
-			subtitle: 'Supervisi aktivitas kelas, kesehatan pembelajaran, dan perkembangan kompetensi siswa',
+			subtitle: 'Pantau aktivitas komunitas, kesehatan pembelajaran kelas, dan perkembangan siswa',
 			content: [
 				{
 					heading: '1. Monitoring Kesehatan Kelas (Health Dashboard)',
-					body: 'Pantau kondisi kelas binaan secara menyeluruh melalui metrik tingkat kehadiran, rasio ketuntasan tugas, dan keaktifan streak siswa secara real-time.'
+					body: 'Pantau aktivitas kelas dan komunitas melalui ringkasan kehadiran, penyelesaian tugas, dan keaktifan streak siswa.'
 				},
 				{
 					heading: '2. Memantau Ketercapaian Track Pembelajaran',
-					body: 'Lihat progres penyerapan kurikulum di setiap jenjang kelas, lengkap dengan rekapitulasi ketercapaian fase belajar dan skor pemahaman kuis siswa.'
+					body: 'Lihat progres penyerapan materi di setiap jenjang kelas, rekapitulasi capaian fase belajar, dan hasil kuis pemahaman siswa.'
 				},
 				{
-					heading: '3. Profil & Riwayat Portofolio Siswa',
-					body: 'Akses profil individu siswa untuk melihat rekam jejak presensi, portofolio karya tugas yang telah dikerjakan, perolehan poin XP, dan koleksi badge penghargaan.'
+					heading: '3. Profil & Portofolio Siswa',
+					body: 'Buka profil siswa untuk melihat rekam kehadiran, portofolio tugas yang telah dikerjakan, perolehan poin XP, dan badge.'
 				},
 				{
-					heading: '4. Catatan Pendampingan Khusus',
-					body: 'Tuliskan catatan observasi atau bimbingan perkembangan pada profil siswa untuk keperluan pendampingan terarah yang dapat dilihat oleh tim pengajar.'
+					heading: '4. Catatan Pendampingan',
+					body: 'Tuliskan catatan observasi atau bimbingan pada profil siswa agar dapat dipantau bersama oleh guru dan mentor.'
 				},
 				{
-					heading: '5. Rekapitulasi & Laporan Pembelajaran',
-					body: 'Unduh laporan rekapitulasi presensi dan capaian pembelajaran kelas untuk evaluasi berkala dan pelaporan akademik program ke pihak sekolah.'
+					heading: '5. Rekapitulasi Data Pembelajaran',
+					body: 'Unduh data rekapitulasi presensi dan capaian belajar kelas untuk evaluasi berkala serta arsip komunitas.'
 				}
 			]
 		},
@@ -135,113 +135,35 @@
 			content: [
 				{
 					heading: '1. Manajemen Data Pengguna',
-					body: 'Kelola data pengguna untuk Siswa, Mentor, Guru, dan Admin. Dukungan impor massal data siswa via file CSV/Excel dan pengelolaan reset kredensial akun.'
+					body: 'Kelola data pengguna untuk Siswa, Mentor, Guru, dan Admin. Mendukung impor data siswa lewat file CSV/Excel serta reset akun.'
 				},
 				{
 					heading: '2. Pengaturan Kelas & Roster Siswa',
-					body: 'Buat kelas instance per tahun ajaran, pasangkan mentor pendamping, dan daftarkan siswa. Gunakan wizard kenaikan kelas untuk mempromosikan siswa secara otomatis di akhir periode.'
+					body: 'Buat kelas per tahun ajaran, hubungkan mentor, dan daftarkan siswa ke dalam kelas.'
 				},
 				{
 					heading: '3. Manajemen Periode & Tahun Ajaran',
-					body: 'Atur tahun ajaran aktif dan kelola histori periode sebelumnya agar pencatatan data akademik tetap rapi dan terorganisir.'
+					body: 'Atur tahun ajaran aktif dan kelola riwayat periode sebelumnya agar data tetap terorganisir.'
 				},
 				{
 					heading: '4. Konfigurasi Gamifikasi & Poin XP',
-					body: 'Sesuaikan aturan perolehan poin XP untuk presensi, penyelesaian tugas, dan milestone streak, serta kelola jenis badge penghargaan yang dapat diraih siswa.'
+					body: 'Sesuaikan aturan perolehan poin XP untuk presensi, tugas, dan streak, serta pengaturan badge siswa.'
 				},
 				{
 					heading: '5. Audit Log & Keamanan Data',
-					body: 'Pantau riwayat aktivitas operasional penting di Audit Log Stream untuk menjaga keamanan, akuntabilitas, dan integritas data seluruh platform.'
+					body: 'Pantau log aktivitas penting sistem di Audit Log Stream untuk menjaga integritas data platform.'
 				}
 			]
 		}
 	];
 
 	let activeSection = $state('overview');
-	let isPresentationMode = $state(false);
-	let currentSlide = $state(0);
-
 	let currentSectionData = $derived(sections.find((s) => s.id === activeSection) ?? sections[0]);
-
-	// Flatten all sections content into slides for presentation mode
-	let allSlides = $derived(
-		sections.flatMap((sec) =>
-			sec.content.map((c, i) => ({
-				sectionLabel: sec.label,
-				sectionColor: sec.color,
-				sectionBg: sec.bg,
-				slideIndex: i,
-				heading: c.heading,
-				body: c.body
-			}))
-		)
-	);
-
-	function enterPresentation() {
-		isPresentationMode = true;
-		currentSlide = 0;
-		if (typeof document !== 'undefined') {
-			document.documentElement.requestFullscreen?.().catch(() => {});
-		}
-	}
-
-	function exitPresentation() {
-		isPresentationMode = false;
-		if (typeof document !== 'undefined') {
-			document.exitFullscreen?.().catch(() => {});
-		}
-	}
-
-	function nextSlide() {
-		if (currentSlide < allSlides.length - 1) currentSlide++;
-	}
-
-	function prevSlide() {
-		if (currentSlide > 0) currentSlide--;
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (!isPresentationMode) return;
-		if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
-		if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
-		if (e.key === 'Escape') exitPresentation();
-	}
 </script>
 
 <svelte:head>
 	<title>Dokumentasi — Nesaga Learning Community</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
-
-<!-- ══ PRESENTATION MODE ══ -->
-{#if isPresentationMode}
-	{@const slide = allSlides[currentSlide]}
-	<div class="presentation-overlay">
-		<div class="presentation-slide">
-			<div class="slide-badge" style="background:{slide.sectionBg}; color:{slide.sectionColor}">
-				{slide.sectionLabel}
-			</div>
-			<h2 class="slide-heading">{slide.heading}</h2>
-			<p class="slide-body">{slide.body}</p>
-			<div class="slide-nav">
-				<button type="button" class="slide-btn" onclick={prevSlide} disabled={currentSlide === 0}>
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-					Sebelumnya
-				</button>
-				<span class="slide-counter">{currentSlide + 1} / {allSlides.length}</span>
-				<button type="button" class="slide-btn" onclick={nextSlide} disabled={currentSlide === allSlides.length - 1}>
-					Berikutnya
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-				</button>
-			</div>
-			<button type="button" class="slide-exit" onclick={exitPresentation} title="Keluar Presentasi (Esc)">
-				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-				Keluar
-			</button>
-		</div>
-	</div>
-{/if}
 
 <!-- ══ DOCS LAYOUT ══ -->
 <div class="docs-layout">
@@ -250,12 +172,8 @@
 		<div class="docs-sidebar-header">
 			<a href="/" class="back-link">
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-				Beranda
+				Kembali ke Beranda
 			</a>
-			<button type="button" class="btn-create-pill present-btn" onclick={enterPresentation}>
-				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-				Presentasi
-			</button>
 		</div>
 		<nav class="docs-nav">
 			{#each sections as sec}
@@ -271,6 +189,13 @@
 				</button>
 			{/each}
 		</nav>
+		<div class="docs-sidebar-footer">
+			<div class="docs-version-badge">
+				<span class="version-dot"></span>
+				<span>Dokumentasi NLC</span>
+			</div>
+			<span class="docs-sidebar-sub">SMK N 1 Gantiwarno</span>
+		</div>
 	</aside>
 
 	<!-- Content -->
@@ -322,24 +247,29 @@
 	/* ── Layout ── */
 	.docs-layout {
 		display: flex;
-		min-height: calc(100vh - 60px);
-		align-items: flex-start;
+		min-height: calc(100vh - 58px);
+		min-height: calc(100dvh - 58px);
+		align-items: stretch;
+		background-color: var(--bg-base);
 	}
 
 	/* ── Sidebar ── */
 	.docs-sidebar {
-		width: 240px;
+		width: 250px;
 		flex-shrink: 0;
 		position: sticky;
-		top: 64px;
-		max-height: calc(100vh - 64px);
-		overflow-y: auto;
+		top: 58px;
+		height: calc(100vh - 58px);
+		height: calc(100dvh - 58px);
+		min-height: calc(100vh - 58px);
+		min-height: calc(100dvh - 58px);
 		background: #ffffff;
 		border-right: 1px solid var(--border-hard);
-		padding: 20px 12px;
+		padding: 16px 12px;
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		box-sizing: border-box;
+		z-index: 20;
 	}
 
 	.docs-sidebar-header {
@@ -347,7 +277,10 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
-		padding: 0 4px;
+		padding: 0 4px 12px 4px;
+		border-bottom: 1px solid var(--border-hard);
+		margin-bottom: 12px;
+		flex-shrink: 0;
 	}
 
 	.back-link {
@@ -374,7 +307,47 @@
 	.docs-nav {
 		display: flex;
 		flex-direction: column;
-		gap: 3px;
+		gap: 4px;
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		padding-right: 2px;
+	}
+
+	.docs-sidebar-footer {
+		margin-top: auto;
+		flex-shrink: 0;
+		padding-top: 14px;
+		border-top: 1px solid var(--border-hard);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding-left: 6px;
+	}
+
+	.docs-version-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-secondary);
+	}
+
+	.version-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: #10b981;
+		box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+	}
+
+	.docs-sidebar-sub {
+		font-family: var(--font-body);
+		font-size: 10.5px;
+		font-weight: 500;
+		color: var(--text-muted);
 	}
 
 	.docs-nav-item {
@@ -485,118 +458,6 @@
 		margin: 0;
 	}
 
-	/* ── Presentation Mode ── */
-	.presentation-overlay {
-		position: fixed;
-		inset: 0;
-		z-index: 9999;
-		background: #0f172a;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 40px;
-	}
-
-	.presentation-slide {
-		max-width: 900px;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 24px;
-		position: relative;
-	}
-
-	.slide-badge {
-		display: inline-flex;
-		align-items: center;
-		height: 28px;
-		padding: 0 12px;
-		border-radius: var(--radius-full);
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 800;
-		letter-spacing: 0.04em;
-	}
-
-	.slide-heading {
-		font-family: var(--font-macro);
-		font-size: clamp(1.8rem, 4vw, 3rem);
-		font-weight: 800;
-		color: #ffffff;
-		letter-spacing: -0.03em;
-		line-height: 1.1;
-	}
-
-	.slide-body {
-		font-family: var(--font-body);
-		font-size: clamp(1rem, 2vw, 1.3rem);
-		color: rgba(255, 255, 255, 0.75);
-		line-height: 1.7;
-		max-width: 720px;
-		margin: 0;
-	}
-
-	.slide-nav {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		margin-top: 16px;
-	}
-
-	.slide-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 20px;
-		border-radius: var(--radius-md);
-		font-family: var(--font-macro);
-		font-size: 13px;
-		font-weight: 700;
-		color: rgba(255,255,255,0.8);
-		background: rgba(255,255,255,0.08);
-		border: 1px solid rgba(255,255,255,0.15);
-		cursor: pointer;
-		transition: all 140ms;
-	}
-
-	.slide-btn:hover:not(:disabled) {
-		background: rgba(255,255,255,0.15);
-		color: #ffffff;
-	}
-
-	.slide-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-	.slide-counter {
-		font-family: var(--font-mono);
-		font-size: 13px;
-		font-weight: 700;
-		color: rgba(255,255,255,0.5);
-		min-width: 60px;
-		text-align: center;
-	}
-
-	.slide-exit {
-		position: absolute;
-		top: -20px;
-		right: 0;
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 12px;
-		border-radius: var(--radius-md);
-		font-family: var(--font-mono);
-		font-size: 11px;
-		font-weight: 700;
-		color: rgba(255,255,255,0.5);
-		background: none;
-		border: 1px solid rgba(255,255,255,0.15);
-		cursor: pointer;
-		transition: all 140ms;
-	}
-
-	.slide-exit:hover { color: #ffffff; border-color: rgba(255,255,255,0.4); }
-
 	.docs-mobile-tabs-bar {
 		display: none;
 	}
@@ -683,9 +544,5 @@
 			font-size: 12.5px;
 			line-height: 1.6;
 		}
-
-		.presentation-overlay { padding: 20px; }
-		.slide-heading { font-size: 1.5rem; }
-		.slide-body { font-size: 1rem; }
 	}
 </style>

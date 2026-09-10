@@ -21,6 +21,9 @@
 	let isMateriSection = $derived(
 		pathname.startsWith('/materi')
 	);
+	let isDocs = $derived(
+		pathname.startsWith('/docs')
+	);
 	let navButtonHref = $derived(
 		isMateriSection ? '/' : '/materi'
 	);
@@ -69,7 +72,7 @@
 		{@render children()}
 	</main>
 
-	{#if !isMateriReader}
+	{#if !isMateriReader && !isDocs}
 		<footer class="public-footer">
 			<div class="footer-inner">
 				<span class="footer-brand">NLC — Nesaga Learning Community</span>
@@ -97,7 +100,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 14px 24px;
+		padding: 0 24px;
+		height: 58px;
+		box-sizing: border-box;
 		border-bottom: 1px solid var(--border-hard);
 		background: rgba(255, 255, 255, 0.95);
 		backdrop-filter: blur(12px);
