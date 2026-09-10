@@ -1325,8 +1325,8 @@
 									</div>
 								</div>
 
-								<!-- Physical un-collapsible spacer between iframe player and video card list -->
-								<div class="h-10 sm:h-14 lg:h-16 w-full flex-shrink-0" aria-hidden="true"></div>
+								<!-- Physical spacer between iframe player and video card list -->
+								<div class="h-5 sm:h-6 w-full flex-shrink-0" aria-hidden="true"></div>
 							{/if}
 
 							<!-- Card List Below Player -->
