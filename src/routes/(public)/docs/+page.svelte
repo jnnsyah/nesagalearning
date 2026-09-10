@@ -18,20 +18,20 @@
 			label: 'Overview',
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
 			color: '#4f46e5', bg: '#e0e7ff',
-			title: 'Apa itu Nesaga Learning Community?',
-			subtitle: 'Platform komunitas belajar untuk SMK Negeri 1 Gantiwarno',
+			title: 'Mengenal Nesaga Learning Community',
+			subtitle: 'Wadah belajar bersama, eksplorasi materi praktis, dan kolaborasi siswa SMK Negeri 1 Gantiwarno',
 			content: [
 				{
-					heading: 'Tentang Platform',
-					body: 'Nesaga Learning Community (NLC) adalah ekosistem pembelajaran digital yang dirancang untuk mendukung kegiatan belajar bersama di SMK Negeri 1 Gantiwarno. Platform ini menghubungkan siswa, mentor, dan guru pembimbing dalam satu sistem terintegrasi.'
+					heading: '1. Ruang Belajar Komunitas yang Inklusif',
+					body: 'Nesaga Learning Community (NLC) adalah platform belajar bersama untuk siswa SMK Negeri 1 Gantiwarno. Di sini, materi dirancang bertahap dan santai agar siapa pun bisa belajar dengan nyaman sesuai ritme masing-masing.'
 				},
 				{
-					heading: 'Siapa yang Menggunakan NLC?',
-					body: 'NLC digunakan oleh empat kelompok pengguna: Siswa (pelaku utama pembelajaran), Mentor (pembimbing teknis & penilai), Guru Pembimbing (supervisor & monitor kelas), dan Administrator (pengelola sistem & data master).'
+					heading: '2. Peran Pengguna di Komunitas',
+					body: 'NLC menghubungkan 4 peran utama: Siswa (belajar mandiri & eksplorasi materi), Mentor (membagikan wawasan & mereview tugas), Guru Pembimbing (memantau perkembangan kelas), dan Administrator (mengelola konfigurasi sistem).'
 				},
 				{
-					heading: 'Apa yang Bisa Dilakukan di NLC?',
-					body: 'NLC menyediakan presensi digital berbasis QR, pelacakan progress track pembelajaran, sistem pengumpulan dan penilaian tugas, gamifikasi melalui poin & streak harian, kuis latihan mandiri, serta dashboard monitoring kelas untuk guru.'
+					heading: '3. Fitur Utama Platform',
+					body: 'Platform ini dilengkapi alur Track Pembelajaran per fase, presensi mandiri dengan scan QR saat sesi kumpul, kuis latihan pemahaman, pengumpulan tugas proyek, serta apresiasi lewat XP poin, streak keaktifan, dan badge penghargaan.'
 				}
 			]
 		},
@@ -40,28 +40,28 @@
 			label: 'Panduan Siswa',
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`,
 			color: '#0d9488', bg: '#ccfbf1',
-			title: 'Panduan Penggunaan untuk Siswa',
-			subtitle: 'Cara memaksimalkan pengalaman belajarmu di NLC',
+			title: 'Panduan Belajar untuk Siswa',
+			subtitle: 'Maksimalkan progres belajarmu dan raih pencapaian terbaik bersama teman',
 			content: [
 				{
-					heading: '1. Presensi QR — Cara Absen Mandiri',
-					body: 'Setiap sesi pertemuan, mentor akan menampilkan kode QR di layar. Buka portal NLC dari HPmu, masuk ke menu "Pertemuan", lalu tap "Scan QR Presensi". Arahkan kamera ke QR dan presensimu tercatat otomatis. Pastikan kamu scan dalam batas waktu yang ditentukan mentor.'
+					heading: '1. Presensi Scan QR Saat Pertemuan',
+					body: 'Saat sesi tatap muka atau workshop komunitas, buka menu "Pertemuan" dari HP kamu lalu pilih "Scan QR". Arahkan kamera ke layar proyektor untuk mencatat kehadiran secara instan.'
 				},
 				{
-					heading: '2. Baca Materi & Track Progress',
-					body: 'Di menu "Materi", kamu bisa melihat seluruh konten kurikulum berdasarkan fase pembelajaran. Setelah selesai membaca, tap "Tandai Selesai" untuk mencatat progress. Progress ini tampil di dashboard sebagai indikator kemajuan belajarmu.'
+					heading: '2. Membaca Track Pembelajaran',
+					body: 'Di menu "Track Pembelajaran", kamu bisa memilih modul sesuai jenjang kelasmu. Pelajari topik bertahap per fase, unduh lampiran berkas praktikum, dan tonton video referensi yang disematkan.'
 				},
 				{
-					heading: '3. Kumpulkan Tugas',
-					body: 'Setiap tugas praktikum wajib dikumpulkan melalui menu "Tugas". Isi link repository GitHub, URL deploy/demo, atau unggah file sesuai ketentuan mentor. Kamu bisa lihat status tugas: Menunggu Penilaian, Disetujui, atau Revisi.'
+					heading: '3. Mengumpulkan Tugas Praktikum',
+					body: 'Kumpulkan tugas melalui menu "Tugas". Masukkan tautan repository GitHub, link demo karya, atau unggah file proyekmu. Pantau hasil ulasan dari mentor apakah sudah disetujui atau perlu sedikit revisi.'
 				},
 				{
-					heading: '4. Poin, Streak & Badge',
-					body: 'Setiap aktivitas menghasilkan poin XP: presensi hadir, tugas disetujui, dan milestone streak. Streak adalah jumlah sesi beruntun kamu hadir — jangan putus! Raih badge eksklusif saat mencapai milestone tertentu dan naikkan peringkat di leaderboard kelas.'
+					heading: '4. Mengumpulkan XP, Menjaga Streak & Badge',
+					body: 'Setiap keaktifan belajarmu menghasilkan poin XP. Hadiri pertemuan rutin untuk membangun streak harian tanpa terputus, dan raih badge pencapaian spesial untuk ditampilkan di profilmu.'
 				},
 				{
-					heading: '5. Kerjakan Kuis Pre-Test & Post-Test',
-					body: 'Sebelum dan sesudah mempelajari setiap sub-fase, ada kuis pilihan ganda untuk mengukur pemahamanmu. Kerjakan kuis dalam batas waktu yang ditentukan. Nilai kuis terintegrasi ke skor ketercapaian kurikulum milikmu.'
+					heading: '5. Mengerjakan Kuis Pre-Test & Post-Test',
+					body: 'Uji pemahamanmu sebelum dan sesudah mempelajari sub-fase topik tertentu. Kuis latihan ini santai, membantu mengingat poin penting materi, dan memberikan bonus tambahan poin XP.'
 				}
 			]
 		},
@@ -70,28 +70,28 @@
 			label: 'Panduan Mentor',
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
 			color: '#4f46e5', bg: '#e0e7ff',
-			title: 'Panduan Penggunaan untuk Mentor',
-			subtitle: 'Kelola kelas, kurikulum, dan penilaian siswa',
+			title: 'Panduan Pendampingan untuk Mentor',
+			subtitle: 'Rancang kurikulum materi, kelola sesi pertemuan, dan bimbing siswa',
 			content: [
 				{
-					heading: '1. Kelola Track Pembelajaran',
-					body: 'Di menu "Track Pembelajaran", kamu bisa membuat dan mengelola struktur kurikulum: Track → Fase → Sub-Fase → Materi. Tulis konten materi dengan editor teks kaya (bold, kode, gambar, heading). Tambahkan lampiran file dan rekomendasi video YouTube.'
+					heading: '1. Menyusun Track Pembelajaran',
+					body: 'Di menu "Track Pembelajaran", kamu bisa membangun struktur materi bertingkat: Track → Fase → Sub-Fase → Materi. Tulis penjelasan interaktif dengan editor teks kaya, lampirkan modul lab, dan tautkan video referensi.'
 				},
 				{
-					heading: '2. Buat & Kelola Pertemuan',
-					body: 'Setiap sesi tatap muka dibuat sebagai "Pertemuan" — isi judul, tanggal, dan deskripsi sesi. Platform akan otomatis generate QR token unik per pertemuan. Tampilkan QR di proyektor saat sesi berlangsung.'
+					heading: '2. Membuka Sesi Pertemuan & QR Presensi',
+					body: 'Buat agenda sesi di menu "Pertemuan". Sistem akan menghasilkan token QR dinamis yang dapat ditampilkan di proyektor agar siswa dapat melakukan presensi mandiri secara tertib.'
 				},
 				{
-					heading: '3. Buat Kuis Evaluasi',
-					body: 'Di halaman detail Sub-Fase, tambahkan kuis Pre-Test atau Post-Test. Buat soal satu per satu, atau import sekaligus via file JSON. Tentukan passing score dan durasi pengerjaan.'
+					heading: '3. Membuat Kuis Evaluasi Pemahaman',
+					body: 'Tambahkan kuis pilihan ganda pada Sub-Fase terkait untuk mengukur penyerapan materi. Kamu bisa membuat soal satu per satu atau melakukan impor instan via template JSON.'
 				},
 				{
-					heading: '4. Nilai Tugas Siswa',
-					body: 'Di menu "Penilaian Tugas", lihat semua submisi masuk. Buka detail tugas per siswa, review link repository/deploy, lalu berikan status Disetujui atau Revisi beserta feedback terstruktur. Gunakan preset feedback cepat untuk efisiensi.'
+					heading: '4. Menilai & Memberi Umpan Balik Tugas',
+					body: 'Buka menu "Penilaian Tugas" untuk mereview submisi siswa. Berikan penilaian serta catatan umpan balik yang membangun untuk membantu siswa terus berkembang.'
 				},
 				{
-					heading: '5. Monitor Progress Kelas',
-					body: 'Dashboard "Progress Pembelajaran" menampilkan ringkasan kemajuan seluruh siswa di kelasmu: persentase kehadiran, penyelesaian materi, dan skor kuis. Identifikasi siswa yang butuh perhatian lebih dari sini.'
+					heading: '5. Memantau Kemajuan Kelas',
+					body: 'Gunakan dashboard "Progress Pembelajaran" untuk melihat ringkasan keaktifan siswa binaanmu, mengidentifikasi materi yang butuh pendalaman, dan mendampingi siswa yang tertinggal.'
 				}
 			]
 		},
@@ -100,28 +100,28 @@
 			label: 'Panduan Guru',
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
 			color: '#0d9488', bg: '#ccfbf1',
-			title: 'Panduan Penggunaan untuk Guru Pembimbing',
-			subtitle: 'Monitor kelas dan supervisi perkembangan siswa',
+			title: 'Panduan Supervisi untuk Guru Pembimbing',
+			subtitle: 'Supervisi aktivitas kelas, kesehatan pembelajaran, dan perkembangan kompetensi siswa',
 			content: [
 				{
-					heading: '1. Dashboard Health Monitoring',
-					body: 'Halaman utama menampilkan ringkasan "kesehatan" setiap kelas: indeks rata-rata kehadiran, tingkat penyelesaian tugas, dan rata-rata streak aktif. Warna indikator memudahkan identifikasi kelas yang perlu perhatian.'
+					heading: '1. Monitoring Kesehatan Kelas (Health Dashboard)',
+					body: 'Pantau kondisi kelas binaan secara menyeluruh melalui metrik tingkat kehadiran, rasio ketuntasan tugas, dan keaktifan streak siswa secara real-time.'
 				},
 				{
-					heading: '2. Pantau Track Pembelajaran',
-					body: 'Di menu "Pantau Track Pembelajaran", lihat seberapa jauh setiap kelas telah menyelesaikan kurikulum. Data ditampilkan sebagai persentase per fase, lengkap dengan skor komposit ketercapaian yang menggabungkan kehadiran, tugas, dan nilai kuis.'
+					heading: '2. Memantau Ketercapaian Track Pembelajaran',
+					body: 'Lihat progres penyerapan kurikulum di setiap jenjang kelas, lengkap dengan rekapitulasi ketercapaian fase belajar dan skor pemahaman kuis siswa.'
 				},
 				{
-					heading: '3. Detail Siswa Individual',
-					body: 'Klik nama siswa manapun untuk melihat riwayat lengkapnya: kronologi presensi, tugas yang sudah dikumpulkan beserta nilainya, perolehan poin dan badge, serta skor kuis per sub-fase.'
+					heading: '3. Profil & Riwayat Portofolio Siswa',
+					body: 'Akses profil individu siswa untuk melihat rekam jejak presensi, portofolio karya tugas yang telah dikerjakan, perolehan poin XP, dan koleksi badge penghargaan.'
 				},
 				{
-					heading: '4. Catatan Pendampingan',
-					body: 'Setiap siswa memiliki ruang catatan khusus untuk guru. Tulis catatan pembinaan, observasi perkembangan, atau rencana tindak lanjut. Catatan ini hanya terlihat oleh guru dan mentor.'
+					heading: '4. Catatan Pendampingan Khusus',
+					body: 'Tuliskan catatan observasi atau bimbingan perkembangan pada profil siswa untuk keperluan pendampingan terarah yang dapat dilihat oleh tim pengajar.'
 				},
 				{
-					heading: '5. Rekap & Laporan',
-					body: 'Generate rekap presensi bulanan atau semesteran dalam format Excel/CSV. Cetak laporan perkembangan kelas dalam format PDF siap presentasi untuk keperluan rapat atau pelaporan ke kepala sekolah.'
+					heading: '5. Rekapitulasi & Laporan Pembelajaran',
+					body: 'Unduh laporan rekapitulasi presensi dan capaian pembelajaran kelas untuk evaluasi berkala dan pelaporan akademik program ke pihak sekolah.'
 				}
 			]
 		},
@@ -130,28 +130,28 @@
 			label: 'Panduan Admin',
 			icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
 			color: '#dc2626', bg: '#fee2e2',
-			title: 'Panduan Penggunaan untuk Administrator',
-			subtitle: 'Kelola sistem, user, dan data master NLC',
+			title: 'Panduan Manajemen untuk Administrator',
+			subtitle: 'Kelola data pengguna, struktur kelas, dan pengaturan platform NLC',
 			content: [
 				{
-					heading: '1. Manajemen User',
-					body: 'Tambah, edit, nonaktifkan, atau reset password user dari menu "Manajemen User". Import siswa baru secara massal via file CSV dengan template NISN. Tentukan role (siswa/mentor/guru/admin) saat membuat user.'
+					heading: '1. Manajemen Data Pengguna',
+					body: 'Kelola data pengguna untuk Siswa, Mentor, Guru, dan Admin. Dukungan impor massal data siswa via file CSV/Excel dan pengelolaan reset kredensial akun.'
 				},
 				{
-					heading: '2. Kelola Kelas & Roster',
-					body: 'Buat Kelas Instance (kombinasi tingkat, tahun ajaran, dan track kurikulum). Assign mentor ke kelas, lalu daftarkan siswa ke kelas tersebut. Gunakan Wizard Kenaikan Kelas untuk mempromosikan siswa secara massal di akhir tahun ajaran.'
+					heading: '2. Pengaturan Kelas & Roster Siswa',
+					body: 'Buat kelas instance per tahun ajaran, pasangkan mentor pendamping, dan daftarkan siswa. Gunakan wizard kenaikan kelas untuk mempromosikan siswa secara otomatis di akhir periode.'
 				},
 				{
-					heading: '3. Periode & Tahun Ajaran',
-					body: 'Atur tahun ajaran aktif dari menu "Periode Komunitas". Set tanggal mulai & berakhir, lalu aktifkan tahun ajaran baru. Sistem otomatis menonaktifkan tahun ajaran sebelumnya.'
+					heading: '3. Manajemen Periode & Tahun Ajaran',
+					body: 'Atur tahun ajaran aktif dan kelola histori periode sebelumnya agar pencatatan data akademik tetap rapi dan terorganisir.'
 				},
 				{
-					heading: '4. Konfigurasi Poin & Gamifikasi',
-					body: 'Sesuaikan nilai poin untuk presensi (weekday vs weekend), tugas (kecil/sedang/besar), dan threshold milestone streak. Kelola juga koleksi Badge Type beserta kondisi otomatis pemicunya.'
+					heading: '4. Konfigurasi Gamifikasi & Poin XP',
+					body: 'Sesuaikan aturan perolehan poin XP untuk presensi, penyelesaian tugas, dan milestone streak, serta kelola jenis badge penghargaan yang dapat diraih siswa.'
 				},
 				{
-					heading: '5. Audit Log',
-					body: 'Monitor seluruh aktivitas penting sistem di "Audit Log Stream": login gagal, edit presensi manual, penghapusan materi, dan reset password. Filter berdasarkan tanggal, role, atau keyword aksi.'
+					heading: '5. Audit Log & Keamanan Data',
+					body: 'Pantau riwayat aktivitas operasional penting di Audit Log Stream untuk menjaga keamanan, akuntabilitas, dan integritas data seluruh platform.'
 				}
 			]
 		}
@@ -275,6 +275,24 @@
 
 	<!-- Content -->
 	<main class="docs-content page-container">
+		<!-- Mobile horizontal scrollable tabs -->
+		<div class="docs-mobile-tabs-bar">
+			<div class="docs-mobile-tabs-scroll">
+				{#each sections as sec}
+					<button
+						type="button"
+						class="mobile-tab-btn"
+						class:mobile-tab-btn--active={activeSection === sec.id}
+						style={activeSection === sec.id ? `color:${sec.color}; background:${sec.bg}; border-color:${sec.color}40;` : ''}
+						onclick={() => (activeSection = sec.id)}
+					>
+						<span class="nav-icon">{@html sec.icon}</span>
+						<span>{sec.label}</span>
+					</button>
+				{/each}
+			</div>
+		</div>
+
 		{#key activeSection}
 			<div class="docs-section-header panel">
 				<div class="docs-section-icon" style="background:{currentSectionData.bg}; color:{currentSectionData.color}">
@@ -579,9 +597,93 @@
 
 	.slide-exit:hover { color: #ffffff; border-color: rgba(255,255,255,0.4); }
 
+	.docs-mobile-tabs-bar {
+		display: none;
+	}
+
 	/* ── Responsive ── */
 	@media (max-width: 768px) {
 		.docs-sidebar { display: none; }
+		
+		.docs-mobile-tabs-bar {
+			display: block;
+			margin-bottom: 12px;
+			overflow: hidden;
+		}
+
+		.docs-mobile-tabs-scroll {
+			display: flex;
+			gap: 6px;
+			overflow-x: auto;
+			padding: 2px 2px 8px;
+			scrollbar-width: none;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.docs-mobile-tabs-scroll::-webkit-scrollbar {
+			display: none;
+		}
+
+		.mobile-tab-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 6px 12px;
+			border-radius: var(--radius-full, 9999px);
+			font-family: var(--font-macro);
+			font-size: 11.5px;
+			font-weight: 700;
+			color: var(--text-secondary);
+			background: #ffffff;
+			border: 1px solid var(--border-hard);
+			cursor: pointer;
+			white-space: nowrap;
+			flex-shrink: 0;
+			transition: all 130ms ease;
+		}
+
+		.docs-content.page-container {
+			padding: 14px 12px calc(60px + env(safe-area-inset-bottom, 0px));
+			gap: 12px;
+		}
+
+		.docs-section-header {
+			padding: 16px;
+			gap: 12px;
+			border-radius: var(--radius-lg, 14px);
+		}
+
+		.docs-section-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 10px;
+		}
+
+		.docs-section-title {
+			font-size: clamp(1.15rem, 5vw, 1.35rem);
+			margin: 4px 0 2px;
+		}
+
+		.docs-section-sub {
+			font-size: 12px;
+			line-height: 1.45;
+		}
+
+		.docs-card {
+			padding: 16px;
+			gap: 8px;
+			border-radius: var(--radius-lg, 14px);
+		}
+
+		.docs-card-heading {
+			font-size: 13.5px;
+		}
+
+		.docs-card-body {
+			font-size: 12.5px;
+			line-height: 1.6;
+		}
+
 		.presentation-overlay { padding: 20px; }
 		.slide-heading { font-size: 1.5rem; }
 		.slide-body { font-size: 1rem; }
