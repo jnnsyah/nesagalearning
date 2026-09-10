@@ -41,17 +41,25 @@
 				<span class="brand-name">Nesaga Learning Community</span>
 			</a>
 			<div class="public-topbar-right">
-				<a href={navButtonHref} class="btn-secondary-head-pill hide-on-mobile">
-					{#if isMateriSection}
+				{#if isMateriSection}
+					<a href="/" class="btn-secondary-head-pill topbar-nav-btn">
 						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-					{/if}
-					<span>{navButtonText}</span>
-				</a>
-				<a href={userDashboardPath} class="btn-create-pill">
+						<span class="desktop-text">Kembali ke Beranda</span>
+						<span class="mobile-text">Beranda</span>
+					</a>
+				{:else}
+					<a href="/materi" class="btn-secondary-head-pill topbar-nav-btn">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+						<span class="desktop-text">Jelajahi Materi</span>
+						<span class="mobile-text">Materi</span>
+					</a>
+				{/if}
+				<a href={userDashboardPath} class="btn-create-pill topbar-portal-btn">
 					{#if data.user}
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
 					{/if}
-					<span>{portalButtonText}</span>
+					<span class="desktop-text">{portalButtonText}</span>
+					<span class="mobile-text">{data.user ? 'Dashboard' : 'Portal'}</span>
 				</a>
 			</div>
 		</header>
@@ -184,10 +192,14 @@
 		color: var(--text-ghost);
 	}
 
+	.mobile-text {
+		display: none;
+	}
+
 	/* ── Responsive ── */
 	@media (max-width: 640px) {
 		.public-topbar {
-			padding: 10px 16px;
+			padding: 10px 14px;
 		}
 		.brand-name {
 			display: none;
@@ -195,8 +207,20 @@
 		.brand-logo-text {
 			font-size: 1.25rem;
 		}
-		.hide-on-mobile {
+		.desktop-text {
 			display: none;
+		}
+		.mobile-text {
+			display: inline;
+		}
+		.topbar-nav-btn,
+		.topbar-portal-btn {
+			padding: 0 10px;
+			font-size: 11px;
+			height: 30px;
+			gap: 5px;
+			border-radius: 9999px;
+			white-space: nowrap;
 		}
 		.public-footer {
 			padding: 20px 16px calc(24px + env(safe-area-inset-bottom, 0px));
