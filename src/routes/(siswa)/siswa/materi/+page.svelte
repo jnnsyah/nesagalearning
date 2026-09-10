@@ -1160,7 +1160,7 @@
 		justify-content: space-between;
 		gap: 14px;
 		flex-wrap: wrap;
-		margin-top: 24px;
+		margin-top: 14px;
 		padding-top: 0;
 		border-top: none;
 	}
@@ -1637,10 +1637,10 @@
 		.filter-footer-row {
 			flex-direction: column;
 			align-items: stretch;
-			margin-top: 20px;
+			margin-top: 12px;
 			padding-top: 0;
 			border-top: none;
-			gap: 12px;
+			gap: 10px;
 		}
 
 		.filter-pills-row {
