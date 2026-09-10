@@ -4,17 +4,67 @@
 	import { page } from '$app/stores';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import PageHeaderCard from '$lib/components/ui/PageHeaderCard.svelte';
+	import StudentTrackProgressView from '$lib/components/progress/StudentTrackProgressView.svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	let activeTab = $state<'presensi' | 'track' | 'tugas'>('presensi');
 	let filterAttendanceStatus = $state<'all' | 'hadir' | 'excused' | 'absen'>('all');
 	let filterTaskStatus = $state<'all' | 'approved' | 'revisi' | 'pending' | 'unsubmitted'>('all');
+	let trackViewMode = $state<'catalog' | 'detail'>('catalog');
 
 	// Selected Membership Info
 	let selectedMembership = $derived(
 		(data.memberships || []).find((m) => m.kelasInstanceId === data.selectedKelasId) || data.memberships?.[0]
 	);
+
+	let archiveTrackInfo = $derived(
+		data.archiveData?.kelas
+			? {
+					trackTitle: data.archiveData.kelas.trackTitle,
+					trackDescription: `Arsip Track Pembelajaran — ${data.archiveData.kelas.kelasName}`,
+					tingkatName: data.archiveData.kelas.tingkatName
+			  }
+			: null
+	);
+
+	let archiveMembership = $derived(
+		data.archiveData?.kelas
+			? {
+					kelasName: data.archiveData.kelas.kelasName,
+					tahunAjaranName: data.archiveData.kelas.tahunAjaranName
+			  }
+			: null
+	);
+
+	let archivePhaseProgressList = $derived(
+		data.archiveData?.phaseProgress && data.archiveData.phaseProgress.length > 0
+			? data.archiveData.phaseProgress
+			: (data.archiveData?.phaseDetails || []).map((p) => {
+					const completedCount = p.subPhases.filter((sp) => sp.isCompleted).length;
+					const totalCount = p.subPhases.length;
+					return {
+						phaseTitle: p.title,
+						completedSubPhases: completedCount,
+						totalSubPhases: totalCount,
+						progressPercentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+						subPhases: p.subPhases.map((sp) => ({
+							subPhaseId: sp.id,
+							subPhaseTitle: sp.title,
+							isCompleted: sp.isCompleted,
+							totalSessions: 0,
+							completedSessions: 0,
+							totalTasks: 0,
+							approvedTasks: 0
+						}))
+					};
+			  })
+	);
+
+	let archiveSummary = $derived({
+		totalSessions: data.archiveData?.attendanceStats?.totalSessions ?? 0,
+		totalTasks: data.archiveData?.tasks?.length ?? 0
+	});
 
 	let classSelectOptions = $derived(
 		(data.memberships || []).map((m) => ({
@@ -305,53 +355,20 @@
 			</div>
 		{/if}
 
-		<!-- TAB 2: ARSIP TRACK PEMBELAJARAN -->
+		<!-- TAB 2: ARSIP TRACK PEMBELAJARAN (REUSABLE 2-TIER CATALOG VIEW) -->
 		{#if activeTab === 'track'}
-			<div class="list-container p-6 space-y-6">
-				<div class="flex items-center justify-between gap-4 flex-wrap border-b border-slate-200 pb-4">
-					<div>
-						<h3 class="font-macro font-bold text-lg text-slate-900">{data.archiveData.kelas.trackTitle}</h3>
-						<p class="text-xs text-slate-500 mt-0.5">Struktur Track Pembelajaran &amp; sub-materi yang dipelajari pada kelas ini.</p>
-					</div>
-					<div class="text-right">
-						<span class="text-xs font-semibold text-slate-500">Poin Diperoleh:</span>
-						<div class="font-macro text-xl font-extrabold text-amber-600">+{data.archiveData.totalPointsEarned} Poin</div>
-					</div>
+			{#if data.archiveData}
+				<div class="mt-4">
+					<StudentTrackProgressView
+						trackInfo={archiveTrackInfo}
+						activeMembership={archiveMembership}
+						phaseProgressList={archivePhaseProgressList}
+						summary={archiveSummary}
+						initialViewMode={trackViewMode}
+						onViewModeChange={(mode) => (trackViewMode = mode)}
+					/>
 				</div>
-
-				<div class="space-y-6">
-					{#each data.archiveData.phaseDetails as p}
-						<div class="phase-box">
-							<div class="phase-header">
-								<span class="phase-order">Fase {p.sortOrder}</span>
-								<h4 class="phase-title">{p.title}</h4>
-							</div>
-							{#if p.description}
-								<p class="phase-desc">{p.description}</p>
-							{/if}
-
-							<div class="subphases-grid mt-3">
-								{#each p.subPhases as sp}
-									<div class="subphase-card {sp.isCompleted ? 'completed' : ''}">
-										<div class="flex items-center gap-2">
-											{#if sp.isCompleted}
-												<span class="sp-check" title="Sub-materi selesai">
-													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-														<polyline points="20 6 9 17 4 12" />
-													</svg>
-												</span>
-											{:else}
-												<span class="sp-dot"></span>
-											{/if}
-											<span class="sp-title">{sp.title}</span>
-										</div>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
+			{/if}
 		{/if}
 
 		<!-- TAB 3: ARSIP TUGAS -->
