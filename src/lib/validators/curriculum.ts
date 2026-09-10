@@ -53,10 +53,19 @@ export const attachmentItemSchema = z.object({
 	size: z.number().optional().default(0)
 });
 
+export const videoRecommendationItemSchema = z.object({
+	id: z.string().optional(),
+	title: z.string().min(1, 'Judul video wajib diisi'),
+	url: z.string().url('URL video tidak valid'),
+	youtubeId: z.string().min(1, 'ID YouTube tidak valid'),
+	duration: z.string().optional().default('')
+});
+
 export const updateMateriSchema = z.object({
 	title: z.string().min(3, 'Judul materi minimal 3 karakter').max(150),
 	content: z.string().nullish(),
-	attachments: z.array(attachmentItemSchema).nullish()
+	attachments: z.array(attachmentItemSchema).nullish(),
+	videoRecommendations: z.array(videoRecommendationItemSchema).nullish()
 });
 
 export type CreateCurriculumTrackInput = z.infer<typeof createCurriculumTrackSchema>;

@@ -78,6 +78,18 @@ export const materi = pgTable(
 		attachments: jsonb('attachments')
 			.$type<Array<{ name: string; url: string; size: number }>>()
 			.default([]),
+		videoRecommendations: jsonb('video_recommendations')
+			.$type<
+				Array<{
+					id: string;
+					title: string;
+					url: string;
+					youtubeId: string;
+					duration?: string;
+					note?: string;
+				}>
+			>()
+			.default([]),
 		sortOrder: integer('sort_order').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

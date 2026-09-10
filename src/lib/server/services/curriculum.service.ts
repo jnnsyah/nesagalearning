@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { curriculumTrack, phase, subPhase, materi, tingkat } from '$lib/server/db/schema';
-import { eq, asc, max } from 'drizzle-orm';
+import { eq, asc, max, sql } from 'drizzle-orm';
 import type {
 	CreateCurriculumTrackInput,
 	UpdateCurriculumTrackInput,
@@ -11,6 +11,19 @@ import type {
 	CreateMateriInput,
 	UpdateMateriInput
 } from '$lib/validators/curriculum';
+
+let isVideoColumnEnsured = false;
+async function ensureVideoRecommendationsColumn() {
+	if (isVideoColumnEnsured) return;
+	try {
+		await db.execute(
+			sql`ALTER TABLE materi ADD COLUMN IF NOT EXISTS video_recommendations jsonb DEFAULT '[]'::jsonb;`
+		);
+		isVideoColumnEnsured = true;
+	} catch (e) {
+		console.error('Failed to ensure video_recommendations column:', e);
+	}
+}
 
 /**
  * CurriculumTree — Deep Aggregate Engine for Curriculum Tracks, Phases, SubPhases, and Materis.
@@ -370,6 +383,7 @@ export const CurriculumTree = {
 	 * Get single Materi with breadcrumbs
 	 */
 	async getMateriWithDetails(materiId: number) {
+		await ensureVideoRecommendationsColumn();
 		const rows = await db
 			.select({
 				id: materi.id,
@@ -377,6 +391,7 @@ export const CurriculumTree = {
 				title: materi.title,
 				content: materi.content,
 				attachments: materi.attachments,
+				videoRecommendations: materi.videoRecommendations,
 				sortOrder: materi.sortOrder,
 				createdAt: materi.createdAt,
 				updatedAt: materi.updatedAt,
@@ -402,6 +417,15 @@ export const CurriculumTree = {
 			title: res.title,
 			content: res.content,
 			attachments: (res.attachments as Array<{ name: string; url: string; size: number }>) || [],
+			videoRecommendations:
+				(res.videoRecommendations as Array<{
+					id: string;
+					title: string;
+					url: string;
+					youtubeId: string;
+					duration?: string;
+					note?: string;
+				}>) || [],
 			sortOrder: res.sortOrder,
 			createdAt: res.createdAt,
 			updatedAt: res.updatedAt,
@@ -424,6 +448,7 @@ export const CurriculumTree = {
 	 * Update Materi
 	 */
 	async updateMateri(id: number, input: UpdateMateriInput) {
+		await ensureVideoRecommendationsColumn();
 		const updatePayload: Record<string, any> = {
 			title: input.title,
 			content: input.content !== undefined ? input.content : null,
@@ -431,6 +456,9 @@ export const CurriculumTree = {
 		};
 		if (input.attachments !== undefined) {
 			updatePayload.attachments = input.attachments;
+		}
+		if (input.videoRecommendations !== undefined) {
+			updatePayload.videoRecommendations = input.videoRecommendations;
 		}
 		const [updated] = await db
 			.update(materi)

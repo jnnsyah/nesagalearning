@@ -38,6 +38,77 @@
 	let lightboxImg = $state<LightboxData | null>(null);
 	let lightboxScale = $state(1);
 
+	// Video Player Floating & Progress State
+	interface ActiveVideoData {
+		title: string;
+		url: string;
+		youtubeId: string;
+		duration?: string;
+	}
+	let activeVideo = $state<ActiveVideoData | null>(null);
+	let videoDisplayMode = $state<'mini' | 'expanded' | 'minimized'>('mini');
+	let videoStartTime = $state(0);
+
+	function openVideoModal(video: ActiveVideoData) {
+		let savedTime = 0;
+		if (typeof localStorage !== 'undefined') {
+			const raw = localStorage.getItem(`yt_progress_${video.youtubeId}`);
+			if (raw) {
+				const parsed = parseInt(raw, 10);
+				if (!isNaN(parsed) && parsed > 3) {
+					savedTime = parsed;
+				}
+			}
+		}
+		videoStartTime = savedTime;
+		activeVideo = video;
+		videoDisplayMode = 'mini';
+	}
+
+	function closeVideoModal() {
+		activeVideo = null;
+		videoDisplayMode = 'mini';
+	}
+
+	function restartFromStart() {
+		videoStartTime = 0;
+		if (activeVideo && typeof localStorage !== 'undefined') {
+			localStorage.removeItem(`yt_progress_${activeVideo.youtubeId}`);
+		}
+	}
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		function handleYtMessage(event: MessageEvent) {
+			if (!activeVideo || !event.origin.includes('youtube.com')) return;
+			try {
+				const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+				if (data?.event === 'infoDelivery' && typeof data?.info?.currentTime === 'number') {
+					const currentTime = Math.floor(data.info.currentTime);
+					if (currentTime > 3) {
+						localStorage.setItem(`yt_progress_${activeVideo.youtubeId}`, currentTime.toString());
+					}
+				}
+			} catch {
+				// ignore non-json messages
+			}
+		}
+		window.addEventListener('message', handleYtMessage);
+
+		const timer = setInterval(() => {
+			if (!activeVideo) return;
+			const iframe = document.querySelector('.inline-video-player-box iframe') as HTMLIFrameElement | null;
+			if (iframe && iframe.contentWindow) {
+				iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*');
+			}
+		}, 1000);
+
+		return () => {
+			window.removeEventListener('message', handleYtMessage);
+			clearInterval(timer);
+		};
+	});
+
 	// Table of Contents State
 	interface TocItem {
 		id: string;
@@ -193,7 +264,9 @@
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
-			if (lightboxImg) {
+			if (activeVideo) {
+				closeVideoModal();
+			} else if (lightboxImg) {
 				closeLightbox();
 			} else if (isSlidebarOpen) {
 				isSlidebarOpen = false;
@@ -749,42 +822,42 @@
 				     DEDICATED MATERIAL ATTACHMENTS SECTION
 				     ══════════════════════════════════════════════════════════ -->
 				{#if data.materi?.attachments && data.materi.attachments.length > 0}
-					<section class="materi-attachments-section">
-						<div class="attachments-header">
-							<div class="attachments-title-group">
-								<div class="attachments-icon-badge">
+					<section class="materi-attachments-section mt-5 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+						<div class="attachments-header flex items-center justify-between mb-4">
+							<div class="attachments-title-group flex items-center gap-2.5">
+								<div class="attachments-icon-badge w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs flex-shrink-0">
 									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
 										<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
 									</svg>
 								</div>
 								<div>
-									<h3 class="attachments-heading">Lampiran & Berkas Materi</h3>
-									<p class="attachments-subheading">Unduh berkas pendukung pembelajaran ini</p>
+									<h3 class="attachments-heading font-bold text-slate-800 text-sm tracking-tight m-0 leading-tight">Lampiran & Berkas Materi</h3>
+									<p class="attachments-subheading text-[11px] text-slate-500 font-medium m-0 mt-0.5">Unduh berkas pendukung pembelajaran ini</p>
 								</div>
 							</div>
-							<span class="attachments-count-badge">
+							<span class="attachments-count-badge font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">
 								{data.materi.attachments.length} Berkas
 							</span>
 						</div>
 
-						<div class="attachments-grid">
+						<div class="attachments-grid grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
 							{#each data.materi.attachments as att}
 								<a
 									href={att.url}
 									download={att.name}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="attachment-card"
+									class="attachment-card p-3 sm:p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white hover:border-indigo-300 hover:shadow-xs transition-all duration-200 flex items-center justify-between gap-3 group text-decoration-none min-w-0"
 									title={`Unduh ${att.name}`}
 								>
-									<div class="attachment-card-icon">
-										<span class="att-file-ext {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
+									<div class="flex items-center gap-3 min-w-0 flex-1">
+										<span class="badge uppercase tracking-wider flex-shrink-0 {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
+										<div class="min-w-0 flex-1">
+											<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>{att.name}</div>
+											<div class="text-[10px] font-mono text-slate-500 font-medium mt-0.5">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
+										</div>
 									</div>
-									<div class="attachment-card-info min-w-0">
-										<div class="attachment-card-title truncate">{att.name}</div>
-										<div class="attachment-card-meta">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
-									</div>
-									<div class="attachment-card-action">
+									<div class="attachment-card-action inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-200 shadow-2xs">
 										<span>Unduh</span>
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -793,6 +866,140 @@
 										</svg>
 									</div>
 								</a>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<!-- ══════════════════════════════════════════════════════════
+				     DEDICATED YOUTUBE VIDEO RECOMMENDATIONS SECTION
+				     ══════════════════════════════════════════════════════════ -->
+				{#if data.materi?.videoRecommendations && data.materi.videoRecommendations.length > 0}
+					<section class="materi-video-recommendations-section mt-5 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+						<div class="video-section-header flex items-center justify-between mb-4">
+							<div class="flex items-center gap-2.5">
+								<div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs flex-shrink-0">
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+										<polygon points="6 3 20 12 6 21 6 3"/>
+									</svg>
+								</div>
+								<div>
+									<h3 class="font-bold text-slate-800 text-sm tracking-tight m-0 leading-tight">Rekomendasi Video Pembelajaran</h3>
+									<p class="text-[11px] text-slate-500 font-medium m-0 mt-0.5">Tonton video penjelasan dari YouTube untuk memperdalam materi ini</p>
+								</div>
+							</div>
+							<span class="badge border-indigo-200 bg-indigo-50 text-indigo-700 font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md flex-shrink-0">
+								{data.materi.videoRecommendations.length} Video
+							</span>
+						</div>
+
+						<!-- Full Width Top Active Video Player (Opens when any card is clicked) -->
+						{#if activeVideo}
+							<div class="inline-video-player-box mt-5 mb-0 relative bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-xl transition-all">
+								<!-- Floating Close Button -->
+								<button
+									type="button"
+									onclick={closeVideoModal}
+									class="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs"
+									title="Tutup Pemutar Video"
+								>
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+								</button>
+
+								<!-- Floating Resume Progress Pill (Top Left) -->
+								{#if videoStartTime > 0}
+									<div class="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-lg select-none">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="text-amber-400 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+										<span class="font-mono text-[11px] text-slate-200">Melanjutkan: {Math.floor(videoStartTime / 60)}m {videoStartTime % 60}s</span>
+										<button
+											type="button"
+											onclick={restartFromStart}
+											class="ml-1 text-amber-400 hover:text-amber-300 underline text-[11px] font-semibold cursor-pointer transition-colors"
+											title="Putar dari 0:00"
+										>
+											Reset
+										</button>
+									</div>
+								{/if}
+
+								<!-- 16:9 Youtube Iframe Canvas -->
+								<div class="relative aspect-video w-full">
+									<iframe
+										src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1&autoplay=1&rel=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
+										title={activeVideo.title}
+										class="absolute inset-0 w-full h-full border-0"
+										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+										allowfullscreen
+									></iframe>
+								</div>
+							</div>
+
+							<!-- Physical un-collapsible spacer between iframe player and video card list -->
+							<div class="h-10 sm:h-14 lg:h-16 w-full flex-shrink-0" aria-hidden="true"></div>
+						{/if}
+
+						<!-- Card List Below Player -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+							{#each data.materi.videoRecommendations as video}
+								<div
+									class="group bg-slate-50/60 hover:bg-white border rounded-xl p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-3.5 cursor-pointer min-w-0 {activeVideo?.youtubeId === video.youtubeId ? 'border-indigo-400 bg-indigo-50/50 shadow-2xs ring-1 ring-indigo-300' : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-xs'}"
+									onclick={() => openVideoModal(video)}
+									role="button"
+									tabindex="0"
+									onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVideoModal(video); } }}
+								>
+									<!-- Compact Video Thumbnail Container -->
+									<div class="relative w-28 sm:w-32 aspect-video rounded-lg overflow-hidden bg-slate-900 flex-shrink-0 shadow-2xs border border-slate-200/80">
+										<img
+											src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+											alt={video.title}
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+											onerror={(e) => {
+												(e.currentTarget as HTMLImageElement).src = 'https://img.youtube.com/vi/' + video.youtubeId + '/mqdefault.jpg';
+											}}
+										/>
+										<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+
+										<!-- Play Button Overlay -->
+										<div class="absolute inset-0 flex items-center justify-center">
+											<div class="w-8 h-8 rounded-full bg-indigo-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-indigo-600 transition-all duration-200 ring-2 ring-white/30">
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="translate-x-0.5">
+													<polygon points="5 3 19 12 5 21 5 3"/>
+												</svg>
+											</div>
+										</div>
+
+										{#if video.duration}
+											<span class="absolute bottom-1 right-1 bg-black/85 text-white text-[9px] font-mono font-bold px-1.5 py-0.2 rounded">
+												{video.duration}
+											</span>
+										{/if}
+									</div>
+
+									<!-- Compact Video Details -->
+									<div class="min-w-0 flex-1 space-y-1">
+										{#if activeVideo?.youtubeId === video.youtubeId}
+											<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase tracking-wider mb-1">
+												<span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
+												<span>Sedang Diputar</span>
+											</div>
+										{/if}
+										<h4 class="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug m-0" title={video.title}>
+											{video.title}
+										</h4>
+										{#if video.duration}
+											<div class="flex items-center gap-1 text-[11px] font-mono font-bold text-slate-500 mt-1">
+												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+												<span>Durasi: {video.duration}</span>
+											</div>
+										{/if}
+										{#if video.note}
+											<p class="text-[10.5px] text-slate-500 italic truncate mt-0.5 m-0" title={video.note}>
+												&ldquo;{video.note}&rdquo;
+											</p>
+										{/if}
+									</div>
+								</div>
 							{/each}
 						</div>
 					</section>
@@ -1183,6 +1390,8 @@
 		</div>
 	</div>
 {/if}
+
+
 
 <style>
 	/* ══════════════════════════════════════════════════════════
@@ -2019,8 +2228,9 @@
 	   DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
 	   Fully responsive to Theme (Light, Sepia, Dark)
 	   ══════════════════════════════════════════════════════════ */
-	.materi-attachments-section {
-		margin-top: 48px;
+	.materi-attachments-section,
+	.materi-video-recommendations-section {
+		margin-top: 24px;
 		padding: 20px;
 		border-radius: 14px;
 		background: var(--r-card-bg);
@@ -2029,13 +2239,12 @@
 		transition: background-color 180ms ease, border-color 180ms ease;
 	}
 
-	.attachments-header {
+	.attachments-header,
+	.video-section-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		padding-bottom: 16px;
-		border-bottom: 1px solid var(--r-border);
 		margin-bottom: 16px;
 	}
 

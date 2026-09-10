@@ -48,7 +48,15 @@ export const actions: Actions = {
 			} catch {}
 		}
 
-		const parse = updateMateriSchema.safeParse({ title, content, attachments });
+		const rawVideoRecommendations = formData.get('videoRecommendations')?.toString();
+		let videoRecommendations = undefined;
+		if (rawVideoRecommendations) {
+			try {
+				videoRecommendations = JSON.parse(rawVideoRecommendations);
+			} catch {}
+		}
+
+		const parse = updateMateriSchema.safeParse({ title, content, attachments, videoRecommendations });
 		if (!parse.success) {
 			console.error('updateMateri validation error:', parse.error.format());
 			return fail(400, { error: parse.error.issues[0]?.message || 'Input materi tidak valid' });

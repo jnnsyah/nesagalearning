@@ -21,10 +21,11 @@ async function ensureMateriCompletionTable() {
 			);
 			CREATE INDEX IF NOT EXISTS idx_materi_completion_user ON materi_completion(user_id);
 			CREATE INDEX IF NOT EXISTS idx_materi_completion_materi ON materi_completion(materi_id);
+			ALTER TABLE materi ADD COLUMN IF NOT EXISTS video_recommendations jsonb DEFAULT '[]'::jsonb;
 		`);
 		isTableInitialized = true;
 	} catch (e) {
-		console.error('Failed to initialize materi_completion table:', e);
+		console.error('Failed to initialize materi_completion table or video_recommendations column:', e);
 	}
 }
 
@@ -59,6 +60,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			title: materi.title,
 			content: materi.content,
 			attachments: materi.attachments,
+			videoRecommendations: materi.videoRecommendations,
 			sortOrder: materi.sortOrder,
 			subPhaseId: subPhase.id,
 			subPhaseTitle: subPhase.title,
@@ -236,12 +238,32 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		}
 	}
 
+	let safeVideoRecommendations: Array<{
+		id: string;
+		title: string;
+		url: string;
+		youtubeId: string;
+		duration?: string;
+		note?: string;
+	}> = [];
+	if (Array.isArray(materiDetail.videoRecommendations)) {
+		safeVideoRecommendations = materiDetail.videoRecommendations as any;
+	} else if (typeof materiDetail.videoRecommendations === 'string') {
+		try {
+			const parsed = JSON.parse(materiDetail.videoRecommendations);
+			if (Array.isArray(parsed)) safeVideoRecommendations = parsed;
+		} catch {
+			safeVideoRecommendations = [];
+		}
+	}
+
 	return {
 		user: locals.user,
 		membership: membership || null,
 		materi: {
 			...materiDetail,
-			attachments: safeAttachments
+			attachments: safeAttachments,
+			videoRecommendations: safeVideoRecommendations
 		},
 		isCompleted: !!completionRecord,
 		completedAt: completionRecord?.completedAt || null,
