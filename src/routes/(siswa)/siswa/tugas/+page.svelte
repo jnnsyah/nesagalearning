@@ -158,7 +158,7 @@
 <div class="content-area">
 	<!-- Page Header Card (Single Source of Truth Blueprint) -->
 	<PageHeaderCard
-		title="Daftar Tugas Praktikum"
+		title="Daftar Tugas"
 		breadcrumbs={[
 			{ label: 'Beranda', href: '/siswa' },
 			{ label: 'Tugas Saya' }
@@ -169,7 +169,7 @@
 	<div class="stats-grid">
 		<!-- Card 1: Total Tugas -->
 		<StatCard
-			label="Tugas Praktikum"
+			label="Total Tugas"
 			value={totalTasksCount}
 			subtext="{unsubmittedCount} Belum Disubmit"
 			variant="total"
