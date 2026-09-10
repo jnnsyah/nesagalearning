@@ -674,13 +674,13 @@
 						</div>
 						<div class="videos-grid">
 							{#each data.materi.videoRecommendations as vid}
-								{@const ytId = vid.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1]}
+								{@const ytId = vid.youtubeId || (vid.url ? (vid.url || '').match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] : null)}
 								<div class="video-card">
 									{#if ytId}
 										<div class="video-iframe-wrap">
 											<iframe
 												src="https://www.youtube.com/embed/{ytId}"
-												title={vid.title}
+												title={vid.title || 'Video'}
 												frameborder="0"
 												allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 												allowfullscreen
@@ -2652,15 +2652,104 @@
 		color: #0f172a;
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 768px) {
 		.course-main-canvas {
-			padding: 24px 16px 140px;
+			padding: 16px 14px calc(110px + env(safe-area-inset-bottom, 0px));
+		}
+
+		.reader-top-nav-bar {
+			gap: 8px;
+			margin-bottom: 16px;
+			padding-bottom: 10px;
+		}
+
+		.btn-back-track {
+			padding: 5px 10px;
+			font-size: 11px;
+			border-radius: 6px;
+		}
+
+		.reader-nav-breadcrumbs {
+			font-size: 11px;
+		}
+
+		.truncate-crumb {
+			max-width: 130px;
+		}
+
+		.article-title-header {
+			margin-bottom: 18px;
+			padding-bottom: 16px;
+		}
+
+		.article-kicker-text {
+			font-size: 10px;
+			margin-bottom: 6px;
+		}
+
+		.article-main-title {
+			font-size: clamp(1.3rem, 5.5vw, 1.7rem);
+			margin-bottom: 10px;
+			line-height: 1.25;
+		}
+
+		.article-meta-strip {
+			font-size: 11px;
+			gap: 6px;
+		}
+
+		.videos-grid {
+			grid-template-columns: 1fr;
+			gap: 12px;
+		}
+
+		.attachments-grid {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+
+		.attachment-card {
+			padding: 10px 12px;
+		}
+
+		.course-bottom-bar {
+			height: 52px;
+			padding: 0 8px;
+			padding-bottom: env(safe-area-inset-bottom, 0px);
+			gap: 6px;
+		}
+
+		.bottom-bar-nav-btn {
+			height: 36px;
+			padding: 0 8px;
+			font-size: 11px;
+			gap: 4px;
+			border-radius: 6px;
+		}
+
+		.bottom-bar-menu-btn {
+			height: 36px;
+			padding: 0 10px;
+			font-size: 11px;
+			gap: 4px;
+		}
+
+		.menu-btn-label {
+			font-size: 10.5px;
 		}
 
 		.guest-notice-banner {
-			bottom: 70px;
-			font-size: 12px;
-			padding: 6px 10px 6px 14px;
+			bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+			font-size: 11.5px;
+			padding: 6px 10px 6px 12px;
+			max-width: calc(100vw - 20px);
+			border-radius: 12px;
+		}
+
+		.mobile-drawer-panel {
+			max-height: 82vh;
+			border-radius: 18px 18px 0 0;
+			padding: 10px 12px calc(24px + env(safe-area-inset-bottom, 0px));
 		}
 	}
 </style>

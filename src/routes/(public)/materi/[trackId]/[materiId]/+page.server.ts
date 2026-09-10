@@ -112,7 +112,11 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		track,
-		materi: materiDetail,
+		materi: {
+			...materiDetail,
+			attachments: materiDetail.attachments ?? [],
+			videoRecommendations: materiDetail.videoRecommendations ?? []
+		},
 		syllabus,
 		prevMateri,
 		nextMateri

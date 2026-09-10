@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import type { PageData } from './$types';
@@ -10,15 +11,17 @@
 	let openCardPhases = $state<Record<number, boolean>>({});
 
 	$effect(() => {
-		if (data.phases.length > 0) {
-			const initSidebar: Record<number, boolean> = {};
-			const initCard: Record<number, boolean> = {};
-			data.phases.forEach((p, i) => {
-				initSidebar[p.id] = i === 0; // open first phase in sidebar
-				initCard[p.id] = true; // open all cards in main content
+		if (data.phases && data.phases.length > 0) {
+			untrack(() => {
+				const initSidebar: Record<number, boolean> = {};
+				const initCard: Record<number, boolean> = {};
+				data.phases.forEach((p, i) => {
+					initSidebar[p.id] = i === 0; // open first phase in sidebar
+					initCard[p.id] = true; // open all cards in main content
+				});
+				openSidebarPhases = initSidebar;
+				openCardPhases = initCard;
 			});
-			openSidebarPhases = initSidebar;
-			openCardPhases = initCard;
 		}
 	});
 
@@ -92,7 +95,7 @@
 								<div class="nav-sub-phase">
 									<div class="nav-sub-title">{sp.title}</div>
 									{#each sp.materis as m}
-										<a href="#{m.id}" class="nav-materi-link">
+										<a href="/materi/{data.track.id}/{m.id}" class="nav-materi-link">
 											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 											{m.title}
 										</a>
@@ -111,14 +114,23 @@
 		<!-- Breadcrumb & header -->
 		<div class="track-header panel">
 			<div class="track-header-top">
-				<div class="breadcrumb">
+				<div class="breadcrumb hide-mobile-crumb">
 					<a href="/">Beranda</a>
 					<span class="breadcrumb-sep">/</span>
 					<a href="/materi">Katalog Materi</a>
 					<span class="breadcrumb-sep">/</span>
-					<span>{data.track.title}</span>
+					<span class="truncate-crumb">{data.track.title}</span>
 				</div>
-				<span class="badge badge-hadir">Dipublikasikan</span>
+				<a href="/materi" class="btn-mobile-back show-mobile-only">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+					<span>Katalog</span>
+				</a>
+				<div class="header-badges-row">
+					{#if data.track.tingkatName}
+						<span class="badge badge-neutral">{formatTingkatLabel(data.track.tingkatName)}</span>
+					{/if}
+					<span class="badge badge-hadir">Publik</span>
+				</div>
 			</div>
 			<h1 class="track-main-title">{data.track.title}</h1>
 			{#if data.track.description}
@@ -126,10 +138,10 @@
 			{/if}
 			<!-- Guest CTA -->
 			<div class="guest-track-cta">
-				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0">
 					<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
 				</svg>
-				<span>Kamu membaca dalam <strong>mode Tamu</strong>. <a href="/login" class="cta-link">Login</a> untuk menyimpan progress & mengerjakan kuis.</span>
+				<span>Kamu membaca dalam <strong>Mode Tamu</strong>. <a href="/login" class="cta-link">Login</a> untuk simpan progres & akses kuis.</span>
 			</div>
 		</div>
 
@@ -701,21 +713,155 @@
 		color: var(--text-primary, #0f172a);
 	}
 
+	.btn-mobile-back {
+		display: none;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 10px;
+		border-radius: var(--radius-sm, 6px);
+		background: #f1f5f9;
+		border: 1px solid var(--border-soft);
+		font-family: var(--font-macro);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-secondary);
+		text-decoration: none;
+	}
+
+	.header-badges-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.truncate-crumb {
+		max-width: 240px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	/* ── Hide mobile sidebar ── */
 	.hide-mobile {
 		display: flex;
 	}
 
+	.show-mobile-only {
+		display: none;
+	}
+
 	@media (max-width: 768px) {
 		.hide-mobile { display: none; }
+		.hide-mobile-crumb { display: none; }
+		.show-mobile-only { display: inline-flex; }
 		.reader-main { padding-left: 0; }
+		
+		.reader-main.page-container {
+			padding: 14px 12px calc(80px + env(safe-area-inset-bottom, 0px));
+			gap: 12px;
+		}
+
+		.track-header {
+			padding: 14px 16px;
+			gap: 8px;
+			border-radius: var(--radius-lg, 14px);
+		}
+
+		.track-main-title {
+			font-size: clamp(1.2rem, 5vw, 1.45rem);
+			line-height: 1.28;
+		}
+
+		.track-main-desc {
+			font-size: 12.5px;
+			line-height: 1.5;
+		}
+
+		.guest-track-cta {
+			padding: 8px 12px;
+			font-size: 11.5px;
+			line-height: 1.45;
+			border-radius: var(--radius-md, 8px);
+		}
+
+		.phase-header {
+			padding: 12px 14px;
+		}
+
+		.phase-title {
+			font-size: 13px;
+		}
+
+		.phase-body {
+			padding: 0 12px 14px;
+			gap: 12px;
+		}
+
+		.sub-phase-header {
+			padding-top: 6px;
+		}
+
+		.sub-phase-title {
+			font-size: 12.5px;
+		}
+
+		.sub-phase-desc {
+			margin: 0 0 4px 0;
+			font-size: 12px;
+		}
+
+		.materi-list {
+			margin-left: 0;
+			gap: 5px;
+		}
+
+		.materi-item {
+			padding: 8px 10px;
+			gap: 8px;
+			border-radius: var(--radius-md, 8px);
+		}
+
+		.materi-icon {
+			width: 26px;
+			height: 26px;
+			border-radius: 6px;
+		}
+
+		.materi-icon svg {
+			width: 13px;
+			height: 13px;
+		}
+
+		.materi-title {
+			font-size: 12.5px;
+			line-height: 1.35;
+		}
+
+		.materi-read-badge {
+			font-size: 9.5px;
+			padding: 1px 6px;
+		}
+
 		.guest-notice-banner {
 			bottom: 16px;
 			flex-wrap: wrap;
 			white-space: normal;
-			border-radius: var(--radius-lg, 16px);
-			padding: 12px 14px;
+			border-radius: var(--radius-lg, 14px);
+			padding: 10px 12px;
+			gap: 8px;
+			max-width: calc(100vw - 24px);
 		}
-		.banner-text { white-space: normal; }
+
+		.banner-text {
+			white-space: normal;
+			font-size: 12px;
+			line-height: 1.35;
+			flex: 1;
+		}
+
+		.banner-cta {
+			padding: 6px 12px;
+			font-size: 11.5px;
+		}
 	}
 </style>

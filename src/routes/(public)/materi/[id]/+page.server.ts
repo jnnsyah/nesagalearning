@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { curriculumTrack, phase, subPhase, materi } from '$lib/server/db/schema/curriculum';
 import { tingkat } from '$lib/server/db/schema/academic';
 import { eq } from 'drizzle-orm';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const trackId = Number(params.id);
@@ -23,8 +23,26 @@ export const load: PageServerLoad = async ({ params }) => {
 		.where(eq(curriculumTrack.id, trackId))
 		.limit(1);
 
+	// If track not found or not published, check if params.id is actually a materi ID!
 	if (!track || !track.isPublished) {
-		throw error(404, 'Track tidak ditemukan atau belum dipublikasikan');
+		const [fallbackMateri] = await db
+			.select({
+				materiId: materi.id,
+				trackId: phase.curriculumTrackId,
+				isTrackPublished: curriculumTrack.isPublished
+			})
+			.from(materi)
+			.innerJoin(subPhase, eq(materi.subPhaseId, subPhase.id))
+			.innerJoin(phase, eq(subPhase.phaseId, phase.id))
+			.innerJoin(curriculumTrack, eq(phase.curriculumTrackId, curriculumTrack.id))
+			.where(eq(materi.id, trackId))
+			.limit(1);
+
+		if (fallbackMateri && fallbackMateri.isTrackPublished) {
+			throw redirect(302, `/materi/${fallbackMateri.trackId}/${fallbackMateri.materiId}`);
+		}
+
+		throw error(404, 'Track pembelajaran tidak ditemukan atau belum dipublikasikan');
 	}
 
 	// Load phases
