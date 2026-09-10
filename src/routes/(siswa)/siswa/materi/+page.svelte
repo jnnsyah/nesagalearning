@@ -410,7 +410,7 @@
 			</div>
 
 			<!-- Status Filter Pills & Global Accordion Controls -->
-			<div class="filter-footer-row mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+			<div class="filter-footer-row mt-7 sm:mt-8 pt-5 sm:pt-6 border-t border-slate-200/80 flex items-center justify-between gap-3.5 flex-wrap">
 				<div class="filter-pills-row" role="tablist" aria-label="Filter status materi">
 					<button
 						type="button"
@@ -1626,9 +1626,9 @@
 		.filter-footer-row {
 			flex-direction: column;
 			align-items: stretch;
-			margin-top: 18px;
-			padding-top: 14px;
-			gap: 12px;
+			margin-top: 24px !important;
+			padding-top: 18px !important;
+			gap: 14px;
 		}
 
 		.filter-pills-row {
