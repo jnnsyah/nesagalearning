@@ -1313,9 +1313,12 @@
 										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 									</button>
 
-									<!-- Centered Floating Resume Progress Pill (Auto-hides after 5s) -->
+									<!-- Centered Floating Resume Progress Pill (Auto-hides after 5s with smooth entry & exit animation) -->
 									{#if showPreviewResumePill && previewVideoStartTime > 0}
-										<div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 select-none max-w-[90vw]">
+										<div
+											transition:fly={{ y: 18, duration: 400 }}
+											class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-xl select-none max-w-[90vw]"
+										>
 											<div class="flex items-center gap-2 text-slate-700 font-medium">
 												<div class="w-6 h-6 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-600">
 													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
