@@ -368,7 +368,7 @@
 
 		<!-- 3. FILTER PANEL -->
 		<div class="filter-card">
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-end">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-end">
 				<!-- Search Bar with Quick Clear (×) -->
 				<div class="md:col-span-2 relative">
 					<div class="search-input-wrapper">
@@ -410,7 +410,7 @@
 			</div>
 
 			<!-- Status Filter Pills & Global Accordion Controls -->
-			<div class="filter-footer-row mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2.5 flex-wrap">
+			<div class="filter-footer-row mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
 				<div class="filter-pills-row" role="tablist" aria-label="Filter status materi">
 					<button
 						type="button"
@@ -1122,8 +1122,8 @@
 	.filter-card {
 		background: #ffffff;
 		border: 1px solid var(--border-hard, #e2e8f0);
-		border-radius: 14px;
-		padding: 16px 20px;
+		border-radius: 16px;
+		padding: 20px 24px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 	}
 
@@ -1620,13 +1620,15 @@
 		}
 
 		.filter-card {
-			padding: 14px 16px;
+			padding: 16px 18px;
 		}
 
 		.filter-footer-row {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 10px;
+			margin-top: 18px;
+			padding-top: 14px;
+			gap: 12px;
 		}
 
 		.filter-pills-row {
