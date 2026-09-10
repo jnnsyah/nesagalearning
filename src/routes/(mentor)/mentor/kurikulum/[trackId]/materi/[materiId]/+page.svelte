@@ -1297,18 +1297,21 @@
 										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 									</button>
 
-									<!-- Floating Resume Progress Pill (Top Left) -->
+									<!-- Centered Floating Resume Progress Pill (Bottom Center) -->
 									{#if previewVideoStartTime > 0}
-										<div class="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-lg select-none">
-											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="text-amber-400 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-											<span class="font-mono text-[11px] text-slate-200">Melanjutkan: {Math.floor(previewVideoStartTime / 60)}m {previewVideoStartTime % 60}s</span>
+										<div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 text-xs font-semibold shadow-md select-none">
+											<div class="flex items-center gap-1.5 text-slate-700">
+												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="text-amber-500 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+												<span class="font-mono text-[11px] font-bold">Melanjutkan: {Math.floor(previewVideoStartTime / 60)}m {previewVideoStartTime % 60}s</span>
+											</div>
 											<button
 												type="button"
 												onclick={restartPreviewFromStart}
-												class="ml-1 text-amber-400 hover:text-amber-300 underline text-[11px] font-semibold cursor-pointer transition-colors"
+												class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
 												title="Putar dari 0:00"
 											>
-												Reset
+												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24"/><polyline points="21 3 21 9 15 9"/></svg>
+												<span>Reset</span>
 											</button>
 										</div>
 									{/if}
