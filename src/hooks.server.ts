@@ -7,12 +7,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const pathname = event.url.pathname.toLowerCase();
 
-	// Root path redirect
-	if (pathname === '/' || pathname === '') {
-		if (!user) {
-			throw redirect(302, '/login');
-		}
-		throw redirect(302, `/${user.role}`);
+	// Public guest routes — accessible by anyone (guests & logged-in users)
+	const isPublicGuestRoute =
+		pathname === '/' ||
+		pathname === '' ||
+		pathname.startsWith('/materi') ||
+		pathname.startsWith('/docs');
+
+	if (isPublicGuestRoute) {
+		return resolve(event);
 	}
 
 	// Prevent logged-in user from visiting /login

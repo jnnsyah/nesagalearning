@@ -1,24 +1,18 @@
 <script lang="ts">
 	import { untrack, onDestroy } from 'svelte';
-	import { enhance } from '$app/forms';
-	import { beforeNavigate } from '$app/navigation';
-	import { toast } from '$lib/stores/toast';
-	import { formatFileSize } from '$lib/utils/sanitizer';
 	import { fade, fly, slide } from 'svelte/transition';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	// State
-	let isReadCompleted = $state(false);
-	let isSubmitting = $state(false);
+	// ── Reader Customization State ──
 	let fontSize = $state<'sm' | 'base' | 'lg'>('base');
 	let theme = $state<'light' | 'sepia' | 'dark'>('light');
 	let fontFamily = $state<'sans' | 'serif'>('sans');
 	let scrollProgress = $state(0);
 
-	// Desktop Docked Sidebar & Mobile Drawer State
+	// ── Desktop Docked Sidebar & Mobile Drawer State ──
 	let isSlidebarOpen = $state(false);
 	let activeSlidebarTab = $state<'syllabus' | 'toc' | 'settings'>('toc');
 
@@ -29,7 +23,7 @@
 		}
 	});
 
-	// Lightbox Zoom Modal State
+	// ── Lightbox Zoom Modal State ──
 	interface LightboxData {
 		src: string;
 		alt: string;
@@ -38,7 +32,7 @@
 	let lightboxImg = $state<LightboxData | null>(null);
 	let lightboxScale = $state(1);
 
-	// Video Player Floating & Progress State
+	// ── Video Modal State ──
 	interface ActiveVideoData {
 		title: string;
 		url: string;
@@ -46,86 +40,16 @@
 		duration?: string;
 	}
 	let activeVideo = $state<ActiveVideoData | null>(null);
-	let videoDisplayMode = $state<'mini' | 'expanded' | 'minimized'>('mini');
-	let videoStartTime = $state(0);
-	let showResumePill = $state(false);
-	let resumePillTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function openVideoModal(video: ActiveVideoData) {
-		let savedTime = 0;
-		if (typeof localStorage !== 'undefined') {
-			const raw = localStorage.getItem(`yt_progress_${video.youtubeId}`);
-			if (raw) {
-				const parsed = parseInt(raw, 10);
-				if (!isNaN(parsed) && parsed > 3) {
-					savedTime = parsed;
-				}
-			}
-		}
-		videoStartTime = savedTime;
 		activeVideo = video;
-		videoDisplayMode = 'mini';
-
-		if (resumePillTimer) clearTimeout(resumePillTimer);
-		if (savedTime > 0) {
-			showResumePill = true;
-			resumePillTimer = setTimeout(() => {
-				showResumePill = false;
-			}, 5000);
-		} else {
-			showResumePill = false;
-		}
 	}
 
 	function closeVideoModal() {
 		activeVideo = null;
-		videoDisplayMode = 'mini';
-		showResumePill = false;
-		if (resumePillTimer) clearTimeout(resumePillTimer);
 	}
 
-	function restartFromStart() {
-		videoStartTime = 0;
-		showResumePill = false;
-		if (resumePillTimer) clearTimeout(resumePillTimer);
-		if (activeVideo && typeof localStorage !== 'undefined') {
-			localStorage.removeItem(`yt_progress_${activeVideo.youtubeId}`);
-		}
-	}
-
-	$effect(() => {
-		if (typeof window === 'undefined') return;
-		function handleYtMessage(event: MessageEvent) {
-			if (!activeVideo || !event.origin.includes('youtube.com')) return;
-			try {
-				const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-				if (data?.event === 'infoDelivery' && typeof data?.info?.currentTime === 'number') {
-					const currentTime = Math.floor(data.info.currentTime);
-					if (currentTime > 3) {
-						localStorage.setItem(`yt_progress_${activeVideo.youtubeId}`, currentTime.toString());
-					}
-				}
-			} catch {
-				// ignore non-json messages
-			}
-		}
-		window.addEventListener('message', handleYtMessage);
-
-		const timer = setInterval(() => {
-			if (!activeVideo) return;
-			const iframe = document.querySelector('.inline-video-player-box iframe') as HTMLIFrameElement | null;
-			if (iframe && iframe.contentWindow) {
-				iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*');
-			}
-		}, 1000);
-
-		return () => {
-			window.removeEventListener('message', handleYtMessage);
-			clearInterval(timer);
-		};
-	});
-
-	// Table of Contents State
+	// ── Table of Contents State ──
 	interface TocItem {
 		id: string;
 		text: string;
@@ -134,36 +58,8 @@
 	let tocList = $state<TocItem[]>([]);
 	let activeTocId = $state<string>('');
 
-	// Accordion state for syllabus phases
+	// ── Accordion state for syllabus phases ──
 	let openPhases = $state<Record<number, boolean>>({});
-
-	// Manage focus mode body class lifecycle safely in SSR & Client
-	$effect(() => {
-		if (typeof document !== 'undefined') {
-			document.body.classList.add('focus-mode-active');
-		}
-		return () => {
-			if (typeof document !== 'undefined') {
-				document.body.classList.remove('focus-mode-active');
-			}
-		};
-	});
-
-	beforeNavigate(() => {
-		if (typeof document !== 'undefined') {
-			document.body.classList.remove('focus-mode-active');
-		}
-	});
-
-	onDestroy(() => {
-		if (typeof document !== 'undefined') {
-			document.body.classList.remove('focus-mode-active');
-		}
-	});
-
-	$effect(() => {
-		isReadCompleted = data.isCompleted;
-	});
 
 	// Initialize open phases (keep the phase containing current materi open)
 	$effect(() => {
@@ -185,16 +81,13 @@
 		openPhases[phaseId] = !openPhases[phaseId];
 	}
 
-	// Word count and reading time estimate
+	// ── Word count and reading time estimate ──
 	let contentStats = $derived.by(() => {
 		const html = data.materi?.content || '';
 		const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 		const words = text ? text.split(' ').length : 0;
 		const minutes = Math.max(1, Math.ceil(words / 180));
-		return {
-			words,
-			minutes
-		};
+		return { words, minutes };
 	});
 
 	function setFontSize(size: 'sm' | 'base' | 'lg') {
@@ -209,28 +102,11 @@
 		fontFamily = f;
 	}
 
-	function getFileExt(filename: string): string {
-		const parts = filename.split('.');
-		return parts.length > 1 ? parts.pop()!.toUpperCase() : 'FILE';
-	}
-
-	function getFileBadgeClass(filename: string): string {
-		const ext = filename.split('.').pop()?.toLowerCase() || '';
-		if (['pdf'].includes(ext)) return 'bg-rose-50 text-rose-700 border-rose-200';
-		if (['pkt', 'gns3', 'pcap', 'pcapng', 'json', 'yaml', 'yml', 'conf', 'cfg', 'log'].includes(ext))
-			return 'bg-cyan-50 text-cyan-700 border-cyan-200';
-		if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'bg-amber-50 text-amber-700 border-amber-200';
-		if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext))
-			return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-		return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-	}
-
-	// Eye-level smooth scroll offset (~115px below sticky topbar)
+	// ── Smooth Scroll to Headings (Eye-level offset) ──
 	function scrollToHeading(id: string) {
 		const el = document.getElementById(id);
 		if (el) {
 			activeTocId = id;
-			// Close drawer ONLY on mobile screens (< 1024px); keep desktop docked sidebar open
 			if (typeof window !== 'undefined' && window.innerWidth < 1024) {
 				isSlidebarOpen = false;
 			}
@@ -239,8 +115,9 @@
 		}
 	}
 
-	// Scroll progress calculation
+	// ── Scroll Progress ──
 	function handleScroll() {
+		if (typeof document === 'undefined') return;
 		const totalScroll = document.documentElement.scrollTop || document.body.scrollTop;
 		const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
 		if (windowHeight > 0) {
@@ -248,14 +125,7 @@
 		}
 	}
 
-	$effect(() => {
-		window.addEventListener('scroll', handleScroll, { passive: true });
-		return () => {
-			window.removeEventListener('scroll', handleScroll);
-		};
-	});
-
-	// Lightbox handlers
+	// ── Lightbox Handlers ──
 	function openLightbox(src: string, alt: string, title?: string) {
 		lightboxImg = { src, alt, title };
 		lightboxScale = 1;
@@ -290,8 +160,19 @@
 		}
 	}
 
+	// ── Banner & Auth Guard State ──
+	let bannerDismissed = $state(false);
+	let showAuthModal = $state(false);
+	let authModalAction = $state('');
+
+	function triggerAuthGuard(action: string) {
+		authModalAction = action;
+		showAuthModal = true;
+	}
+
+	// ── Content DOM Enhancements (Code Blocks, Lightbox, Tables, TOC) ──
 	$effect(() => {
-		if (!data.materi.content) return;
+		if (!data.materi?.content) return;
 		const article = document.querySelector('.prose-reading');
 		if (!article) return;
 
@@ -337,16 +218,10 @@
 			if (copyBtn) {
 				copyBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					
-					// Extract multiline code text preserving newlines
 					let codeText = '';
-					const codeEl = pre.querySelector('code');
 					const targetEl = codeEl || pre;
-
-					// 1. innerText preserves rendered line breaks in standard DOM
 					codeText = targetEl.innerText || '';
 
-					// 2. Fallback if innerText collapsed newlines but HTML has <br>/<p>/<div>
 					if ((!codeText || !codeText.includes('\n')) && targetEl.innerHTML) {
 						const temp = document.createElement('div');
 						temp.innerHTML = targetEl.innerHTML
@@ -425,7 +300,7 @@
 			activeTocId = items[0].id;
 		}
 
-		// 5. Set up IntersectionObserver for active heading highlight
+		// 5. IntersectionObserver for active heading highlight
 		if (items.length > 0) {
 			const observer = new IntersectionObserver(
 				(entries) => {
@@ -444,111 +319,26 @@
 	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onscroll={handleScroll} onkeydown={handleKeydown} />
 
 <svelte:head>
-	<title>{data.materi?.title || 'Modul Materi'} — Ruang Belajar Siswa</title>
+	<title>{data.materi.title} — {data.track.title} | NLC</title>
 </svelte:head>
 
-<!-- ══════════════════════════════════════════════════════════
-     DICODING-STYLE DEDICATED LEARNING WORKSPACE
-     ══════════════════════════════════════════════════════════ -->
-<div class="dedicated-course-room theme-{theme}">
-	<!-- Top Reading Progress Bar -->
-	<div class="course-scroll-progress-wrap">
-		<div class="course-scroll-progress-bar" style="width: {scrollProgress}%;"></div>
-	</div>
+<!-- Top Reading Scroll Indicator -->
+<div class="course-scroll-progress-wrap">
+	<div class="course-scroll-progress-bar" style="width: {scrollProgress}%;"></div>
+</div>
 
+<div class="reader-page theme-{theme} font-{fontFamily} size-{fontSize}">
 	<!-- ══════════════════════════════════════════════════════════
-	     1. DEDICATED COURSE TOPBAR WITH COMPLETION ACTION
-	     ══════════════════════════════════════════════════════════ -->
-	<header class="course-topbar">
-		<div class="topbar-left">
-			<!-- Back Button to Track -->
-			<a
-				href={`/siswa/materi?track=${data.materi?.trackId || ''}`}
-				class="btn-back-track"
-				title="Kembali ke Ringkasan Track Pembelajaran"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<polyline points="15 18 9 12 15 6" />
-				</svg>
-				<span class="btn-back-label">Kembali ke Track</span>
-			</a>
-
-			<div class="topbar-vsep"></div>
-
-			<!-- Course Hierarchy Breadcrumb -->
-			<div class="course-breadcrumb-block min-w-0">
-				<div class="course-track-name truncate">{data.materi?.trackTitle || ''}</div>
-				<div class="course-phase-sub truncate">
-					{data.materi?.phaseTitle || ''} &rsaquo; {data.materi?.subPhaseTitle || ''}
-				</div>
-			</div>
-		</div>
-
-		<div class="topbar-right">
-			<!-- Overall Track Progress Metric -->
-			<div class="track-progress-metric hidden md:flex">
-				<div class="progress-metric-text">
-					<span class="metric-count">{data.trackStats.completedModules}/{data.trackStats.totalModules} Modul</span>
-					<span class="metric-percent">{data.trackStats.progressPercentage}%</span>
-				</div>
-				<div class="mini-progress-track">
-					<div class="mini-progress-fill" style="width: {data.trackStats.progressPercentage}%;"></div>
-				</div>
-			</div>
-
-			<!-- Topbar Form Action: Tandai Selesai -->
-			<form
-				method="POST"
-				action="?/toggleCompletion"
-				use:enhance={() => {
-					isSubmitting = true;
-					return async ({ result, update }) => {
-						isSubmitting = false;
-						if (result.type === 'success' && result.data) {
-							const actionData = result.data as { isCompleted?: boolean; message?: string };
-							isReadCompleted = !!actionData.isCompleted;
-							if (isReadCompleted) {
-								toast.success(actionData.message || 'Modul ditandai selesai.');
-							} else {
-								toast.info(actionData.message || 'Status selesai dibatalkan.');
-							}
-						}
-						await update({ reset: false });
-					};
-				}}
-			>
-				<button
-					type="submit"
-					disabled={isSubmitting}
-					class="btn-topbar-completion {isReadCompleted ? 'btn-topbar-completion--completed' : 'btn-topbar-completion--pending'}"
-				>
-					{#if isReadCompleted}
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-						<span>Selesai (Batalkan)</span>
-					{:else}
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-						<span>Tandai Selesai</span>
-					{/if}
-				</button>
-			</form>
-		</div>
-	</header>
-
-	<!-- ══════════════════════════════════════════════════════════
-	     2. MAIN WORKSPACE (DOCKED DESKTOP SIDEBAR + READING CANVAS)
+	     MAIN WORKSPACE (DOCKED DESKTOP SIDEBAR + READING CANVAS)
 	     ══════════════════════════════════════════════════════════ -->
 	<div class="course-workspace">
-		<!-- Desktop In-Flow Docked Sidebar (underneath topbar, pushes reading content, NO backdrop blur) -->
+		<!-- Desktop Docked Sidebar (>= 1024px) -->
 		{#if isSlidebarOpen}
 			<aside class="desktop-course-sidebar" transition:slide={{ axis: 'x', duration: 180 }}>
-				<!-- Floating Docked Rail Toggle Handle (Linear/Vercel Style) -->
+				<!-- Floating Docked Rail Toggle Handle -->
 				<button
 					type="button"
 					onclick={() => (isSlidebarOpen = false)}
@@ -585,6 +375,9 @@
 							<line x1="8" y1="18" x2="21" y2="18" />
 						</svg>
 						<span>Daftar Isi</span>
+						{#if tocList.length > 0}
+							<span class="tab-counter-badge">{tocList.length}</span>
+						{/if}
 					</button>
 
 					<button
@@ -605,6 +398,14 @@
 					{#if activeSlidebarTab === 'syllabus'}
 						<!-- Course Syllabus Tree -->
 						<div class="syllabus-tree-container">
+							<div class="syllabus-track-header">
+								<a href={`/materi/${data.track.id}`} class="btn-syllabus-back" title="Lihat silabus lengkap track ini">
+									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="15 18 9 12 15 6" />
+									</svg>
+									<span class="truncate">{data.track.title}</span>
+								</a>
+							</div>
 							{#each data.syllabus as p, pIdx (p.id)}
 								{@const isOpen = !!openPhases[p.id]}
 								<div class="phase-group">
@@ -613,8 +414,8 @@
 										onclick={() => togglePhaseAccordion(p.id)}
 										class="phase-group-header"
 									>
-										<div class="flex items-center gap-2 min-w-0">
-											<span class="badge badge-grade text-[9.5px] h-[22px] px-1.5">FASE {pIdx + 1}</span>
+										<div class="phase-header-left truncate">
+											<span class="phase-badge-pill">FASE {pIdx + 1}</span>
 											<span class="phase-title-text truncate">{p.title}</span>
 										</div>
 										<svg
@@ -639,15 +440,11 @@
 														{#each sp.materiList as m (m.id)}
 															{@const isCurrent = m.id === data.materi.id}
 															<a
-																href={`/siswa/materi/${m.id}`}
+																href={`/materi/${data.track.id}/${m.id}`}
 																class="materi-tree-link {isCurrent ? 'materi-tree-link--active' : ''}"
 															>
 																<div class="materi-tree-icon">
-																	{#if m.isCompleted}
-																		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3">
-																			<polyline points="20 6 9 17 4 12" />
-																		</svg>
-																	{:else if isCurrent}
+																	{#if isCurrent}
 																		<div class="active-dot"></div>
 																	{:else}
 																		<div class="pending-dot"></div>
@@ -667,9 +464,9 @@
 					{:else if activeSlidebarTab === 'toc'}
 						<!-- Table of Contents Headings -->
 						{#if tocList.length > 0}
-							<div class="toc-container p-3">
-								<div class="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-									Sub-Bab Topik ({tocList.length})
+							<div class="toc-container">
+								<div class="toc-header-label">
+									Daftar Sub-Topik ({tocList.length})
 								</div>
 								<nav class="toc-nav-list">
 									{#each tocList as item}
@@ -689,11 +486,11 @@
 						{/if}
 					{:else if activeSlidebarTab === 'settings'}
 						<!-- Reading Preferences Panel -->
-						<div class="settings-container p-4 space-y-4">
+						<div class="settings-container">
 							<!-- Ukuran Teks -->
 							<div class="setting-block">
 								<span class="setting-label">Ukuran Teks</span>
-								<div class="pill-group w-full mt-1.5">
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setFontSize('sm')}
@@ -721,7 +518,7 @@
 							<!-- Tema Warna -->
 							<div class="setting-block">
 								<span class="setting-label">Tema Warna Baca</span>
-								<div class="pill-group w-full mt-1.5">
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setTheme('light')}
@@ -759,7 +556,7 @@
 							<!-- Gaya Font -->
 							<div class="setting-block">
 								<span class="setting-label">Gaya Font</span>
-								<div class="pill-group w-full mt-1.5">
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setFontFamily('sans')}
@@ -782,247 +579,118 @@
 			</aside>
 		{/if}
 
-		<!-- Main Article Reading Canvas -->
-		<main class="course-main-canvas font-{fontFamily} size-{fontSize}">
+		<!-- Reading Canvas Main Area -->
+		<main class="course-main-canvas">
 			<div class="reading-column-wrapper">
-				<!-- Article Header (Clean Editorial Header, Medium/Substack Style) -->
+				<!-- Reader Top Back Navigation & Breadcrumbs -->
+				<div class="reader-top-nav-bar">
+					<a href={`/materi/${data.track.id}`} class="btn-back-track" title={`Kembali ke daftar materi ${data.track.title}`}>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="15 18 9 12 15 6" />
+						</svg>
+						<span>Daftar Materi Track</span>
+					</a>
+
+					<div class="reader-nav-breadcrumbs">
+						<a href="/materi" class="crumb-link">Katalog</a>
+						<span class="crumb-sep">/</span>
+						<a href={`/materi/${data.track.id}`} class="crumb-link truncate-crumb" title={data.track.title}>{data.track.title}</a>
+					</div>
+				</div>
+
+				<!-- Article Title Header -->
 				<header class="article-title-header">
 					<div class="article-kicker-text">
-						{data.materi?.trackTitle || ''}
+						{data.materi.phaseTitle} &bull; {data.materi.subPhaseTitle}
 					</div>
-
-					<h1 class="article-main-title">
-						{data.materi?.title || ''}
-					</h1>
-
+					<h1 class="article-main-title">{data.materi.title}</h1>
 					<div class="article-meta-strip">
 						<span class="meta-item">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10" />
-								<polyline points="12 6 12 12 16 14" />
-							</svg>
-							<span>{contentStats.minutes} Menit Baca</span>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+							Estimasi ~{contentStats.minutes} mnt baca ({contentStats.words} kata)
 						</span>
-
-						{#if data.materi?.phaseTitle}
-							<span class="meta-dot">&bull;</span>
-							<span class="meta-item meta-item--subtle">{data.materi.phaseTitle}</span>
-						{/if}
-
-						{#if isReadCompleted}
-							<span class="meta-dot">&bull;</span>
-							<span class="meta-item meta-item--completed">
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<polyline points="20 6 9 17 4 12" />
-								</svg>
-								<span>Selesai Dibaca</span>
-							</span>
-						{/if}
+						<span class="meta-dot">&bull;</span>
+						<span class="meta-item meta-item--subtle">
+							Materi Publik
+						</span>
 					</div>
 				</header>
 
-				<!-- Article Body Content -->
-				{#if data.materi?.content}
-					<article class="prose-reading">
+				<!-- Article Body Content (Render Tiptap / HTML) -->
+				<article class="prose-reading">
+					{#if data.materi.content}
 						{@html data.materi.content}
-					</article>
-				{:else}
-					<EmptyState
-						title="Modul Materi Dalam Penyusunan"
-						description="Mentor sedang menyiapkan konten pembelajaran untuk modul materi ini."
-						iconTheme="indigo"
-					/>
-				{/if}
+					{:else}
+						<p class="empty-content-text">Konten materi ini belum ditambahkan.</p>
+					{/if}
+				</article>
 
-				<!-- ══════════════════════════════════════════════════════════
-				     DEDICATED MATERIAL ATTACHMENTS SECTION
-				     ══════════════════════════════════════════════════════════ -->
-				{#if data.materi?.attachments && data.materi.attachments.length > 0}
-					<section class="materi-attachments-section mt-5 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
-						<div class="attachments-header flex items-center justify-between mb-4">
-							<div class="attachments-title-group flex items-center gap-2.5">
-								<div class="attachments-icon-badge w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs flex-shrink-0">
-									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-										<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-									</svg>
+				<!-- Attachments Section -->
+				{#if data.materi.attachments && data.materi.attachments.length > 0}
+					<section class="materi-attachments-section">
+						<div class="attachments-header">
+							<div class="attachments-title-group">
+								<div class="attachments-icon-badge">
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
 								</div>
 								<div>
-									<h3 class="attachments-heading font-bold text-slate-800 text-sm tracking-tight m-0 leading-tight">Lampiran & Berkas Materi</h3>
-									<p class="attachments-subheading text-[11px] text-slate-500 font-medium m-0 mt-0.5">Unduh berkas pendukung pembelajaran ini</p>
+									<h3 class="attachments-heading">Lampiran Modul & Berkas Praktikum</h3>
+									<p class="attachments-subheading">Unduh berkas konfigurasi, modul lab, atau file pendukung</p>
 								</div>
 							</div>
-							<span class="attachments-count-badge font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">
-								{data.materi.attachments.length} Berkas
-							</span>
+							<span class="attachments-count-badge">{data.materi.attachments.length} Berkas</span>
 						</div>
-
-						<div class="attachments-grid grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-							{#each data.materi.attachments as att}
-								<a
-									href={att.url}
-									download={att.name}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="attachment-card p-3 sm:p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white hover:border-indigo-300 hover:shadow-xs transition-all duration-200 flex items-center justify-between gap-3 group text-decoration-none min-w-0"
-									title={`Unduh ${att.name}`}
-								>
-									<div class="flex items-center gap-3 min-w-0 flex-1">
-										<span class="badge uppercase tracking-wider flex-shrink-0 {getFileBadgeClass(att.name)}">{getFileExt(att.name)}</span>
-										<div class="min-w-0 flex-1">
-											<div class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors" title={att.name}>{att.name}</div>
-											<div class="text-[10px] font-mono text-slate-500 font-medium mt-0.5">{formatFileSize(att.size)} &bull; Berkas Lampiran</div>
-										</div>
+						<div class="attachments-grid">
+							{#each data.materi.attachments as file}
+								<a href={file.url} target="_blank" rel="noopener noreferrer" download class="attachment-card">
+									<div class="att-card-icon">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 									</div>
-									<div class="attachment-card-action inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-200 shadow-2xs">
-										<span>Unduh</span>
-										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-											<polyline points="7 10 12 15 17 10" />
-											<line x1="12" y1="15" x2="12" y2="3" />
-										</svg>
+									<div class="att-card-info">
+										<span class="att-card-name truncate">{file.name}</span>
+										<span class="att-card-size">{file.size ? `${(file.size / 1024).toFixed(1)} KB` : 'Unduh'}</span>
 									</div>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 								</a>
 							{/each}
 						</div>
 					</section>
 				{/if}
 
-				<!-- ══════════════════════════════════════════════════════════
-				     DEDICATED YOUTUBE VIDEO RECOMMENDATIONS SECTION
-				     ══════════════════════════════════════════════════════════ -->
-				{#if data.materi?.videoRecommendations && data.materi.videoRecommendations.length > 0}
-					<section class="materi-video-recommendations-section mt-5 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
-						<div class="video-section-header flex items-center justify-between mb-4">
-							<div class="flex items-center gap-2.5">
-								<div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs flex-shrink-0">
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-										<polygon points="6 3 20 12 6 21 6 3"/>
-									</svg>
+				<!-- Video Recommendations Section -->
+				{#if data.materi.videoRecommendations && data.materi.videoRecommendations.length > 0}
+					<section class="materi-video-recommendations-section">
+						<div class="video-section-header">
+							<div class="attachments-title-group">
+								<div class="attachments-icon-badge">
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
 								</div>
 								<div>
-									<h3 class="font-bold text-slate-800 text-sm tracking-tight m-0 leading-tight">Rekomendasi Video Pembelajaran</h3>
-									<p class="text-[11px] text-slate-500 font-medium m-0 mt-0.5">Tonton video penjelasan dari YouTube untuk memperdalam materi ini</p>
+									<h3 class="attachments-heading">Video Referensi & Tutorial</h3>
+									<p class="attachments-subheading">Tonton penjelasan visual dan demonstrasi lab terkait</p>
 								</div>
 							</div>
-							<span class="badge border-indigo-200 bg-indigo-50 text-indigo-700 font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md flex-shrink-0">
-								{data.materi.videoRecommendations.length} Video
-							</span>
+							<span class="attachments-count-badge">{data.materi.videoRecommendations.length} Video</span>
 						</div>
-
-						<!-- Full Width Top Active Video Player (Opens when any card is clicked) -->
-						{#if activeVideo}
-							<div class="inline-video-player-box mt-5 mb-0 relative bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-xl transition-all">
-								<!-- Floating Close Button -->
-								<button
-									type="button"
-									onclick={closeVideoModal}
-									class="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs"
-									title="Tutup Pemutar Video"
-								>
-									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-								</button>
-
-								<!-- Centered Floating Resume Progress Pill (Auto-hides after 5s with smooth entry & exit animation) -->
-								{#if showResumePill && videoStartTime > 0}
-									<div
-										transition:fly={{ y: 18, duration: 400 }}
-										class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-800 shadow-xl select-none max-w-[90vw]"
-									>
-										<div class="flex items-center gap-2 text-slate-700 font-medium">
-											<div class="w-6 h-6 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-600">
-												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-											</div>
-											<span class="text-xs sm:text-sm font-semibold tracking-tight text-slate-800 whitespace-nowrap">
-												Melanjutkan dari <span class="font-mono font-bold text-indigo-600 ml-0.5">{Math.floor(videoStartTime / 60)}m {videoStartTime % 60}s</span>
-											</span>
+						<div class="videos-grid">
+							{#each data.materi.videoRecommendations as vid}
+								{@const ytId = vid.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1]}
+								<div class="video-card">
+									{#if ytId}
+										<div class="video-iframe-wrap">
+											<iframe
+												src="https://www.youtube.com/embed/{ytId}"
+												title={vid.title}
+												frameborder="0"
+												allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+												allowfullscreen
+											></iframe>
 										</div>
-										<button
-											type="button"
-											onclick={restartFromStart}
-											class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs flex-shrink-0"
-											title="Putar dari 0:00"
-										>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24"/><polyline points="21 3 21 9 15 9"/></svg>
-											<span>Reset</span>
-										</button>
-									</div>
-								{/if}
-
-								<!-- 16:9 Youtube Iframe Canvas -->
-								<div class="relative aspect-video w-full">
-									<iframe
-										src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1&autoplay=1&rel=0${videoStartTime > 0 ? `&start=${videoStartTime}` : ''}`}
-										title={activeVideo.title}
-										class="absolute inset-0 w-full h-full border-0"
-										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-										allowfullscreen
-									></iframe>
-								</div>
-							</div>
-
-							<!-- Physical spacer between iframe player and video card list -->
-							<div class="h-5 sm:h-6 w-full flex-shrink-0" aria-hidden="true"></div>
-						{/if}
-
-						<!-- Card List Below Player -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-							{#each data.materi.videoRecommendations as video}
-								<div
-									class="group bg-slate-50/60 hover:bg-white border rounded-xl p-3.5 sm:p-4 transition-all duration-200 flex items-center justify-between gap-3.5 cursor-pointer min-w-0 {activeVideo?.youtubeId === video.youtubeId ? 'border-indigo-400 bg-indigo-50/50 shadow-2xs ring-1 ring-indigo-300' : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-xs'}"
-									onclick={() => openVideoModal(video)}
-									role="button"
-									tabindex="0"
-									onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVideoModal(video); } }}
-								>
-									<!-- Compact Video Thumbnail Container -->
-									<div class="relative w-28 sm:w-32 aspect-video rounded-lg overflow-hidden bg-slate-900 flex-shrink-0 shadow-2xs border border-slate-200/80">
-										<img
-											src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
-											alt={video.title}
-											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-											onerror={(e) => {
-												(e.currentTarget as HTMLImageElement).src = 'https://img.youtube.com/vi/' + video.youtubeId + '/mqdefault.jpg';
-											}}
-										/>
-										<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
-
-										<!-- Play Button Overlay -->
-										<div class="absolute inset-0 flex items-center justify-center">
-											<div class="w-8 h-8 rounded-full bg-indigo-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-indigo-600 transition-all duration-200 ring-2 ring-white/30">
-												<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="translate-x-0.5">
-													<polygon points="5 3 19 12 5 21 5 3"/>
-												</svg>
-											</div>
-										</div>
-
-										{#if video.duration}
-											<span class="absolute bottom-1 right-1 bg-black/85 text-white text-[9px] font-mono font-bold px-1.5 py-0.2 rounded">
-												{video.duration}
-											</span>
-										{/if}
-									</div>
-
-									<!-- Compact Video Details -->
-									<div class="min-w-0 flex-1 space-y-1">
-										{#if activeVideo?.youtubeId === video.youtubeId}
-											<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase tracking-wider mb-1">
-												<span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
-												<span>Sedang Diputar</span>
-											</div>
-										{/if}
-										<h4 class="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug m-0" title={video.title}>
-											{video.title}
-										</h4>
-										{#if video.duration}
-											<div class="flex items-center gap-1 text-[11px] font-mono font-bold text-slate-500 mt-1">
-												<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-												<span>Durasi: {video.duration}</span>
-											</div>
-										{/if}
-										{#if video.note}
-											<p class="text-[10.5px] text-slate-500 italic truncate mt-0.5 m-0" title={video.note}>
-												&ldquo;{video.note}&rdquo;
-											</p>
+									{/if}
+									<div class="video-card-body">
+										<h4 class="video-card-title">{vid.title}</h4>
+										{#if vid.duration}
+											<span class="video-duration-pill">{vid.duration}</span>
 										{/if}
 									</div>
 								</div>
@@ -1030,69 +698,68 @@
 						</div>
 					</section>
 				{/if}
-
 			</div>
 		</main>
 	</div>
 
 	<!-- ══════════════════════════════════════════════════════════
-	     3. STICKY READER BOTTOM ACTION BAR
+	     3. FIXED BOTTOM DOCKED ACTION BAR (PREV / TOGGLE / NEXT)
 	     ══════════════════════════════════════════════════════════ -->
-	<footer class="course-bottom-bar {isSlidebarOpen ? 'course-bottom-bar--sidebar-open' : ''}">
-		<!-- Left Slot: Previous Module Button or Placeholder -->
+	<footer class="course-bottom-bar">
+		<!-- Left Slot: Prev Module Button -->
 		<div class="bottom-bar-side-slot left-slot">
 			{#if data.prevMateri}
 				<a
-					href={`/siswa/materi/${data.prevMateri.id}`}
+					href={`/materi/${data.track.id}/${data.prevMateri.id}`}
 					class="bottom-bar-nav-btn prev-btn"
 					title={`Modul Sebelumnya: ${data.prevMateri.title}`}
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
 						<polyline points="15 18 9 12 15 6" />
 					</svg>
+					<span class="sm:hidden text-xs font-semibold truncate">Sebelumnya</span>
 					<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-left">
-						<span class="nav-btn-label">Modul Sebelumnya</span>
+						<span class="nav-btn-label">Sebelumnya</span>
 						<span class="nav-btn-title truncate">{data.prevMateri.title}</span>
 					</div>
-					<span class="sm:hidden text-xs font-semibold truncate">Sebelumnya</span>
 				</a>
 			{:else}
 				<div class="bottom-bar-placeholder"></div>
 			{/if}
 		</div>
 
-		<!-- Center Slot: Menu & Syllabus Toggle -->
+		<!-- Center Slot: Sidebar / Menu Toggle Trigger -->
 		<div class="bottom-bar-center-slot">
 			<button
 				type="button"
 				onclick={() => (isSlidebarOpen = !isSlidebarOpen)}
 				class="bottom-bar-menu-btn {isSlidebarOpen ? 'bottom-bar-menu-btn--active' : ''}"
-				title={isSlidebarOpen ? 'Tutup Menu' : 'Buka Silabus, Daftar Isi & Tampilan'}
+				title="Buka Silabus, Daftar Isi, & Pengaturan Tampilan"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					{#if isSlidebarOpen}
 						<line x1="18" y1="6" x2="6" y2="18" />
 						<line x1="6" y1="6" x2="18" y2="18" />
 					{:else}
-						<line x1="3" y1="12" x2="21" y2="12" />
-						<line x1="3" y1="6" x2="21" y2="6" />
-						<line x1="3" y1="18" x2="21" y2="18" />
+						<line x1="8" y1="6" x2="21" y2="6" />
+						<line x1="8" y1="12" x2="21" y2="12" />
+						<line x1="8" y1="18" x2="21" y2="18" />
 					{/if}
 				</svg>
-				<span class="menu-btn-label">{isSlidebarOpen ? 'Tutup' : 'Silabus & Menu'}</span>
+				<span class="menu-btn-label">{isSlidebarOpen ? 'Tutup Sidebar' : 'Silabus & Daftar Isi'}</span>
 			</button>
 		</div>
 
-		<!-- Right Slot: Next Module Button or Placeholder -->
+		<!-- Right Slot: Next Module Button -->
 		<div class="bottom-bar-side-slot right-slot">
 			{#if data.nextMateri}
 				<a
-					href={`/siswa/materi/${data.nextMateri.id}`}
+					href={`/materi/${data.track.id}/${data.nextMateri.id}`}
 					class="bottom-bar-nav-btn next-btn"
 					title={`Modul Selanjutnya: ${data.nextMateri.title}`}
 				>
 					<div class="nav-btn-text min-w-0 hidden sm:flex flex-col text-right">
-						<span class="nav-btn-label">Modul Selanjutnya</span>
+						<span class="nav-btn-label">Selanjutnya</span>
 						<span class="nav-btn-title truncate">{data.nextMateri.title}</span>
 					</div>
 					<span class="sm:hidden text-xs font-semibold truncate">Selanjutnya</span>
@@ -1108,7 +775,6 @@
 
 	<!-- ══════════════════════════════════════════════════════════
 	     4. MOBILE BOTTOM SHEET SLIDER DRAWER (< 1024px)
-	     Zero backdrop blur, soft translucent dim
 	     ══════════════════════════════════════════════════════════ -->
 	{#if isSlidebarOpen}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -1156,6 +822,9 @@
 								<line x1="8" y1="18" x2="21" y2="18" />
 							</svg>
 							<span>Daftar Isi</span>
+							{#if tocList.length > 0}
+								<span class="tab-counter-badge">{tocList.length}</span>
+							{/if}
 						</button>
 
 						<button
@@ -1176,11 +845,19 @@
 					</button>
 				</div>
 
-				<!-- Slidebar Body Content -->
+				<!-- Drawer Body Content -->
 				<div class="drawer-body">
 					{#if activeSlidebarTab === 'syllabus'}
 						<!-- Mobile Syllabus Tree -->
 						<div class="syllabus-tree-container">
+							<div class="syllabus-track-header">
+								<a href={`/materi/${data.track.id}`} class="btn-syllabus-back" title="Lihat silabus lengkap track ini">
+									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<polyline points="15 18 9 12 15 6" />
+									</svg>
+									<span class="truncate">{data.track.title}</span>
+								</a>
+							</div>
 							{#each data.syllabus as p, pIdx (p.id)}
 								{@const isOpen = !!openPhases[p.id]}
 								<div class="phase-group">
@@ -1189,8 +866,8 @@
 										onclick={() => togglePhaseAccordion(p.id)}
 										class="phase-group-header"
 									>
-										<div class="flex items-center gap-2 min-w-0">
-											<span class="badge badge-grade text-[9.5px] h-[22px] px-1.5">FASE {pIdx + 1}</span>
+										<div class="phase-header-left truncate">
+											<span class="phase-badge-pill">FASE {pIdx + 1}</span>
 											<span class="phase-title-text truncate">{p.title}</span>
 										</div>
 										<svg
@@ -1215,16 +892,12 @@
 														{#each sp.materiList as m (m.id)}
 															{@const isCurrent = m.id === data.materi.id}
 															<a
-																href={`/siswa/materi/${m.id}`}
+																href={`/materi/${data.track.id}/${m.id}`}
 																onclick={() => (isSlidebarOpen = false)}
 																class="materi-tree-link {isCurrent ? 'materi-tree-link--active' : ''}"
 															>
 																<div class="materi-tree-icon">
-																	{#if m.isCompleted}
-																		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3">
-																			<polyline points="20 6 9 17 4 12" />
-																		</svg>
-																	{:else if isCurrent}
+																	{#if isCurrent}
 																		<div class="active-dot"></div>
 																	{:else}
 																		<div class="pending-dot"></div>
@@ -1244,7 +917,7 @@
 					{:else if activeSlidebarTab === 'toc'}
 						<!-- Mobile Table of Contents -->
 						{#if tocList.length > 0}
-							<nav class="mobile-toc-list space-y-1">
+							<nav class="mobile-toc-list">
 								{#each tocList as item}
 									<button
 										type="button"
@@ -1261,11 +934,11 @@
 						{/if}
 					{:else if activeSlidebarTab === 'settings'}
 						<!-- Mobile Reading Settings -->
-						<div class="mobile-settings-stack">
+						<div class="settings-container">
 							<!-- Ukuran Font -->
-							<div class="mobile-ctrl-card">
-								<span class="mobile-ctrl-label">Ukuran Teks</span>
-								<div class="pill-group w-full">
+							<div class="setting-block">
+								<span class="setting-label">Ukuran Teks</span>
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setFontSize('sm')}
@@ -1291,9 +964,9 @@
 							</div>
 
 							<!-- Tema Warna -->
-							<div class="mobile-ctrl-card">
-								<span class="mobile-ctrl-label">Tema Warna Baca</span>
-								<div class="pill-group w-full">
+							<div class="setting-block">
+								<span class="setting-label">Tema Warna Baca</span>
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setTheme('light')}
@@ -1329,9 +1002,9 @@
 							</div>
 
 							<!-- Gaya Font -->
-							<div class="mobile-ctrl-card">
-								<span class="mobile-ctrl-label">Gaya Font</span>
-								<div class="pill-group w-full">
+							<div class="setting-block">
+								<span class="setting-label">Gaya Font</span>
+								<div class="pill-group mt-1.5">
 									<button
 										type="button"
 										onclick={() => setFontFamily('sans')}
@@ -1357,7 +1030,32 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     IMAGE LIGHTBOX ZOOM MODAL
+     5. STICKY GUEST NOTICE BANNER (LIGHT THEME)
+     ══════════════════════════════════════════════════════════ -->
+{#if !bannerDismissed && !data.user}
+	<div class="guest-notice-banner">
+		<div class="banner-icon">
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+				<circle cx="12" cy="12" r="10"/>
+				<line x1="12" y1="8" x2="12" y2="12"/>
+				<line x1="12" y1="16" x2="12.01" y2="16"/>
+			</svg>
+		</div>
+		<span class="banner-text"><strong>Mode Tamu</strong> &bull; Login untuk simpan progress belajar</span>
+		<a href="/login?redirectTo=/materi/{data.track.id}/{data.materi.id}" class="banner-cta">Login Sekarang</a>
+		<button
+			type="button"
+			class="banner-dismiss"
+			onclick={() => (bannerDismissed = true)}
+			aria-label="Tutup banner"
+		>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+		</button>
+	</div>
+{/if}
+
+<!-- ══════════════════════════════════════════════════════════
+     6. IMAGE LIGHTBOX ZOOM MODAL
      ══════════════════════════════════════════════════════════ -->
 {#if lightboxImg}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -1399,64 +1097,58 @@
 			</button>
 		</div>
 
-		<!-- Zoomable Image Container -->
+		<!-- Zoomable Image Canvas -->
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div class="lightbox-stage" onclick={(e) => e.stopPropagation()}>
 			<img
 				src={lightboxImg.src}
 				alt={lightboxImg.alt}
-				class="lightbox-img"
 				style="transform: scale({lightboxScale});"
+				class="lightbox-img"
 			/>
-			{#if lightboxImg.alt || lightboxImg.title}
+			{#if lightboxImg.title || lightboxImg.alt}
 				<div class="lightbox-caption">
-					{lightboxImg.alt || lightboxImg.title}
+					{lightboxImg.title || lightboxImg.alt}
 				</div>
 			{/if}
 		</div>
 	</div>
 {/if}
 
-
+<!-- ══════════════════════════════════════════════════════════
+     7. AUTH GUARD MODAL
+     ══════════════════════════════════════════════════════════ -->
+{#if showAuthModal}
+	<div class="auth-modal-overlay" onclick={() => showAuthModal = false}>
+		<div class="auth-modal-card panel" onclick={(e) => e.stopPropagation()}>
+			<div class="auth-modal-icon">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+			</div>
+			<h3 class="auth-modal-title">Perlu Login untuk {authModalAction}</h3>
+			<p class="auth-modal-desc">Fitur ini khusus untuk siswa terdaftar di Nesaga Learning Community agar progress belajar dan skor kuis tersimpan secara otomatis.</p>
+			<div class="auth-modal-actions">
+				<a href="/login?redirectTo=/materi/{data.track.id}/{data.materi.id}" class="btn-primary-gradient auth-login-btn">
+					Masuk Sekarang
+				</a>
+				<button type="button" class="btn-ghost" onclick={() => showAuthModal = false}>
+					Lanjut Membaca Tamu
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	/* ══════════════════════════════════════════════════════════
-	   DICODING-STYLE FULL ISOLATION OVERRIDES (SCOPED TO FOCUS MODE)
-	   Hides app-topbar, app-sidebar, and app-bottom-nav ONLY while reading materi
+	   THEME COLOR SCHEMES & CSS CUSTOM PROPERTIES
 	   ══════════════════════════════════════════════════════════ */
-	:global(body.focus-mode-active .app-topbar),
-	:global(body.focus-mode-active .app-sidebar),
-	:global(body.focus-mode-active .app-bottom-nav),
-	:global(body.focus-mode-active .mobile-bottom-nav) {
-		display: none !important;
-	}
-
-	:global(body.focus-mode-active .app-content),
-	:global(body.focus-mode-active .app-main),
-	:global(body.focus-mode-active .app-main-area),
-	:global(body.focus-mode-active .nlc-app-shell) {
-		padding: 0 !important;
-		margin: 0 !important;
-		max-width: 100vw !important;
-		width: 100vw !important;
-		min-height: 100vh !important;
-		background: transparent !important;
-	}
-
-	/* ══════════════════════════════════════════════════════════
-	   THEME DEFINITIONS
-	   ══════════════════════════════════════════════════════════ */
-	.dedicated-course-room {
-		display: flex;
-		flex-direction: column;
+	.reader-page {
 		min-height: 100vh;
-		width: 100%;
-		max-width: 100vw;
-		overflow-x: clip;
-		box-sizing: border-box;
-		background-color: var(--r-bg);
+		background: var(--r-bg);
 		color: var(--r-text-body);
 		transition: background-color 180ms ease, color 180ms ease;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.theme-light {
@@ -1469,14 +1161,14 @@
 		--r-text-primary: #0f172a;
 		--r-text-body: #334155;
 		--r-text-muted: #64748b;
-		--r-code-bg: #eef2ff;
-		--r-code-border: #c7d2fe;
-		--r-code-text: #4338ca;
-		--r-quote-bg: #f8fafc;
-		--r-quote-border: #6366f1;
-		--r-hover-bg: #f1f5f9;
-		--r-active-bg: #e0e7ff;
-		--r-active-text: #4338ca;
+		--r-code-bg: #f1f5f9;
+		--r-code-border: #e2e8f0;
+		--r-code-text: #0f172a;
+		--r-quote-bg: #eff6ff;
+		--r-quote-border: #3b82f6;
+		--r-hover-bg: #f8fafc;
+		--r-active-bg: #eff6ff;
+		--r-active-text: #4f46e5;
 	}
 
 	.theme-sepia {
@@ -1537,168 +1229,20 @@
 	}
 
 	/* ══════════════════════════════════════════════════════════
-	   1. DEDICATED COURSE TOPBAR
+	   1. TOPBAR
 	   ══════════════════════════════════════════════════════════ */
-	.course-topbar {
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		height: 56px;
-		background: var(--r-topbar-bg);
-		border-bottom: 1px solid var(--r-border);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0 16px;
-		gap: 12px;
-		box-sizing: border-box;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-	}
-
-	.topbar-left {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		min-width: 0;
-	}
-
-	.btn-back-track {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		height: 32px;
-		padding: 0 12px;
-		border-radius: 6px;
-		background: var(--r-hover-bg);
-		border: 1px solid var(--r-border);
-		color: var(--r-text-primary);
-		font-family: var(--font-macro, sans-serif);
-		font-size: 11.5px;
-		font-weight: 700;
-		text-decoration: none;
-		white-space: nowrap;
-		flex-shrink: 0;
-		transition: all 140ms ease;
-	}
-
-	.btn-back-track:hover {
-		border-color: #818cf8;
-		color: #4338ca;
-	}
-
-	.topbar-vsep {
-		width: 1px;
-		height: 20px;
-		background: var(--r-border);
-		flex-shrink: 0;
-	}
-
-	.course-track-name {
-		font-family: var(--font-macro, sans-serif);
-		font-size: 13px;
-		font-weight: 800;
-		color: var(--r-text-primary);
-		line-height: 1.2;
-	}
-
-	.course-phase-sub {
-		font-size: 11px;
-		color: var(--r-text-muted);
-		line-height: 1.2;
-	}
-
-	.topbar-right {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-shrink: 0;
-	}
-
-	.track-progress-metric {
-		flex-direction: column;
-		gap: 3px;
-		width: 130px;
-	}
-
-	.progress-metric-text {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		font-family: var(--font-mono, monospace);
-		font-size: 10px;
-		font-weight: 700;
-		color: var(--r-text-muted);
-	}
-
-	.mini-progress-track {
-		height: 4px;
-		background: var(--r-border);
-		border-radius: 9999px;
-		overflow: hidden;
-	}
-
-	.mini-progress-fill {
-		height: 100%;
-		background: #16a34a;
-		border-radius: 9999px;
-		transition: width 200ms ease;
-	}
-
-	/* Topbar Completion Action Button */
-	.btn-topbar-completion {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		height: 34px;
-		padding: 0 14px;
-		border-radius: 8px;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 11.5px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 150ms ease;
-		white-space: nowrap;
-	}
-
-	.btn-topbar-completion--pending {
-		background: #4f46e5;
-		color: #ffffff;
-		border: 1px solid #4338ca;
-		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
-	}
-
-	.btn-topbar-completion--pending:hover {
-		background: #4338ca;
-		transform: translateY(-1px);
-	}
-
-	.btn-topbar-completion--completed {
-		background: #dcfce7;
-		color: #15803d;
-		border: 1px solid #86efac;
-	}
-
-	.btn-topbar-completion--completed:hover {
-		background: #fee2e2;
-		color: #b91c1c;
-		border-color: #fca5a5;
-	}
-
 	/* ══════════════════════════════════════════════════════════
-	   2. MAIN WORKSPACE (DOCKED DESKTOP SIDEBAR + READING CANVAS)
+	   MAIN WORKSPACE & DOCKED SIDEBAR
 	   ══════════════════════════════════════════════════════════ */
 	.course-workspace {
 		display: flex;
 		flex: 1;
 		width: 100%;
-		min-height: calc(100vh - 56px);
+		min-height: 100vh;
 		box-sizing: border-box;
 		position: relative;
 	}
 
-	/* ══════════════════════════════════════════════════════════
-	   BREAKPOINT RULES FOR DESKTOP SIDEBAR VS MOBILE SLIDER
-	   ══════════════════════════════════════════════════════════ */
 	@media (min-width: 1024px) {
 		.desktop-course-sidebar {
 			display: flex !important;
@@ -1707,8 +1251,8 @@
 			border-right: 1px solid var(--r-border);
 			flex-direction: column;
 			position: sticky;
-			top: 56px;
-			height: calc(100vh - 56px);
+			top: 0;
+			height: 100vh;
 			overflow: visible;
 			flex-shrink: 0;
 			z-index: 20;
@@ -1723,7 +1267,7 @@
 			width: 26px;
 			height: 26px;
 			border-radius: 50%;
-			background: var(--r-topbar-bg);
+			background: var(--r-card-bg);
 			border: 1px solid var(--r-border);
 			color: var(--r-text-muted);
 			display: inline-flex;
@@ -1746,6 +1290,34 @@
 		}
 	}
 
+	.syllabus-track-header {
+		padding: 10px 14px 6px;
+	}
+
+	.btn-syllabus-back {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		width: 100%;
+		padding: 7px 10px;
+		border-radius: 8px;
+		background: var(--r-hover-bg);
+		border: 1px solid var(--r-border);
+		color: var(--r-text-primary);
+		font-family: var(--font-macro, sans-serif);
+		font-size: 11.5px;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all 140ms ease;
+		box-sizing: border-box;
+	}
+
+	.btn-syllabus-back:hover {
+		border-color: #818cf8;
+		color: #4338ca;
+		background: var(--r-active-bg);
+	}
+
 	@media (max-width: 1023px) {
 		.desktop-course-sidebar {
 			display: none !important;
@@ -1755,9 +1327,7 @@
 			display: flex !important;
 			position: fixed;
 			inset: 0;
-			background: rgba(15, 23, 42, 0.16);
-			backdrop-filter: none;
-			-webkit-backdrop-filter: none;
+			background: rgba(15, 23, 42, 0.25);
 			z-index: 1000;
 			align-items: flex-end;
 			justify-content: center;
@@ -1790,7 +1360,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 5px;
-		padding: 6px 4px;
+		padding: 7px 4px;
 		border-radius: 6px;
 		background: transparent;
 		border: none;
@@ -1812,26 +1382,14 @@
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
 
-	.btn-sidebar-collapse {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		border-radius: 6px;
-		background: transparent;
-		border: 1px solid transparent;
-		color: var(--r-text-muted);
-		cursor: pointer;
-		transition: all 140ms ease;
-		flex-shrink: 0;
-	}
-
-	.btn-sidebar-collapse:hover {
-		background: var(--r-sidebar-bg);
-		color: var(--r-text-primary);
-		border-color: var(--r-border);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	.tab-counter-badge {
+		font-family: var(--font-mono, monospace);
+		font-size: 9.5px;
+		font-weight: 700;
+		padding: 1px 5px;
+		border-radius: 9999px;
+		background: var(--r-active-bg);
+		color: var(--r-active-text);
 	}
 
 	.sidebar-scroll-body {
@@ -1866,6 +1424,24 @@
 
 	.phase-group-header:hover {
 		background: var(--r-hover-bg);
+	}
+
+	.phase-header-left {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.phase-badge-pill {
+		font-family: var(--font-mono, monospace);
+		font-size: 9.5px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: #e0e7ff;
+		color: #4338ca;
+		flex-shrink: 0;
 	}
 
 	.phase-title-text {
@@ -1952,13 +1528,181 @@
 		min-width: 0;
 	}
 
-	/* Main Article Reading Canvas */
+	/* ══════════════════════════════════════════════════════════
+	   TOC (TABLE OF CONTENTS)
+	   ══════════════════════════════════════════════════════════ */
+	.toc-container {
+		padding: 12px;
+	}
+
+	.toc-header-label {
+		font-family: var(--font-mono, monospace);
+		font-size: 10.5px;
+		font-weight: 700;
+		color: var(--r-text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		margin-bottom: 8px;
+		padding: 0 4px;
+	}
+
+	.toc-nav-list,
+	.mobile-toc-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		position: relative;
+		border-left: 2px solid var(--r-border-subtle);
+		padding-left: 4px;
+		margin-left: 4px;
+	}
+
+	.toc-link-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 10px;
+		border: none;
+		border-left: 2px solid transparent;
+		margin-left: -6px;
+		background: transparent;
+		text-align: left;
+		font-size: 12px;
+		color: var(--r-text-muted);
+		border-radius: 0 6px 6px 0;
+		cursor: pointer;
+		transition: all 140ms ease;
+		width: 100%;
+		min-height: 30px;
+	}
+
+	.toc-link-item.level-1 { font-weight: 700; color: var(--r-text-primary); }
+	.toc-link-item.level-2 { padding-left: 16px; }
+	.toc-link-item.level-3 { padding-left: 24px; font-size: 11.5px; }
+
+	.toc-bullet {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--r-border);
+		flex-shrink: 0;
+		transition: background 140ms ease;
+	}
+
+	.toc-link-item:hover {
+		background: var(--r-hover-bg);
+		color: #4f46e5;
+	}
+
+	.toc-link-item--active {
+		background: var(--r-hover-bg) !important;
+		color: #4f46e5 !important;
+		border-left-color: #4f46e5 !important;
+		font-weight: 700 !important;
+	}
+
+	.toc-link-item--active .toc-bullet {
+		background: #4f46e5 !important;
+	}
+
+	.empty-tab-hint {
+		padding: 32px 16px;
+		text-align: center;
+		font-size: 12px;
+		color: var(--r-text-muted);
+		font-style: italic;
+	}
+
+	/* ══════════════════════════════════════════════════════════
+	   SETTINGS
+	   ══════════════════════════════════════════════════════════ */
+	.settings-container {
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.setting-block {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.setting-label {
+		font-size: 11.5px;
+		font-weight: 700;
+		color: var(--r-text-primary);
+	}
+
+	.pill-group {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		width: 100%;
+	}
+
+	.pill-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 8px;
+		border-radius: 6px;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		background: var(--r-hover-bg);
+		border: 1px solid var(--r-border);
+		color: var(--r-text-muted);
+		cursor: pointer;
+		transition: all 140ms ease;
+	}
+
+	.pill-btn:hover {
+		color: var(--r-text-primary);
+		border-color: #818cf8;
+	}
+
+	.pill-btn--active {
+		background: #e0e7ff !important;
+		color: #4338ca !important;
+		border-color: #c7d2fe !important;
+	}
+
+	.theme-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 8px;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 700;
+		border: 1px solid var(--r-border);
+		cursor: pointer;
+		transition: all 140ms ease;
+	}
+
+	.theme-pill--light { background: #ffffff; color: #334155; }
+	.theme-pill--sepia { background: #f4e8d3; color: #4a3824; border-color: #dfcbac; }
+	.theme-pill--dark { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+
+	.theme-pill--active {
+		border-color: #4f46e5 !important;
+		box-shadow: 0 0 0 1.5px #4f46e5;
+	}
+
+	.font-sans-preview { font-family: var(--font-body, sans-serif) !important; font-weight: 700; }
+	.font-serif-preview { font-family: Georgia, serif !important; font-weight: 700; }
+
+	/* ══════════════════════════════════════════════════════════
+	   READING CANVAS & PROSE
+	   ══════════════════════════════════════════════════════════ */
 	.course-main-canvas {
 		flex: 1;
 		min-width: 0;
 		display: flex;
 		justify-content: center;
-		padding: 36px 24px 100px;
+		padding: 36px 24px 120px;
 		box-sizing: border-box;
 	}
 
@@ -1966,6 +1710,72 @@
 		width: 100%;
 		max-width: 740px;
 		box-sizing: border-box;
+	}
+
+	/* Reader Top Navigation Bar */
+	.reader-top-nav-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 24px;
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--r-border);
+		flex-wrap: wrap;
+	}
+
+	.btn-back-track {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px 12px;
+		border-radius: 8px;
+		background: var(--r-card-bg);
+		border: 1px solid var(--r-border);
+		color: var(--r-text-primary);
+		font-family: var(--font-macro, sans-serif);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		transition: all 150ms ease;
+	}
+
+	.btn-back-track:hover {
+		background: var(--r-hover-bg);
+		border-color: #818cf8;
+		color: #4f46e5;
+		transform: translateX(-2px);
+	}
+
+	.reader-nav-breadcrumbs {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--r-text-muted);
+		font-family: var(--font-body, sans-serif);
+	}
+
+	.crumb-link {
+		color: var(--r-text-muted);
+		text-decoration: none;
+		transition: color 140ms ease;
+	}
+
+	.crumb-link:hover {
+		color: #4f46e5;
+	}
+
+	.truncate-crumb {
+		max-width: 220px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.crumb-sep {
+		color: var(--r-border);
 	}
 
 	.article-title-header {
@@ -2018,11 +1828,6 @@
 		color: var(--r-text-muted);
 	}
 
-	.meta-item--completed {
-		color: #16a34a;
-		font-weight: 600;
-	}
-
 	.meta-dot {
 		color: var(--r-border);
 		user-select: none;
@@ -2036,10 +1841,7 @@
 	.font-sans { font-family: var(--font-body, system-ui, -apple-system, sans-serif); }
 	.font-serif { font-family: 'Merriweather', Georgia, Cambria, serif; }
 
-	.font-sans-preview { font-family: var(--font-body, sans-serif) !important; font-weight: 700; }
-	.font-serif-preview { font-family: Georgia, serif !important; font-weight: 700; }
-
-	/* Article Typography */
+	/* Prose Typography */
 	.prose-reading {
 		color: var(--r-text-body);
 		line-height: 1.82;
@@ -2104,13 +1906,6 @@
 		transform: scale(1.01);
 	}
 
-	.prose-reading :global(figcaption) {
-		font-size: 0.85em;
-		color: var(--r-text-muted);
-		margin-top: 6px;
-		font-style: italic;
-	}
-
 	.prose-reading :global(.table-responsive-wrapper) {
 		width: 100%;
 		overflow-x: auto;
@@ -2139,7 +1934,7 @@
 		color: var(--r-text-primary);
 	}
 
-	/* PRO CODE BLOCK BOX */
+	/* macOS Style Code Block */
 	.prose-reading :global(.tiptap-code-block-wrapper) {
 		margin: 1.4em 0;
 		border-radius: 10px;
@@ -2232,27 +2027,8 @@
 		font-size: inherit !important;
 	}
 
-	.prose-reading :global(.tiptap-attachment-btn) {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 10px;
-		margin: 2px 4px;
-		background: var(--r-code-bg);
-		border: 1px solid var(--r-code-border);
-		border-radius: 9999px;
-		font-family: var(--font-macro, sans-serif);
-		font-size: 11.5px;
-		font-weight: 700;
-		color: var(--r-code-text);
-		text-decoration: none;
-		vertical-align: middle;
-		transition: all 140ms ease;
-	}
-
 	/* ══════════════════════════════════════════════════════════
-	   DEDICATED MATERIAL ATTACHMENTS & RESOURCES SECTION
-	   Fully responsive to Theme (Light, Sepia, Dark)
+	   ATTACHMENTS & VIDEOS SECTION
 	   ══════════════════════════════════════════════════════════ */
 	.materi-attachments-section,
 	.materi-video-recommendations-section {
@@ -2341,147 +2117,132 @@
 	}
 
 	.attachment-card:hover {
-		border-color: var(--r-code-border);
+		border-color: #818cf8;
 		background: var(--r-hover-bg);
 		transform: translateY(-1px);
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 	}
 
-	.attachment-card--slide {
-		background: var(--r-code-bg);
-		border-color: var(--r-code-border);
-	}
-
-	.attachment-card--slide:hover {
-		border-color: var(--r-active-text);
+	.att-card-icon {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
 		background: var(--r-active-bg);
-	}
-
-	.attachment-card-icon {
+		color: var(--r-active-text);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
 	}
 
-	.attachment-card-icon--ppt {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
-		background: var(--r-active-bg);
-		color: var(--r-active-text);
-		border: 1px solid var(--r-code-border);
-	}
-
-	.attachment-card-info {
+	.att-card-info {
 		flex: 1;
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
 	}
 
-	.attachment-card-title {
+	.att-card-name {
 		font-family: var(--font-macro, sans-serif);
-		font-size: 12px;
+		font-size: 12.5px;
 		font-weight: 700;
 		color: var(--r-text-primary);
-		line-height: 1.3;
 	}
 
-	.attachment-card-meta {
+	.att-card-size {
+		font-family: var(--font-mono, monospace);
 		font-size: 10.5px;
 		color: var(--r-text-muted);
-		margin-top: 1px;
 	}
 
-	.attachment-card-action {
-		display: inline-flex;
+	.videos-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 14px;
+	}
+
+	.video-card {
+		border-radius: 10px;
+		border: 1px solid var(--r-border);
+		overflow: hidden;
+		background: var(--r-bg);
+	}
+
+	.video-iframe-wrap {
+		position: relative;
+		padding-bottom: 56.25%;
+		height: 0;
+		background: #000000;
+	}
+
+	.video-iframe-wrap iframe {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.video-card-body {
+		padding: 10px 12px;
+		display: flex;
 		align-items: center;
-		gap: 4px;
-		padding: 5px 10px;
-		border-radius: 6px;
-		background: var(--r-active-bg);
-		color: var(--r-active-text);
-		border: 1px solid var(--r-code-border);
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.video-card-title {
 		font-family: var(--font-macro, sans-serif);
-		font-size: 10.5px;
+		font-size: 12.5px;
 		font-weight: 700;
-		flex-shrink: 0;
-		transition: all 140ms ease;
-	}
-
-	.attachment-card:hover .attachment-card-action {
-		background: var(--r-code-border);
 		color: var(--r-text-primary);
+		margin: 0;
 	}
 
-	.att-file-ext {
+	.video-duration-pill {
 		font-family: var(--font-mono, monospace);
 		font-size: 10px;
-		font-weight: 800;
-		padding: 3px 6px;
-		border-radius: 6px;
-		border: 1px solid var(--r-code-border);
+		padding: 2px 6px;
+		border-radius: 4px;
 		background: var(--r-code-bg);
 		color: var(--r-code-text);
-		text-transform: uppercase;
-		flex-shrink: 0;
+		white-space: nowrap;
 	}
 
 	/* ══════════════════════════════════════════════════════════
-	   3. STICKY READER BOTTOM ACTION BAR
+	   3. FIXED BOTTOM BAR
 	   ══════════════════════════════════════════════════════════ */
 	.course-bottom-bar {
 		position: fixed;
 		bottom: 0;
 		left: 0;
 		right: 0;
-		width: auto;
-		max-width: 100vw;
-		z-index: 90;
-		height: 56px;
-		background: var(--r-topbar-bg);
+		height: 58px;
+		background: var(--r-card-bg);
 		border-top: 1px solid var(--r-border);
+		z-index: 60;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0 16px calc(0px + env(safe-area-inset-bottom, 0px));
-		gap: 12px;
-		box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
-		box-sizing: border-box;
-		overflow: hidden;
-		transition: left 180ms ease, width 180ms ease;
-	}
-
-	@media (min-width: 1024px) {
-		.course-bottom-bar--sidebar-open {
-			left: 350px !important;
-			width: calc(100vw - 350px) !important;
-		}
+		padding: 0 16px;
+		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
 	}
 
 	.bottom-bar-side-slot {
-		flex: 1 1 0px;
-		min-width: 0;
+		flex: 1;
 		display: flex;
-		align-items: center;
+		min-width: 0;
 	}
 
-	.left-slot {
-		justify-content: flex-start;
-	}
-
-	.right-slot {
-		justify-content: flex-end;
-	}
+	.left-slot { justify-content: flex-start; }
+	.right-slot { justify-content: flex-end; }
 
 	.bottom-bar-center-slot {
-		flex-shrink: 0;
 		display: flex;
+		align-items: center;
 		justify-content: center;
-	}
-
-	.bottom-bar-placeholder {
-		width: 100%;
-		height: 1px;
+		flex-shrink: 0;
+		padding: 0 10px;
 	}
 
 	.bottom-bar-nav-btn {
@@ -2489,24 +2250,20 @@
 		align-items: center;
 		gap: 8px;
 		height: 38px;
-		padding: 0 14px;
+		padding: 0 12px;
 		border-radius: 8px;
-		background: var(--r-card-bg);
+		background: var(--r-hover-bg);
 		border: 1px solid var(--r-border);
 		color: var(--r-text-primary);
 		text-decoration: none;
-		max-width: 260px;
-		width: auto;
+		max-width: 240px;
 		min-width: 0;
-		flex-shrink: 1;
-		box-sizing: border-box;
 		transition: all 140ms ease;
 	}
 
 	.bottom-bar-nav-btn:hover {
 		border-color: #818cf8;
 		color: #4338ca;
-		background: var(--r-hover-bg);
 	}
 
 	.nav-btn-text {
@@ -2528,9 +2285,6 @@
 		font-size: 11.5px;
 		font-weight: 700;
 		line-height: 1.2;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.bottom-bar-menu-btn {
@@ -2563,144 +2317,18 @@
 		border-color: #1e293b;
 	}
 
-	/* Settings Pills */
-	.setting-label {
-		font-size: 11.5px;
-		font-weight: 700;
-		color: var(--r-text-primary);
+	.bottom-bar-placeholder {
+		width: 38px;
 	}
 
-	.pill-group {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-
-	.pill-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 5px 8px;
-		border-radius: 6px;
-		font-family: var(--font-mono, monospace);
-		font-size: 11px;
-		font-weight: 700;
-		background: var(--r-hover-bg);
-		border: 1px solid var(--r-border);
-		color: var(--r-text-muted);
-		cursor: pointer;
-		transition: all 140ms ease;
-	}
-
-	.pill-btn:hover {
-		color: var(--r-text-primary);
-		border-color: #818cf8;
-	}
-
-	.pill-btn--active {
-		background: #e0e7ff !important;
-		color: #4338ca !important;
-		border-color: #c7d2fe !important;
-	}
-
-	.theme-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 5px 8px;
-		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 700;
-		border: 1px solid var(--r-border);
-		cursor: pointer;
-		transition: all 140ms ease;
-	}
-
-	.theme-pill--light { background: #ffffff; color: #334155; }
-	.theme-pill--sepia { background: #f4e8d3; color: #4a3824; border-color: #dfcbac; }
-	.theme-pill--dark { background: #1e293b; color: #cbd5e1; border-color: #334155; }
-
-	.theme-pill--active {
-		border-color: #4f46e5 !important;
-		box-shadow: 0 0 0 1.5px #4f46e5;
-	}
-
-	/* ToC Headings List (Vertical Guide Rail & Active Indicator) */
-	.toc-container {
-		padding: 12px;
-	}
-
-	.toc-nav-list {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		position: relative;
-		border-left: 2px solid var(--r-border-subtle);
-		padding-left: 4px;
-		margin-left: 4px;
-	}
-
-	.toc-link-item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 10px;
-		border: none;
-		border-left: 2px solid transparent;
-		margin-left: -6px;
-		background: transparent;
-		text-align: left;
-		font-size: 12px;
-		color: var(--r-text-muted);
-		border-radius: 0 6px 6px 0;
-		cursor: pointer;
-		transition: all 140ms ease;
-		width: 100%;
-		min-height: 30px;
-	}
-
-	.toc-link-item.level-1 { font-weight: 700; color: var(--r-text-primary); }
-	.toc-link-item.level-2 { padding-left: 16px; }
-	.toc-link-item.level-3 { padding-left: 24px; font-size: 11.5px; }
-
-	.toc-bullet {
-		width: 5px;
-		height: 5px;
-		border-radius: 50%;
-		background: var(--r-border);
-		flex-shrink: 0;
-		transition: background 140ms ease;
-	}
-
-	.toc-link-item:hover {
-		background: var(--r-hover-bg);
-		color: #4f46e5;
-	}
-
-	.toc-link-item--active {
-		background: var(--r-hover-bg) !important;
-		color: #4f46e5 !important;
-		border-left-color: #4f46e5 !important;
-		font-weight: 700 !important;
-	}
-
-	.toc-link-item--active .toc-bullet {
-		background: #4f46e5 !important;
-	}
-
-	.empty-tab-hint {
-		padding: 32px 16px;
-		text-align: center;
-		font-size: 12px;
-		color: var(--r-text-muted);
-		font-style: italic;
-	}
-
+	/* ══════════════════════════════════════════════════════════
+	   4. MOBILE DRAWER PANEL
+	   ══════════════════════════════════════════════════════════ */
 	.drawer-handle-bar {
 		width: 36px;
 		height: 4px;
-		background: #cbd5e1;
 		border-radius: 9999px;
+		background: var(--r-border);
 		margin: 0 auto 12px;
 	}
 
@@ -2708,141 +2336,217 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: 8px;
 		margin-bottom: 12px;
+		padding-bottom: 8px;
 		border-bottom: 1px solid var(--r-border);
-		padding-bottom: 10px;
 	}
 
 	.drawer-tab-switch {
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		background: var(--r-border-subtle);
-		padding: 3px;
-		border-radius: 8px;
-		border: 1px solid var(--r-border);
+		flex: 1;
 	}
 
 	.drawer-tab-btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		padding: 5px 10px;
+		gap: 4px;
+		padding: 6px 10px;
 		border-radius: 6px;
 		font-family: var(--font-macro, sans-serif);
 		font-size: 11px;
 		font-weight: 700;
 		background: transparent;
-		border: none;
+		border: 1px solid transparent;
 		color: var(--r-text-muted);
 		cursor: pointer;
 	}
 
 	.drawer-tab-btn--active {
-		background: var(--r-sidebar-bg);
-		color: #4f46e5;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+		background: var(--r-active-bg);
+		color: var(--r-active-text);
+		border-color: var(--r-border);
 	}
 
 	.btn-drawer-close {
 		font-family: var(--font-macro, sans-serif);
-		font-size: 12px;
+		font-size: 11.5px;
 		font-weight: 700;
 		color: var(--r-text-muted);
 		background: transparent;
 		border: none;
-		padding: 6px 10px;
 		cursor: pointer;
+		padding: 4px 8px;
 	}
 
 	.drawer-body {
-		overflow-y: auto;
 		flex: 1;
-	}
-
-	.mobile-settings-stack {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.mobile-ctrl-card {
-		background: var(--r-border-subtle);
-		border: 1px solid var(--r-border);
-		border-radius: 10px;
-		padding: 10px 12px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.mobile-ctrl-label {
-		font-size: 11.5px;
-		font-weight: 700;
-		color: var(--r-text-primary);
+		overflow-y: auto;
+		max-height: 60vh;
 	}
 
 	/* ══════════════════════════════════════════════════════════
-	   IMAGE LIGHTBOX MODAL
+	   5. STICKY GUEST BANNER (LIGHT THEME)
+	   ══════════════════════════════════════════════════════════ */
+	.guest-notice-banner {
+		position: fixed;
+		bottom: 74px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 80;
+		background: rgba(255, 255, 255, 0.96);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border: 1.5px solid var(--border-hard, #e2e8f0);
+		border-radius: var(--radius-full, 9999px);
+		padding: 8px 12px 8px 18px;
+		color: var(--text-primary, #0f172a);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-family: var(--font-body);
+		font-size: 13px;
+		font-weight: 500;
+		max-width: calc(100vw - 32px);
+		box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+		white-space: nowrap;
+	}
+
+	.banner-icon {
+		color: var(--primary, #4f46e5);
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+	}
+
+	.banner-text {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: var(--text-secondary, #334155);
+	}
+
+	.banner-text strong {
+		color: var(--text-primary, #0f172a);
+		font-weight: 700;
+	}
+
+	.banner-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 16px;
+		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+		color: #ffffff;
+		border-radius: var(--radius-full, 9999px);
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: all 140ms ease;
+		box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+	}
+
+	.banner-cta:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+	}
+
+	.banner-dismiss {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		background: var(--bg-cell, #f1f5f9);
+		border: none;
+		color: var(--text-muted, #64748b);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: all 140ms ease;
+	}
+
+	.banner-dismiss:hover {
+		background: #e2e8f0;
+		color: var(--text-primary, #0f172a);
+	}
+
+	/* ══════════════════════════════════════════════════════════
+	   6. LIGHTBOX ZOOM
 	   ══════════════════════════════════════════════════════════ */
 	.lightbox-backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(10, 15, 29, 0.94);
-		backdrop-filter: none;
-		-webkit-backdrop-filter: none;
-		z-index: 10000;
+		background: rgba(15, 23, 42, 0.88);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		z-index: 2000;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 20px;
-		box-sizing: border-box;
+		padding: 24px;
 	}
 
 	.lightbox-toolbar {
 		position: fixed;
 		top: 20px;
+		right: 20px;
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		background: rgba(30, 41, 59, 0.9);
+		backdrop-filter: blur(12px);
 		border: 1px solid rgba(255, 255, 255, 0.15);
 		border-radius: 9999px;
 		padding: 6px 12px;
-		z-index: 10001;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		z-index: 2010;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 	}
 
 	.btn-lb-tool {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.08);
+		background: transparent;
 		border: none;
-		color: #f8fafc;
-		display: flex;
+		color: #e2e8f0;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
 		cursor: pointer;
 		transition: all 140ms ease;
 	}
 
-	.btn-lb-tool:hover { background: rgba(255, 255, 255, 0.2); }
-	.btn-lb-percent { width: auto; padding: 0 8px; border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 11px; font-weight: 700; }
-	.lb-sep { width: 1px; height: 18px; background: rgba(255, 255, 255, 0.2); margin: 0 4px; }
-	.btn-lb-close { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
-	.btn-lb-close:hover { background: rgba(239, 68, 68, 0.8); color: #ffffff; }
+	.btn-lb-tool:hover { background: rgba(255, 255, 255, 0.15); color: #ffffff; }
+
+	.btn-lb-percent {
+		width: auto;
+		padding: 0 8px;
+		font-family: var(--font-mono, monospace);
+		font-size: 11px;
+		font-weight: 700;
+		border-radius: 4px;
+	}
+
+	.lb-sep {
+		width: 1px;
+		height: 16px;
+		background: rgba(255, 255, 255, 0.2);
+	}
 
 	.lightbox-stage {
-		max-width: 92vw;
+		max-width: 90vw;
 		max-height: 85vh;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		overflow: auto;
+		overflow: hidden;
 	}
 
 	.lightbox-img {
@@ -2850,29 +2554,113 @@
 		max-height: 75vh;
 		object-fit: contain;
 		border-radius: 8px;
-		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-		transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+		transition: transform 150ms ease-out;
+		user-select: none;
 	}
 
 	.lightbox-caption {
 		color: #cbd5e1;
-		font-size: 12px;
+		font-size: 13px;
 		margin-top: 12px;
 		text-align: center;
 		max-width: 600px;
-		font-style: italic;
 	}
 
-	/* Responsive Tweaks */
+	/* ══════════════════════════════════════════════════════════
+	   7. AUTH MODAL
+	   ══════════════════════════════════════════════════════════ */
+	.auth-modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.6);
+		backdrop-filter: blur(4px);
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+	}
+
+	.auth-modal-card {
+		background: #ffffff;
+		border-radius: 16px;
+		padding: 28px;
+		max-width: 440px;
+		width: 100%;
+		text-align: center;
+		box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.2);
+	}
+
+	.auth-modal-icon {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: #eef2ff;
+		color: #4f46e5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 16px;
+	}
+
+	.auth-modal-title {
+		font-family: var(--font-macro);
+		font-size: 18px;
+		font-weight: 800;
+		color: #0f172a;
+		margin: 0 0 8px 0;
+	}
+
+	.auth-modal-desc {
+		font-size: 13px;
+		color: #64748b;
+		line-height: 1.5;
+		margin: 0 0 20px 0;
+	}
+
+	.auth-modal-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.auth-login-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 10px 18px;
+		border-radius: 8px;
+		font-family: var(--font-macro);
+		font-size: 13px;
+		font-weight: 700;
+		color: #ffffff;
+		text-decoration: none;
+	}
+
+	.btn-ghost {
+		background: transparent;
+		border: none;
+		color: #64748b;
+		font-family: var(--font-body);
+		font-size: 12.5px;
+		cursor: pointer;
+		padding: 8px;
+	}
+
+	.btn-ghost:hover {
+		color: #0f172a;
+	}
+
 	@media (max-width: 640px) {
-		.btn-back-label { display: none; }
-		.course-main-canvas { padding: 20px 14px 100px; }
-		.materi-attachments-section { margin-top: 32px; padding: 14px; }
-		.attachments-grid { grid-template-columns: 1fr; }
-		.attachment-card { width: 100%; padding: 8px 10px; }
-		.course-bottom-bar { padding: 0 8px calc(0px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
-		.bottom-bar-nav-btn { padding: 0 8px; height: 36px; max-width: 100%; }
-		.bottom-bar-menu-btn { height: 36px; padding: 0 10px; font-size: 11px; }
-		.menu-btn-label { font-size: 11px; }
+		.course-main-canvas {
+			padding: 24px 16px 140px;
+		}
+
+		.guest-notice-banner {
+			bottom: 70px;
+			font-size: 12px;
+			padding: 6px 10px 6px 14px;
+		}
 	}
 </style>
