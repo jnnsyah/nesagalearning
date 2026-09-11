@@ -3,6 +3,7 @@ import {
 	bigint,
 	text,
 	integer,
+	boolean,
 	timestamp,
 	jsonb,
 	unique,
@@ -108,6 +109,8 @@ export const quizAttempt = pgTable(
 			.notNull()
 			.references(() => user.id),
 		score: integer('score').notNull(),
+		isPassed: boolean('is_passed').notNull().default(false),
+		durationSeconds: integer('duration_seconds'),
 		answers: jsonb('answers').notNull().default([]),
 		attemptedAt: timestamp('attempted_at', { withTimezone: true }).notNull().defaultNow()
 	},

@@ -9,6 +9,11 @@ import {
 	createMateriSchema,
 	updateCurriculumTrackSchema
 } from '$lib/validators/curriculum';
+import { createQuizSchema } from '$lib/validators/quiz';
+import { QuizService } from '$lib/server/services/quiz.service';
+import { db } from '$lib/server/db';
+import { quiz, quizQuestion } from '$lib/server/db/schema/curriculum';
+import { eq, inArray, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user || locals.user.role !== 'mentor') {
@@ -29,9 +34,49 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(404, 'Track Pembelajaran tidak ditemukan');
 	}
 
+	// Extract all subphase IDs in this track
+	const allSubPhaseIds = (track.phases || []).flatMap((p) => (p.subPhases || []).map((sp) => sp.id));
+
+	let quizMap: Record<number, Array<{ id: number; title: string; quizType: string; passingScore: number; durationMinutes: number | null; questionCount: number }>> = {};
+
+	if (allSubPhaseIds.length > 0) {
+		const rawQuizzes = await db
+			.select({
+				id: quiz.id,
+				subPhaseId: quiz.subPhaseId,
+				title: quiz.title,
+				quizType: quiz.quizType,
+				passingScore: quiz.passingScore,
+				durationMinutes: quiz.durationMinutes
+			})
+			.from(quiz)
+			.where(inArray(quiz.subPhaseId, allSubPhaseIds));
+
+		const counts = await Promise.all(
+			rawQuizzes.map(async (q) => {
+				const [qc] = await db
+					.select({ count: count(quizQuestion.id) })
+					.from(quizQuestion)
+					.where(eq(quizQuestion.quizId, q.id));
+				return { quizId: q.id, count: Number(qc?.count ?? 0) };
+			})
+		);
+
+		const countMap = Object.fromEntries(counts.map((c) => [c.quizId, c.count]));
+
+		for (const q of rawQuizzes) {
+			if (!quizMap[q.subPhaseId]) quizMap[q.subPhaseId] = [];
+			quizMap[q.subPhaseId].push({
+				...q,
+				questionCount: countMap[q.id] ?? 0
+			});
+		}
+	}
+
 	return {
 		track,
-		tingkatList
+		tingkatList,
+		quizMap
 	};
 };
 
@@ -173,6 +218,38 @@ export const actions: Actions = {
 			return { success: true, message: 'Materi berhasil dibuat', newMateriId: m.id };
 		} catch (err: any) {
 			return fail(500, { error: err?.message || 'Gagal membuat materi' });
+		}
+	},
+
+	// --- QUIZ ACTIONS ---
+	createQuiz: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'mentor') return fail(403, { error: 'Akses ditolak' });
+		const formData = await request.formData();
+		const subPhaseId = Number(formData.get('subPhaseId'));
+		const title = formData.get('title')?.toString() || '';
+		const quizType = (formData.get('quizType')?.toString() || 'post-test') as 'pre-test' | 'post-test';
+		const passingScore = Number(formData.get('passingScore') || 60);
+		const durationRaw = formData.get('durationMinutes')?.toString();
+		const durationMinutes = durationRaw && durationRaw.trim() !== '' ? Number(durationRaw) : null;
+
+		const parse = createQuizSchema.safeParse({
+			subPhaseId,
+			title,
+			quizType,
+			passingScore,
+			durationMinutes
+		});
+
+		if (!parse.success) {
+			const msg = parse.error.issues[0]?.message || 'Input kuis tidak valid';
+			return fail(400, { error: msg });
+		}
+
+		try {
+			const created = await QuizService.createQuiz(parse.data);
+			return { success: true, message: 'Kuis berhasil dibuat', newQuizId: created.id };
+		} catch (err: any) {
+			return fail(500, { error: err?.message || 'Gagal membuat kuis' });
 		}
 	},
 

@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import {
 	createUserSchema,
 	updateUserSchema,
@@ -20,7 +19,7 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = createUserSchema.safeParse(validSiswa);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('rejects siswa creation without NISN', () => {
@@ -34,7 +33,7 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = createUserSchema.safeParse(invalidSiswaWithoutNisn);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('allows non-siswa creation without NISN', () => {
@@ -48,7 +47,7 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = createUserSchema.safeParse(validMentorWithoutNisn);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('rejects invalid username characters or short passwords', () => {
@@ -60,7 +59,7 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = createUserSchema.safeParse(invalid);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('validates reset password schema correctly', () => {
@@ -70,7 +69,7 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = resetPasswordSchema.safeParse(valid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates bulk import siswa list with NISN', () => {
@@ -82,9 +81,9 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = bulkImportSiswaSchema.safeParse(bulkData);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.users.length, 2);
+			expect(result.data.users.length).toBe(2);
 		}
 	});
 
@@ -98,9 +97,9 @@ describe('User Admin Validation & Helper Logic', () => {
 		};
 
 		const result = createUserSchema.safeParse(validWithNisn);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.nisn, '0081234567');
+			expect(result.data.nisn).toBe('0081234567');
 		}
 	});
 });

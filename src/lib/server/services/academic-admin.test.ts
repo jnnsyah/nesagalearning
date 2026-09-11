@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { createTahunAjaranSchema, updateTahunAjaranSchema } from '../../validators/academic';
 
 describe('Academic Admin Validation & Schema Logic', () => {
@@ -12,10 +11,10 @@ describe('Academic Admin Validation & Schema Logic', () => {
 		};
 
 		const result = createTahunAjaranSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.name, '2026/2027');
-			assert.equal(result.data.isActive, true);
+			expect(result.data.name).toBe('2026/2027');
+			expect(result.data.isActive).toBe(true);
 		}
 	});
 
@@ -26,7 +25,7 @@ describe('Academic Admin Validation & Schema Logic', () => {
 		};
 
 		const result = createTahunAjaranSchema.safeParse(invalidInput);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('validates updateTahunAjaranSchema with valid ID', () => {
@@ -39,10 +38,10 @@ describe('Academic Admin Validation & Schema Logic', () => {
 		};
 
 		const result = updateTahunAjaranSchema.safeParse(updateInput);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.id, 1);
-			assert.equal(result.data.name, '2027/2028');
+			expect(result.data.id).toBe(1);
+			expect(result.data.name).toBe('2027/2028');
 		}
 	});
 
@@ -54,6 +53,6 @@ describe('Academic Admin Validation & Schema Logic', () => {
 		};
 
 		const result = updateTahunAjaranSchema.safeParse(invalidUpdate);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 });

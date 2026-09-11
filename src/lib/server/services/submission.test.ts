@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { submitTaskSchema, reviewSubmissionSchema } from '$lib/validators/submission';
 
 describe('Submission Service & Validation Logic', () => {
@@ -8,7 +7,7 @@ describe('Submission Service & Validation Logic', () => {
 			taskId: 1,
 			link: 'https://github.com/smk-nesaga/tkj-lab-1'
 		});
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates mentor review status approval', () => {
@@ -17,7 +16,7 @@ describe('Submission Service & Validation Logic', () => {
 			status: 'approved',
 			feedback: 'Pekerjaan sangat rapi!'
 		});
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates mentor review status revision request', () => {
@@ -26,7 +25,7 @@ describe('Submission Service & Validation Logic', () => {
 			status: 'revisi',
 			feedback: 'Tolong perbaiki routing IP pada interface eth0'
 		});
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('rejects invalid review status values', () => {
@@ -34,7 +33,7 @@ describe('Submission Service & Validation Logic', () => {
 			submissionId: 5,
 			status: 'unknown_status'
 		});
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('rejects invalid task submission URLs', () => {
@@ -42,6 +41,6 @@ describe('Submission Service & Validation Logic', () => {
 			taskId: 1,
 			link: 'http://'
 		});
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 });

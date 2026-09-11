@@ -26,9 +26,12 @@
 	let pathname = $derived($page.url.pathname);
 	let role = $derived(NavigationRegistry.deriveRole(currentUser?.role?.toLowerCase(), pathname));
 
-	// Focus mode / Reading mode detection (Materi Reader for Siswa & Modul Builder for Mentor)
+	// Focus mode / Reading mode detection (Materi Reader for Siswa & Modul Builder for Mentor & Exam Engine)
 	let isFocusMode = $derived.by(() => {
 		if (pathname.startsWith('/siswa/materi/') && pathname !== '/siswa/materi') {
+			return true;
+		}
+		if (pathname.startsWith('/siswa/quiz/')) {
 			return true;
 		}
 		if (/\/mentor\/kurikulum\/[^\/]+\/materi\/[^\/]+/.test(pathname)) {
@@ -45,6 +48,9 @@
 
 	// Mobile More navigation drawer sheet state
 	let showMoreDrawer = $state(false);
+
+	// Sidebar cats easter egg
+	let showSidebarCats = $state(false);
 
 	// Keyboard shortcut '[' to toggle sidebar collapse
 	function handleKeyDown(e: KeyboardEvent) {
@@ -523,9 +529,19 @@
 				{/each}
 			</nav>
 
+			<!-- Dancing Cat Easter Egg (Outside profile section, sitting above the divider line) -->
+			{#if !sidebarCollapsed}
+				<div class="sidebar-cats-stage" aria-hidden="true">
+					<div class="sidebar-cats-group">
+						<div class="sidebar-cat-wrapper" title="Dancing Cat (Damdam)">
+							<img src="/assets/dancing-cat.webp" alt="Dancing Cat" class="sidebar-cat-gif cat-dance" />
+						</div>
+					</div>
+				</div>
+			{/if}
+
 			<!-- User Section Pinned to Bottom -->
 			<div class="sidebar__user">
-				<div class="sidebar-user-divider"></div>
 				{#if sidebarCollapsed}
 					<a href="/{role}/profile" class="user-avatar-sm" title="{currentUser?.fullName ?? 'Pengguna'} ({currentRoleMeta.badge})">
 							{#if currentUser?.avatarUrl}
@@ -781,19 +797,23 @@
 	/* ── Sidebar ── */
 	.app-sidebar {
 		width: 260px;
+		height: 100vh;
+		height: 100dvh;
 		min-height: 100vh;
+		min-height: 100dvh;
 		background: #ffffff;
 		border-right: 1px solid var(--border-hard);
 		display: flex;
 		flex-direction: column;
 		position: sticky;
 		top: 0;
-		height: 100vh;
+		bottom: 0;
 		overflow: hidden;
 		box-shadow: var(--shadow-sm);
 		transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
 		z-index: 40;
 		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 
 	.app-sidebar--collapsed {
@@ -809,6 +829,7 @@
 		flex-direction: column;
 		justify-content: center;
 		overflow: hidden;
+		flex-shrink: 0;
 	}
 
 	.brand-link {
@@ -850,12 +871,15 @@
 
 	/* Nav List */
 	.sidebar__nav {
-		flex: 1;
+		flex: 1 1 auto;
+		min-height: 0;
 		padding: 12px 10px;
 		display: flex;
 		flex-direction: column;
 		gap: 3px;
 		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: #cbd5e1 transparent;
 	}
 
 	.nav-item {
@@ -902,23 +926,88 @@
 		text-overflow: ellipsis;
 	}
 
+	/* ── Sidebar Cats Easter Egg (Outside profile, sitting on top of divider) ── */
+	.sidebar-cats-stage {
+		margin-top: auto;
+		height: 0;
+		max-height: 0;
+		opacity: 0;
+		transform: translateY(18px) scale(0.9);
+		overflow: hidden;
+		transition: max-height 340ms cubic-bezier(0.34, 1.56, 0.64, 1),
+		            height 340ms cubic-bezier(0.34, 1.56, 0.64, 1),
+		            opacity 240ms ease,
+		            transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+		pointer-events: none;
+		position: relative;
+		z-index: 10;
+		flex-shrink: 0;
+		box-sizing: border-box;
+	}
+
+	.app-sidebar:hover .sidebar-cats-stage {
+		height: 64px;
+		max-height: 70px;
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		pointer-events: auto;
+	}
+
+	.sidebar-cats-group {
+		display: flex;
+		align-items: flex-end;
+		justify-content: flex-start;
+		padding: 0 16px;
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		background: transparent;
+		border: none;
+	}
+
+	.sidebar-cat-wrapper {
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		height: 62px;
+		width: 54px;
+		margin-left: -5px;
+		transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+		cursor: pointer;
+		filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+	}
+
+	.sidebar-cat-wrapper:hover {
+		transform: translateY(-5px) scale(1.12);
+	}
+
+	.sidebar-cat-gif {
+		object-fit: contain;
+		display: block;
+		user-select: none;
+		-webkit-user-drag: none;
+	}
+
+	.sidebar-cat-gif.cat-dance {
+		height: 60px;
+	}
+
 	/* User Section Pinned to Bottom */
 	.sidebar__user {
+		margin-top: 0;
+		flex-shrink: 0;
 		padding: 12px 12px 16px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		overflow: hidden;
+		position: relative;
 		background: #ffffff;
-	}
-
-	.sidebar-user-divider {
-		height: 1px;
-		background: var(--border-hard);
-		margin-bottom: 4px;
+		border-top: 1px solid var(--border-hard);
 	}
 
 	.user-profile-box {
+		position: relative;
+		z-index: 2;
 		display: flex;
 		align-items: center;
 		gap: 10px;

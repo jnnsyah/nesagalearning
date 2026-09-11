@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { createKelasSchema, updateKelasSchema, assignStudentSchema, bulkPromoteSchema, taBulkPromoteSchema } from '../../validators/master';
 
 describe('Master Admin & Class Validation Logic', () => {
@@ -14,10 +13,10 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = createKelasSchema.safeParse(valid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.name, 'X TKJ 1');
-			assert.equal(result.data.mentorIds.length, 2);
+			expect(result.data.name).toBe('X TKJ 1');
+			expect(result.data.mentorIds.length).toBe(2);
 		}
 	});
 
@@ -30,7 +29,7 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = createKelasSchema.safeParse(invalid);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('validates updateKelasSchema with valid ID', () => {
@@ -45,10 +44,10 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = updateKelasSchema.safeParse(updateValid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.id, 5);
-			assert.equal(result.data.name, 'XI RPL 2');
+			expect(result.data.id).toBe(5);
+			expect(result.data.name).toBe('XI RPL 2');
 		}
 	});
 
@@ -60,7 +59,7 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = assignStudentSchema.safeParse(assignValid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates bulkPromoteSchema input with multiple student promotions', () => {
@@ -75,9 +74,9 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = bulkPromoteSchema.safeParse(bulkValid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.promotions.length, 3);
+			expect(result.data.promotions.length).toBe(3);
 		}
 	});
 
@@ -99,10 +98,10 @@ describe('Master Admin & Class Validation Logic', () => {
 		};
 
 		const result = taBulkPromoteSchema.safeParse(taBulkValid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.mappings.length, 2);
-			assert.equal(result.data.mappings[1].targetKelasId, 0);
+			expect(result.data.mappings.length).toBe(2);
+			expect(result.data.mappings[1].targetKelasId).toBe(0);
 		}
 	});
 });

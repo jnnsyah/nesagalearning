@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { createPertemuanSchema, updatePertemuanSchema, optionalTaskSchema } from './pertemuan';
 
 describe('createPertemuanSchema', () => {
@@ -18,7 +17,7 @@ describe('createPertemuanSchema', () => {
 		};
 
 		const result = createPertemuanSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates meeting input with absolute HTTPS material URL', () => {
@@ -35,7 +34,7 @@ describe('createPertemuanSchema', () => {
 		};
 
 		const result = createPertemuanSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 
 	it('validates meeting input with empty or null materialUrl', () => {
@@ -51,11 +50,11 @@ describe('createPertemuanSchema', () => {
 		};
 
 		const resultEmpty = createPertemuanSchema.safeParse(inputEmpty);
-		assert.equal(resultEmpty.success, true);
+		expect(resultEmpty.success).toBe(true);
 
 		const inputNull = { ...inputEmpty, materialUrl: null };
 		const resultNull = createPertemuanSchema.safeParse(inputNull);
-		assert.equal(resultNull.success, true);
+		expect(resultNull.success).toBe(true);
 	});
 
 	it('rejects short title (< 3 chars)', () => {
@@ -70,9 +69,9 @@ describe('createPertemuanSchema', () => {
 		};
 
 		const result = createPertemuanSchema.safeParse(input);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 		if (!result.success) {
-			assert.equal(result.error.issues[0].message, 'Judul pertemuan minimal 3 karakter');
+			expect(result.error.issues[0].message).toBe('Judul pertemuan minimal 3 karakter');
 		}
 	});
 
@@ -93,7 +92,7 @@ describe('createPertemuanSchema', () => {
 		};
 
 		const result = createPertemuanSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 });
 
@@ -104,9 +103,9 @@ describe('optionalTaskSchema', () => {
 		};
 
 		const result = optionalTaskSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.taskSize, 'sedang');
+			expect(result.data.taskSize).toBe('sedang');
 		}
 	});
 
@@ -116,7 +115,7 @@ describe('optionalTaskSchema', () => {
 		};
 
 		const result = optionalTaskSchema.safeParse(input);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 });
 
@@ -128,6 +127,6 @@ describe('updatePertemuanSchema', () => {
 		};
 
 		const result = updatePertemuanSchema.safeParse(input);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 	});
 });

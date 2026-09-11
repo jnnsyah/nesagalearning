@@ -108,7 +108,10 @@ export const quiz = pgTable(
 			.notNull()
 			.references(() => subPhase.id, { onDelete: 'cascade' }),
 		title: text('title').notNull(),
+		description: text('description'),
+		quizType: text('quiz_type').notNull().default('post-test'), // 'pre-test' | 'post-test'
 		passingScore: integer('passing_score').notNull().default(60),
+		durationMinutes: integer('duration_minutes'), // null = no time limit
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
@@ -123,7 +126,10 @@ export const quizQuestion = pgTable(
 			.notNull()
 			.references(() => quiz.id, { onDelete: 'cascade' }),
 		questionText: text('question_text').notNull(),
-		options: jsonb('options').notNull().default([]),
+		imageUrl: text('image_url'),
+		options: jsonb('options').$type<string[]>().notNull().default([]),
+		correctAnswer: integer('correct_answer').notNull().default(0), // 0-based index matching options
+		explanation: text('explanation'),
 		sortOrder: integer('sort_order').notNull(),
 	},
 	(table) => [
@@ -172,12 +178,28 @@ export const subPhaseRelations = relations(subPhase, ({ one, many }) => ({
 		fields: [subPhase.phaseId],
 		references: [phase.id]
 	}),
-	materis: many(materi)
+	materis: many(materi),
+	quizzes: many(quiz)
 }));
 
 export const materiRelations = relations(materi, ({ one }) => ({
 	subPhase: one(subPhase, {
 		fields: [materi.subPhaseId],
 		references: [subPhase.id]
+	})
+}));
+
+export const quizRelations = relations(quiz, ({ one, many }) => ({
+	subPhase: one(subPhase, {
+		fields: [quiz.subPhaseId],
+		references: [subPhase.id]
+	}),
+	questions: many(quizQuestion)
+}));
+
+export const quizQuestionRelations = relations(quizQuestion, ({ one }) => ({
+	quiz: one(quiz, {
+		fields: [quizQuestion.quizId],
+		references: [quiz.id]
 	})
 }));

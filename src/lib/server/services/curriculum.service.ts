@@ -111,6 +111,12 @@ export const CurriculumTree = {
 		});
 
 		if (!track) return null;
+		if (!track.tingkatId) {
+			return {
+				...track,
+				tingkatName: 'Tingkat Unknown'
+			};
+		}
 
 		const tingkatData = await db
 			.select()

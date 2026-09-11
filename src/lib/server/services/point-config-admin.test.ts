@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { updatePointConfigSchema, bulkUpdatePointConfigSchema } from '../../validators/point-config';
 import { DEFAULT_POINT_CONFIGS } from './point-config-admin.service';
 
@@ -12,9 +11,9 @@ describe('Point Config Admin Validation & Logic', () => {
 		};
 
 		const result = updatePointConfigSchema.safeParse(valid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.configValue, 120);
+			expect(result.data.configValue).toBe(120);
 		}
 	});
 
@@ -25,7 +24,7 @@ describe('Point Config Admin Validation & Logic', () => {
 		};
 
 		const result = updatePointConfigSchema.safeParse(invalid);
-		assert.equal(result.success, false);
+		expect(result.success).toBe(false);
 	});
 
 	it('validates bulkUpdatePointConfigSchema input', () => {
@@ -37,18 +36,18 @@ describe('Point Config Admin Validation & Logic', () => {
 		};
 
 		const result = bulkUpdatePointConfigSchema.safeParse(bulkValid);
-		assert.equal(result.success, true);
+		expect(result.success).toBe(true);
 		if (result.success) {
-			assert.equal(result.data.configs.length, 2);
+			expect(result.data.configs.length).toBe(2);
 		}
 	});
 
 	it('ensures all 9 default point configuration items are defined', () => {
-		assert.equal(DEFAULT_POINT_CONFIGS.length, 9);
+		expect(DEFAULT_POINT_CONFIGS.length).toBe(9);
 		const keys = DEFAULT_POINT_CONFIGS.map((d) => d.key);
-		assert.ok(keys.includes('attendance_weekday'));
-		assert.ok(keys.includes('attendance_weekend'));
-		assert.ok(keys.includes('streak_milestone_30'));
-		assert.ok(keys.includes('task_besar'));
+		expect(keys.includes('attendance_weekday')).toBe(true);
+		expect(keys.includes('attendance_weekend')).toBe(true);
+		expect(keys.includes('streak_milestone_30')).toBe(true);
+		expect(keys.includes('task_besar')).toBe(true);
 	});
 });

@@ -17,7 +17,7 @@
 	let isDeleting = $state(false);
 
 	// ── Slider Drawer States (Right on desktop, Bottom on mobile) ──────
-	let drawerType = $state<'track' | 'phase' | 'subPhase' | 'materi' | null>(null);
+	let drawerType = $state<'track' | 'phase' | 'subPhase' | 'materi' | 'quiz' | null>(null);
 	let drawerMode = $state<'create' | 'edit'>('create');
 	let targetId   = $state<number | null>(null);
 
@@ -30,6 +30,9 @@
 	let formDescription = $state('');
 	let formTingkatId   = $state<number | string | null>(null);
 	let formIsPublished = $state(false);
+	let formQuizType    = $state<'pre-test' | 'post-test'>('post-test');
+	let formPassingScore = $state(60);
+	let formDurationMinutes = $state<number | null>(null);
 
 	// ── Drawer Handlers ────────────────────────────────────────────────
 	function openEditTrackDrawer() {
@@ -84,13 +87,26 @@
 		formDescription  = '';
 	}
 
+	function openCreateQuizDrawer(subPhaseId: number) {
+		drawerType          = 'quiz';
+		drawerMode          = 'create';
+		parentSubPhaseId    = subPhaseId;
+		targetId            = null;
+		formTitle           = '';
+		formQuizType        = 'post-test';
+		formPassingScore    = 60;
+		formDurationMinutes = null;
+	}
+
 	function closeDrawer() {
-		drawerType       = null;
-		targetId         = null;
-		parentPhaseId    = null;
-		parentSubPhaseId = null;
-		formTitle        = '';
-		formDescription  = '';
+		drawerType          = null;
+		targetId            = null;
+		parentPhaseId       = null;
+		parentSubPhaseId    = null;
+		formTitle           = '';
+		formDescription     = '';
+		formPassingScore    = 60;
+		formDurationMinutes = null;
 	}
 
 	// Quick Preview Modal State
@@ -394,6 +410,10 @@
 												<button onclick={() => openCreateMateriDrawer(sp.id)} class="btn-ghost" style="padding: 4px 10px; font-size: 11px; color: var(--primary); border-color: var(--border-accent);">
 													+ Materi
 												</button>
+
+												<button onclick={() => openCreateQuizDrawer(sp.id)} class="btn-ghost" style="padding: 4px 10px; font-size: 11px; color: #4f46e5; border-color: #c7d2fe;">
+													+ Kuis
+												</button>
 											</div>
 										</div>
 
@@ -467,6 +487,36 @@
 												{/each}
 											{/if}
 										</div>
+
+										<!-- Quizzes List -->
+										{#if data.quizMap?.[sp.id] && data.quizMap[sp.id].length > 0}
+											<div class="quizzes-sub-section">
+												<div class="quizzes-header-label">
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+													<span>EVALUASI KUIS ({data.quizMap[sp.id].length})</span>
+												</div>
+												<div class="quizzes-items-grid">
+													{#each data.quizMap[sp.id] as q}
+														<a href="/mentor/kurikulum/{data.track.id}/quiz/{q.id}" class="quiz-sub-card">
+															<div class="quiz-sub-left">
+																<span class="badge {q.quizType === 'pre-test' ? 'badge-primary' : 'badge-hadir'}" style="font-size: 9px; height: 20px; padding: 0 6px;">
+																	{q.quizType.toUpperCase()}
+																</span>
+																<span class="quiz-sub-title">{q.title}</span>
+															</div>
+															<div class="quiz-sub-right">
+																<span class="quiz-pill-info">{q.questionCount} Soal</span>
+																<span class="quiz-pill-info">KKM {q.passingScore}%</span>
+																{#if q.durationMinutes}
+																	<span class="quiz-pill-info">{q.durationMinutes}m</span>
+																{/if}
+																<span class="quiz-open-btn">Buka →</span>
+															</div>
+														</a>
+													{/each}
+												</div>
+											</div>
+										{/if}
 									</div>
 								{/each}
 							{/if}
@@ -548,6 +598,8 @@
 							{drawerMode === 'edit' ? 'Edit Detail Fase' : 'Tambah Fase Baru'}
 						{:else if drawerType === 'subPhase'}
 							{drawerMode === 'edit' ? 'Edit Detail Sub-Fase' : 'Tambah Sub-Fase Baru'}
+						{:else if drawerType === 'quiz'}
+							Buat Kuis Baru
 						{:else if drawerType === 'materi'}
 							Tambah Materi Baru
 						{/if}
@@ -568,12 +620,20 @@
 						? drawerMode === 'edit' ? '?/updatePhase' : '?/createPhase'
 						: drawerType === 'subPhase'
 						? drawerMode === 'edit' ? '?/updateSubPhase' : '?/createSubPhase'
+						: drawerType === 'quiz'
+						? '?/createQuiz'
 						: '?/createMateri'
 				}
 				use:enhance={() => {
 					return async ({ result, update }) => {
 						await update();
-						if (result.type === 'success') closeDrawer();
+						if (result.type === 'success') {
+							if ((result.data as any)?.newQuizId) {
+								window.location.href = `/mentor/kurikulum/${data.track.id}/quiz/${(result.data as any).newQuizId}`;
+							} else {
+								closeDrawer();
+							}
+						}
 					};
 				}}
 				class="form-drawer__form"
@@ -585,11 +645,46 @@
 					<input type="hidden" name="id" value={targetId} />
 				{:else if drawerType === 'subPhase' && parentPhaseId}
 					<input type="hidden" name="phaseId" value={parentPhaseId} />
-				{:else if drawerType === 'materi' && parentSubPhaseId}
+				{:else if (drawerType === 'materi' || drawerType === 'quiz') && parentSubPhaseId}
 					<input type="hidden" name="subPhaseId" value={parentSubPhaseId} />
 				{/if}
 
 				<div class="form-drawer__body">
+					<!-- Quiz specific fields -->
+					{#if drawerType === 'quiz'}
+						<TextInput
+							name="title"
+							label="Judul Kuis *"
+							required
+							bind:value={formTitle}
+							placeholder="Contoh: Pre-Test Dasar Jaringan"
+							clearable
+						/>
+						<CustomSelect
+							name="quizType"
+							label="Tipe Evaluasi *"
+							required
+							bind:value={formQuizType}
+							options={[
+								{ value: 'pre-test', label: 'Pre-Test (Evaluasi Awal)' },
+								{ value: 'post-test', label: 'Post-Test (Evaluasi Akhir)' }
+							]}
+						/>
+						<TextInput
+							name="passingScore"
+							label="Nilai KKM Kelulusan (0 - 100) *"
+							type="number"
+							required
+							bind:value={formPassingScore}
+						/>
+						<TextInput
+							name="durationMinutes"
+							label="Durasi Pengerjaan (Menit)"
+							type="number"
+							bind:value={formDurationMinutes}
+							placeholder="Kosongkan jika tidak ada batas waktu"
+						/>
+					{/if}
 					<!-- Track-specific fields -->
 					{#if drawerType === 'track'}
 						<CustomSelect
@@ -1414,5 +1509,97 @@
 			from { transform: translateY(100%); }
 			to   { transform: translateY(0); }
 		}
+	}
+
+	/* ── Quizzes Sub-Section Styles ── */
+	.quizzes-sub-section {
+		margin-top: 10px;
+		padding: 10px 12px;
+		background: #f8fafc;
+		border: 1px solid var(--border-soft);
+		border-radius: var(--radius-md);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.quizzes-header-label {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 700;
+		color: #4f46e5;
+		letter-spacing: 0.04em;
+	}
+
+	.quizzes-items-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.quiz-sub-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 12px;
+		background: #ffffff;
+		border: 1px solid var(--border-hard);
+		border-radius: var(--radius-sm);
+		text-decoration: none;
+		color: inherit;
+		transition: all 130ms ease;
+		gap: 8px;
+	}
+
+	.quiz-sub-card:hover {
+		border-color: #a5b4fc;
+		box-shadow: 0 1px 3px rgba(79, 70, 229, 0.08);
+		transform: translateX(2px);
+	}
+
+	.quiz-sub-left {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.quiz-sub-title {
+		font-family: var(--font-macro);
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text-primary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.quiz-sub-right {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+
+	.quiz-pill-info {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 600;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border-soft);
+		padding: 1px 6px;
+		border-radius: 4px;
+	}
+
+	.quiz-open-btn {
+		font-family: var(--font-macro);
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--primary);
 	}
 </style>

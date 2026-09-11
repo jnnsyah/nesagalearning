@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 
 describe('ProgressService Interfaces & Calculation Rules', () => {
 	it('calculates progress percentage correctly from completed vs total subphases', () => {
@@ -7,7 +6,7 @@ describe('ProgressService Interfaces & Calculation Rules', () => {
 		const completedSubPhases = 3;
 		const progressPercentage = Math.round((completedSubPhases / totalSubPhases) * 100);
 
-		assert.equal(progressPercentage, 75);
+		expect(progressPercentage).toBe(75);
 	});
 
 	it('returns 0% progress when total subphases is 0', () => {
@@ -15,7 +14,7 @@ describe('ProgressService Interfaces & Calculation Rules', () => {
 		const completedSubPhases = 0;
 		const progressPercentage = totalSubPhases > 0 ? Math.round((completedSubPhases / totalSubPhases) * 100) : 0;
 
-		assert.equal(progressPercentage, 0);
+		expect(progressPercentage).toBe(0);
 	});
 
 	it('handles 100% completion when all subphases are finished', () => {
@@ -23,6 +22,6 @@ describe('ProgressService Interfaces & Calculation Rules', () => {
 		const completedSubPhases = 5;
 		const progressPercentage = Math.round((completedSubPhases / totalSubPhases) * 100);
 
-		assert.equal(progressPercentage, 100);
+		expect(progressPercentage).toBe(100);
 	});
 });

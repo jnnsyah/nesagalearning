@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	try {
 		// Fetch mentor's assigned classes for class selector dropdown
-		const mentorClasses = await MentorStudentRosterService.getMentorClasses(locals.user.id, tahunAjaranId);
+		const mentorClasses = await MentorStudentRosterService.getMentorClasses(Number(locals.user.id), tahunAjaranId);
 
 		if (trackId) {
 			// Tier 2: Detail View for specific Curriculum Track & student roster progress
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			const targetKelasId = monitoringData.selectedKelas?.id || (mentorClasses[0]?.id ?? null);
 			if (targetKelasId) {
 				rosterData = await MentorStudentRosterService.getRosterData({
-					mentorUserId: locals.user.id,
+					mentorUserId: Number(locals.user.id),
 					kelasInstanceId: targetKelasId,
 					tahunAjaranId: monitoringData.selectedTahunAjaran?.id
 				});
@@ -74,7 +74,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		// Graceful fallback fetching tahunAjaranOptions & mentorClasses safely
 		const [tahunAjaranOptions, mentorClasses] = await Promise.all([
 			CurriculumMonitoringService.getTahunAjaranOptions().catch(() => []),
-			MentorStudentRosterService.getMentorClasses(locals.user.id, tahunAjaranId).catch(() => [])
+			MentorStudentRosterService.getMentorClasses(Number(locals.user.id), tahunAjaranId).catch(() => [])
 		]);
 
 		return {

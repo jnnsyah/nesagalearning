@@ -546,7 +546,7 @@ export const CurriculumMonitoringService = {
 					id: curriculumTrack.id,
 					title: curriculumTrack.title,
 					description: curriculumTrack.description,
-					tingkatId: curriculumTrack.tingkatId,
+					tingkatId: tingkat.id,
 					tingkatName: tingkat.name
 				})
 				.from(curriculumTrack)
