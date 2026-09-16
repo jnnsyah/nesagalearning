@@ -51,14 +51,26 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const earnedMap = new Map(userEarnedBadges.map((b) => [b.badgeTypeId, b.earnedAt]));
 
-	const badgeGallery = allBadgeTypes.map((bt) => {
-		const earnedAt = earnedMap.get(bt.id);
-		return {
-			...bt,
-			isUnlocked: !!earnedAt,
-			earnedAt: earnedAt || null
-		};
-	});
+	const badgeGallery = allBadgeTypes
+		.map((bt) => {
+			const earnedAt = earnedMap.get(bt.id);
+			return {
+				...bt,
+				isUnlocked: !!earnedAt,
+				earnedAt: earnedAt || null
+			};
+		})
+		.sort((a, b) => {
+			// Unlocked badges first
+			if (a.isUnlocked && !b.isUnlocked) return -1;
+			if (!a.isUnlocked && b.isUnlocked) return 1;
+			// Both unlocked: newest earned first
+			if (a.isUnlocked && b.isUnlocked) {
+				return new Date(b.earnedAt!).getTime() - new Date(a.earnedAt!).getTime();
+			}
+			// Both locked: original id order
+			return a.id - b.id;
+		});
 
 	// 4. Fetch class leaderboard
 	let leaderboard: Array<{
