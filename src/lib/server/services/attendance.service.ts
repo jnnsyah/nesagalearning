@@ -3,7 +3,7 @@ import { pertemuan, attendanceToken, attendance } from '../db/schema/session';
 import { keanggotaan, kelasInstance } from '../db/schema/academic';
 import { user } from '../db/schema/auth';
 import { pointLog } from '../db/schema/gamification';
-import { eq, and, desc, gt, inArray } from 'drizzle-orm';
+import { eq, and, desc, gt, lt, inArray } from 'drizzle-orm';
 import { PointsService } from './points.service';
 import crypto from 'node:crypto';
 
@@ -102,6 +102,21 @@ export class AttendanceService {
 			.update(attendanceToken)
 			.set({ isActive: false })
 			.where(and(eq(attendanceToken.pertemuanId, pertemuanId), eq(attendanceToken.isActive, true)));
+
+		// Auto-cleanup stale tokens expired over 2 minutes ago to prevent table bloat
+		try {
+			const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+			await db
+				.delete(attendanceToken)
+				.where(
+					and(
+						eq(attendanceToken.pertemuanId, pertemuanId),
+						lt(attendanceToken.expiresAt, twoMinutesAgo)
+					)
+				);
+		} catch (cleanupErr) {
+			console.warn('[generateQRToken] Failed to cleanup stale tokens:', cleanupErr);
+		}
 
 		const charset = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 		let tokenStr = 'NLC-';
