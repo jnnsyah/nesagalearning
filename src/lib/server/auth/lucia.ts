@@ -25,6 +25,12 @@ export const lucia = new Lucia(adapter, {
 			isActive: attributes.isActive,
 			nisn: attributes.nisn ?? null
 		};
+	},
+	getSessionAttributes: (attributes: any) => {
+		return {
+			uaIsMobile: attributes.uaIsMobile ?? false,
+			rememberMe: attributes.rememberMe ?? false
+		};
 	}
 });
 
@@ -42,7 +48,18 @@ declare module 'lucia' {
 			isActive: boolean;
 			nisn: string | null;
 		};
+		DatabaseSessionAttributes: {
+			uaIsMobile: boolean;
+			rememberMe: boolean;
+		};
 	}
+}
+
+export const SESSION_DURATION_DESKTOP_SEC = 24 * 60 * 60; // 1 Hari (24 Jam)
+export const SESSION_DURATION_MOBILE_SEC = 30 * 24 * 60 * 60; // 30 Hari (1 Bulan)
+
+export function getSessionDurationSec(isMobile: boolean): number {
+	return isMobile ? SESSION_DURATION_MOBILE_SEC : SESSION_DURATION_DESKTOP_SEC;
 }
 
 export function isMobileUserAgent(userAgent: string | null): boolean {

@@ -1,9 +1,9 @@
 import type { RequestHandler } from './$types';
 import { getGoogleOAuthClient, type GoogleUserResult } from '$lib/server/auth/oauth';
 import { db } from '$lib/server/db';
-import { user as userTable } from '$lib/server/db/schema';
+import { user as userTable, session as sessionTable } from '$lib/server/db/schema';
 import { eq, or } from 'drizzle-orm';
-import { lucia, isMobileUserAgent } from '$lib/server/auth/lucia';
+import { lucia, isMobileUserAgent, getSessionDurationSec } from '$lib/server/auth/lucia';
 import { AuthGatekeeper } from '$lib/server/auth/gatekeeper';
 import { redirect } from '@sveltejs/kit';
 import bcrypt from 'bcryptjs';
@@ -97,16 +97,25 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 			throw redirect(303, '/login?error=Akun+Anda+telah+dinonaktifkan');
 		}
 
-		// Buat Lucia session
+		// Buat Lucia session dengan durasi adaptif (Desktop: 1 hari, Mobile: 30 hari)
 		const userAgent = request.headers.get('user-agent');
 		const isMobile = isMobileUserAgent(userAgent);
+		const durationSec = getSessionDurationSec(isMobile);
+		const expiresAt = new Date(Date.now() + durationSec * 1000);
 
 		const session = await lucia.createSession(String(dbUser.id), {
 			uaIsMobile: isMobile,
 			rememberMe: true
 		});
 
+		// Explicitly update session expiration in DB
+		await db
+			.update(sessionTable)
+			.set({ expiresAt })
+			.where(eq(sessionTable.id, session.id));
+
 		const sessionCookie = lucia.createSessionCookie(session.id);
+		sessionCookie.attributes.maxAge = durationSec;
 		cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '/',
 			...sessionCookie.attributes

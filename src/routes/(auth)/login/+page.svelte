@@ -5,15 +5,6 @@
 
 	let showPassword = $state(false);
 
-	function fillCreds(username: string) {
-		const uInput = document.getElementById('username') as HTMLInputElement;
-		const pInput = document.getElementById('password') as HTMLInputElement;
-		if (uInput && pInput) {
-			uInput.value = username;
-			pInput.value = 'password123';
-		}
-	}
-
 	function togglePassword() {
 		showPassword = !showPassword;
 		const input = document.getElementById('password') as HTMLInputElement;
@@ -171,20 +162,6 @@
 				</a>
 			</div>
 		</form>
-
-		<!-- Dev test helper -->
-		<div class="dev-hint">
-			<div class="dev-hint__header">
-				<span class="badge badge-pending">AKUN UJI COBA</span>
-				<span class="type-mono text-muted">password123</span>
-			</div>
-			<div class="dev-hint__roles">
-				<button type="button" onclick={() => fillCreds('siswa1')} class="role-btn">Siswa</button>
-				<button type="button" onclick={() => fillCreds('mentor')} class="role-btn">Mentor</button>
-				<button type="button" onclick={() => fillCreds('guru')} class="role-btn">Guru</button>
-				<button type="button" onclick={() => fillCreds('admin')} class="role-btn role-btn--admin">Admin</button>
-			</div>
-		</div>
 	</div>
 </div>
 
@@ -514,60 +491,6 @@
 
 	.submit-btn:active {
 		transform: scale(0.98);
-	}
-
-	/* ── Dev hint ── */
-	.dev-hint {
-		margin-top: 20px;
-		background: rgba(241, 245, 249, 0.8);
-		border: 1px solid #e2e8f0;
-		border-radius: 14px;
-		padding: 14px;
-	}
-
-	.dev-hint__header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 10px;
-	}
-
-	.dev-hint__roles {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 8px;
-	}
-
-	.role-btn {
-		background: #ffffff;
-		border: 1.5px solid #e2e8f0;
-		border-radius: 9px;
-		padding: 7px 4px;
-		font-size: 12px;
-		font-weight: 700;
-		color: #334155;
-		cursor: pointer;
-		text-align: center;
-		transition: all 150ms ease;
-		font-family: var(--font-body);
-	}
-
-	.role-btn:hover {
-		background: #e0e7ff;
-		border-color: #a5b4fc;
-		color: #3730a3;
-		transform: translateY(-1px);
-	}
-
-	.role-btn--admin {
-		border-color: #fca5a5;
-		color: #dc2626;
-	}
-
-	.role-btn--admin:hover {
-		background: #fee2e2;
-		border-color: #f87171;
-		color: #b91c1c;
 	}
 
 	.forgot-link {

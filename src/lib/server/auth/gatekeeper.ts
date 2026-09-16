@@ -1,8 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
-import { lucia, isMobileUserAgent } from './lucia';
+import { lucia, isMobileUserAgent, getSessionDurationSec } from './lucia';
 import { db } from '../db';
-import { user as userTable } from '../db/schema/auth';
+import { user as userTable, session as sessionTable } from '../db/schema/auth';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import type { Cookie } from 'lucia';
@@ -44,7 +44,10 @@ export const AuthGatekeeper = {
 		const { session, user } = await lucia.validateSession(sessionId);
 
 		if (session && session.fresh) {
+			const isMobile = Boolean(session.uaIsMobile);
+			const durationSec = getSessionDurationSec(isMobile);
 			const sessionCookie = lucia.createSessionCookie(session.id);
+			sessionCookie.attributes.maxAge = durationSec;
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
 				path: '/',
 				...sessionCookie.attributes
@@ -136,14 +139,23 @@ export const AuthGatekeeper = {
 		}
 
 		const isMobile = isMobileUserAgent(userAgent);
-		const rememberMe = rememberMeInput ?? false;
+		const rememberMe = isMobile ? true : (rememberMeInput ?? false);
+		const durationSec = getSessionDurationSec(isMobile);
+		const expiresAt = new Date(Date.now() + durationSec * 1000);
 
 		const session = await lucia.createSession(String(user.id), {
 			uaIsMobile: isMobile,
 			rememberMe: rememberMe
 		});
 
+		// Explicitly set the session expiration in database (Desktop: 1 day, Mobile: 30 days)
+		await db
+			.update(sessionTable)
+			.set({ expiresAt })
+			.where(eq(sessionTable.id, session.id));
+
 		const cookie = lucia.createSessionCookie(session.id);
+		cookie.attributes.maxAge = durationSec;
 		return { user, cookie };
 	},
 
