@@ -4,7 +4,7 @@ import { pertemuan } from '../db/schema/session';
 import { user } from '../db/schema/auth';
 import { subPhase, phase } from '../db/schema/curriculum';
 import { keanggotaan, kelasInstance } from '../db/schema/academic';
-import { eq, and, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, desc, asc, inArray, lte } from 'drizzle-orm';
 import { PointsService } from './points.service';
 import { ProgressService } from './progress.service';
 
@@ -443,6 +443,7 @@ export class SubmissionService {
 	 */
 	static async getStudentTasksWithStatus(userId: number, kelasInstanceId: number) {
 		// 1. Get all tasks in student's class
+		const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 		const tasks = await db
 			.select({
 				taskId: task.id,
@@ -460,7 +461,7 @@ export class SubmissionService {
 			.innerJoin(pertemuan, eq(task.pertemuanId, pertemuan.id))
 			.leftJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
 			.leftJoin(phase, eq(subPhase.phaseId, phase.id))
-			.where(eq(pertemuan.kelasInstanceId, kelasInstanceId))
+			.where(and(eq(pertemuan.kelasInstanceId, kelasInstanceId), lte(pertemuan.sessionDate, today)))
 			.orderBy(desc(pertemuan.sessionDate));
 
 		if (tasks.length === 0) return [];
