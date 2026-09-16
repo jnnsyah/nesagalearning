@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.ico';
 	import { navigating } from '$app/stores';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 
