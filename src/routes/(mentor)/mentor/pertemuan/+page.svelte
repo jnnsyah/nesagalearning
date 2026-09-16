@@ -38,8 +38,40 @@
 	let formKelasInstanceId = $state<number | string | null>('');
 	let formTrackId = $state<number | string | null>('');
 	let formSubPhaseId = $state<number | string | null>('');
+	let formHasMateri = $state(true);
 	let formTitle = $state('');
 	let formActivityType = $state<string | number | null>('teori');
+
+	$effect(() => {
+		if (!formHasMateri) {
+			untrack(() => {
+				formSubPhaseId = '';
+				formMateriId = '';
+				if (formActivityType !== 'santai') {
+					formActivityType = 'santai';
+				}
+			});
+		} else {
+			untrack(() => {
+				if (!formSubPhaseId && filteredSubPhasesForForm.length > 0) {
+					formSubPhaseId = filteredSubPhasesForForm[0].id;
+				}
+				if (formActivityType === 'santai') {
+					formActivityType = 'teori';
+				}
+			});
+		}
+	});
+
+	$effect(() => {
+		if (formActivityType === 'santai') {
+			untrack(() => {
+				if (formHasMateri) {
+					formHasMateri = false;
+				}
+			});
+		}
+	});
 	let formSessionDate = $state('');
 	let formStartTime = $state('');
 	let formEndTime = $state('');
@@ -200,7 +232,8 @@
 		uploadedFileName = '';
 		formKelasInstanceId = data.kelases[0]?.id ?? '';
 		formTrackId = data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
-		formSubPhaseId = '';
+		formHasMateri = true;
+		formSubPhaseId = filteredSubPhasesForForm[0]?.id ?? '';
 		formMateriId = '';
 		formTitle = '';
 		formActivityType = 'teori';
@@ -240,6 +273,7 @@
 		const foundSub = (data.subPhases || []).find((sp) => Number(sp.id) === Number(meeting.subPhaseId));
 		formTrackId = foundSub?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
 		formSubPhaseId = meeting.subPhaseId;
+		formHasMateri = Boolean(meeting.subPhaseId);
 
 		const matchingMateri = (data.materis || []).find(
 			(m) =>
@@ -1044,35 +1078,50 @@
 							/>
 						</div>
 
-						<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<CustomSelect
-								name="trackId"
-								label="Track Pembelajaran *"
-								bind:value={formTrackId}
-								options={formTrackOptions}
-								placeholder="-- Pilih Track Pembelajaran --"
-							/>
-
-							<CustomSelect
-								name="subPhaseId"
-								label="Sub-Fase Track Pembelajaran (Opsional)"
-								bind:value={formSubPhaseId}
-								options={formSubPhaseOptions}
-								placeholder="-- Pilih Sub-Fase (Opsional) --"
+						<!-- Toggle Switch: Sesi Memiliki Materi Kurikulum -->
+						<div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+							<ToggleSwitch
+								bind:checked={formHasMateri}
+								label="Sesi Pertemuan Memiliki Materi Kurikulum?"
+								description="Nonaktifkan jika ini adalah sesi santai / bebas / sharing tanpa materi kurikulum."
+								onLabel="Ada Materi Track"
+								offLabel="Sesi Santai / Bebas"
 							/>
 						</div>
 
-						<div class="mt-4">
-							<CustomSelect
-								id="form-materi-select"
-								label="Pilih Materi Kurikulum (Sub-Fase)"
-								bind:value={formMateriId}
-								options={filteredMateriOptions}
-								placeholder="-- Pilih Materi Kurikulum --"
-								searchable={false}
-							/>
-						</div>
+						{#if formHasMateri}
+							<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<CustomSelect
+									name="trackId"
+									label="Track Pembelajaran *"
+									bind:value={formTrackId}
+									options={formTrackOptions}
+									placeholder="-- Pilih Track Pembelajaran --"
+								/>
+
+								<CustomSelect
+									name="subPhaseId"
+									label="Sub-Fase Track Pembelajaran"
+									bind:value={formSubPhaseId}
+									options={formSubPhaseOptions}
+									placeholder="-- Pilih Sub-Fase --"
+								/>
+							</div>
+
+							<div class="mt-4">
+								<CustomSelect
+									id="form-materi-select"
+									label="Pilih Materi Kurikulum (Sub-Fase)"
+									bind:value={formMateriId}
+									options={filteredMateriOptions}
+									placeholder="-- Pilih Materi Kurikulum --"
+									searchable={false}
+								/>
+							</div>
+						{:else}
+							<input type="hidden" name="subPhaseId" value="" />
+						{/if}
 
 						<div class="mt-4">
 							<TextInput

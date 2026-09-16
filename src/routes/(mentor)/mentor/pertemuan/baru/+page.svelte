@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import ToggleSwitch from '$lib/components/ui/ToggleSwitch.svelte';
 	import { untrack } from 'svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -8,6 +9,8 @@
 	let formKelasInstanceId = $state<number | string | null>(data.kelases[0]?.id ?? '');
 	let formTrackId = $state<number | string | null>(data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '');
 	let formSubPhaseId = $state<number | string | null>(data.subPhases[0]?.id ?? '');
+	let formHasMateri = $state(true);
+	let formActivityType = $state('teori');
 	let formMateriId = $state<number | string | null>('');
 
 	let filteredMateriOptions = $derived.by(() => {
@@ -84,13 +87,44 @@
 	);
 
 	$effect(() => {
-		if (formTrackId && filteredSubPhasesForForm.length > 0) {
+		if (formTrackId && filteredSubPhasesForForm.length > 0 && formHasMateri) {
 			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
 			if (!isValid) {
 				untrack(() => {
 					formSubPhaseId = filteredSubPhasesForForm[0].id;
 				});
 			}
+		}
+	});
+
+	$effect(() => {
+		if (!formHasMateri) {
+			untrack(() => {
+				formSubPhaseId = '';
+				formMateriId = '';
+				if (formActivityType !== 'santai') {
+					formActivityType = 'santai';
+				}
+			});
+		} else {
+			untrack(() => {
+				if (!formSubPhaseId && filteredSubPhasesForForm.length > 0) {
+					formSubPhaseId = filteredSubPhasesForForm[0].id;
+				}
+				if (formActivityType === 'santai') {
+					formActivityType = 'teori';
+				}
+			});
+		}
+	});
+
+	$effect(() => {
+		if (formActivityType === 'santai') {
+			untrack(() => {
+				if (formHasMateri) {
+					formHasMateri = false;
+				}
+			});
 		}
 	});
 
@@ -184,41 +218,55 @@
 				/>
 			</div>
 
-			<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<div>
-					<CustomSelect
-						name="trackId"
-						label="Track Pembelajaran *"
-						bind:value={formTrackId}
-						options={formTrackOptions}
-						placeholder="-- Pilih Track Pembelajaran --"
-					/>
-				</div>
-
-				<div>
-					<CustomSelect
-						name="subPhaseId"
-						label="Kaitan Sub-Fase Track Pembelajaran *"
-						required
-						bind:value={formSubPhaseId}
-						options={formSubPhaseOptions}
-						placeholder="-- Pilih Sub-Fase --"
-						error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
-					/>
-				</div>
-			</div>
-
-			<div class="mt-4">
-				<CustomSelect
-					id="materi-select-baru"
-					label="Pilih Materi Kurikulum (Sub-Fase)"
-					bind:value={formMateriId}
-					options={filteredMateriOptions}
-					placeholder="-- Pilih Materi Kurikulum --"
-					searchable={false}
+			<!-- Toggle Switch: Sesi Memiliki Materi Kurikulum -->
+			<div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+				<ToggleSwitch
+					bind:checked={formHasMateri}
+					label="Sesi Pertemuan Memiliki Materi Kurikulum?"
+					description="Nonaktifkan jika ini adalah sesi santai / bebas / sharing tanpa materi kurikulum."
+					onLabel="Ada Materi Track"
+					offLabel="Sesi Santai / Bebas"
 				/>
 			</div>
+
+			{#if formHasMateri}
+				<!-- Row 2: Track Pembelajaran & Sub-Fase Track -->
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<CustomSelect
+							name="trackId"
+							label="Track Pembelajaran *"
+							bind:value={formTrackId}
+							options={formTrackOptions}
+							placeholder="-- Pilih Track Pembelajaran --"
+						/>
+					</div>
+
+					<div>
+						<CustomSelect
+							name="subPhaseId"
+							label="Sub-Fase Track Pembelajaran"
+							bind:value={formSubPhaseId}
+							options={formSubPhaseOptions}
+							placeholder="-- Pilih Sub-Fase --"
+							error={form?.errors?.subPhaseId ? form.errors.subPhaseId[0] : ''}
+						/>
+					</div>
+				</div>
+
+				<div class="mt-4">
+					<CustomSelect
+						id="materi-select-baru"
+						label="Pilih Materi Kurikulum (Sub-Fase)"
+						bind:value={formMateriId}
+						options={filteredMateriOptions}
+						placeholder="-- Pilih Materi Kurikulum --"
+						searchable={false}
+					/>
+				</div>
+			{:else}
+				<input type="hidden" name="subPhaseId" value="" />
+			{/if}
 		</div>
 
 		<!-- Title & Activity Type -->
@@ -247,6 +295,7 @@
 				<select
 					id="activityType"
 					name="activityType"
+					bind:value={formActivityType}
 					required
 					class="field-input"
 				>
