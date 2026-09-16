@@ -1051,7 +1051,7 @@
 							{m.title}
 						</h3>
 						<p class="pertemuan-subphase">
-							{m.phaseTitle} &rsaquo; {m.subPhaseTitle}
+							{m.subPhaseTitle ? `${m.phaseTitle ?? ''} › ${m.subPhaseTitle}` : 'Sesi Santai / Bebas'}
 						</p>
 
 						<!-- Date, Time, Location Info Box -->
@@ -1237,7 +1237,7 @@
 						<div class="mt-3 flex items-center gap-2 text-xs text-slate-600 font-medium flex-wrap">
 							<span class="text-slate-400">Track:</span>
 							<span class="drawer-subphase-tag">
-								{meeting.phaseTitle} &rsaquo; {meeting.subPhaseTitle}
+								{meeting.subPhaseTitle ? `${meeting.phaseTitle ?? ''} › ${meeting.subPhaseTitle}` : 'Sesi Santai / Bebas'}
 							</span>
 						</div>
 					</div>

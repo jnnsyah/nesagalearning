@@ -1030,28 +1030,28 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     5. STICKY GUEST NOTICE BANNER (LIGHT THEME)
+     5. STICKY GUEST NOTICE BANNER
      ══════════════════════════════════════════════════════════ -->
 {#if !bannerDismissed && !data.user}
-	<div class="guest-notice-banner">
-		<div class="banner-icon">
-			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-				<circle cx="12" cy="12" r="10"/>
-				<line x1="12" y1="8" x2="12" y2="12"/>
-				<line x1="12" y1="16" x2="12.01" y2="16"/>
-			</svg>
+	<aside class="guest-notice-banner" aria-label="Notifikasi Mode Tamu">
+		<div class="banner-badge">
+			<span class="badge-dot"></span>
+			<span>Tamu</span>
 		</div>
-		<span class="banner-text"><strong>Mode Tamu</strong> &bull; Login untuk simpan progress belajar</span>
-		<a href="/login?redirectTo=/materi/{data.track.id}/{data.materi.id}" class="banner-cta">Login Sekarang</a>
+		<span class="banner-text">
+			<span class="text-desktop">Login untuk simpan progres &amp; akses kuis</span>
+			<span class="text-mobile">Simpan progres belajar</span>
+		</span>
+		<a href="/login?redirectTo=/materi/{data.track.id}/{data.materi.id}" class="banner-cta">Login</a>
 		<button
 			type="button"
 			class="banner-dismiss"
 			onclick={() => (bannerDismissed = true)}
-			aria-label="Tutup banner"
+			aria-label="Tutup notifikasi"
 		>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 		</button>
-	</div>
+	</aside>
 {/if}
 
 <!-- ══════════════════════════════════════════════════════════
@@ -2388,7 +2388,7 @@
 	}
 
 	/* ══════════════════════════════════════════════════════════
-	   5. STICKY GUEST BANNER (LIGHT THEME)
+	   5. STICKY GUEST BANNER (Sleek Floating Pill)
 	   ══════════════════════════════════════════════════════════ */
 	.guest-notice-banner {
 		position: fixed;
@@ -2396,84 +2396,122 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 80;
-		background: rgba(255, 255, 255, 0.96);
+		background: rgba(255, 255, 255, 0.95);
 		backdrop-filter: blur(16px);
 		-webkit-backdrop-filter: blur(16px);
-		border: 1.5px solid var(--border-hard, #e2e8f0);
-		border-radius: var(--radius-full, 9999px);
-		padding: 8px 12px 8px 18px;
+		border: 1px solid rgba(203, 213, 225, 0.85);
+		border-radius: 9999px;
+		padding: 5px 6px 5px 12px;
 		color: var(--text-primary, #0f172a);
 		display: flex;
 		align-items: center;
-		gap: 12px;
-		font-family: var(--font-body);
-		font-size: 13px;
+		gap: 10px;
+		font-family: var(--font-body, system-ui, sans-serif);
+		font-size: 12.5px;
 		font-weight: 500;
-		max-width: calc(100vw - 32px);
-		box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+		max-width: min(calc(100vw - 32px), 520px);
+		box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
 		white-space: nowrap;
+		box-sizing: border-box;
+		animation: guestBannerFadeIn 220ms ease-out;
 	}
 
-	.banner-icon {
-		color: var(--primary, #4f46e5);
-		flex-shrink: 0;
-		display: flex;
+	@keyframes guestBannerFadeIn {
+		from {
+			opacity: 0;
+			transform: translate(-50%, 10px) scale(0.96);
+		}
+		to {
+			opacity: 1;
+			transform: translate(-50%, 0) scale(1);
+		}
+	}
+
+	.banner-badge {
+		display: inline-flex;
 		align-items: center;
+		gap: 5px;
+		padding: 3px 8px;
+		background: #eef2ff;
+		color: #4f46e5;
+		border: 1px solid #e0e7ff;
+		border-radius: 9999px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 10.5px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		flex-shrink: 0;
+	}
+
+	.badge-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: #4f46e5;
+		animation: pulseDot 2s ease-in-out infinite;
 	}
 
 	.banner-text {
-		white-space: nowrap;
+		color: var(--text-secondary, #334155);
 		overflow: hidden;
 		text-overflow: ellipsis;
-		color: var(--text-secondary, #334155);
+		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
 	}
 
-	.banner-text strong {
-		color: var(--text-primary, #0f172a);
-		font-weight: 700;
+	.banner-text .text-mobile {
+		display: none;
+	}
+
+	.banner-text .text-desktop {
+		display: inline;
 	}
 
 	.banner-cta {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		padding: 7px 16px;
-		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+		justify-content: center;
+		padding: 5px 14px;
+		background: #4f46e5;
 		color: #ffffff;
-		border-radius: var(--radius-full, 9999px);
-		font-family: var(--font-macro);
-		font-size: 12px;
+		border-radius: 9999px;
+		font-family: var(--font-macro, system-ui, sans-serif);
+		font-size: 11.5px;
 		font-weight: 700;
 		text-decoration: none;
 		white-space: nowrap;
 		flex-shrink: 0;
 		transition: all 140ms ease;
-		box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+		box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
 	}
 
 	.banner-cta:hover {
+		background: #4338ca;
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+		box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
 	}
 
 	.banner-dismiss {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		height: 26px;
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
-		background: var(--bg-cell, #f1f5f9);
+		background: #f1f5f9;
 		border: none;
-		color: var(--text-muted, #64748b);
+		color: #64748b;
 		cursor: pointer;
 		flex-shrink: 0;
 		transition: all 140ms ease;
+		padding: 0;
 	}
 
 	.banner-dismiss:hover {
 		background: #e2e8f0;
-		color: var(--text-primary, #0f172a);
+		color: #0f172a;
 	}
 
 	/* ══════════════════════════════════════════════════════════
@@ -2739,11 +2777,42 @@
 		}
 
 		.guest-notice-banner {
-			bottom: calc(62px + env(safe-area-inset-bottom, 0px));
-			font-size: 11.5px;
-			padding: 6px 10px 6px 12px;
+			bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+			padding: 4px 5px 4px 8px;
+			gap: 6px;
 			max-width: calc(100vw - 20px);
-			border-radius: 12px;
+			font-size: 11.5px;
+		}
+
+		.banner-badge {
+			padding: 2px 6px;
+			font-size: 9.5px;
+			gap: 4px;
+		}
+
+		.badge-dot {
+			width: 5px;
+			height: 5px;
+		}
+
+		.banner-text .text-desktop {
+			display: none;
+		}
+
+		.banner-text .text-mobile {
+			display: inline;
+			font-size: 11px;
+			line-height: 1;
+		}
+
+		.banner-cta {
+			padding: 4.5px 10px;
+			font-size: 11px;
+		}
+
+		.banner-dismiss {
+			width: 22px;
+			height: 22px;
 		}
 
 		.mobile-drawer-panel {

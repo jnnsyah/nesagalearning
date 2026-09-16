@@ -71,8 +71,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 			phaseTitle: phase.title
 		})
 		.from(pertemuan)
-		.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
-		.innerJoin(phase, eq(subPhase.phaseId, phase.id))
+		.leftJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+		.leftJoin(phase, eq(subPhase.phaseId, phase.id))
 		.where(eq(pertemuan.kelasInstanceId, kelasInstanceId))
 		.orderBy(desc(pertemuan.sessionDate), desc(pertemuan.startTime));
 

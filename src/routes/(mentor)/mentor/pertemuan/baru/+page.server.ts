@@ -60,7 +60,8 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const kelasInstanceId = Number(formData.get('kelasInstanceId'));
-		const subPhaseId = Number(formData.get('subPhaseId'));
+		const subPhaseIdRaw = formData.get('subPhaseId');
+		const subPhaseId = subPhaseIdRaw && Number(subPhaseIdRaw) > 0 ? Number(subPhaseIdRaw) : null;
 		const title = formData.get('title') as string;
 		const activityType = formData.get('activityType') as any;
 		const sessionDate = formData.get('sessionDate') as string;

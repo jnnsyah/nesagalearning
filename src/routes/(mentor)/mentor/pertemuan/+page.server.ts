@@ -97,7 +97,8 @@ export const actions: Actions = {
 			return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });
 		}
 
-		const subPhaseId = Number(formData.get('subPhaseId'));
+		const subPhaseIdRaw = formData.get('subPhaseId');
+		const subPhaseId = subPhaseIdRaw && Number(subPhaseIdRaw) > 0 ? Number(subPhaseIdRaw) : null;
 		const title = formData.get('title') as string;
 		const activityType = formData.get('activityType') as any;
 		const sessionDate = formData.get('sessionDate') as string;
@@ -158,7 +159,8 @@ export const actions: Actions = {
 			return fail(403, { message: 'Akses Ditolak: Anda hanya memiliki akses Read-Only untuk pertemuan di kelas ini.' });
 		}
 
-		const subPhaseId = Number(formData.get('subPhaseId'));
+		const subPhaseIdRaw = formData.get('subPhaseId');
+		const subPhaseId = subPhaseIdRaw && Number(subPhaseIdRaw) > 0 ? Number(subPhaseIdRaw) : null;
 		const title = formData.get('title') as string;
 		const activityType = formData.get('activityType') as any;
 		const sessionDate = formData.get('sessionDate') as string;

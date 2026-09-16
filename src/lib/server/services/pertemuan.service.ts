@@ -10,7 +10,7 @@ import type { CreatePertemuanInput, UpdatePertemuanInput } from '$lib/validators
 export interface PertemuanWithDetails {
 	id: number;
 	kelasInstanceId: number;
-	subPhaseId: number;
+	subPhaseId: number | null;
 	title: string;
 	activityType: string;
 	sessionDate: string;
@@ -21,7 +21,7 @@ export interface PertemuanWithDetails {
 	isWeekend: boolean;
 	createdAt: Date;
 	updatedAt: Date;
-	subPhaseTitle?: string;
+	subPhaseTitle?: string | null;
 	kelasName?: string;
 	tasks?: {
 		id: number;
@@ -53,7 +53,7 @@ export class PertemuanService {
 				kelasName: kelasInstance.name
 			})
 			.from(pertemuan)
-			.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+			.leftJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
 			.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
 			.where(eq(pertemuan.kelasInstanceId, kelasInstanceId))
 			.orderBy(desc(pertemuan.sessionDate));
@@ -81,7 +81,7 @@ export class PertemuanService {
 				kelasName: kelasInstance.name
 			})
 			.from(pertemuan)
-			.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+			.leftJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
 			.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
 			.orderBy(desc(pertemuan.sessionDate));
 
@@ -143,7 +143,7 @@ export class PertemuanService {
 				kelasName: kelasInstance.name
 			})
 			.from(pertemuan)
-			.innerJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
+			.leftJoin(subPhase, eq(pertemuan.subPhaseId, subPhase.id))
 			.innerJoin(kelasInstance, eq(pertemuan.kelasInstanceId, kelasInstance.id))
 			.where(eq(pertemuan.id, id))
 			.limit(1);
@@ -176,7 +176,7 @@ export class PertemuanService {
 				.insert(pertemuan)
 				.values({
 					kelasInstanceId: input.kelasInstanceId,
-					subPhaseId: input.subPhaseId,
+					subPhaseId: input.subPhaseId ? input.subPhaseId : null,
 					title: input.title,
 					activityType: input.activityType,
 					sessionDate: input.sessionDate,
@@ -224,7 +224,7 @@ export class PertemuanService {
 			if (input.location !== undefined) updateData.location = input.location || null;
 			if (input.materialUrl !== undefined) updateData.materialUrl = input.materialUrl || null;
 			if (input.isWeekend !== undefined) updateData.isWeekend = input.isWeekend;
-			if (input.subPhaseId !== undefined) updateData.subPhaseId = input.subPhaseId;
+			if (input.subPhaseId !== undefined) updateData.subPhaseId = input.subPhaseId ? input.subPhaseId : null;
 
 			await tx.update(pertemuan).set(updateData).where(eq(pertemuan.id, id));
 

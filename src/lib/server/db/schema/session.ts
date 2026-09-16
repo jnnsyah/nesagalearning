@@ -21,7 +21,6 @@ export const pertemuan = pgTable(
 			.notNull()
 			.references(() => kelasInstance.id),
 		subPhaseId: bigint('sub_phase_id', { mode: 'number' })
-			.notNull()
 			.references(() => subPhase.id),
 		title: text('title').notNull(),
 		activityType: text('activity_type').notNull(), // 'teori' | 'praktik' | 'teori_praktik' | 'games' | 'quiz' | 'santai'

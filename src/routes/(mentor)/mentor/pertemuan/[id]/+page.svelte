@@ -154,7 +154,7 @@
 
 		{#snippet subtitleSnippet()}
 			<p class="page-sub text-left">
-				Sub-Fase Track Pembelajaran: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle}</strong>
+				Sub-Fase Track: <strong class="text-indigo-600 font-semibold">{m.subPhaseTitle || 'Sesi Bebas / Non-Materi'}</strong>
 			</p>
 		{/snippet}
 
@@ -277,7 +277,7 @@
 
 							<div class="info-group">
 								<span class="info-label">Sub-Fase Track Pembelajaran</span>
-								<span class="info-val">{m.subPhaseTitle}</span>
+								<span class="info-val">{m.subPhaseTitle || 'Sesi Bebas / Non-Materi'}</span>
 							</div>
 
 							<div class="info-group">

@@ -57,6 +57,29 @@ describe('createPertemuanSchema', () => {
 		expect(resultNull.success).toBe(true);
 	});
 
+	it('validates meeting input without subPhaseId (e.g. Sesi Santai)', () => {
+		const inputWithoutSubPhase = {
+			kelasInstanceId: 1,
+			title: 'Sesi Santai & Ngobrol Komunitas',
+			activityType: 'santai',
+			sessionDate: '2026-08-23',
+			startTime: '15:20',
+			endTime: '16:55'
+		};
+
+		const result = createPertemuanSchema.safeParse(inputWithoutSubPhase);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.subPhaseId).toBeUndefined();
+		}
+
+		const resultWithNull = createPertemuanSchema.safeParse({
+			...inputWithoutSubPhase,
+			subPhaseId: null
+		});
+		expect(resultWithNull.success).toBe(true);
+	});
+
 	it('rejects short title (< 3 chars)', () => {
 		const input = {
 			kelasInstanceId: 1,

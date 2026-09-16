@@ -53,7 +53,9 @@
 	let formMateriId = $state<number | string | null>('');
 
 	let filteredMateriOptions = $derived.by(() => {
-		if (!formSubPhaseId) return [];
+		if (!formSubPhaseId) {
+			return [{ value: '', label: '-- Tanpa Materi (Sesi Santai / Bebas) --' }];
+		}
 		const list = (data.materis || []).filter((m) => Number(m.subPhaseId) === Number(formSubPhaseId));
 		if (list.length > 0) {
 			return [
@@ -198,7 +200,7 @@
 		uploadedFileName = '';
 		formKelasInstanceId = data.kelases[0]?.id ?? '';
 		formTrackId = data.kelases[0]?.curriculumTrackId ?? data.tracks[0]?.id ?? '';
-		formSubPhaseId = data.subPhases[0]?.id ?? '';
+		formSubPhaseId = '';
 		formMateriId = '';
 		formTitle = '';
 		formActivityType = 'teori';
@@ -422,20 +424,21 @@
 		return list.length > 0 ? list : data.subPhases || [];
 	});
 
-	let formSubPhaseOptions = $derived(
-		filteredSubPhasesForForm.map((sp) => ({
+	let formSubPhaseOptions = $derived([
+		{ value: '', label: '-- Tanpa Sub-Fase (Sesi Santai / Bebas) --' },
+		...filteredSubPhasesForForm.map((sp) => ({
 			value: sp.id,
 			label: sp.phaseTitle ? `${sp.phaseTitle} › ${sp.title}` : sp.title
 		}))
-	);
+	]);
 
-	// Auto-select valid sub-phase when track changes
+	// Reset sub-phase if selected sub-phase does not belong to new track
 	$effect(() => {
-		if (formTrackId && filteredSubPhasesForForm.length > 0) {
+		if (formTrackId && formSubPhaseId) {
 			const isValid = filteredSubPhasesForForm.some((sp) => String(sp.id) === String(formSubPhaseId));
 			if (!isValid) {
 				untrack(() => {
-					formSubPhaseId = filteredSubPhasesForForm[0].id;
+					formSubPhaseId = '';
 				});
 			}
 		}
@@ -816,7 +819,7 @@
 									<a href={`/mentor/pertemuan/${m.id}`} class="font-bold text-slate-900 hover:text-indigo-600">
 										{m.title}
 									</a>
-									<span class="text-xs text-slate-500">{m.subPhaseTitle}</span>
+									<span class="text-xs text-slate-500">{m.subPhaseTitle || 'Sesi Bebas / Non-Materi'}</span>
 								</div>
 							</td>
 							<td>
@@ -1053,11 +1056,10 @@
 
 							<CustomSelect
 								name="subPhaseId"
-								label="Sub-Fase Track Pembelajaran *"
-								required
+								label="Sub-Fase Track Pembelajaran (Opsional)"
 								bind:value={formSubPhaseId}
 								options={formSubPhaseOptions}
-								placeholder="-- Pilih Sub-Fase --"
+								placeholder="-- Pilih Sub-Fase (Opsional) --"
 							/>
 						</div>
 

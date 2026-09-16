@@ -18,8 +18,8 @@ export const optionalTaskSchema = z.object({
 });
 
 export const createPertemuanSchema = z.object({
-	kelasInstanceId: z.number({ message: 'Kelas Wajib dipilih' }),
-	subPhaseId: z.number({ message: 'SubPhase Wajib dipilih' }),
+	kelasInstanceId: z.number({ message: 'Kelas Wajib dipilih' }).positive('Kelas Wajib dipilih'),
+	subPhaseId: z.number().positive('Sub-Fase tidak valid').optional().nullable(),
 	title: z.string().min(3, 'Judul pertemuan minimal 3 karakter'),
 	activityType: z.enum(ACTIVITY_TYPES, { message: 'Tipe aktivitas wajib dipilih' }),
 	sessionDate: z.string().min(1, 'Tanggal pertemuan wajib diisi'),
