@@ -287,7 +287,12 @@ export const MasterAdminService = {
 
 		let finalTrackId = input.curriculumTrackId;
 		if (!finalTrackId) {
-			const [firstTrack] = await db.select({ id: curriculumTrack.id }).from(curriculumTrack).orderBy(curriculumTrack.id).limit(1);
+			const [firstTrack] = await db
+				.select({ id: curriculumTrack.id })
+				.from(curriculumTrack)
+				.where(eq(curriculumTrack.isPublished, true))
+				.orderBy(curriculumTrack.id)
+				.limit(1);
 			finalTrackId = firstTrack?.id;
 		}
 
@@ -366,7 +371,11 @@ export const MasterAdminService = {
 
 		let finalTrackId = input.curriculumTrackId || target.curriculumTrackId;
 		if (!finalTrackId) {
-			const [firstTrack] = await db.select({ id: curriculumTrack.id }).from(curriculumTrack).limit(1);
+			const [firstTrack] = await db
+				.select({ id: curriculumTrack.id })
+				.from(curriculumTrack)
+				.where(eq(curriculumTrack.isPublished, true))
+				.limit(1);
 			finalTrackId = firstTrack?.id || 1;
 		}
 

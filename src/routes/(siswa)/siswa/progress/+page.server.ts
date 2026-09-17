@@ -64,7 +64,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 			.from(kelasInstance)
 			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
 			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
-			.where(eq(kelasInstance.id, activeMembership.kelasInstanceId))
+			.where(
+				and(
+					eq(kelasInstance.id, activeMembership.kelasInstanceId),
+					eq(curriculumTrack.isPublished, true)
+				)
+			)
 			.limit(1);
 
 		trackInfo = kelasTrackData || null;

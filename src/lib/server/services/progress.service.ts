@@ -153,11 +153,17 @@ export class ProgressService {
 		userId: number,
 		kelasInstanceId: number
 	): Promise<PhaseProgressSummary[]> {
-		// 1. Get curriculumTrackId from kelasInstance
+		// 1. Get curriculumTrackId from kelasInstance (must be published)
 		const [kelas] = await db
 			.select({ curriculumTrackId: kelasInstance.curriculumTrackId })
 			.from(kelasInstance)
-			.where(eq(kelasInstance.id, kelasInstanceId));
+			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
+			.where(
+				and(
+					eq(kelasInstance.id, kelasInstanceId),
+					eq(curriculumTrack.isPublished, true)
+				)
+			);
 
 		if (!kelas || !kelas.curriculumTrackId) {
 			return [];
@@ -358,7 +364,13 @@ export class ProgressService {
 			.innerJoin(tahunAjaran, eq(kelasInstance.tahunAjaranId, tahunAjaran.id))
 			.innerJoin(tingkat, eq(kelasInstance.tingkatId, tingkat.id))
 			.innerJoin(curriculumTrack, eq(kelasInstance.curriculumTrackId, curriculumTrack.id))
-			.where(and(eq(keanggotaan.userId, userId), ne(keanggotaan.status, 'aktif')))
+			.where(
+				and(
+					eq(keanggotaan.userId, userId),
+					ne(keanggotaan.status, 'aktif'),
+					eq(curriculumTrack.isPublished, true)
+				)
+			)
 			.orderBy(asc(tahunAjaran.startedAt));
 
 		const results: HistoricalClassProgress[] = [];
