@@ -189,8 +189,12 @@ export const actions: Actions = {
 			task: hasTask && taskTitle ? { title: taskTitle, description: taskDescription, taskSize } : undefined
 		};
 
-		await PertemuanService.updatePertemuan(id, rawInput);
-		return { success: true };
+		try {
+			await PertemuanService.updatePertemuan(id, rawInput);
+			return { success: true };
+		} catch (err: any) {
+			return fail(400, { message: err.message || 'Gagal memperbarui pertemuan' });
+		}
 	},
 
 	delete: async ({ request, locals }) => {

@@ -4,7 +4,7 @@ import { task, submission } from '../db/schema/task';
 import { kelasInstance, keanggotaan } from '../db/schema/academic';
 import { subPhase, phase, curriculumTrack } from '../db/schema/curriculum';
 import { user } from '../db/schema/auth';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import type { CreatePertemuanInput, UpdatePertemuanInput } from '$lib/validators/pertemuan';
 
 export interface PertemuanWithDetails {
@@ -228,7 +228,7 @@ export class PertemuanService {
 
 			await tx.update(pertemuan).set(updateData).where(eq(pertemuan.id, id));
 
-			if (input.task && input.task.title) {
+			if (input.task && input.task.title && input.task.title.trim() !== '') {
 				const existingTasks = await tx
 					.select({ id: task.id })
 					.from(task)
@@ -239,7 +239,7 @@ export class PertemuanService {
 					await tx
 						.update(task)
 						.set({
-							title: input.task.title,
+							title: input.task.title.trim(),
 							description: input.task.description || null,
 							taskSize: input.task.taskSize || 'sedang',
 							updatedAt: new Date()
@@ -248,10 +248,35 @@ export class PertemuanService {
 				} else {
 					await tx.insert(task).values({
 						pertemuanId: id,
-						title: input.task.title,
+						title: input.task.title.trim(),
 						description: input.task.description || null,
 						taskSize: input.task.taskSize || 'sedang'
 					});
+				}
+			} else {
+				// Task toggle disabled / task removed in form
+				const existingTasks = await tx
+					.select({ id: task.id })
+					.from(task)
+					.where(eq(task.pertemuanId, id));
+
+				if (existingTasks.length > 0) {
+					const taskIds = existingTasks.map((t) => t.id);
+
+					// Check if any student has already submitted work for these tasks
+					const [subCount] = await tx
+						.select({ total: sql<number>`count(*)::int` })
+						.from(submission)
+						.where(inArray(submission.taskId, taskIds));
+
+					if (subCount && subCount.total > 0) {
+						throw new Error(
+							'Tugas tidak dapat dinonaktifkan atau dihapus karena sudah ada siswa yang mengumpulkan tugas.'
+						);
+					}
+
+					// Safe to delete task because no student has submitted yet
+					await tx.delete(task).where(eq(task.pertemuanId, id));
 				}
 			}
 
