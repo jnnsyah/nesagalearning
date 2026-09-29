@@ -42,3 +42,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	return response;
 };
+
+export const handleError: import('@sveltejs/kit').HandleError = ({ error }) => {
+	const rawMsg = error instanceof Error ? error.message : String(error || '');
+	if (
+		/content-length.*exceeds limit/i.test(rawMsg) ||
+		/exceeds limit of/i.test(rawMsg) ||
+		/payload too large/i.test(rawMsg)
+	) {
+		return {
+			message: 'Ukuran file yang diunggah melebihi batas maksimum yang diizinkan (maksimal 10MB).'
+		};
+	}
+	return {
+		message: rawMsg || 'Terjadi kesalahan pada server.'
+	};
+};
+

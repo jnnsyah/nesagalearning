@@ -133,6 +133,12 @@
 		if (!target.files || target.files.length === 0) return;
 
 		const file = target.files[0];
+		const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+		if (file.size > MAX_FILE_SIZE) {
+			uploadError = `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 10MB.`;
+			return;
+		}
+
 		const formData = new FormData();
 		formData.append('file', file);
 		formData.append('folder', 'materials');
@@ -145,11 +151,30 @@
 				method: 'POST',
 				body: formData
 			});
-			const result = await res.json();
-			if (res.ok && result.url) {
+
+			let responseText = '';
+			let result: any = null;
+			try {
+				responseText = await res.text();
+				result = JSON.parse(responseText);
+			} catch {
+				result = null;
+			}
+
+			if (res.ok && result?.url) {
 				uploadedUrl = result.url;
 			} else {
-				uploadError = result.error || 'Gagal mengunggah file';
+				const rawErr = result?.error || responseText || '';
+				if (
+					/content-length.*exceeds limit/i.test(rawErr) ||
+					/exceeds limit of/i.test(rawErr) ||
+					/payload too large/i.test(rawErr) ||
+					res.status === 413
+				) {
+					uploadError = 'Ukuran file yang diunggah melebihi batas maksimum 10MB.';
+				} else {
+					uploadError = result?.error || rawErr || 'Gagal mengunggah file';
+				}
 			}
 		} catch (err) {
 			uploadError = 'Terjadi kesalahan jaringan saat mengunggah';
@@ -389,12 +414,12 @@
 
 		<!-- Material/PPT Upload & URL -->
 		<div class="pt-4 border-t border-slate-200 space-y-3">
-			<h3 class="text-sm font-bold text-slate-900">Materi / Slide PPT Pertemuan</h3>
+			<h3 class="text-sm font-bold text-slate-900">Materi / Slide PPT Pertemuan (Maksimal 10MB)</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 				<div>
 					<label for="file-upload" class="field-label">
-						Unggah File Materi (Cloudflare R2 / Local)
+						Unggah File Materi (PPT / PDF, Maks. 10MB)
 					</label>
 					<input
 						id="file-upload"

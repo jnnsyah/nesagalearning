@@ -356,6 +356,13 @@
 	async function uploadSelectedFile(file: File) {
 		if (!file) return;
 
+		const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+		if (file.size > MAX_FILE_SIZE) {
+			uploadError = `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 10MB.`;
+			toast.error(uploadError);
+			return;
+		}
+
 		const formData = new FormData();
 		formData.append('file', file);
 		formData.append('folder', 'materials');
@@ -368,14 +375,33 @@
 				method: 'POST',
 				body: formData
 			});
-			const result = await res.json();
-			if (res.ok && result.url) {
+
+			let responseText = '';
+			let result: any = null;
+			try {
+				responseText = await res.text();
+				result = JSON.parse(responseText);
+			} catch {
+				result = null;
+			}
+
+			if (res.ok && result?.url) {
 				formMaterialUrl = result.url;
 				uploadedFileName = file.name;
 				sessionUploadedFiles.push(result.url);
 				toast.success(`File "${file.name}" berhasil diunggah!`);
 			} else {
-				uploadError = result.error || 'Gagal mengunggah file';
+				const rawErr = result?.error || responseText || '';
+				if (
+					/content-length.*exceeds limit/i.test(rawErr) ||
+					/exceeds limit of/i.test(rawErr) ||
+					/payload too large/i.test(rawErr) ||
+					res.status === 413
+				) {
+					uploadError = 'Ukuran file yang diunggah melebihi batas maksimum 10MB.';
+				} else {
+					uploadError = result?.error || rawErr || 'Gagal mengunggah file';
+				}
 				toast.error(uploadError);
 			}
 		} catch (err) {
@@ -1218,7 +1244,7 @@
 
 					<!-- Section 3: PPT & Slide Materi -->
 					<div class="drawer-section">
-						<h4 class="section-title">3. Slide PPT & Material Sesi</h4>
+						<h4 class="section-title">3. Slide PPT & Material Sesi (Maksimal 10MB)</h4>
 
 						<div
 							class="upload-drop-zone {isDragging ? 'is-dragging' : ''} {formMaterialUrl ? 'has-file' : ''}"
@@ -1270,7 +1296,7 @@
 										<polyline points="17 8 12 3 7 8" />
 										<line x1="12" y1="3" x2="12" y2="15" />
 									</svg>
-									<span><strong>Klik di sini</strong> atau drag &amp; drop file PPT / PDF Materi ke kotak ini</span>
+									<span><strong>Klik di sini</strong> atau drag &amp; drop file PPT / PDF Materi (Maks. 10MB) ke kotak ini</span>
 								{/if}
 							</label>
 						</div>

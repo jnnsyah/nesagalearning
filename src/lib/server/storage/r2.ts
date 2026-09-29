@@ -86,7 +86,7 @@ export function validateFile(file: File, folder: string): { valid: boolean; erro
 		}
 	}
 
-	const maxMB = isAvatarFolder ? 5 : 20;
+	const maxMB = isAvatarFolder ? 5 : (safeFolder === 'materials' ? 10 : 20);
 	const maxBytes = maxMB * 1024 * 1024;
 	if (file.size > maxBytes) {
 		return { valid: false, error: `Ukuran file melebihi batas maksimal ${maxMB} MB`, ext, safeFolder };

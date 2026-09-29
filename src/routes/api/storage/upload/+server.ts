@@ -42,11 +42,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			);
 		}
 
-		// 3. File Size Validation (Avatars max 5MB, others max 20MB)
-		const maxSizeBytes = folder === 'avatars' ? 5 * 1024 * 1024 : 20 * 1024 * 1024;
+		// 3. File Size Validation (Avatars max 5MB, materials max 10MB, others max 20MB)
+		let maxSizeBytes = 20 * 1024 * 1024;
+		let maxMbStr = '20MB';
+		if (folder === 'avatars') {
+			maxSizeBytes = 5 * 1024 * 1024;
+			maxMbStr = '5MB';
+		} else if (folder === 'materials') {
+			maxSizeBytes = 10 * 1024 * 1024;
+			maxMbStr = '10MB';
+		}
+
 		if (file.size > maxSizeBytes) {
-			const maxMb = folder === 'avatars' ? '5MB' : '20MB';
-			return json({ error: `Ukuran file melebihi batas maksimum ${maxMb}.` }, { status: 400 });
+			return json({ error: `Ukuran file melebihi batas maksimum ${maxMbStr}.` }, { status: 400 });
 		}
 
 		// 4. Extension & Dangerous File Check
