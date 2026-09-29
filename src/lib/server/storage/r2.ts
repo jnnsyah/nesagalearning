@@ -136,6 +136,10 @@ export async function uploadFile(
 			const localUploads = path.join(process.cwd(), 'uploads', safeFolder);
 			const targetDirs = [staticUploads, localUploads];
 
+			if (process.env.UPLOADS_DIR) {
+				targetDirs.push(path.join(process.env.UPLOADS_DIR, safeFolder));
+			}
+
 			if (process.env.NODE_ENV === 'production' || fs.existsSync(path.join(process.cwd(), 'build'))) {
 				targetDirs.push(path.join(process.cwd(), 'build', 'client', 'uploads', safeFolder));
 			}
